@@ -16,6 +16,17 @@ pub struct MenuSlot {
     pub slot: Option<SlotRow>,
 }
 
+#[derive(Default, Clone)]
+pub struct MenuBoardDay {
+    pub date: String,
+    pub weekday: String,
+    pub day_num: u8,
+    pub is_today: bool,
+    pub is_past: bool,
+    pub is_in_month: bool,
+    pub slot: Option<SlotRow>,
+}
+
 #[derive(askama::Template)]
 #[template(path = "partials/menu-regenerate-modal.html")]
 pub struct GenerateModalTemplate {
@@ -36,9 +47,13 @@ pub struct MenuTemplate {
     pub user: AuthUser,
     pub slots: Vec<MenuSlot>,
     pub selected_slot: Option<SlotRow>,
+    pub selected_day: u64,
+    pub current_date: String,
+    pub is_past: bool,
     pub first_month_day: u64,
     pub prev_month: String,
     pub next_month: String,
+    pub board_weeks: Vec<Vec<MenuBoardDay>>,
 }
 
 impl Default for MenuTemplate {
@@ -48,9 +63,13 @@ impl Default for MenuTemplate {
             user: AuthUser::default(),
             slots: vec![],
             selected_slot: None,
+            selected_day: 0,
+            current_date: String::new(),
+            is_past: false,
             first_month_day: 0,
             prev_month: "".to_owned(),
             next_month: "".to_owned(),
+            board_weeks: vec![],
         }
     }
 }
@@ -120,14 +139,66 @@ pub async fn page(
         .or_else(|| slots.first())
         .cloned();
 
+    let selected_day = selected_slot.as_ref().map(|s| s.day).unwrap_or(0);
+
+    let today = imkitchen_core::mealplan::now(&user.tz);
+    let today_u64 = imkitchen_core::mealplan::date_to_u64(today);
+    let is_past = imkitchen_core::mealplan::date_to_u64(bounds.date) < today_u64;
+
+    let fmt = time::macros::format_description!("[year]-[month]-[day]");
+    let current_date = bounds.date.format(&fmt).unwrap_or_default();
+
+    // ── Desktop week-board: walk the same Mon–Sun-padded date sequence the
+    // calendar uses, but build rich cells (date string for URL, weekday label,
+    // slot, today/past flags) and group them into weeks of 7.
+    let mut all_board_dates: Vec<OffsetDateTime> =
+        imkitchen_core::mealplan::week_days_before(bounds.first);
+    let mut d = bounds.first;
+    while d <= bounds.last {
+        all_board_dates.push(d);
+        d += time::Duration::days(1);
+    }
+    all_board_dates.extend(imkitchen_core::mealplan::week_days_after(bounds.last));
+
+    let bounds_month = bounds.date.month();
+    let board_days: Vec<MenuBoardDay> = all_board_dates
+        .iter()
+        .map(|d| {
+            let d_u64 = imkitchen_core::mealplan::date_to_u64(*d);
+            let slot = slots
+                .iter()
+                .find(|s| {
+                    OffsetDateTime::from_unix_timestamp(s.day as i64)
+                        .map(|sd| imkitchen_core::mealplan::date_to_u64(sd) == d_u64)
+                        .unwrap_or(false)
+                })
+                .cloned();
+            MenuBoardDay {
+                date: d.format(&fmt).unwrap_or_default(),
+                weekday: d.weekday().to_string().chars().take(3).collect(),
+                day_num: d.day(),
+                is_today: d_u64 == today_u64,
+                is_past: d_u64 < today_u64,
+                is_in_month: d.month() == bounds_month,
+                slot,
+            }
+        })
+        .collect();
+
+    let board_weeks: Vec<Vec<MenuBoardDay>> = board_days.chunks(7).map(|c| c.to_vec()).collect();
+
     template
         .render(MenuTemplate {
             user,
             slots: menu_slots,
             first_month_day: bounds.first.unix_timestamp() as u64,
+            current_date,
+            is_past,
             prev_month,
             next_month,
             selected_slot,
+            selected_day,
+            board_weeks,
             ..Default::default()
         })
         .into_response()
@@ -152,17 +223,20 @@ pub async fn generate_action(
 
     let bounds = imkitchen_web_shared::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
     let now_bounds = imkitchen_web_shared::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_now(&user.tz), template);
-    let (start, days) = if now_bounds.date > bounds.date {
-        (
-            now_bounds.date.unix_timestamp(),
-            now_bounds.last.day() - now_bounds.date.day() + 1,
-        )
+    let (target_local, last_day) = if now_bounds.date > bounds.date {
+        (now_bounds.date, now_bounds.last.day())
     } else {
-        (
-            bounds.date.unix_timestamp(),
-            bounds.last.day() - bounds.date.day() + 1,
-        )
+        (bounds.date, bounds.last.day())
     };
+    // Use user-tz noon as start so date_to_u64(from_unix_timestamp(start)) yields
+    // the user-tz date — from_unix_timestamp always returns UTC, so encoding start
+    // at user-tz midnight gives the wrong UTC day for any non-UTC user (e.g. in
+    // Martinique UTC-4 evening, midnight rolls into the next UTC day, infinite-polling
+    // on a slot stored under tomorrow's date).
+    let start_noon = time::PrimitiveDateTime::new(target_local.date(), time::macros::time!(12:00))
+        .assume_offset(target_local.offset());
+    let start = start_noon.unix_timestamp();
+    let days = last_day - target_local.date().day() + 1;
 
     imkitchen_web_shared::try_response!(
         app.core.mealplan.generate(Generate {
@@ -191,9 +265,19 @@ pub async fn generate_status(
     Path((date,)): Path<(String,)>,
 ) -> impl IntoResponse {
     let bounds = imkitchen_web_shared::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
+    let now_bounds = imkitchen_web_shared::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_now(&user.tz), template);
+
+    // Polling must look at the same start day that generate_action used, otherwise
+    // we'll keep finding a stale slot from before today (whose generated_at never
+    // updates) and never match the aggregate's new generated_at.
+    let start = if now_bounds.date > bounds.date {
+        now_bounds.date
+    } else {
+        bounds.date
+    };
 
     let s_generated_at = imkitchen_web_shared::try_response!(anyhow:
-        app.core.mealplan.next_slot_from(bounds.date, &user.id),
+        app.core.mealplan.next_slot_from(start, &user.id),
         template,
         Some(GenerateButtonTemplate {
             date,

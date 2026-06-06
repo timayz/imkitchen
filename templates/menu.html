@@ -1,248 +1,428 @@
 {% extends "_user.html" %}
 {% block title %}{{ "Menu"|t }} - imkitchen{% endblock %}
 {% block content %}
-<!-- Main Content -->
-<div class="container mx-auto px-2 sm:px-4 py-4 md:py-8">
-  <!-- Header / Toolbar -->
-  <div class="flex items-center justify-between gap-2 mb-4 md:mb-6">
-    <div class="flex items-center gap-2 md:gap-4 min-w-0">
-      <h1 class="text-xl md:text-3xl font-bold font-serif truncate">{{ first_month_day|month_year(first_month_day) }}</h1>
-      {% if selected_slot.is_none() %}
-      <button ts-trigger="click" ts-req="/menu/{{ first_month_day|yyyymmdd }}/generate" ts-target="body" ts-swap="append"
-        class="sm:inline-flex px-3 py-1.5 text-sm rounded-md bg-ink hover:bg-ink-2 text-white font-medium">
-            {{ "Generate"|t }}
+<div class="container mx-auto px-4 py-6">
+
+  {# ── Header — eyebrow + serif title + month nav ── #}
+  <header class="flex items-start justify-between gap-3 mb-3">
+    <div class="min-w-0">
+      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Menu"|t }}</div>
+      <h1 class="font-serif text-3xl md:text-4xl leading-none tracking-tight text-ink mt-1 truncate">
+        {{ first_month_day|month_year(first_month_day) }}
+      </h1>
+    </div>
+    <div class="flex items-center gap-1.5 shrink-0">
+      {# Desktop-only Regenerate/Generate inline with header #}
+      {% if user.is_premium() && !is_past %}
+      {% if selected_slot.is_some() %}
+      <button ts-trigger="click" ts-req="/menu/{{ current_date }}/generate" ts-target="body" ts-swap="append"
+        class="hidden md:inline-flex items-center gap-1.5 px-3 h-9 bg-meal-main-soft text-meal-main-ink font-semibold rounded-xl text-xs hover:opacity-90 transition mr-1.5">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
+        {{ "Regenerate plan"|t }}
+      </button>
+      {% else %}
+      <button ts-trigger="click" ts-req="/menu/{{ current_date }}/generate" ts-target="body" ts-swap="append"
+        class="hidden md:inline-flex items-center gap-1.5 px-3 h-9 bg-primary-500 text-white font-semibold rounded-xl text-xs hover:bg-primary-600 shadow-sm transition mr-1.5">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
+        {{ "Generate plan"|t }}
       </button>
       {% endif %}
-    </div>
-    <div class="flex items-center gap-1 md:gap-2 shrink-0">
-      <a href="/menu/{{ prev_month }}" aria-label="Previous month"
-        class="p-2 rounded-full hover:bg-cream-2 text-ink-2">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
+      {% endif %}
+      <a href="/menu/{{ prev_month }}" aria-label="{{ "Previous"|t }}"
+        class="w-9 h-9 rounded-xl border border-line bg-paper text-ink-2 hover:text-ink hover:bg-cream-2 flex items-center justify-center transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
       </a>
-      <a href="/menu/{{ next_month }}" aria-label="Next month" class="p-2 rounded-full hover:bg-cream-2 text-ink-2">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-        </svg>
+      <a href="/menu/{{ next_month }}" aria-label="{{ "Next"|t }}"
+        class="w-9 h-9 rounded-xl border border-line bg-paper text-ink-2 hover:text-ink hover:bg-cream-2 flex items-center justify-center transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </a>
     </div>
+  </header>
+
+  {# ── Mobile-only action bar — full-width Generate/Regenerate ── #}
+  {% if user.is_premium() && !is_past %}
+  <div class="flex gap-2 mb-3 md:hidden">
+    {% if selected_slot.is_some() %}
+    <button ts-trigger="click" ts-req="/menu/{{ current_date }}/generate" ts-target="body" ts-swap="append"
+      class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-meal-main-soft text-meal-main-ink font-semibold rounded-xl text-sm hover:opacity-90 transition">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
+      {{ "Regenerate plan"|t }}
+    </button>
+    {% else %}
+    <button ts-trigger="click" ts-req="/menu/{{ current_date }}/generate" ts-target="body" ts-swap="append"
+      class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-semibold rounded-xl text-sm hover:bg-primary-600 shadow-sm transition">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
+      {{ "Generate plan"|t }}
+    </button>
+    {% endif %}
   </div>
-
-  <!-- Layout: Calendar + Sidebar -->
-  {% if selected_slot.is_some() || !user.is_premium() %}
-  <div class="lg:grid lg:grid-cols-3 lg:gap-6">
-  {% else %}
-  <div>
   {% endif %}
-    <!-- Calendar Month Grid -->
-    <div class="lg:col-span-2 bg-paper rounded-xl shadow overflow-hidden">
-      <!-- Day-of-week headers -->
-      <div class="grid grid-cols-7 border-b border-line-2 bg-cream">
-        <div class="text-center text-xs md:text-sm font-medium text-ink-2 py-2">{{ "Mon"|t }}</div>
-        <div class="text-center text-xs md:text-sm font-medium text-ink-2 py-2">{{ "Tue"|t }}</div>
-        <div class="text-center text-xs md:text-sm font-medium text-ink-2 py-2">{{ "Wed"|t }}</div>
-        <div class="text-center text-xs md:text-sm font-medium text-ink-2 py-2">{{ "Thu"|t }}</div>
-        <div class="text-center text-xs md:text-sm font-medium text-ink-2 py-2">{{ "Fri"|t }}</div>
-        <div class="text-center text-xs md:text-sm font-medium text-ink-2 py-2">{{ "Sat"|t }}</div>
-        <div class="text-center text-xs md:text-sm font-medium text-ink-2 py-2">{{ "Sun"|t }}</div>
-      </div>
 
-      <!-- Calendar grid: 6 rows × 7 cols. Cells use min-h with aspect-square fallback on mobile. -->
-      <div class="grid grid-cols-7 grid-rows-5 divide-x divide-y divide-line-2 border-l border-line-2">
+  {# ── Desktop: stacked week boards covering the whole month ── #}
+  <div class="hidden lg:block space-y-3">
+    {# Weekday headers — once at the top #}
+    <div class="grid grid-cols-7 gap-3 px-3">
+      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Mon"|t }}</div>
+      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Tue"|t }}</div>
+      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Wed"|t }}</div>
+      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Thu"|t }}</div>
+      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Fri"|t }}</div>
+      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Sat"|t }}</div>
+      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Sun"|t }}</div>
+    </div>
 
-        <!-- Row 1: Oct 27 - Nov 2 -->
-        {% for m_slot in slots %}
-        {% if let Some(slot) = m_slot.slot %}
-        <a href="/menu/{{ slot.day|yyyymmdd }}"
-          class="text-left p-1 md:p-2 min-h-16 md:min-h-28 hover:bg-cream transition">
-          <span class="block text-xs md:text-sm text-ink-2">{{ m_slot.day }}</span>
-          <div class="hidden md:block mt-1 space-y-0.5">
-            {% if let Some(appetizer) = slot.appetizer %}
-            <div class="truncate text-xs px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded">🥗 {{ appetizer.name }}</div>
-            {% endif %}
-            <div class="truncate text-xs px-1.5 py-0.5 bg-orange-100 text-orange-800 rounded">🍛 {{
-              slot.main_course.name }}</div>
-            {% if let Some(dessert) = slot.dessert %}
-            <div class="truncate text-xs px-1.5 py-0.5 bg-pink-100 text-pink-800 rounded">🍰 {{ dessert.name }}</div>
-            {% endif %}
+    {% for week in board_weeks %}
+    <div class="grid grid-cols-7 gap-3">
+      {% for d in week %}
+      <a href="/menu/{{ d.date }}"
+        class="block rounded-2xl border p-3 min-h-[240px] flex flex-col gap-2 transition
+          {% if d.is_today %}bg-primary-50 border-primary-200 hover:bg-primary-100/60
+          {% else if !d.is_in_month %}bg-transparent border-line-2/40 opacity-50 hover:opacity-80
+          {% else %}bg-cream-2/40 border-line-2 hover:bg-cream-2{% endif %}">
+
+        {# Day header — weekday + day number + meal count #}
+        <div class="flex items-baseline justify-between pb-1">
+          <div>
+            <div class="font-serif text-2xl leading-none tracking-tight {% if d.is_today %}text-primary-700{% else %}text-ink{% endif %}">
+              {{ d.day_num }}
+            </div>
           </div>
-          <div class="md:hidden flex gap-0.5 mt-1">
-            {% if slot.appetizer.is_some() %}
-            <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-            {% endif %}
-            <span class="w-1.5 h-1.5 bg-orange-400 rounded-full"></span>
-            {% if slot.dessert.is_some() %}
-            <span class="w-1.5 h-1.5 bg-pink-400 rounded-full"></span>
-            {% endif %}
+          {% if let Some(slot) = d.slot %}
+          <div class="text-[10px] font-mono text-ink-3">
+            {% let count = 1 + slot.appetizer.is_some() as u8 + slot.accompaniment.is_some() as u8 + slot.dessert.is_some() as u8 + slot.beverage.is_some() as u8 + slot.condiment.is_some() as u8 %}
+            {{ count }}
           </div>
-        </a>
+          {% endif %}
+        </div>
+
+        {# Meal cards stacked, compact WebMealCard style #}
+        {% if let Some(slot) = d.slot %}
+        <div class="flex flex-col gap-1.5 flex-1">
+          {% if let Some(appetizer) = slot.appetizer %}
+          <div class="bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-entree p-2 shadow-sm">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base leading-none">🥗</span>
+              <div class="min-w-0 flex-1">
+                <div class="text-[9px] font-mono font-semibold tracking-widest uppercase text-meal-entree-ink">{{ "Starter"|t }}</div>
+              </div>
+            </div>
+            <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ appetizer.name }}</div>
+          </div>
+          {% endif %}
+
+          <div class="bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-main p-2 shadow-sm">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base leading-none">🍛</span>
+              <div class="min-w-0 flex-1">
+                <div class="text-[9px] font-mono font-semibold tracking-widest uppercase text-meal-main-ink">{{ "Main"|t }}</div>
+              </div>
+            </div>
+            <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ slot.main_course.name }}</div>
+          </div>
+
+          {% if let Some(accompaniment) = slot.accompaniment %}
+          <div class="bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-side p-2 shadow-sm">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base leading-none">🥖</span>
+              <div class="min-w-0 flex-1">
+                <div class="text-[9px] font-mono font-semibold tracking-widest uppercase text-meal-side-ink">{{ "Side"|t }}</div>
+              </div>
+            </div>
+            <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ accompaniment.name }}</div>
+          </div>
+          {% endif %}
+
+          {% if let Some(dessert) = slot.dessert %}
+          <div class="bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-dessert p-2 shadow-sm">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base leading-none">🍰</span>
+              <div class="min-w-0 flex-1">
+                <div class="text-[9px] font-mono font-semibold tracking-widest uppercase text-meal-dessert-ink">{{ "Dessert"|t }}</div>
+              </div>
+            </div>
+            <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ dessert.name }}</div>
+          </div>
+          {% endif %}
+
+          {% if let Some(beverage) = slot.beverage %}
+          <div class="bg-paper rounded-lg border border-line-2 border-l-4 border-l-cyan-500 p-2 shadow-sm">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base leading-none">🥤</span>
+              <div class="min-w-0 flex-1">
+                <div class="text-[9px] font-mono font-semibold tracking-widest uppercase text-cyan-900">{{ "Drink"|t }}</div>
+              </div>
+            </div>
+            <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ beverage.name }}</div>
+          </div>
+          {% endif %}
+
+          {% if let Some(condiment) = slot.condiment %}
+          <div class="bg-paper rounded-lg border border-line-2 border-l-4 border-l-amber-500 p-2 shadow-sm">
+            <div class="flex items-center gap-1.5">
+              <span class="text-base leading-none">🥫</span>
+              <div class="min-w-0 flex-1">
+                <div class="text-[9px] font-mono font-semibold tracking-widest uppercase text-amber-900">{{ "Sauce"|t }}</div>
+              </div>
+            </div>
+            <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ condiment.name }}</div>
+          </div>
+          {% endif %}
+        </div>
         {% else %}
-        <div class="text-left p-1 md:p-2 min-h-16 md:min-h-28 bg-cream transition">
-          <span class="block text-xs md:text-sm text-ink-3">{{ m_slot.day }}</span>
+        {# Empty day cell — only shown for in-month days #}
+        <div class="flex-1 flex items-center justify-center min-h-16">
+          <div class="text-[11px] font-mono text-ink-3 opacity-50">—</div>
         </div>
         {% endif %}
-        {% endfor %}
+      </a>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+
+  {# ── Mobile: Calendar (full) + Sidebar ── #}
+  <div class="lg:hidden grid lg:grid-cols-5 lg:gap-6">
+    <div class="lg:col-span-2 min-w-0">
+
+      {# ── Calendar card — aspect-square dot-chord grid ── #}
+      <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-3 md:p-4">
+        {# Weekday headers — single letters #}
+        <div class="grid grid-cols-7 gap-0.5 mb-1.5">
+          <div class="text-center text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 py-1">{{ "Mon"|t }}</div>
+          <div class="text-center text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 py-1">{{ "Tue"|t }}</div>
+          <div class="text-center text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 py-1">{{ "Wed"|t }}</div>
+          <div class="text-center text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 py-1">{{ "Thu"|t }}</div>
+          <div class="text-center text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 py-1">{{ "Fri"|t }}</div>
+          <div class="text-center text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 py-1">{{ "Sat"|t }}</div>
+          <div class="text-center text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 py-1">{{ "Sun"|t }}</div>
+        </div>
+
+        {# Day cells — aspect-square, no borders #}
+        <div class="grid grid-cols-7 gap-1">
+          {% for m_slot in slots %}
+          {% if let Some(slot) = m_slot.slot %}
+          {% let is_selected = slot.day == selected_day %}
+          <a href="/menu/{{ slot.day|yyyymmdd }}"
+            class="aspect-square md:max-w-14 md:mx-auto rounded-xl flex flex-col items-center justify-between p-1.5 transition {% if is_selected %}bg-ink text-cream{% else %}text-ink hover:bg-cream-2{% endif %}">
+            <div class="font-serif text-base leading-none mt-1 tracking-tight">{{ m_slot.day }}</div>
+            <div class="flex justify-center items-center gap-0.5 mb-0.5 min-h-[6px]">
+              {% if slot.appetizer.is_some() %}
+              <span class="w-1 h-1 rounded-full {% if is_selected %}bg-cream/70{% else %}bg-meal-entree{% endif %}"></span>
+              {% endif %}
+              <span class="w-1 h-1 rounded-full {% if is_selected %}bg-cream/70{% else %}bg-meal-main{% endif %}"></span>
+              {% if slot.accompaniment.is_some() %}
+              <span class="w-1 h-1 rounded-full {% if is_selected %}bg-cream/70{% else %}bg-meal-side{% endif %}"></span>
+              {% endif %}
+              {% if slot.dessert.is_some() %}
+              <span class="w-1 h-1 rounded-full {% if is_selected %}bg-cream/70{% else %}bg-meal-dessert{% endif %}"></span>
+              {% endif %}
+              {% if slot.beverage.is_some() %}
+              <span class="w-1 h-1 rounded-full {% if is_selected %}bg-cream/70{% else %}bg-cyan-500{% endif %}"></span>
+              {% endif %}
+              {% if slot.condiment.is_some() %}
+              <span class="w-1 h-1 rounded-full {% if is_selected %}bg-cream/70{% else %}bg-amber-500{% endif %}"></span>
+              {% endif %}
+            </div>
+          </a>
+          {% else %}
+          <div class="aspect-square md:max-w-14 md:mx-auto rounded-xl flex items-start justify-center p-1.5 opacity-40">
+            <div class="font-serif text-base leading-none mt-1 tracking-tight text-ink-3">{{ m_slot.day }}</div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      {# ── Legend — dots centered ── #}
+      <div class="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-3 mb-4 text-xs text-ink-2">
+        <span class="inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-meal-entree"></span>{{ "Starter"|t }}</span>
+        <span class="inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-meal-main"></span>{{ "Main"|t }}</span>
+        <span class="inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-meal-side"></span>{{ "Side"|t }}</span>
+        <span class="inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-meal-dessert"></span>{{ "Dessert"|t }}</span>
       </div>
     </div>
 
-    <!-- Sidebar: Selected Day Menu -->
-    <aside class="mt-4 lg:mt-0 lg:col-span-1">
+    {# ── Day detail panel ── #}
+    <aside class="mt-4 lg:mt-0 lg:col-span-3 min-w-0">
       {% if let Some(slot) = selected_slot %}
-      <div class="bg-paper rounded-xl shadow lg:sticky lg:top-4">
-        <!-- Sidebar header -->
-        <div class="p-4 border-b border-line-2 flex items-start justify-between gap-2">
-          <div>
-            <h2 class="text-lg md:text-xl font-bold font-serif text-ink">{{ slot.day|day }}</h2>
-            <p class="text-sm text-ink-3 mt-0.5">{{ &slot.prep_time()|minutes }}</p>
-          </div>
-          <div class="flex items-center">
-            <a href="/kitchen/{{ slot.day|yyyymmdd }}" aria-label="Lets go cook"
-              class="p-2 text-ink-3 hover:bg-cream-2 rounded-full">
-              👨‍🍳
-            </a>
-            <button ts-trigger="click" ts-req="/menu/{{ slot.day|yyyymmdd }}/generate" ts-target="body" ts-swap="append"
-              aria-label="Generate Menu" class="p-2 text-ink-3 hover:bg-cream-2 rounded-full">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-          </div>
+      <div class="lg:sticky lg:top-4 space-y-3">
+
+        {# Day header — serif day-of-week + time pill #}
+        <div class="flex items-center gap-2">
+          <h2 class="font-serif text-2xl leading-tight tracking-tight text-ink min-w-0 truncate">{{ slot.day|day }}</h2>
+          <div class="flex-1"></div>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cream-2 text-xs text-ink-2 shrink-0">
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            {{ &slot.prep_time()|minutes }}
+          </span>
         </div>
 
-        <!-- Meal cards -->
-        <div class="p-4 space-y-3">
+        {# Meal cards — 4px left border by type. Mobile: horizontal row stack.
+           Desktop: 2-col grid of vertical cards matching WebMealCard from the mock. #}
+        <div class="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3">
           {% if let Some(appetizer) = slot.appetizer %}
-          <!-- Appetizer -->
           <a href="/recipes/{{ appetizer.id }}"
-            class="block p-3 rounded-xl border border-blue-100 bg-blue-50 hover:bg-blue-100 transition">
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-xs font-semibold text-blue-700 uppercase tracking-wide">{{ "Appetizer"|t }}</span>
-              {% if appetizer.advance_prep.is_empty() %}
-              <span class="text-xs text-ink-3">{{ &appetizer.total_prep_time()|minutes }}</span>
-              {% else %}
-              <span class="text-xs text-yellow-700">⏰ {{ "Prep in AM"|t }}</span>
-              {% endif %}
+            class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-entree shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
+            <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
+              <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-entree-soft">🥗</div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 lg:flex-col lg:items-start lg:gap-0.5">
+                  <span class="text-[10px] font-mono font-semibold tracking-widest uppercase text-meal-entree-ink">{{ "Appetizer"|t }}</span>
+                  <span class="text-[11px] text-ink-3 lg:hidden">·</span>
+                  <span class="text-[11px] font-mono text-ink-3">{{ &appetizer.total_prep_time()|minutes }}</span>
+                </div>
+                <div class="text-sm lg:hidden font-semibold text-ink mt-0.5 truncate">{{ appetizer.name }}</div>
+                {% if !appetizer.advance_prep.is_empty() %}
+                <div class="text-[11px] text-amber-700 mt-0.5 lg:hidden">⏰ {{ "Prep in AM"|t }}</div>
+                {% endif %}
+              </div>
             </div>
-            <div class="font-semibold text-ink">🥗 {{ appetizer.name }}</div>
+            <div class="hidden lg:block text-base font-semibold text-ink leading-snug">{{ appetizer.name }}</div>
+            {% if !appetizer.advance_prep.is_empty() %}
+            <div class="hidden lg:block text-xs text-amber-700 mt-1.5">⏰ {{ "Prep in AM"|t }}</div>
+            {% endif %}
           </a>
           {% endif %}
 
-          <!-- Main -->
           <a href="/recipes/{{ slot.main_course.id }}"
-            class="block p-3 rounded-xl border border-orange-100 bg-orange-50 hover:bg-orange-100 transition">
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-xs font-semibold text-orange-700 uppercase tracking-wide">{{ "Main course"|t }}</span>
-              {% if slot.main_course.advance_prep.is_empty() %}
-              <span class="text-xs text-ink-3">{{ &slot.main_course.total_prep_time()|minutes }}</span>
-              {% else %}
-              <span class="text-xs text-yellow-700">⏰ {{ "Prep in AM"|t }}</span>
-              {% endif %}
+            class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-main shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
+            <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
+              <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-main-soft">🍛</div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 lg:flex-col lg:items-start lg:gap-0.5">
+                  <span class="text-[10px] font-mono font-semibold tracking-widest uppercase text-meal-main-ink">{{ "Main course"|t }}</span>
+                  <span class="text-[11px] text-ink-3 lg:hidden">·</span>
+                  <span class="text-[11px] font-mono text-ink-3">{{ &slot.main_course.total_prep_time()|minutes }}</span>
+                </div>
+                <div class="text-sm lg:hidden font-semibold text-ink mt-0.5 truncate">{{ slot.main_course.name }}</div>
+                {% if !slot.main_course.advance_prep.is_empty() %}
+                <div class="text-[11px] text-amber-700 mt-0.5 lg:hidden">⏰ {{ "Prep in AM"|t }}</div>
+                {% endif %}
+              </div>
             </div>
-            <div class="font-semibold text-ink">🍛 {{ slot.main_course.name }}</div>
-            {% if let Some(accompaniment) = slot.accompaniment %}
-            <div class="text-xs text-ink-2 mt-1">+ 🍚 {{ accompaniment.name }}</div>
+            <div class="hidden lg:block text-base font-semibold text-ink leading-snug">{{ slot.main_course.name }}</div>
+            {% if !slot.main_course.advance_prep.is_empty() %}
+            <div class="hidden lg:block text-xs text-amber-700 mt-1.5">⏰ {{ "Prep in AM"|t }}</div>
             {% endif %}
           </a>
 
-          {% if let Some(dessert) = slot.dessert %}
-          <!-- Dessert -->
-          <a href="/recipes/{{ dessert.id }}"
-            class="block p-3 rounded-xl border border-pink-100 bg-pink-50 hover:bg-pink-100 transition">
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-xs font-semibold text-pink-700 uppercase tracking-wide">{{ "Dessert"|t }}</span>
-              {% if dessert.advance_prep.is_empty() %}
-              <span class="text-xs text-ink-3">{{ &dessert.total_prep_time()|minutes }}</span>
-              {% else %}
-              <span class="text-xs text-yellow-700">⏰ {{ "Prep in AM"|t }}</span>
-              {% endif %}
+          {% if let Some(accompaniment) = slot.accompaniment %}
+          <a href="/recipes/{{ accompaniment.id }}"
+            class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-side shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
+            <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
+              <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-side-soft">🥖</div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 lg:flex-col lg:items-start lg:gap-0.5">
+                  <span class="text-[10px] font-mono font-semibold tracking-widest uppercase text-meal-side-ink">{{ "Accompaniment"|t }}</span>
+                  <span class="text-[11px] text-ink-3 lg:hidden">·</span>
+                  <span class="text-[11px] font-mono text-ink-3">{{ &accompaniment.total_prep_time()|minutes }}</span>
+                </div>
+                <div class="text-sm lg:hidden font-semibold text-ink mt-0.5 truncate">{{ accompaniment.name }}</div>
+                {% if !accompaniment.advance_prep.is_empty() %}
+                <div class="text-[11px] text-amber-700 mt-0.5 lg:hidden">⏰ {{ "Prep in AM"|t }}</div>
+                {% endif %}
+              </div>
             </div>
-            <div class="font-semibold text-ink">🍰 {{ dessert.name }}</div>
+            <div class="hidden lg:block text-base font-semibold text-ink leading-snug">{{ accompaniment.name }}</div>
+            {% if !accompaniment.advance_prep.is_empty() %}
+            <div class="hidden lg:block text-xs text-amber-700 mt-1.5">⏰ {{ "Prep in AM"|t }}</div>
+            {% endif %}
+          </a>
+          {% endif %}
+
+          {% if let Some(dessert) = slot.dessert %}
+          <a href="/recipes/{{ dessert.id }}"
+            class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-dessert shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
+            <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
+              <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-dessert-soft">🍰</div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 lg:flex-col lg:items-start lg:gap-0.5">
+                  <span class="text-[10px] font-mono font-semibold tracking-widest uppercase text-meal-dessert-ink">{{ "Dessert"|t }}</span>
+                  <span class="text-[11px] text-ink-3 lg:hidden">·</span>
+                  <span class="text-[11px] font-mono text-ink-3">{{ &dessert.total_prep_time()|minutes }}</span>
+                </div>
+                <div class="text-sm lg:hidden font-semibold text-ink mt-0.5 truncate">{{ dessert.name }}</div>
+                {% if !dessert.advance_prep.is_empty() %}
+                <div class="text-[11px] text-amber-700 mt-0.5 lg:hidden">⏰ {{ "Prep in AM"|t }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="hidden lg:block text-base font-semibold text-ink leading-snug">{{ dessert.name }}</div>
+            {% if !dessert.advance_prep.is_empty() %}
+            <div class="hidden lg:block text-xs text-amber-700 mt-1.5">⏰ {{ "Prep in AM"|t }}</div>
+            {% endif %}
           </a>
           {% endif %}
 
           {% if let Some(beverage) = slot.beverage %}
-          <!-- Beverage -->
           <a href="/recipes/{{ beverage.id }}"
-            class="block p-3 rounded-xl border border-cyan-100 bg-cyan-50 hover:bg-cyan-100 transition">
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-xs font-semibold text-cyan-700 uppercase tracking-wide">{{ "Beverage"|t }}</span>
-              {% if beverage.advance_prep.is_empty() %}
-              <span class="text-xs text-ink-3">{{ &beverage.total_prep_time()|minutes }}</span>
-              {% else %}
-              <span class="text-xs text-yellow-700">⏰ {{ "Prep in AM"|t }}</span>
-              {% endif %}
+            class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-cyan-500 shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
+            <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
+              <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-cyan-100">🥤</div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 lg:flex-col lg:items-start lg:gap-0.5">
+                  <span class="text-[10px] font-mono font-semibold tracking-widest uppercase text-cyan-900">{{ "Beverage"|t }}</span>
+                  <span class="text-[11px] text-ink-3 lg:hidden">·</span>
+                  <span class="text-[11px] font-mono text-ink-3">{{ &beverage.total_prep_time()|minutes }}</span>
+                </div>
+                <div class="text-sm lg:hidden font-semibold text-ink mt-0.5 truncate">{{ beverage.name }}</div>
+              </div>
             </div>
-            <div class="font-semibold text-ink">🥤 {{ beverage.name }}</div>
+            <div class="hidden lg:block text-base font-semibold text-ink leading-snug">{{ beverage.name }}</div>
           </a>
           {% endif %}
 
           {% if let Some(condiment) = slot.condiment %}
-          <!-- Condiment -->
           <a href="/recipes/{{ condiment.id }}"
-            class="block p-3 rounded-xl border border-amber-100 bg-amber-50 hover:bg-amber-100 transition">
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-xs font-semibold text-amber-700 uppercase tracking-wide">{{ "Condiment"|t }}</span>
-              {% if condiment.advance_prep.is_empty() %}
-              <span class="text-xs text-ink-3">{{ &condiment.total_prep_time()|minutes }}</span>
-              {% else %}
-              <span class="text-xs text-yellow-700">⏰ {{ "Prep in AM"|t }}</span>
-              {% endif %}
+            class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-amber-500 shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
+            <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
+              <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-amber-100">🥫</div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5 lg:flex-col lg:items-start lg:gap-0.5">
+                  <span class="text-[10px] font-mono font-semibold tracking-widest uppercase text-amber-900">{{ "Condiment"|t }}</span>
+                  <span class="text-[11px] text-ink-3 lg:hidden">·</span>
+                  <span class="text-[11px] font-mono text-ink-3">{{ &condiment.total_prep_time()|minutes }}</span>
+                </div>
+                <div class="text-sm lg:hidden font-semibold text-ink mt-0.5 truncate">{{ condiment.name }}</div>
+              </div>
             </div>
-            <div class="font-semibold text-ink">🥫 {{ condiment.name }}</div>
+            <div class="hidden lg:block text-base font-semibold text-ink leading-snug">{{ condiment.name }}</div>
           </a>
           {% endif %}
         </div>
-
-        <!-- Legend -->
-        <div class="p-4 border-t border-line-2">
-          <div class="text-xs font-semibold text-ink-3 uppercase tracking-wide mb-2">{{ "Legend"|t }}</div>
-          <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-ink-2">
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span>{{ "Appetizer"|t }}</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-orange-400"></span>{{ "Main"|t }}</span>
-            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-pink-400"></span>{{ "Dessert"|t }}</span>
-          </div>
-        </div>
+      </div>
+      {% else %}
+      {# ── Empty day card ── #}
+      <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-6 text-center">
+        <div class="text-4xl mb-2.5">🌾</div>
+        <h3 class="font-serif text-lg text-ink mb-1">{{ "No plan for this day yet"|t }}</h3>
+        <p class="text-xs text-ink-3 mb-4">{{ "Generate a weekly plan from your recipes."|t }}</p>
+        {% if user.is_premium() && !is_past %}
+        <button ts-trigger="click" ts-req="/menu/{{ current_date }}/generate" ts-target="body" ts-swap="append"
+          class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-semibold rounded-xl text-sm hover:bg-primary-600 shadow-sm transition">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
+          {{ "Generate plan"|t }}
+        </button>
+        {% endif %}
       </div>
       {% endif %}
 
       {% if !user.is_premium() %}
-      <!-- Premium Upgrade Banner -->
-      <div class="bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 md:p-6 mt-6">
-        <div class="flex flex-col gap-4">
-          <div class="flex-1">
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-2xl">✨</span>
-              <h3 class="font-bold font-serif text-lg text-amber-900">{{ "Unlock the Full Experience"|t }}</h3>
-            </div>
-            <p class="text-amber-800 text-sm mb-3">{{ "You're viewing in read-only mode. Upgrade to Premium to:"|t }}</p>
-            <div class="text-sm">
-              <div class="flex items-center gap-2 text-amber-700">
-                <span class="text-primary-500">✓</span>
-                <span>{{ "Create and edit your own recipes"|t }}</span>
-              </div>
-              <div class="flex items-center gap-2 text-amber-700">
-                <span class="text-primary-500">✓</span>
-                <span>{{ "Generate personalized meal plans"|t }}</span>
-              </div>
-              <div class="flex items-center gap-2 text-amber-700">
-                <span class="text-primary-500">✓</span>
-                <span>{{ "Cook with step-by-step kitchen tools"|t }}</span>
-              </div>
-              <div class="flex items-center gap-2 text-amber-700">
-                <span class="text-primary-500">✓</span>
-                <span>{{ "Bulk import recipes from the web"|t }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="shrink-0">
-            <a href="/upgrade"
-              class="inline-block px-6 py-3 bg-linear-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition shadow-md">
-              {{ "Upgrade to Premium"|t }}
-            </a>
-          </div>
+      <div class="bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 mt-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-2xl">✨</span>
+          <h3 class="font-bold font-serif text-base text-amber-900">{{ "Unlock the Full Experience"|t }}</h3>
         </div>
+        <p class="text-amber-800 text-sm mb-3">{{ "You're viewing in read-only mode. Upgrade to Premium to:"|t }}</p>
+        <div class="text-sm space-y-1 mb-4">
+          <div class="flex items-center gap-2 text-amber-700"><span class="text-primary-500">✓</span><span>{{ "Create and edit your own recipes"|t }}</span></div>
+          <div class="flex items-center gap-2 text-amber-700"><span class="text-primary-500">✓</span><span>{{ "Generate personalized meal plans"|t }}</span></div>
+          <div class="flex items-center gap-2 text-amber-700"><span class="text-primary-500">✓</span><span>{{ "Cook with step-by-step kitchen tools"|t }}</span></div>
+        </div>
+        <a href="/upgrade"
+          class="block w-full text-center px-6 py-2.5 bg-linear-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition shadow-md">
+          {{ "Upgrade to Premium"|t }}
+        </a>
       </div>
       {% endif %}
     </aside>
