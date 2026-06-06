@@ -94,22 +94,14 @@ pub async fn page(
 
     let total_items: usize = ingredients.iter().map(|(_, items)| items.len()).sum();
     let checked_items = checked.len();
-    let progress_pct = if total_items > 0 {
-        checked_items * 100 / total_items
-    } else {
-        0
-    };
+    let progress_pct = (checked_items * 100).checked_div(total_items).unwrap_or(0);
 
     let aisles: Vec<AisleSection> = ingredients
         .into_iter()
         .map(|(name, items)| {
             let total = items.len();
             let checked_count = items.iter().filter(|i| checked.contains(&i.key())).count();
-            let pct = if total > 0 {
-                checked_count * 100 / total
-            } else {
-                0
-            };
+            let pct = (checked_count * 100).checked_div(total).unwrap_or(0);
             AisleSection {
                 name,
                 items,
