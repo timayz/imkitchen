@@ -79,9 +79,10 @@
   </header>
   {% endif %}
 
-  <div class="grid lg:grid-cols-3 gap-6">
+  {% let has_aside = !user.is_premium() || prep_remiders.is_some() %}
+  <div class="{% if has_aside %}grid lg:grid-cols-3 gap-6{% endif %}">
     <!-- Main column: course switcher + hero + also today -->
-    <div class="lg:col-span-2 min-w-0">
+    <div class="{% if has_aside %}lg:col-span-2 {% endif %}min-w-0">
       {% if let Some(slot) = slot %}
         {% if let Some(slot_recipe) = slot_recipe %}
           {% include "partials/kitchen-dish.html" %}
@@ -127,6 +128,7 @@
       {% endif %}
     </div>
 
+    {% if has_aside %}
     <!-- Side column: premium upsell + prep reminders -->
     <aside class="space-y-6 min-w-0">
       {% if !user.is_premium() %}
@@ -180,6 +182,7 @@
       </div>
       {% endif %}
     </aside>
+    {% endif %}
   </div>
   {% endif %}
 </div>
