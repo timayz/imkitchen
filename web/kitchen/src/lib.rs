@@ -83,6 +83,18 @@ impl Default for KitchenTemplate {
 }
 
 #[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
+pub async fn kitchen_page(
+    template: Template,
+    user: AuthUser,
+    token: Option<AuthToken>,
+    state: State<AppState>,
+    params: Option<Path<(String,)>>,
+    jar: CookieJar,
+) -> impl IntoResponse {
+    page(template, Some(user), token, state, params, jar).await
+}
+
+#[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
 pub async fn page(
     template: Template,
     user: Option<AuthUser>,
@@ -854,5 +866,5 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
         )
         .route("/kitchen/{date}/{recipe_id}/select-dish", post(select_dish))
         .route("/kitchen/{date}/{recipe_id}/cook", get(cook_page))
-        .route("/kitchen/{date}", get(page))
+        .route("/kitchen/{date}", get(kitchen_page))
 }
