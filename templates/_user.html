@@ -4,53 +4,221 @@
 {% block body %}
 
 <body class="bg-cream pb-20 md:pb-0">
-  <!-- Navigation -->
-  <nav class="bg-paper border-b border-line-2 h-16">
-    <div class="container mx-auto px-4 h-full">
-      <div class="flex items-center justify-between h-full">
-        {% if user.is_admin() %}
-        <a href="/admin/users" class="text-2xl font-serif text-ink">🍳 imkitchen</a>
-        {% else %}
-        <a href="/about" class="text-2xl font-serif text-ink">🍳 imkitchen</a>
-        {% endif %}
-        <!-- Desktop Navigation -->
-        <div class="hidden md:flex gap-6 items-center">
-          <a href="/" class="text-ink-2 text-sm font-medium{% if current_path == "kitchen"%} text-primary-500 font-semibold{% else %}
-            hover:text-ink{% endif %}">{{ "Kitchen"|t }}</a>
-          <a href="/menu" class="text-ink-2 text-sm font-medium{% if current_path == "menu"%} text-primary-500 font-semibold{% else %}
-            hover:text-ink{% endif %}">{{ "Menu"|t }}</a>
-          <a href="/recipes" class="text-ink-2 text-sm font-medium{% if current_path == "recipes"%} text-primary-500 font-semibold{% else %}
-            hover:text-ink{% endif %}">{{ "Recipes"|t }}</a>
-          <a href="/groceries" class="text-ink-2 text-sm font-medium{% if current_path == "groceries"%} text-primary-500 font-semibold{% else %} hover:text-ink{% endif %}">{{ "Groceries"|t }}</a>
-        </div>
 
-        <div class="flex items-center gap-4">
-          <div class="flex items-center gap-1 pl-4">
-            <button ts-req="/recipes/create" ts-req-method="post"
-              class="flex items-center justify-center w-9 h-9 rounded-lg text-ink-2 hover:text-ink hover:bg-cream transition"
-              title="{{ "Create Recipe"|t }}">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-              </svg>
-            </button>
-            <a href="/recipes/import"
-              class="flex items-center justify-center w-9 h-9 rounded-lg text-ink-2 hover:text-ink hover:bg-cream transition"
-              title="{{ "Import"|t }}">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-              </svg>
-            </a>
-          </div>
-          <a href="/settings/general"
-            class="hidden md:flex items-center justify-center w-10 h-10 rounded-full bg-primary-500 text-white font-semibold hover:bg-primary-600 transition">
-            <span class="text-sm">ME</span>
-          </a>
+  {# ── Sidebar — icon rail (md+) / expanded (xl+) ──────────────── #}
+  <aside
+    class="hidden md:flex fixed top-0 left-0 h-screen w-20 xl:w-60 flex-col bg-paper border-r border-line-2 px-3 xl:px-3.5 pt-6 xl:pt-8 pb-4 z-40">
+
+    {# Brand #}
+    <a href="{% if user.is_admin() %}/admin/users{% else %}/about{% endif %}"
+      class="flex items-center gap-2.5 px-1 xl:px-2 pb-5 mb-1 justify-center xl:justify-start"
+      title="imkitchen">
+      <div
+        class="w-[38px] h-[38px] rounded-xl bg-linear-to-br from-primary-500 to-primary-300 text-white font-serif text-xl flex items-center justify-center shadow-sm shrink-0">
+        k
+      </div>
+      <div class="hidden xl:block">
+        <div class="font-serif text-lg text-ink leading-none tracking-tight">imkitchen</div>
+        <div class="text-[10px] font-mono text-ink-3 uppercase tracking-widest mt-1">{{ "Home cooking, planned"|t }}
         </div>
       </div>
-    </div>
-  </nav>
+    </a>
 
-  <!-- Mobile Bottom Navigation -->
+    {# Section label (expanded only) #}
+    <div class="hidden xl:block text-[10px] font-mono text-ink-3 uppercase tracking-widest px-2 py-2">
+      {{ "Kitchen"|t }}
+    </div>
+
+    {# Nav: Kitchen #}
+    <a href="/"
+      class="flex items-center gap-3 px-0 xl:px-3 py-2.5 rounded-xl text-sm font-medium tracking-tight justify-center xl:justify-start
+        {% if current_path == "kitchen" %}bg-primary-100 text-primary-800 font-semibold{% else %}text-ink hover:bg-cream-2{% endif %}"
+      title="{{ "Kitchen"|t }}">
+      <div
+        class="w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0 {% if current_path == "kitchen" %}bg-paper shadow-sm{% endif %}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 14v5a1 1 0 001 1h10a1 1 0 001-1v-5" />
+          <path d="M5 14a3 3 0 01-.5-5.9A4 4 0 0112 5a4 4 0 017.5 3.1A3 3 0 0119 14H5z" />
+        </svg>
+      </div>
+      <div class="hidden xl:block flex-1 min-w-0">
+        <div>{{ "Kitchen"|t }}</div>
+        <div
+          class="text-[10.5px] font-mono mt-px font-medium tracking-wide opacity-85 {% if current_path == "kitchen" %}text-primary-800{% else %}text-ink-3{% endif %}">
+          {{ "Today & cooking"|t }}
+        </div>
+      </div>
+      {% if current_path == "kitchen" %}
+      <svg class="hidden xl:block w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 6l6 6-6 6" />
+      </svg>
+      {% endif %}
+    </a>
+
+    {# Nav: Menu #}
+    <a href="/menu"
+      class="flex items-center gap-3 px-0 xl:px-3 py-2.5 rounded-xl text-sm font-medium tracking-tight justify-center xl:justify-start
+        {% if current_path == "menu" %}bg-primary-100 text-primary-800 font-semibold{% else %}text-ink hover:bg-cream-2{% endif %}"
+      title="{{ "Menu"|t }}">
+      <div
+        class="w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0 {% if current_path == "menu" %}bg-paper shadow-sm{% endif %}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="5" width="18" height="16" rx="2" />
+          <path d="M3 9h18M8 3v4M16 3v4" />
+        </svg>
+      </div>
+      <div class="hidden xl:block flex-1 min-w-0">
+        <div>{{ "Menu"|t }}</div>
+        <div
+          class="text-[10.5px] font-mono mt-px font-medium tracking-wide opacity-85 {% if current_path == "menu" %}text-primary-800{% else %}text-ink-3{% endif %}">
+          {{ "Weekly plan"|t }}
+        </div>
+      </div>
+      {% if current_path == "menu" %}
+      <svg class="hidden xl:block w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 6l6 6-6 6" />
+      </svg>
+      {% endif %}
+    </a>
+
+    {# Nav: Recipes #}
+    <a href="/recipes"
+      class="flex items-center gap-3 px-0 xl:px-3 py-2.5 rounded-xl text-sm font-medium tracking-tight justify-center xl:justify-start
+        {% if current_path == "recipes" %}bg-primary-100 text-primary-800 font-semibold{% else %}text-ink hover:bg-cream-2{% endif %}"
+      title="{{ "Recipes"|t }}">
+      <div
+        class="w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0 {% if current_path == "recipes" %}bg-paper shadow-sm{% endif %}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2V5z" />
+          <path d="M4 19a2 2 0 012-2h13" />
+        </svg>
+      </div>
+      <div class="hidden xl:block flex-1 min-w-0">
+        <div>{{ "Recipes"|t }}</div>
+        <div
+          class="text-[10.5px] font-mono mt-px font-medium tracking-wide opacity-85 {% if current_path == "recipes" %}text-primary-800{% else %}text-ink-3{% endif %}">
+          {{ "Your library"|t }}
+        </div>
+      </div>
+      {% if current_path == "recipes" %}
+      <svg class="hidden xl:block w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 6l6 6-6 6" />
+      </svg>
+      {% endif %}
+    </a>
+
+    {# Nav: Groceries #}
+    <a href="/groceries"
+      class="flex items-center gap-3 px-0 xl:px-3 py-2.5 rounded-xl text-sm font-medium tracking-tight justify-center xl:justify-start
+        {% if current_path == "groceries" %}bg-primary-100 text-primary-800 font-semibold{% else %}text-ink hover:bg-cream-2{% endif %}"
+      title="{{ "Groceries"|t }}">
+      <div
+        class="w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0 {% if current_path == "groceries" %}bg-paper shadow-sm{% endif %}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="9" cy="20" r="1.5" />
+          <circle cx="18" cy="20" r="1.5" />
+          <path d="M3 4h2l2.7 11.3a1 1 0 001 .7h9.6a1 1 0 001-.7L21 8H6" />
+        </svg>
+      </div>
+      <div class="hidden xl:block flex-1 min-w-0">
+        <div>{{ "Groceries"|t }}</div>
+        <div
+          class="text-[10.5px] font-mono mt-px font-medium tracking-wide opacity-85 {% if current_path == "groceries" %}text-primary-800{% else %}text-ink-3{% endif %}">
+          {{ "Groceries & route"|t }}
+        </div>
+      </div>
+      {% if current_path == "groceries" %}
+      <svg class="hidden xl:block w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 6l6 6-6 6" />
+      </svg>
+      {% endif %}
+    </a>
+
+    {# Nav: Settings #}
+    <a href="/settings/general"
+      class="flex items-center gap-3 px-0 xl:px-3 py-2.5 rounded-xl text-sm font-medium tracking-tight justify-center xl:justify-start
+        {% if current_path == "settings" %}bg-primary-100 text-primary-800 font-semibold{% else %}text-ink hover:bg-cream-2{% endif %}"
+      title="{{ "Settings"|t }}">
+      <div
+        class="w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0 {% if current_path == "settings" %}bg-paper shadow-sm{% endif %}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3" />
+          <path
+            d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z" />
+        </svg>
+      </div>
+      <div class="hidden xl:block flex-1 min-w-0">
+        <div>{{ "Settings"|t }}</div>
+        <div
+          class="text-[10.5px] font-mono mt-px font-medium tracking-wide opacity-85 {% if current_path == "settings" %}text-primary-800{% else %}text-ink-3{% endif %}">
+          {{ "Account & billing"|t }}
+        </div>
+      </div>
+      {% if current_path == "settings" %}
+      <svg class="hidden xl:block w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 6l6 6-6 6" />
+      </svg>
+      {% endif %}
+    </a>
+
+    {# Spacer #}
+    <div class="flex-1"></div>
+
+    {# Sidebar footer — upgrade card (free, expanded) + profile #}
+    <div class="border-t border-line-2 pt-3.5 mt-2">
+      {% if !user.is_premium() %}
+      <a href="/upgrade"
+        class="hidden xl:block bg-linear-to-br from-herb-500 to-herb-700 rounded-2xl p-3 text-white mb-3 shadow-sm hover:shadow-md transition">
+        <div class="flex items-center gap-2 mb-1">
+          <svg class="w-3 h-3" fill="none" stroke="#ffd27a" stroke-width="1.7" viewBox="0 0 24 24"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z" />
+          </svg>
+          <div class="text-[11px] font-mono uppercase tracking-widest opacity-90">{{ "Free tier"|t }}</div>
+        </div>
+        <div class="text-[12.5px] leading-snug mb-2.5">
+          {{ "Unlock unlimited plans, sides & bulk import."|t }}
+        </div>
+        <div class="bg-paper text-herb-700 rounded-xl px-2.5 py-1.5 font-semibold text-[12px] text-center">
+          {{ "Go Premium"|t }}
+        </div>
+      </a>
+      {% endif %}
+      <a href="/settings/account"
+        class="flex items-center gap-2.5 px-0 xl:px-1 py-1 rounded-xl hover:bg-cream-2 transition justify-center xl:justify-start"
+        title="{{ user.username() }}">
+        <div
+          class="w-9 h-9 rounded-xl bg-linear-to-br from-primary-500 to-primary-300 text-white font-serif text-base flex items-center justify-center shadow-sm shrink-0">
+          {{ user.initial() }}
+        </div>
+        <div class="hidden xl:block flex-1 min-w-0">
+          <div class="text-[13px] font-semibold text-ink leading-none truncate">{{ user.username() }}</div>
+          <div class="text-[11px] text-ink-3 mt-1 truncate">{{ user.email }}</div>
+        </div>
+        {% if user.is_premium() %}
+        <span
+          class="hidden xl:inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 text-primary-800 shrink-0">
+          <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z" />
+          </svg>
+        </span>
+        {% endif %}
+      </a>
+    </div>
+  </aside>
+
+  {# ── Mobile bottom navigation ─────────────────────────────────── #}
   <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-paper border-t border-line-2 z-50">
     <div class="flex items-center justify-around">
       {% block before_mobile_nav_items %}
@@ -62,7 +230,6 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18C4 18 2 15 2 12a6 6 0 016-6" />
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 18c2 0 4-3 4-6a6 6 0 00-6-6" />
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 6C8 2 16 2 16 6" />
-
         </svg>
         <span class="text-xs mt-1">{{ "Kitchen"|t }}</span>
       </a>
@@ -93,7 +260,8 @@
         </svg>
         <span class="text-xs mt-1">{{ "Groceries"|t }}</span>
       </a>
-      <a href="/settings/general" class="flex flex-col items-center py-2 px-3{% if current_path == "settings" %} text-primary-500{% else %} text-ink-3{% endif %}">
+      <a href="/settings/general"
+        class="flex flex-col items-center py-2 px-3{% if current_path == "settings" %} text-primary-500{% else %} text-ink-3{% endif %}">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
@@ -106,15 +274,12 @@
     </div>
   </nav>
 
-  <!-- Hero Section -->
-  {% block hero %}{% endblock %}
-
-  <!-- Main Content -->
-  {% block content %}{% endblock %}
-
-  <!-- Footer -->
-  {% call scope::small_footer() %}
-  {% endcall %}
+  {# ── Main area (shifted right on md+) ─────────────────────────── #}
+  <div class="md:ml-20 xl:ml-60">
+    {% block hero %}{% endblock %}
+    {% block content %}{% endblock %}
+    {% call scope::small_footer() %}{% endcall %}
+  </div>
 
   <!-- Toast Container (Fixed Position) -->
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 max-w-md">

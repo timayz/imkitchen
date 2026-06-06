@@ -7,7 +7,7 @@ use sqlx::{SqlitePool, prelude::FromRow};
 
 use crate::types::password::ResetCompleted;
 use crate::types::user::{
-    Activated, LoggedIn, Logout, MadeAdmin, Role, RoleChanged, State, Suspended, User,
+    Activated, LoggedIn, Logout, MadeAdmin, Registered, Role, RoleChanged, State, Suspended, User,
     UsernameChanged,
 };
 use imkitchen_billing::types::subscription::{
@@ -37,6 +37,7 @@ pub struct Login {
     pub role: Role,
     pub state: State,
     pub username: Option<String>,
+    pub email: String,
     pub subscription_expire_at: u64,
     pub tz: String,
 }
@@ -47,6 +48,7 @@ pub struct LoginView {
     pub role: sqlx::types::Text<Role>,
     pub state: sqlx::types::Text<State>,
     pub username: Option<String>,
+    pub email: String,
     pub subscription_expire_at: u64,
     pub logins: evento::sql_types::Bitcode<Vec<Login>>,
 }
@@ -83,6 +85,7 @@ impl Login {
 
 pub fn create_projection<E: Executor>() -> Projection<E, LoginView> {
     Projection::new::<User>()
+        .handler(handle_registered())
         .handler(handle_logged_in())
         .handler(handle_logout())
         .handler(handle_actived())
@@ -103,6 +106,7 @@ impl<E: Executor> Snapshot<E> for LoginView {
                 UserLogin::Id,
                 UserLogin::Cursor,
                 UserLogin::Username,
+                UserLogin::Email,
                 UserLogin::State,
                 UserLogin::Role,
                 UserLogin::SubscriptionExpireAt,
@@ -133,6 +137,7 @@ impl<E: Executor> Snapshot<E> for LoginView {
                 UserLogin::Id,
                 UserLogin::Cursor,
                 UserLogin::Username,
+                UserLogin::Email,
                 UserLogin::State,
                 UserLogin::Role,
                 UserLogin::SubscriptionExpireAt,
@@ -142,6 +147,7 @@ impl<E: Executor> Snapshot<E> for LoginView {
                 self.id.to_owned().into(),
                 self.cursor.to_owned().into(),
                 self.username.to_owned().into(),
+                self.email.to_owned().into(),
                 self.state.to_string().into(),
                 self.role.to_string().into(),
                 self.subscription_expire_at.into(),
@@ -152,6 +158,7 @@ impl<E: Executor> Snapshot<E> for LoginView {
                     .update_columns([
                         UserLogin::Cursor,
                         UserLogin::Username,
+                        UserLogin::Email,
                         UserLogin::State,
                         UserLogin::Role,
                         UserLogin::SubscriptionExpireAt,
@@ -168,6 +175,14 @@ impl<E: Executor> Snapshot<E> for LoginView {
 
         Ok(())
     }
+}
+
+#[evento::handler]
+async fn handle_registered(event: Event<Registered>, data: &mut LoginView) -> anyhow::Result<()> {
+    data.id = event.aggregator_id.to_owned();
+    data.email = event.data.email.to_owned();
+
+    Ok(())
 }
 
 #[evento::handler]
@@ -195,6 +210,7 @@ async fn handle_logged_in(event: Event<LoggedIn>, data: &mut LoginView) -> anyho
         state: data.state.0.to_owned(),
         subscription_expire_at: data.subscription_expire_at,
         username: data.username.to_owned(),
+        email: data.email.to_owned(),
         user_agent: event.data.user_agent,
         tz: event.data.timezone,
     });

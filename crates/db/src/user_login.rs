@@ -6,6 +6,7 @@ pub enum UserLogin {
     Id,
     Cursor,
     Username,
+    Email,
     Role,
     State,
     SubscriptionExpireAt,
@@ -77,6 +78,75 @@ pub(crate) mod m0001 {
         ) -> Result<(), sqlx_migrator::Error> {
             let statement = drop_table().to_string(sea_query::SqliteQueryBuilder);
             sqlx::query(sqlx::AssertSqlSafe(statement))
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+    }
+}
+
+pub(crate) mod m0005 {
+    use sea_query::{ColumnDef, DeleteStatement, Query, Table, TableAlterStatement};
+
+    use super::UserLogin;
+
+    pub struct AddEmail;
+
+    fn add_email_column() -> TableAlterStatement {
+        Table::alter()
+            .table(UserLogin::Table)
+            .add_column(
+                ColumnDef::new(UserLogin::Email)
+                    .string()
+                    .not_null()
+                    .default(""),
+            )
+            .to_owned()
+    }
+
+    fn drop_email_column() -> TableAlterStatement {
+        Table::alter()
+            .table(UserLogin::Table)
+            .drop_column(UserLogin::Email)
+            .to_owned()
+    }
+
+    // SQLite has no TRUNCATE — an unqualified DELETE triggers SQLite's
+    // truncate optimization (sqlite.org/lang_delete.html). On other backends
+    // sea-query will render the equivalent DELETE.
+    fn truncate_snapshots() -> DeleteStatement {
+        Query::delete().from_table(UserLogin::Table).to_owned()
+    }
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for AddEmail {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let add_column = add_email_column().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(sqlx::AssertSqlSafe(add_column))
+                .execute(&mut *connection)
+                .await?;
+
+            // Drop existing snapshots so the projection rebuilds with the new
+            // Login struct shape (the `logins` blob was bitcoded against the
+            // pre-email Login and would fail to decode otherwise).
+            let truncate = truncate_snapshots().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(sqlx::AssertSqlSafe(truncate))
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let drop_column = drop_email_column().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(sqlx::AssertSqlSafe(drop_column))
                 .execute(connection)
                 .await?;
 
