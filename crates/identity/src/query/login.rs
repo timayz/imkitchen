@@ -71,6 +71,14 @@ impl Login {
     pub fn username(&self) -> String {
         self.username.to_owned().unwrap_or("john_doe".to_owned())
     }
+
+    pub fn initial(&self) -> String {
+        self.username()
+            .chars()
+            .next()
+            .map(|c| c.to_uppercase().to_string())
+            .unwrap_or_else(|| "I".to_owned())
+    }
 }
 
 pub fn create_projection<E: Executor>() -> Projection<E, LoginView> {

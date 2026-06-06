@@ -1,77 +1,124 @@
 {% extends "_settings.html" %}
-{% block title %}{{ "General"|t }} - imkitchen{% endblock %}
+{% block title %}{{ "Preferences"|t }} - imkitchen{% endblock %}
 
 {% block settings_content %}
 
-<!-- Profile -->
-<div class="bg-paper rounded-xl shadow-md p-6 mb-6">
-  <h2 class="text-xl font-bold font-serif mb-6">{{ "Profile"|t }}</h2>
+{# ── Profile (email + description) ────────────────────────────── #}
+<section>
+  <div class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-2 px-1">
+    {{ "Profile"|t }}
+  </div>
+  <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-5 md:p-6">
+    <form method="post" action="/settings/general/profile" ts-req="" ts-swap="skip" class="space-y-5" autocomplete="off">
+      <div>
+        <label class="block text-[13px] font-semibold text-ink-2 mb-2">{{ "Email"|t }}</label>
+        <input type="email" value="{{ email }}" disabled
+          class="w-full px-4 py-3 border border-line rounded-xl bg-cream-2/60 text-ink-3 cursor-not-allowed text-sm" />
+        <p class="text-[12px] text-ink-3 mt-1.5">{{ "Your email address cannot be changed"|t }}</p>
+      </div>
 
-  <form method="post" action="/settings/general/profile" ts-req="" ts-swap="skip" class="space-y-6" autocomplete="off">
-    <div>
-      <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "Email"|t }}</label>
-      <input type="email" value="{{ email }}" disabled
-        class="w-full px-4 py-3 border border-line rounded-xl bg-gray-100 text-ink-3 cursor-not-allowed" />
-      <p class="text-sm text-ink-3 mt-1">{{ "Your email address cannot be changed"|t }}</p>
+      <div>
+        <label class="block text-[13px] font-semibold text-ink-2 mb-2">{{ "Description"|t }}</label>
+        <textarea name="description" rows="3" maxlength="500"
+          class="w-full px-4 py-3 border border-line rounded-xl bg-paper text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          placeholder="{{ "Tell us a bit about yourself..."|t }}">{{ description }}</textarea>
+        <p class="text-[12px] text-ink-3 mt-1.5">{{ "A short description about yourself (max 500 characters)"|t }}</p>
+      </div>
+
+      <div class="flex justify-end pt-1">
+        <button type="submit" class="inline-flex items-center justify-center gap-2 px-5 h-11 bg-ink text-cream font-semibold rounded-xl text-sm hover:opacity-90 shadow-sm transition">
+          {{ "Save profile"|t }}
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<form method="post" action="/settings/general" ts-req="" ts-swap="skip" class="space-y-5 md:space-y-6" autocomplete="off">
+
+  {# ── Dietary restrictions ──────────────────────────────────── #}
+  <section>
+    <div class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-2 px-1">
+      {{ "Dietary restrictions"|t }}
     </div>
-
-    <div>
-      <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "Description"|t }}</label>
-      <textarea name="description" rows="3" maxlength="500"
-        class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500"
-        placeholder="{{ "Tell us a bit about yourself..."|t }}">{{ description }}</textarea>
-      <p class="text-sm text-ink-3 mt-1">{{ "A short description about yourself (max 500 characters)"|t }}</p>
-    </div>
-
-    <button type="submit" class="px-6 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600">
-      {{ "Save Profile"|t }}
-    </button>
-  </form>
-</div>
-
-<!-- Meal Preferences -->
-<div class="bg-paper rounded-xl shadow-md p-6">
-  <h2 class="text-xl font-bold font-serif mb-6">{{ "Preferences"|t }}</h2>
-
-  <form method="post" action="/settings/general" ts-req="" ts-swap="skip" class="space-y-6" autocomplete="off">
-    <div>
-      <label class="block text-sm font-semibold text-ink-2 mb-3">{{ "Dietary Restrictions"|t }}</label>
-      <div class="grid md:grid-cols-2 gap-3">
+    <div class="bg-paper rounded-2xl border border-line-2 shadow-sm overflow-hidden">
+      <div class="md:grid md:grid-cols-2">
         {% for restriction in DietaryRestriction::VARIANTS %}
-        <label class="flex items-center">
-          <input type="checkbox" name="dietary_restrictions" value="{{ restriction }}"{% if restriction.exists_in(dietary_restrictions) %} checked{% endif %} class="rounded border-line text-primary-500" />
-          <span class="ml-2">{{ restriction.as_ref()|t }}</span>
+        {% let checked = restriction.exists_in(dietary_restrictions) %}
+        <label class="group flex items-center justify-between gap-3 px-4 md:px-5 py-3.5 border-b border-line-2 last:border-b-0 md:[&:nth-last-child(2):nth-child(odd)]:border-b-0 md:odd:border-r md:odd:border-line-2 cursor-pointer hover:bg-cream/50 transition">
+          <span class="text-sm font-semibold text-ink">{{ restriction.as_ref()|t }}</span>
+          <span class="relative inline-flex shrink-0">
+            <input type="checkbox" name="dietary_restrictions" value="{{ restriction }}"{% if checked %} checked{% endif %}
+              class="peer sr-only" />
+            <span class="w-11 h-6 rounded-full bg-line peer-checked:bg-herb-500 transition-colors"></span>
+            <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></span>
+          </span>
         </label>
         {% endfor %}
       </div>
     </div>
+  </section>
 
-    <div>
-      <label class="block text-sm font-semibold text-ink-2 mb-2">{{ "Household Size"|t }}</label>
-      <input type="number" name="household_size" value="{{ household_size }}" min="1" max="1000"
-        class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500" />
-      <p class="text-sm text-ink-3 mt-1">{{ "Number of people in your household"|t }}</p>
+  {# ── Household ─────────────────────────────────────────────── #}
+  <section>
+    <div class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-2 px-1">
+      {{ "Household"|t }}
     </div>
-
-    <div>
-      <label class="block text-sm font-semibold text-ink-2 mb-2">
-        {{ "Cuisine Variety"|t }}
-      </label>
-      <input type="range" name="cuisine_variety_weight" min="0.1" max="1.0" step="0.1" value="{{ cuisine_variety_weight }}" class="w-full" />
-      <div class="flex justify-between text-xs text-ink-3 mt-1">
-        <span>{{ "Repeat Often (0.1)"|t }}</span>
-        <span class="font-semibold text-primary-500">{{ "Current"|t }}: {{ cuisine_variety_weight }}</span>
-        <span>{{ "Maximum Variety (1.0)"|t }}</span>
+    <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-5 md:px-6 md:py-5">
+      <div class="flex items-center gap-4">
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold text-ink">{{ "People at the table"|t }}</div>
+          <div class="text-[12px] text-ink-3 mt-1">{{ "Used for ingredient scaling"|t }}</div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="ikStep(this, -1)" aria-label="-"
+            class="w-9 h-9 rounded-xl border border-line bg-paper text-ink text-lg font-semibold flex items-center justify-center hover:bg-cream transition">−</button>
+          <input type="number" name="household_size" value="{{ household_size }}" min="1" max="1000"
+            class="w-12 text-center font-serif text-2xl text-ink bg-transparent border-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+          <button type="button" onclick="ikStep(this, +1)" aria-label="+"
+            class="w-9 h-9 rounded-xl border border-line bg-paper text-ink text-lg font-semibold flex items-center justify-center hover:bg-cream transition">+</button>
+        </div>
       </div>
-      <p class="text-sm text-ink-3 mt-2">
+    </div>
+  </section>
+
+  {# ── Culinary variety ──────────────────────────────────────── #}
+  <section>
+    <div class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-2 px-1">
+      {{ "Culinary variety"|t }}
+    </div>
+    <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-5 md:p-6">
+      <div class="flex justify-between text-[11px] font-mono text-ink-3 mb-2.5">
+        <span>{{ "Repeat often"|t }}</span>
+        <span id="variety-current" class="text-herb-700 font-semibold">{{ cuisine_variety_weight }}</span>
+        <span>{{ "Max variety"|t }}</span>
+      </div>
+      <input type="range" name="cuisine_variety_weight" min="0.1" max="1.0" step="0.05" value="{{ cuisine_variety_weight }}"
+        oninput="document.getElementById('variety-current').textContent = parseFloat(this.value).toFixed(2)"
+        class="w-full accent-herb-500" />
+      <p class="text-[12px] text-ink-3 mt-3 leading-relaxed">
         {{ "Controls how often the algorithm repeats similar cuisines. Higher values = more variety."|t }}
       </p>
     </div>
+  </section>
 
-    <button type="input" class="px-6 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600">
-      {{ "Save Preferences"|t }}
+  <div class="flex justify-end">
+    <button type="submit" class="inline-flex items-center justify-center gap-2 px-5 h-11 bg-ink text-cream font-semibold rounded-xl text-sm hover:opacity-90 shadow-sm transition">
+      {{ "Save preferences"|t }}
     </button>
-  </form>
-</div>
+  </div>
+</form>
+
+<script>
+  function ikStep(btn, delta) {
+    var input = btn.parentElement.querySelector('input[type="number"]');
+    var min = parseInt(input.min || '1', 10);
+    var max = parseInt(input.max || '1000', 10);
+    var v = parseInt(input.value || '0', 10) + delta;
+    if (v < min) v = min;
+    if (v > max) v = max;
+    input.value = v;
+  }
+</script>
 
 {% endblock %}
