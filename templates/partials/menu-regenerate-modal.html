@@ -1,29 +1,31 @@
-<div id="generate-confirm" class="fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-4">
-  <div class="bg-paper rounded-xl shadow-md max-w-md w-full">
-    <div class="p-6">
-      <div class="flex items-start gap-4">
-        <div class="shrink-0 w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-          <svg class="w-6 h-6 text-[#c3321a]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
-            </path>
-          </svg>
-        </div>
-        <div class="flex-1">
-          <h3 class="text-lg font-bold mb-2">{{ "Generate Menu?"|t }}</h3>
-          <p class="text-ink-2 text-sm">
-            {{ "Are you sure you want to generate menu? This action cannot be undone."|t }}
-          </p>
-        </div>
-      </div>
+<div id="generate-confirm" class="fixed inset-0 bg-ink/45 backdrop-blur-sm z-60 flex items-end md:items-center justify-center md:p-4"
+  ts-trigger="click target #generate-confirm" ts-action="remove #generate-confirm">
+  <div class="bg-cream w-full md:max-w-md rounded-t-3xl md:rounded-3xl border border-line-2 md:shadow-lg px-6 pt-4 pb-8 md:p-7"
+    onclick="event.stopPropagation()">
+
+    {# Drag handle — mobile only #}
+    <div class="w-10 h-1 bg-line rounded-full mx-auto mb-3.5 md:hidden"></div>
+
+    {# Sparkle icon tile — desktop only (mobile mock omits it) #}
+    <div class="hidden md:flex w-13 h-13 rounded-2xl bg-primary-100 text-primary-700 items-center justify-center mb-4">
+      <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/>
+      </svg>
     </div>
-    <div class="flex flex-col-reverse md:flex-row gap-3 p-6 border-t bg-cream">
+
+    <h3 class="font-serif text-2xl leading-tight tracking-tight text-ink">{{ "Generate Menu?"|t }}</h3>
+    <p class="text-sm text-ink-2 mt-2 leading-relaxed">
+      {{ "Are you sure you want to generate menu? This action cannot be undone."|t }}
+    </p>
+
+    <div class="flex gap-3 mt-5">
       <button ts-trigger="click" ts-action="remove #generate-confirm"
-        class="flex-1 px-4 py-2 bg-cream-2 text-ink-2 font-semibold rounded-xl hover:bg-cream-2 cursor-pointer">
+        class="flex-1 px-4 py-2.5 bg-paper border border-line text-ink font-semibold rounded-xl text-sm hover:bg-cream-2 transition">
         {{ "Cancel"|t }}
       </button>
       <button ts-trigger="click" ts-req="/menu/{{ date }}/generate" ts-req-method="POST"
-        class="flex-1 px-4 py-2 bg-[#c3321a] text-white font-semibold rounded-xl hover:bg-[#a82a16] cursor-pointer">
+        class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-semibold rounded-xl text-sm hover:bg-primary-600 shadow-sm transition">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
         {{ "Generate"|t }}
       </button>
     </div>
