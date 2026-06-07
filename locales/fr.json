@@ -1321,8 +1321,6 @@
   "You're viewing in read-only mode. Upgrade to Premium to:": "Vous consultez en mode lecture seule. Passez à Premium pour :",
   "Create and edit your own recipes": "Créer et modifier vos propres recettes",
   "Generate personalized meal plans": "Générer des plans de repas personnalisés",
-  "Cook with step-by-step kitchen tools": "Cuisiner avec des outils étape par étape",
-  "Bulk import recipes from the web": "Importer des recettes du web en masse",
   "Preview meal plans and kitchen tools": "Aperçu des plans de repas et des outils de cuisine",
   "Read-only access to all features": "Accès en lecture seule à toutes les fonctionnalités",
   "Upgrade anytime to create and edit": "Passez à Premium à tout moment pour créer et modifier",
@@ -1951,11 +1949,11 @@
   "Free tier included": "Offre gratuite incluse",
   "to get started": "pour commencer",
   "Browse the catalogue for free. Go Premium when you're ready to cook.": "Parcourez le catalogue gratuitement. Passez Premium quand vous serez prêt·e à cuisiner.",
-  "Free is read-only — browse the catalogue and view your existing plans. Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from the web, priority support, and early access to new features.": "Le gratuit est en lecture seule — parcourez le catalogue et consultez vos plans existants. Premium débloque la création et la modification de vos propres recettes, la génération de plans de repas personnalisés, les outils de cuisine pas à pas, l'import en masse depuis le web, le support prioritaire et l'accès anticipé aux nouveautés.",
   "Billed once a year · saves": "Facturation annuelle · économies",
   "Free is read-only.": "Le gratuit est en lecture seule.",
   "Premium (": "Premium (",
   "/mo or": "/mois ou",
-  "/yr) unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from the web, priority support, and early access to new features.": "/an) débloque la création et la modification de vos propres recettes, la génération de plans de repas personnalisés, les outils de cuisine pas à pas, l'import en masse depuis le web, le support prioritaire et l'accès anticipé aux nouveautés.",
-  "Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from the web, priority support, and early access to new features.": "Premium débloque la création et la modification de vos propres recettes, la génération de plans de repas personnalisés, les outils de cuisine pas à pas, l'import en masse depuis le web, le support prioritaire et l'accès anticipé aux nouveautés."
+  "/yr) unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features.": "/an) débloque la création et la modification de vos propres recettes, la génération de plans de repas personnalisés, les outils de cuisine pas à pas, l'import en masse depuis le JSON, le support prioritaire et l'accès anticipé aux nouveautés.",
+  "Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features.": "Premium débloque la création et la modification de vos propres recettes, la génération de plans de repas personnalisés, les outils de cuisine pas à pas, l'import en masse depuis le JSON, le support prioritaire et l'accès anticipé aux nouveautés.",
+  "Free is read-only — browse the catalogue and view your existing plans. Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features.": "Le gratuit est en lecture seule — parcourez le catalogue et consultez vos plans existants. Premium débloque la création et la modification de vos propres recettes, la génération de plans de repas personnalisés, les outils de cuisine pas à pas, l'import en masse depuis le JSON, le support prioritaire et l'accès anticipé aux nouveautés."
 }

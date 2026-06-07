@@ -198,9 +198,9 @@
           {{ "Free is read-only."|t }}
           {% if let Ok(config) = "config"|value::<crate::config::Config> %}
             {% if let Some(premium) = config.premium %}
-            {{ "Premium ("|t }}${{ *premium.monthly_price|amount }}{{ "/mo or"|t }} ${{ premium.annual_price()|amount }}{{ "/yr) unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from the web, priority support, and early access to new features."|t }}
+            {{ "Premium ("|t }}${{ *premium.monthly_price|amount }}{{ "/mo or"|t }} ${{ premium.annual_price()|amount }}{{ "/yr) unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features."|t }}
             {% else %}
-            {{ "Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from the web, priority support, and early access to new features."|t }}
+            {{ "Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features."|t }}
             {% endif %}
           {% endif %}
         </p>
