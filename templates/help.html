@@ -401,7 +401,16 @@
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "What's the difference between Free and Premium?"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
-          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Free is read-only. Premium ($4.99/mo or $47.90/yr) unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from the web, priority support, and early access to new features."|t }}</p>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">
+            {{ "Free is read-only."|t }}
+            {% if let Ok(config) = "config"|value::<crate::config::Config> %}
+              {% if let Some(premium) = config.premium %}
+              {{ "Premium ("|t }}${{ *premium.monthly_price|amount }}{{ "/mo or"|t }} ${{ premium.annual_price()|amount }}{{ "/yr) unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from the web, priority support, and early access to new features."|t }}
+              {% else %}
+              {{ "Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from the web, priority support, and early access to new features."|t }}
+              {% endif %}
+            {% endif %}
+          </p>
         </details>
         <details class="group border-t border-line-2 py-3.5">
           <summary class="flex items-center gap-2.5 cursor-pointer list-none">

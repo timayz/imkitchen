@@ -360,14 +360,18 @@
 
         {# Premium tier #}
         <div class="rounded-3xl p-7 relative overflow-hidden text-white shadow-md" style="background: linear-gradient(160deg, #2c8551, #1f6d42);">
+          {% if let Ok(config) = "config"|value::<crate::config::Config> %}
+            {% if let Some(premium) = config.premium %}
           <div class="absolute top-3.5 right-3.5 bg-[#ffd27a] text-primary-800 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide">
-            {{ "Save 20%"|t }}
+            {{ "Save"|t }} {{ premium.annual_rate }}%
           </div>
           <div class="font-mono text-[11px] text-white/85 uppercase tracking-widest">{{ "Premium"|t }}</div>
           <div class="flex items-baseline gap-1.5 mt-1.5 mb-4">
-            <span class="font-serif text-5xl tracking-tighter">$4.99</span>
+            <span class="font-serif text-5xl tracking-tighter">${{ *premium.monthly_price|amount }}</span>
             <span class="text-sm text-white/85">{{ "/ month"|t }}</span>
           </div>
+            {% endif %}
+          {% endif %}
           <a href="/register" class="block text-center w-full px-4 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition shadow-sm">
             {{ "Go Premium"|t }}
           </a>

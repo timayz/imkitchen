@@ -1853,7 +1853,6 @@
   "Breaking these rules can get your account suspended or terminated, with or without notice depending on severity.": "Enfreindre ces règles peut entraîner la suspension ou la fermeture de votre compte, avec ou sans préavis selon la gravité.",
   "Premium & billing": "Premium et facturation",
   "Billed each month": "Facturation mensuelle",
-  "Billed once a year · saves ~20%": "Facturation annuelle · environ 20 % d'économies",
   "Auto-renewal.": "Renouvellement automatique.",
   "Subscriptions renew automatically until cancelled. Cancel anytime in Settings → Billing; access continues until period end.": "Les abonnements se renouvellent automatiquement jusqu'à annulation. Annulez à tout moment dans Paramètres → Facturation ; l'accès se poursuit jusqu'à la fin de la période.",
   "Price changes.": "Évolution des prix.",
@@ -1953,5 +1952,10 @@
   "to get started": "pour commencer",
   "Browse the catalogue for free. Go Premium when you're ready to cook.": "Parcourez le catalogue gratuitement. Passez Premium quand vous serez prêt·e à cuisiner.",
   "Free is read-only — browse the catalogue and view your existing plans. Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from the web, priority support, and early access to new features.": "Le gratuit est en lecture seule — parcourez le catalogue et consultez vos plans existants. Premium débloque la création et la modification de vos propres recettes, la génération de plans de repas personnalisés, les outils de cuisine pas à pas, l'import en masse depuis le web, le support prioritaire et l'accès anticipé aux nouveautés.",
-  "Free is read-only. Premium ($4.99/mo or $47.90/yr) unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from the web, priority support, and early access to new features.": "Le gratuit est en lecture seule. Premium (4,99 $/mois ou 47,90 $/an) débloque la création et la modification de vos propres recettes, la génération de plans de repas personnalisés, les outils de cuisine pas à pas, l'import en masse depuis le web, le support prioritaire et l'accès anticipé aux nouveautés."
+  "Billed once a year · saves": "Facturation annuelle · économies",
+  "Free is read-only.": "Le gratuit est en lecture seule.",
+  "Premium (": "Premium (",
+  "/mo or": "/mois ou",
+  "/yr) unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from the web, priority support, and early access to new features.": "/an) débloque la création et la modification de vos propres recettes, la génération de plans de repas personnalisés, les outils de cuisine pas à pas, l'import en masse depuis le web, le support prioritaire et l'accès anticipé aux nouveautés.",
+  "Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from the web, priority support, and early access to new features.": "Premium débloque la création et la modification de vos propres recettes, la génération de plans de repas personnalisés, les outils de cuisine pas à pas, l'import en masse depuis le web, le support prioritaire et l'accès anticipé aux nouveautés."
 }

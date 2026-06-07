@@ -181,18 +181,22 @@
             <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§6</span>
             <h2 class="font-serif text-2xl text-ink tracking-tight m-0 leading-tight">{{ "Premium & billing"|t }}</h2>
           </div>
+          {% if let Ok(config) = "config"|value::<crate::config::Config> %}
+            {% if let Some(premium) = config.premium %}
           <div class="grid md:grid-cols-2 gap-2.5 my-4">
             <div class="p-3.5 rounded-2xl bg-cream border border-line-2">
               <div class="font-mono text-[10px] text-ink-3 uppercase tracking-widest">{{ "Monthly"|t }}</div>
-              <div class="font-serif text-3xl text-ink tracking-tighter mt-1">$4.99</div>
+              <div class="font-serif text-3xl text-ink tracking-tighter mt-1">${{ *premium.monthly_price|amount }}</div>
               <div class="text-xs text-ink-3 mt-0.5">{{ "Billed each month"|t }}</div>
             </div>
             <div class="p-3.5 rounded-2xl bg-cream border border-line-2">
               <div class="font-mono text-[10px] text-ink-3 uppercase tracking-widest">{{ "Annual"|t }}</div>
-              <div class="font-serif text-3xl text-ink tracking-tighter mt-1">$47.90</div>
-              <div class="text-xs text-ink-3 mt-0.5">{{ "Billed once a year · saves ~20%"|t }}</div>
+              <div class="font-serif text-3xl text-ink tracking-tighter mt-1">${{ premium.annual_price()|amount }}</div>
+              <div class="text-xs text-ink-3 mt-0.5">{{ "Billed once a year · saves"|t }} {{ premium.annual_rate }}%</div>
             </div>
           </div>
+            {% endif %}
+          {% endif %}
           <ul class="grid gap-2">
             <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span><strong class="text-ink">{{ "Auto-renewal."|t }}</strong> {{ "Subscriptions renew automatically until cancelled. Cancel anytime in Settings → Billing; access continues until period end."|t }}</span></li>
             <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span><strong class="text-ink">{{ "Price changes."|t }}</strong> {{ "We'll give at least 30 days' notice by email before raising your renewal price."|t }}</span></li>

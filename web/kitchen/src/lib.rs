@@ -7,6 +7,8 @@ use imkitchen_types::mealplan::DaySlotStatus;
 use imkitchen_types::recipe::Instruction;
 use imkitchen_types::{mealplan::DaySlotRecipe, recipe::RecipeType};
 
+pub use imkitchen_web_shared::config;
+
 use imkitchen_web_shared::AppState;
 use imkitchen_web_shared::auth::{AuthToken, AuthUser, RequirePremium};
 use imkitchen_web_shared::template::{NotFoundTemplate, Template, filters};
