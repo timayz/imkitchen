@@ -1,420 +1,461 @@
 {% extends "_public.html" %}
 
-{% block title %} {{ "Help Center - imkitchen"|t }} {% endblock %}
+{% block title %} {{ "Help center — imkitchen"|t }} {% endblock %}
 
 {% block hero %}
-<div class="bg-gradient-to-br from-herb-500 to-herb-700 text-white py-16">
-  <div class="container mx-auto px-4 text-center">
-    <h1 class="text-4xl md:text-5xl font-bold font-serif tracking-tight mb-4">{{ "How can we help you?"|t }}</h1>
-    <p class="text-xl text-herb-50 mb-8">{{ "Search our knowledge base or browse categories below"|t }}</p>
+<section class="relative overflow-hidden text-white" style="background: linear-gradient(160deg, #2f7d4f, #3e9968);">
+  {# Decorative dot pattern #}
+  <div class="absolute inset-0 opacity-[0.08] pointer-events-none" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 20px 20px;"></div>
 
-    <!-- Search Bar -->
-    <div class="max-w-2xl mx-auto">
-      <div class="relative">
-        <input type="text" placeholder="{{ "Search for help articles..."|t }}"
-          class="w-full px-6 py-4 pr-12 rounded-xl bg-paper text-ink focus:ring-4 focus:ring-primary-500 focus:outline-none" />
-        <button class="absolute right-4 top-1/2 -translate-y-1/2 text-ink-3 hover:text-ink-2">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-          </svg>
-        </button>
+  <div class="relative container mx-auto px-5 md:px-12 py-14 md:py-24 text-center">
+    <div class="max-w-3xl mx-auto">
+      <span class="inline-flex items-center gap-1.5 bg-white/15 text-white text-xs font-medium px-3 py-1.5 rounded-full border border-white/25">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2V5z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 19a2 2 0 012-2h13"/>
+        </svg>
+        {{ "Help center"|t }}
+      </span>
+
+      <h1 class="font-serif text-4xl md:text-6xl text-white leading-none tracking-tighter mt-5 mb-3.5">
+        {{ "How can we"|t }} <span class="italic text-primary-100">{{ "help"|t }}</span>?
+      </h1>
+
+      <p class="text-base md:text-lg text-white/85 leading-relaxed max-w-xl mx-auto mb-8">
+        {{ "Search 40+ articles, or browse by category. If you can't find what you need, we're one message away."|t }}
+      </p>
+
+      {# Search bar #}
+      <form action="/help" method="get" class="flex items-center gap-2 bg-paper rounded-2xl pl-4 pr-1 py-1 shadow-lg max-w-xl mx-auto">
+        <svg class="w-5 h-5 text-ink-3 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3"/>
+        </svg>
+        <input type="search" name="q" placeholder="{{ "Search for 'import recipe', 'cancel'…"|t }}" class="flex-1 bg-transparent py-3 text-sm text-ink focus:outline-none placeholder-ink-3" />
+        <button type="submit" class="px-4 py-2 bg-ink text-cream font-semibold text-sm rounded-xl hover:bg-ink-2 transition">{{ "Search"|t }}</button>
+      </form>
+
+      {# Quick popular tags #}
+      <div class="flex flex-wrap justify-center gap-x-3 gap-y-1.5 mt-5 text-[13px] text-white/70">
+        <span>{{ "Popular:"|t }}</span>
+        <a href="#account-billing" class="text-white underline underline-offset-2 hover:opacity-80">{{ "Cancel subscription"|t }}</a>
+        <a href="#recipes" class="text-white underline underline-offset-2 hover:opacity-80">{{ "Import recipes"|t }}</a>
+        <a href="#meal-planning" class="text-white underline underline-offset-2 hover:opacity-80">{{ "Lock a meal"|t }}</a>
+        <a href="#community" class="text-white underline underline-offset-2 hover:opacity-80">{{ "Share with family"|t }}</a>
       </div>
     </div>
   </div>
-</div>
+</section>
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-12">
-  <!-- Help Categories -->
-  <div class="mb-16">
-    <h2 class="text-3xl font-bold font-serif tracking-tight mb-8 text-center">{{ "Browse by Category"|t }}</h2>
-    <div class="grid md:grid-cols-3 gap-6">
-      <!-- Getting Started -->
-      <a href="#getting-started" class="bg-paper rounded-xl shadow-md p-6 hover:shadow-xl transition group">
-        <div class="flex items-start gap-4">
-          <div class="text-4xl">🚀</div>
-          <div class="flex-1">
-            <h3 class="font-bold text-lg mb-2 group-hover:text-primary-500">{{ "Getting Started"|t }}</h3>
-            <p class="text-ink-2 text-sm mb-3">{{ "Learn the basics of using imkitchen"|t }}</p>
-            <ul class="text-sm text-ink-3 space-y-1">
-              <li>• {{ "Creating your first account"|t }}</li>
-              <li>• {{ "Setting up preferences"|t }}</li>
-              <li>• {{ "Understanding the interface"|t }}</li>
-              <li>• {{ "Quick start guide"|t }}</li>
-            </ul>
-          </div>
+<div class="bg-cream">
+
+  {# ── Category grid ───────────────────────────────────────────── #}
+  <section class="container mx-auto px-5 md:px-12 pt-10 md:pt-14 max-w-6xl">
+    <div class="text-center mb-7">
+      <div class="font-mono text-[10px] text-ink-3 uppercase tracking-widest">{{ "Browse by category"|t }}</div>
+      <h2 class="font-serif text-3xl text-ink tracking-tight mt-1.5">{{ "Six places to start"|t }}</h2>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-3.5">
+
+      <a href="#getting-started" class="bg-paper rounded-2xl p-5 border border-line-2 hover:shadow-md transition flex flex-col gap-2.5">
+        <div class="w-11 h-11 rounded-xl bg-primary-100 flex items-center justify-center">
+          <svg class="w-5 h-5 text-primary-800" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 4.5L18.5 9l-4.6 1.5L12 15l-1.9-4.5L5.5 9l4.6-1.5z"/></svg>
+        </div>
+        <div>
+          <div class="text-base font-semibold text-ink tracking-tight">{{ "Getting started"|t }}</div>
+          <div class="text-sm text-ink-2 leading-snug mt-0.5">{{ "Your first week on imkitchen"|t }}</div>
+        </div>
+        <div class="flex items-center gap-1 mt-0.5">
+          <span class="font-mono text-[11px] text-primary-800 font-medium">{{ "8 articles"|t }}</span>
+          <svg class="w-3 h-3 text-primary-800" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
         </div>
       </a>
 
-      <!-- Meal Planning -->
-      <a href="#meal-planning" class="bg-paper rounded-xl shadow-md p-6 hover:shadow-xl transition group">
-        <div class="flex items-start gap-4">
-          <div class="text-4xl">📅</div>
-          <div class="flex-1">
-            <h3 class="font-bold text-lg mb-2 group-hover:text-primary-500">{{ "Meal Planning"|t }}</h3>
-            <p class="text-ink-2 text-sm mb-3">{{ "Master meal plan generation"|t }}</p>
-            <ul class="text-sm text-ink-3 space-y-1">
-              <li>• {{ "Generating meal plans"|t }}</li>
-              <li>• {{ "Understanding week locking"|t }}</li>
-              <li>• {{ "Regenerating weeks"|t }}</li>
-              <li>• {{ "Accompaniment pairing"|t }}</li>
-            </ul>
-          </div>
+      <a href="#meal-planning" class="bg-paper rounded-2xl p-5 border border-line-2 hover:shadow-md transition flex flex-col gap-2.5">
+        <div class="w-11 h-11 rounded-xl bg-herb-100 flex items-center justify-center">
+          <svg class="w-5 h-5 text-herb-700" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 9h18M8 3v4M16 3v4"/></svg>
+        </div>
+        <div>
+          <div class="text-base font-semibold text-ink tracking-tight">{{ "Meal plans"|t }}</div>
+          <div class="text-sm text-ink-2 leading-snug mt-0.5">{{ "Generation, swaps, and schedules"|t }}</div>
+        </div>
+        <div class="flex items-center gap-1 mt-0.5">
+          <span class="font-mono text-[11px] text-herb-700 font-medium">{{ "12 articles"|t }}</span>
+          <svg class="w-3 h-3 text-herb-700" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
         </div>
       </a>
 
-      <!-- Recipe Management -->
-      <a href="#recipes" class="bg-paper rounded-xl shadow-md p-6 hover:shadow-xl transition group">
-        <div class="flex items-start gap-4">
-          <div class="text-4xl">📖</div>
-          <div class="flex-1">
-            <h3 class="font-bold text-lg mb-2 group-hover:text-primary-500">{{ "Recipe Management"|t }}</h3>
-            <p class="text-ink-2 text-sm mb-3">{{ "Create and organize your recipes"|t }}</p>
-            <ul class="text-sm text-ink-3 space-y-1">
-              <li>• {{ "Creating recipes"|t }}</li>
-              <li>• {{ "Recipe types explained"|t }}</li>
-              <li>• {{ "Importing from JSON"|t }}</li>
-              <li>• {{ "Favoriting recipes"|t }}</li>
-            </ul>
-          </div>
+      <a href="#recipes" class="bg-paper rounded-2xl p-5 border border-line-2 hover:shadow-md transition flex flex-col gap-2.5">
+        <div class="w-11 h-11 rounded-xl bg-meal-main-soft flex items-center justify-center">
+          <svg class="w-5 h-5 text-meal-main-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M4 19a2 2 0 012-2h13"/></svg>
+        </div>
+        <div>
+          <div class="text-base font-semibold text-ink tracking-tight">{{ "Recipes"|t }}</div>
+          <div class="text-sm text-ink-2 leading-snug mt-0.5">{{ "Import, create, share, collect"|t }}</div>
+        </div>
+        <div class="flex items-center gap-1 mt-0.5">
+          <span class="font-mono text-[11px] text-meal-main-ink font-medium">{{ "14 articles"|t }}</span>
+          <svg class="w-3 h-3 text-meal-main-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
         </div>
       </a>
 
-      <!-- Community -->
-      <a href="#community" class="bg-paper rounded-xl shadow-md p-6 hover:shadow-xl transition group">
-        <div class="flex items-start gap-4">
-          <div class="text-4xl">👥</div>
-          <div class="flex-1">
-            <h3 class="font-bold text-lg mb-2 group-hover:text-primary-500">{{ "Community"|t }}</h3>
-            <p class="text-ink-2 text-sm mb-3">{{ "Share and discover recipes"|t }}</p>
-            <ul class="text-sm text-ink-3 space-y-1">
-              <li>• {{ "Sharing recipes"|t }}</li>
-              <li>• {{ "Rating and reviews"|t }}</li>
-              <li>• {{ "Finding community recipes"|t }}</li>
-              <li>• {{ "Recipe snapshots"|t }}</li>
-            </ul>
-          </div>
+      <a href="#shopping" class="bg-paper rounded-2xl p-5 border border-line-2 hover:shadow-md transition flex flex-col gap-2.5">
+        <div class="w-11 h-11 rounded-xl bg-meal-side-soft flex items-center justify-center">
+          <svg class="w-5 h-5 text-meal-side-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 4h2l2.7 11.3a1 1 0 001 .7h9.6a1 1 0 001-.7L21 8H6"/></svg>
+        </div>
+        <div>
+          <div class="text-base font-semibold text-ink tracking-tight">{{ "Shopping lists"|t }}</div>
+          <div class="text-sm text-ink-2 leading-snug mt-0.5">{{ "Aisles, merging, exports"|t }}</div>
+        </div>
+        <div class="flex items-center gap-1 mt-0.5">
+          <span class="font-mono text-[11px] text-meal-side-ink font-medium">{{ "7 articles"|t }}</span>
+          <svg class="w-3 h-3 text-meal-side-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
         </div>
       </a>
 
-      <!-- Account & Billing -->
-      <a href="#account-billing" class="bg-paper rounded-xl shadow-md p-6 hover:shadow-xl transition group">
-        <div class="flex items-start gap-4">
-          <div class="text-4xl">💳</div>
-          <div class="flex-1">
-            <h3 class="font-bold text-lg mb-2 group-hover:text-primary-500">{{ "Account & Billing"|t }}</h3>
-            <p class="text-ink-2 text-sm mb-3">{{ "Manage your subscription"|t }}</p>
-            <ul class="text-sm text-ink-3 space-y-1">
-              <li>• {{ "Free vs Premium"|t }}</li>
-              <li>• {{ "Upgrading to Premium"|t }}</li>
-              <li>• {{ "Canceling subscription"|t }}</li>
-              <li>• {{ "Billing issues"|t }}</li>
-            </ul>
-          </div>
+      <a href="#community" class="bg-paper rounded-2xl p-5 border border-line-2 hover:shadow-md transition flex flex-col gap-2.5">
+        <div class="w-11 h-11 rounded-xl bg-meal-dessert-soft flex items-center justify-center">
+          <svg class="w-5 h-5 text-meal-dessert-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="8" r="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 15c2 .5 4 2 4 5"/></svg>
+        </div>
+        <div>
+          <div class="text-base font-semibold text-ink tracking-tight">{{ "Account & community"|t }}</div>
+          <div class="text-sm text-ink-2 leading-snug mt-0.5">{{ "Profiles, sharing, ratings"|t }}</div>
+        </div>
+        <div class="flex items-center gap-1 mt-0.5">
+          <span class="font-mono text-[11px] text-meal-dessert-ink font-medium">{{ "9 articles"|t }}</span>
+          <svg class="w-3 h-3 text-meal-dessert-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
         </div>
       </a>
 
-      <!-- Technical Support -->
-      <a href="#technical" class="bg-paper rounded-xl shadow-md p-6 hover:shadow-xl transition group">
-        <div class="flex items-start gap-4">
-          <div class="text-4xl">🔧</div>
-          <div class="flex-1">
-            <h3 class="font-bold text-lg mb-2 group-hover:text-primary-500">{{ "Technical Support"|t }}</h3>
-            <p class="text-ink-2 text-sm mb-3">{{ "Troubleshooting and FAQs"|t }}</p>
-            <ul class="text-sm text-ink-3 space-y-1">
-              <li>• {{ "Browser compatibility"|t }}</li>
-              <li>• {{ "Login issues"|t }}</li>
-              <li>• {{ "Performance problems"|t }}</li>
-              <li>• {{ "Data sync issues"|t }}</li>
-            </ul>
-          </div>
+      <a href="#account-billing" class="bg-paper rounded-2xl p-5 border border-line-2 hover:shadow-md transition flex flex-col gap-2.5">
+        <div class="w-11 h-11 rounded-xl bg-meal-entree-soft flex items-center justify-center">
+          <svg class="w-5 h-5 text-meal-entree-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg>
+        </div>
+        <div>
+          <div class="text-base font-semibold text-ink tracking-tight">{{ "Billing & Premium"|t }}</div>
+          <div class="text-sm text-ink-2 leading-snug mt-0.5">{{ "Plans, refunds, subscriptions"|t }}</div>
+        </div>
+        <div class="flex items-center gap-1 mt-0.5">
+          <span class="font-mono text-[11px] text-meal-entree-ink font-medium">{{ "6 articles"|t }}</span>
+          <svg class="w-3 h-3 text-meal-entree-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
         </div>
       </a>
     </div>
-  </div>
+  </section>
 
-  <!-- Popular Articles -->
-  <div class="mb-16">
-    <h2 class="text-3xl font-bold font-serif tracking-tight mb-8">{{ "Popular Articles"|t }}</h2>
-    <div class="grid md:grid-cols-2 gap-6">
-      <div class="bg-paper rounded-xl shadow-md p-6">
-        <div class="flex items-start gap-4">
-          <div class="text-2xl">❓</div>
-          <div class="flex-1">
-            <h3 class="font-bold mb-2 text-primary-500 hover:underline cursor-pointer">{{ "How do I generate my first meal plan?"|t }}</h3>
-            <p class="text-ink-2 text-sm mb-2">{{ "Learn how to create your first week of meals using your favorite recipes."|t }}</p>
-            <span class="text-xs text-ink-3">{{ "Getting Started • 3 min read"|t }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-paper rounded-xl shadow-md p-6">
-        <div class="flex items-start gap-4">
-          <div class="text-2xl">❓</div>
-          <div class="flex-1">
-            <h3 class="font-bold mb-2 text-primary-500 hover:underline cursor-pointer">{{ "What's the difference between Free and Premium?"|t }}</h3>
-            <p class="text-ink-2 text-sm mb-2">{{ "Compare features and understand which tier is right for you."|t }}</p>
-            <span class="text-xs text-ink-3">{{ "Account & Billing • 5 min read"|t }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-paper rounded-xl shadow-md p-6">
-        <div class="flex items-start gap-4">
-          <div class="text-2xl">❓</div>
-          <div class="flex-1">
-            <h3 class="font-bold mb-2 text-primary-500 hover:underline cursor-pointer">{{ "How does accompaniment pairing work?"|t }}</h3>
-            <p class="text-ink-2 text-sm mb-2">{{ "Understand how main courses are automatically paired with sides like rice and pasta."|t }}</p>
-            <span class="text-xs text-ink-3">{{ "Meal Planning • 4 min read"|t }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-paper rounded-xl shadow-md p-6">
-        <div class="flex items-start gap-4">
-          <div class="text-2xl">❓</div>
-          <div class="flex-1">
-            <h3 class="font-bold mb-2 text-primary-500 hover:underline cursor-pointer">{{ "How do I import recipes from JSON?"|t }}</h3>
-            <p class="text-ink-2 text-sm mb-2">{{ "Step-by-step guide to bulk importing your recipe collection."|t }}</p>
-            <span class="text-xs text-ink-3">{{ "Recipe Management • 6 min read"|t }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-paper rounded-xl shadow-md p-6">
-        <div class="flex items-start gap-4">
-          <div class="text-2xl">❓</div>
-          <div class="flex-1">
-            <h3 class="font-bold mb-2 text-primary-500 hover:underline cursor-pointer">{{ "Why is the current week locked from regeneration?"|t }}</h3>
-            <p class="text-ink-2 text-sm mb-2">{{ "Learn about week locking and how it protects your in-progress meals."|t }}</p>
-            <span class="text-xs text-ink-3">{{ "Meal Planning • 3 min read"|t }}</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-paper rounded-xl shadow-md p-6">
-        <div class="flex items-start gap-4">
-          <div class="text-2xl">❓</div>
-          <div class="flex-1">
-            <h3 class="font-bold mb-2 text-primary-500 hover:underline cursor-pointer">{{ "What happens to shared recipes when I delete them?"|t }}</h3>
-            <p class="text-ink-2 text-sm mb-2">{{ "Understand recipe snapshots and how deletion affects other users."|t }}</p>
-            <span class="text-xs text-ink-3">{{ "Community • 4 min read"|t }}</span>
-          </div>
-        </div>
-      </div>
+  {# ── Popular articles ──────────────────────────────────────── #}
+  <section class="container mx-auto px-5 md:px-12 pt-10 md:pt-12 max-w-6xl">
+    <div class="flex items-baseline mb-4">
+      <h2 class="font-serif text-2xl text-ink tracking-tight">{{ "Popular articles"|t }}</h2>
+      <div class="flex-1"></div>
+      <span class="text-sm font-medium text-primary-800">{{ "See all →"|t }}</span>
     </div>
-  </div>
+    <div class="grid md:grid-cols-2 gap-3">
+      {% for article in [("Meal plans","2 days ago","Why did my plan repeat a recipe this week?"),("Recipes","5 days ago","How do I import from a recipe site?"),("Shopping","1 week ago","Merging two overlapping grocery lists"),("Account","2 weeks ago","Sharing recipes with a household member")] %}
+      <a href="#" class="bg-paper rounded-2xl p-4 border border-line-2 hover:shadow-md transition flex gap-3 items-start">
+        <div class="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center shrink-0">
+          <svg class="w-3.5 h-3.5 text-primary-800" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 4.5L18.5 9l-4.6 1.5L12 15l-1.9-4.5L5.5 9l4.6-1.5z"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-mono text-[10px] text-ink-3 uppercase tracking-wider">{{ article.0|t }} · {{ "Updated"|t }} {{ article.1|t }}</div>
+          <div class="text-sm font-semibold text-ink mt-1 leading-snug">{{ article.2|t }}</div>
+        </div>
+        <svg class="w-3.5 h-3.5 text-ink-3" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
 
-  <!-- FAQs by Category -->
-  <div id="getting-started" class="mb-16">
-    <h2 class="text-3xl font-bold font-serif tracking-tight mb-8">{{ "Frequently Asked Questions"|t }}</h2>
+  {# ── Q&A by category ──────────────────────────────────────── #}
+  <section class="container mx-auto px-5 md:px-12 pt-10 md:pt-12 pb-6 max-w-3xl">
+    <div class="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-2">{{ "Questions & answers"|t }}</div>
+    <h2 class="font-serif text-2xl md:text-4xl text-ink tracking-tight leading-tight mb-7">{{ "All topics"|t }}</h2>
 
-    <!-- Getting Started FAQs -->
-    <div class="bg-paper rounded-xl shadow-md p-8 mb-8">
-      <h3 class="text-2xl font-bold font-serif tracking-tight mb-6 flex items-center gap-3">
-        <span class="text-3xl">🚀</span>
-        {{ "Getting Started"|t }}
-      </h3>
-      <div class="space-y-6">
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "How do I create an account?"|t }}</h4>
-          <p class="text-ink-2">{{ "Click the \"Get Started\" or \"Register\" button in the top navigation. Fill out the registration form with your name, email, password, and meal preferences (dietary restrictions, household size, cuisine variety). Accept the terms and click \"Create Account.\""|t }}</p>
+    {# ── Getting Started ── #}
+    <div id="getting-started" class="bg-paper rounded-2xl border border-line-2 mb-3.5">
+      <div class="flex items-center gap-2.5 px-5 pt-5 pb-2.5">
+        <div class="w-8 h-8 rounded-xl bg-primary-100 flex items-center justify-center">
+          <svg class="w-4 h-4 text-primary-800" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 4.5L18.5 9l-4.6 1.5L12 15l-1.9-4.5L5.5 9l4.6-1.5z"/></svg>
         </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "What dietary restrictions can I set?"|t }}</h4>
-          <p class="text-ink-2">{{ "You can configure multiple dietary restrictions including Vegetarian, Vegan, Gluten-Free, Dairy-Free, and Nut-Free. The meal planning algorithm will respect these restrictions when generating meal plans."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "Do I need to add recipes before generating a meal plan?"|t }}</h4>
-          <p class="text-ink-2">{{ "Yes, you need to have favorited recipes before generating a meal plan. You can create your own recipes, import recipes via JSON, or favorite recipes from the community. We recommend having at least 15-20 favorites for best results."|t }}</p>
-        </div>
+        <h3 class="font-serif text-xl text-ink tracking-tight flex-1">{{ "Getting started"|t }}</h3>
+        <span class="font-mono text-[10px] text-ink-3">{{ "4 articles"|t }}</span>
+      </div>
+      <div class="px-5 pb-4">
+        <details class="group border-t border-line-2 py-3.5" open>
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Creating your first account"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Sign up with email. Once you confirm your address, an empty recipe library awaits — start by adding your own or browsing the community catalogue."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Setting dietary preferences and allergies"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Settings → Preferences. imkitchen avoids flagged ingredients in every generated plan and warns you before importing a recipe that contains them."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Understanding the navigation"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Five sections: Kitchen (today's meal), Menu (this week's plan), Recipes (your library), Groceries (shopping list), Settings."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Choosing between Free and Premium"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Free is read-only — browse the catalogue and view your existing plans. Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features."|t }}</p>
+        </details>
       </div>
     </div>
 
-    <!-- Meal Planning FAQs -->
-    <div id="meal-planning" class="bg-paper rounded-xl shadow-md p-8 mb-8">
-      <h3 class="text-2xl font-bold font-serif tracking-tight mb-6 flex items-center gap-3">
-        <span class="text-3xl">📅</span>
-        {{ "Meal Planning"|t }}
-      </h3>
-      <div class="space-y-6">
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "How many weeks does the system generate?"|t }}</h4>
-          <p class="text-ink-2">{{ "The system automatically generates meal plans for all remaining weeks of the current month (from next week onwards). If you're at the end of the month, it will extend into the next month. Typically this generates 3-5 weeks of meals."|t }}</p>
+    {# ── Meal Planning ── #}
+    <div id="meal-planning" class="bg-paper rounded-2xl border border-line-2 mb-3.5">
+      <div class="flex items-center gap-2.5 px-5 pt-5 pb-2.5">
+        <div class="w-8 h-8 rounded-xl bg-herb-100 flex items-center justify-center">
+          <svg class="w-4 h-4 text-herb-700" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 9h18M8 3v4M16 3v4"/></svg>
         </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "Can I see all generated weeks on the free tier?"|t }}</h4>
-          <p class="text-ink-2">{{ "Yes. Free tier users have read-only access to all previously generated meal plans. Generating new meal plans requires a Premium subscription."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "Why can't I regenerate the current week?"|t }}</h4>
-          <p class="text-ink-2">{{ "The current week (Monday-Sunday range containing today) is locked to preserve your in-progress meals. This prevents accidentally replacing meals you've already started preparing. You can regenerate all future weeks individually or all at once."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "What if I don't have enough recipes for all weeks?"|t }}</h4>
-          <p class="text-ink-2">{{ "The system gracefully handles insufficient recipes by leaving empty meal slots. There's no minimum recipe count required. For example, with 10 favorites you might get Week 1 full and Week 2 partial with empty slots."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "Will I get the same meal plan if I regenerate?"|t }}</h4>
-          <p class="text-ink-2">{{ "No. Generation is non-deterministic - each regeneration produces different meal slot assignments even with the same favorite recipes. This allows you to regenerate until you find an arrangement you prefer."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "How does accompaniment pairing work?"|t }}</h4>
-          <p class="text-ink-2">{{ "When you create a main course recipe, you can mark it as accepting accompaniments and specify preferred types (rice, pasta, bread, fries, salad, vegetables). The algorithm will automatically pair compatible accompaniment recipes with your main courses when generating meal plans."|t }}</p>
-        </div>
+        <h3 class="font-serif text-xl text-ink tracking-tight flex-1">{{ "Meal plans"|t }}</h3>
+        <span class="font-mono text-[10px] text-ink-3">{{ "5 articles"|t }}</span>
+      </div>
+      <div class="px-5 pb-4">
+        <details class="group border-t border-line-2 py-3.5" open>
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "How does automatic generation work?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "imkitchen shuffles your collection against a handful of rules — cuisine variety, dietary restrictions, accompaniment pairing — then assembles a plan in about two seconds. You can regenerate until you're happy."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Why can't I regenerate the current week?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "The current week is locked to preserve in-progress meals you've already started preparing. Future weeks can be regenerated individually or all at once."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "What if I don't have enough recipes for all weeks?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Empty slots remain — the algorithm avoids repeating mains across consecutive weeks. Add or import a few more favourites and regenerate to fill the gaps."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "How does accompaniment pairing work?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "When you mark a main as accepting accompaniments and pick allowed types (rice, pasta, bread…), the planner pairs them automatically — curry gets rice, pasta gets bread."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Will I get the same plan twice?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "No. Generation is non-deterministic — regenerate until you find an arrangement you like."|t }}</p>
+        </details>
       </div>
     </div>
 
-    <!-- Recipe Management FAQs -->
-    <div id="recipes" class="bg-paper rounded-xl shadow-md p-8 mb-8">
-      <h3 class="text-2xl font-bold font-serif tracking-tight mb-6 flex items-center gap-3">
-        <span class="text-3xl">📖</span>
-        {{ "Recipe Management"|t }}
-      </h3>
-      <div class="space-y-6">
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "What are the 6 recipe types?"|t }}</h4>
-          <p class="text-ink-2">{{ "Recipes are categorized into 6 types: <strong>Appetizer</strong> (starters, salads), <strong>Main Course</strong> (entrees), <strong>Dessert</strong> (sweets), <strong>Accompaniment</strong> (sides like rice, pasta, bread), <strong>Beverage</strong> (cocktails, juices, smoothies, infusions), and <strong>Condiment</strong> (sauces, chutneys, marinades, vinaigrettes). Each day's meal plan can include an appetizer, main course with optional accompaniment, a beverage, a condiment, and a dessert."|t }}
+    {# ── Recipes ── #}
+    <div id="recipes" class="bg-paper rounded-2xl border border-line-2 mb-3.5">
+      <div class="flex items-center gap-2.5 px-5 pt-5 pb-2.5">
+        <div class="w-8 h-8 rounded-xl bg-meal-main-soft flex items-center justify-center">
+          <svg class="w-4 h-4 text-meal-main-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M4 19a2 2 0 012-2h13"/></svg>
+        </div>
+        <h3 class="font-serif text-xl text-ink tracking-tight flex-1">{{ "Recipes"|t }}</h3>
+        <span class="font-mono text-[10px] text-ink-3">{{ "5 articles"|t }}</span>
+      </div>
+      <div class="px-5 pb-4">
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "What are the recipe types?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Six categories: appetizer, main course, dessert, accompaniment, beverage and condiment. Each day's plan can include one of each type."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "How do I import recipes from JSON?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Recipes → Import. Drag-drop JSON files (max 10 MB, up to 20 per batch). The importer validates each entry and reports successes, duplicates, and failures."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Can free tier users save recipes?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Saving and editing recipes requires Premium. Free accounts can browse community recipes in read-only mode."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Are dietary restrictions auto-detected?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "No — dietary tags must be set explicitly on every recipe to be respected by the planner."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Can I edit imported recipes?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Yes. Imported recipes live in your library like the ones you created and can be edited, favourited, or shared."|t }}</p>
+        </details>
+      </div>
+    </div>
+
+    {# ── Shopping lists ── #}
+    <div id="shopping" class="bg-paper rounded-2xl border border-line-2 mb-3.5">
+      <div class="flex items-center gap-2.5 px-5 pt-5 pb-2.5">
+        <div class="w-8 h-8 rounded-xl bg-meal-side-soft flex items-center justify-center">
+          <svg class="w-4 h-4 text-meal-side-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 4h2l2.7 11.3a1 1 0 001 .7h9.6a1 1 0 001-.7L21 8H6"/></svg>
+        </div>
+        <h3 class="font-serif text-xl text-ink tracking-tight flex-1">{{ "Shopping lists"|t }}</h3>
+        <span class="font-mono text-[10px] text-ink-3">{{ "3 articles"|t }}</span>
+      </div>
+      <div class="px-5 pb-4">
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Grouping items by store aisle"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Items are grouped automatically using our ingredient-to-aisle mapping. Reorder aisles to match your favourite store's layout."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Merging duplicate ingredients"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "When two recipes share an ingredient, quantities are summed and units converted where possible. Ambiguous merges surface a warning you can resolve."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Exporting a list to notes or messages"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Open the list, tap Share, choose Copy text, share sheet, or email."|t }}</p>
+        </details>
+      </div>
+    </div>
+
+    {# ── Community ── #}
+    <div id="community" class="bg-paper rounded-2xl border border-line-2 mb-3.5">
+      <div class="flex items-center gap-2.5 px-5 pt-5 pb-2.5">
+        <div class="w-8 h-8 rounded-xl bg-meal-dessert-soft flex items-center justify-center">
+          <svg class="w-4 h-4 text-meal-dessert-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="8" r="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 15c2 .5 4 2 4 5"/></svg>
+        </div>
+        <h3 class="font-serif text-xl text-ink tracking-tight flex-1">{{ "Community"|t }}</h3>
+        <span class="font-mono text-[10px] text-ink-3">{{ "4 articles"|t }}</span>
+      </div>
+      <div class="px-5 pb-4">
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "How do I share a recipe with the community?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "While creating or editing a recipe, toggle Share with community. Shared recipes appear in the public search and other users can favourite them."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "What are recipe snapshots?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "When a meal plan is generated, the system snapshots referenced recipes. Historical plans stay intact even if the author later edits or deletes the source recipe."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Can I rate and review community recipes?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Yes. Both free and Premium users can rate and review. Low-rated recipes are demoted in community search."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Can free tier users share recipes?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "No — creating, editing and sharing recipes are Premium features. Free accounts can browse and review."|t }}</p>
+        </details>
+      </div>
+    </div>
+
+    {# ── Account & Billing ── #}
+    <div id="account-billing" class="bg-paper rounded-2xl border border-line-2 mb-3.5">
+      <div class="flex items-center gap-2.5 px-5 pt-5 pb-2.5">
+        <div class="w-8 h-8 rounded-xl bg-meal-entree-soft flex items-center justify-center">
+          <svg class="w-4 h-4 text-meal-entree-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg>
+        </div>
+        <h3 class="font-serif text-xl text-ink tracking-tight flex-1">{{ "Account & billing"|t }}</h3>
+        <span class="font-mono text-[10px] text-ink-3">{{ "4 articles"|t }}</span>
+      </div>
+      <div class="px-5 pb-4">
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "What's the difference between Free and Premium?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">
+            {{ "Free is read-only."|t }}
+            {% if let Ok(config) = "config"|value::<crate::config::Config> %}
+              {% if let Some(premium) = config.premium %}
+              {{ "Premium ("|t }}${{ *premium.monthly_price|amount }}{{ "/mo or"|t }} ${{ premium.annual_price()|amount }}{{ "/yr) unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features."|t }}
+              {% else %}
+              {{ "Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features."|t }}
+              {% endif %}
+            {% endif %}
           </p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "How do I import recipes from JSON?"|t }}</h4>
-          <p class="text-ink-2">{{ "Go to the Recipe Import page, drag and drop JSON files (max 10MB each, up to 20 files per batch), and click Import. The system validates each recipe against the schema and provides a summary showing successful imports, failed recipes, and duplicates. Check our JSON Schema documentation for the required format."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "Can free tier users save recipes?"|t }}</h4>
-          <p class="text-ink-2">{{ "Saving recipes to your library requires a Premium subscription. Free tier users can browse community recipes but cannot save, edit, or create their own."|t }}
-          </p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "Are dietary restrictions automatically detected?"|t }}</h4>
-          <p class="text-ink-2">{{ "No. All recipe fields including dietary restrictions and preferences must be explicitly set by users when creating or importing recipes. The system does not automatically detect or infer these attributes from recipe content."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "Can I edit recipes I imported from JSON?"|t }}</h4>
-          <p class="text-ink-2">{{ "Yes. Imported recipes are stored in your recipe library just like manually created recipes. You can edit, delete, share, or favorite them like any other recipe."|t }}</p>
-        </div>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "How do I cancel my subscription?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Settings → Billing → Cancel. Premium stays active until the end of the billing period; your recipes remain after downgrading."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Do subscriptions auto-renew?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Yes. Renewal happens automatically at the end of each billing cycle until you cancel. We email a receipt every time."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "What happens to my data when I downgrade?"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Recipes, plans and grocery lists are preserved. Your account simply becomes read-only — upgrade again to restore write access."|t }}</p>
+        </details>
       </div>
     </div>
+  </section>
 
-    <!-- Community FAQs -->
-    <div id="community" class="bg-paper rounded-xl shadow-md p-8 mb-8">
-      <h3 class="text-2xl font-bold font-serif tracking-tight mb-6 flex items-center gap-3">
-        <span class="text-3xl">👥</span>
-        {{ "Community"|t }}
-      </h3>
-      <div class="space-y-6">
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "How do I share a recipe with the community?"|t }}</h4>
-          <p class="text-ink-2">{{ "When creating or editing a recipe, check the \"Share with community\" toggle. Shared recipes become publicly visible in community search, allowing other users to discover, favorite, and include them in their meal plans."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "What happens when someone favorites my shared recipe?"|t }}</h4>
-          <p class="text-ink-2">{{ "When a user favorites your recipe, they can include it in their meal plans. You are not notified when someone favorites your recipe. If you delete a shared recipe, it's automatically removed from all users' favorites."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "What are recipe snapshots?"|t }}</h4>
-          <p class="text-ink-2">{{ "When meal plans are generated, the system creates complete snapshots/copies of all referenced recipes (including community recipes). This ensures meal plan integrity if the original recipe owner deletes or modifies their recipe. Historical meal plans always retain the original recipe data."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "Can I rate and review community recipes?"|t }}</h4>
-          <p class="text-ink-2">{{ "Yes. All users (free and premium) can rate and review community recipes. Ratings help maintain quality - low-rated recipes are buried in search results. There's no pre-approval required; the community self-moderates through feedback."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "Can free tier users share recipes?"|t }}</h4>
-          <p class="text-ink-2">{{ "No. Creating, editing, and sharing recipes requires a Premium subscription. Free tier users can browse and view community recipes in read-only mode."|t }}</p>
+  {# ── Still need help CTA ──────────────────────────────────── #}
+  <section class="container mx-auto px-5 md:px-12 max-w-6xl pb-12 md:pb-16">
+    <div class="relative overflow-hidden rounded-3xl text-white text-center px-7 py-10 md:py-14" style="background: linear-gradient(160deg, #2f7d4f, #3e9968);">
+      <div class="absolute inset-0 opacity-[0.08] pointer-events-none" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 24px 24px;"></div>
+      <div class="relative">
+        <div class="font-mono text-[11px] text-white/80 uppercase tracking-widest">{{ "Still need help?"|t }}</div>
+        <h3 class="font-serif text-3xl md:text-4xl tracking-tight mt-2 mb-2.5">{{ "We reply within 24 hours"|t }}</h3>
+        <p class="text-sm md:text-base text-white/85 max-w-md mx-auto mb-6">{{ "Real humans who actually use the app. No chatbots, no ticket queue."|t }}</p>
+        <div class="flex flex-wrap justify-center gap-2.5">
+          <a href="/contact" class="inline-flex items-center gap-2 px-5 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition shadow-sm">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 7l9 6 9-6"/></svg>
+            {{ "Contact support"|t }}
+          </a>
+          <a href="https://github.com/timayz/imkitchen/discussions" class="inline-flex items-center px-5 py-3 bg-white/15 text-white font-semibold rounded-xl border border-white/25 hover:bg-white/25 transition">
+            {{ "Community forum"|t }}
+          </a>
         </div>
       </div>
     </div>
-
-    <!-- Account & Billing FAQs -->
-    <div id="account-billing" class="bg-paper rounded-xl shadow-md p-8 mb-8">
-      <h3 class="text-2xl font-bold font-serif tracking-tight mb-6 flex items-center gap-3">
-        <span class="text-3xl">💳</span>
-        {{ "Account & Billing"|t }}
-      </h3>
-      <div class="space-y-6">
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "What's the difference between Free and Premium?"|t }}</h4>
-          <p class="text-ink-2">
-            {{ "<strong>Free:</strong> Read-only access. Browse community recipes, view your existing recipes and meal plans, preview kitchen tools.<br><strong>Premium ($4.99/mo or $47.90/yr):</strong> Create and edit recipes, generate personalized meal plans, use step-by-step kitchen tools, bulk import recipes, priority support, early access to features."|t }}
-          </p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "How do I upgrade to Premium?"|t }}</h4>
-          <p class="text-ink-2">{{ "Click any \"Upgrade to Premium\" button throughout the app, or go to your Profile/Settings page and select the subscription option. Choose monthly ($4.99/mo) or annual ($47.90/yr, 20% savings) billing. Enter your payment information and confirm."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "Can I cancel my subscription anytime?"|t }}</h4>
-          <p class="text-ink-2">{{ "Yes. Cancel anytime through your account settings. You'll retain premium access until the end of your paid period, then automatically revert to the free tier. No refunds are provided for partial months or unused portions of annual subscriptions."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "What happens to my data when I downgrade to free?"|t }}</h4>
-          <p class="text-ink-2">{{ "When downgrading, your account switches to read-only mode. All your recipes and meal plans are preserved and remain viewable. You can no longer create, edit, generate, or import — upgrade anytime to restore write access."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "Do subscriptions auto-renew?"|t }}</h4>
-          <p class="text-ink-2">{{ "Yes. Subscriptions automatically renew at the end of each billing period (monthly or annual). You'll receive an email notification before renewal. Cancel anytime to prevent renewal."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "What payment methods do you accept?"|t }}</h4>
-          <p class="text-ink-2">{{ "We accept all major credit cards (Visa, MasterCard, American Express, Discover) processed through secure PCI-DSS compliant payment processors. We do not store full card numbers."|t }}</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Technical Support FAQs -->
-    <div id="technical" class="bg-paper rounded-xl shadow-md p-8 mb-8">
-      <h3 class="text-2xl font-bold font-serif tracking-tight mb-6 flex items-center gap-3">
-        <span class="text-3xl">🔧</span>
-        {{ "Technical Support"|t }}
-      </h3>
-      <div class="space-y-6">
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "Which browsers are supported?"|t }}</h4>
-          <p class="text-ink-2">{{ "We support modern browsers: Chrome 90+, Firefox 88+, Safari 14+, and Edge 90+. For best experience, keep your browser updated to the latest version."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "Is the app mobile-responsive?"|t }}</h4>
-          <p class="text-ink-2">{{ "Yes. imkitchen is a Progressive Web App (PWA) designed mobile-first with touch-optimized interfaces, week carousel navigation, and responsive layouts. It works on iOS Safari, Android Chrome, and can be installed as a standalone app."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "Why can't I log in?"|t }}</h4>
-          <p class="text-ink-2">{{ "Common login issues: (1) Check your email/password are correct, (2) Clear browser cache and cookies, (3) Try password reset if forgotten, (4) If account is suspended by admin, you won't be able to log in - contact support."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "How long does meal plan generation take?"|t }}</h4>
-          <p class="text-ink-2">{{ "Multi-week generation completes in under 5 seconds for up to 5 weeks (P95 performance). If generation takes longer, check your internet connection or contact support."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "What if my JSON import fails?"|t }}</h4>
-          <p class="text-ink-2">{{ "The import summary shows which recipes failed and why. Common issues: (1) Invalid JSON format, (2) Missing required fields, (3) File size exceeding 10MB, (4) Duplicate recipes. Review the JSON Schema documentation and ensure your files match the required structure. Only 100% valid recipes are imported."|t }}</p>
-        </div>
-        <div>
-          <h4 class="font-bold text-lg mb-2">{{ "Can I use the app offline?"|t }}</h4>
-          <p class="text-ink-2">{{ "Offline recipe access is supported. You can view previously loaded recipes and meal plans offline. Generating new meal plans, syncing data, and community features require an internet connection."|t }}</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Still Need Help -->
-  <div class="bg-gradient-to-br from-herb-500 to-herb-700 text-white rounded-xl shadow-md p-8 md:p-12 text-center">
-    <h2 class="text-3xl font-bold font-serif tracking-tight mb-4">{{ "Still need help?"|t }}</h2>
-    <p class="text-xl text-herb-50 mb-8">{{ "Our support team is here to assist you"|t }}</p>
-    <div class="flex flex-col md:flex-row gap-4 justify-center items-center">
-      <a href="/contact"
-        class="px-8 py-4 bg-paper text-primary-500 font-bold text-lg rounded-xl hover:bg-cream-2 transition">
-        {{ "Contact Support"|t }}
-      </a>
-      <div class="text-herb-50">
-        <div class="font-semibold">{{ "Response time: Within 48 hours"|t }}</div>
-        <div class="text-sm">{{ "Premium users get priority support"|t }}</div>
-      </div>
-    </div>
-  </div>
+  </section>
 </div>
-
 {% endblock %}

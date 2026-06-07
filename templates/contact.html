@@ -1,159 +1,218 @@
 {% extends "_public.html" %}
-{% block title %}{{ "Contact Us"|t }} - imkitchen{% endblock %}
+
+{% block title %} {{ "Contact — imkitchen"|t }} {% endblock %}
+
+{% block hero %}
+<section class="relative text-center border-b border-line-2" style="background: radial-gradient(ellipse at 50% 0%, #fde3cfcc 0%, #fbf5e9 70%);">
+  <div class="container mx-auto px-5 md:px-12 py-12 md:py-16 max-w-3xl">
+    <span class="inline-flex items-center gap-1.5 bg-paper text-primary-800 text-[11px] font-medium px-2.5 py-1 rounded-full border border-line-2 shadow-sm">
+      <svg class="w-2.5 h-2.5 text-primary-500" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 7l9 6 9-6"/></svg>
+      {{ "Contact"|t }}
+    </span>
+    <h1 class="font-serif text-4xl md:text-6xl text-ink leading-none tracking-tighter mt-5 mb-4">
+      {{ "Get in"|t }} <span class="italic text-primary-500">{{ "touch"|t }}</span>
+    </h1>
+    <p class="text-base md:text-lg text-ink-2 leading-relaxed max-w-xl mx-auto">
+      {{ "Questions, ideas, or just want to say hi? We read every message and usually reply within a day."|t }}
+    </p>
+  </div>
+</section>
+{% endblock %}
 
 {% block content %}
-<!-- Main Content -->
-<div class="container mx-auto px-4 py-16 max-w-4xl">
-  <!-- Header -->
-  <div class="text-center mb-12">
-    <h1 class="text-4xl font-bold font-serif tracking-tight mb-4">{{ "Contact Us"|t }}</h1>
-    <p class="text-xl text-ink-2">{{ "We'd love to hear from you. Send us a message and we'll respond as soon as possible."|t }}</p>
-  </div>
+<div class="bg-cream">
 
-  <div class="grid md:grid-cols-3 gap-8">
-    <!-- Contact Form -->
-    <div class="md:col-span-2 bg-paper rounded-xl shadow-md p-8">
-      <form action="/contact" method="post" ts-req="" ts-swap="skip">
-        <div class="mb-6">
-          <label for="name" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Your Name"|t }} *</label>
-          <input type="text" id="name" name="name" maxlength="25" placeholder="{{ "John Doe"|t }}"
-            class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            required />
-        </div>
+  {# ── 2-col body: form + side cards ─────────────────────────── #}
+  <section class="container mx-auto px-5 md:px-12 py-10 md:py-14 max-w-6xl">
+    <div class="grid md:grid-cols-[1.35fr_1fr] gap-4 md:gap-8">
 
-        <div class="mb-6">
-          <label for="email" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Email Address"|t }} *</label>
-          <input type="email" id="email" name="email" placeholder="{{ "you@example.com"|t }}"
-            class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            required />
-        </div>
+      {# Form card #}
+      <div class="bg-paper rounded-3xl border border-line-2 p-6 md:p-8 shadow-sm">
+        <div class="font-mono text-[10px] text-ink-3 uppercase tracking-widest">{{ "Send a message"|t }}</div>
+        <div class="font-serif text-2xl md:text-3xl text-ink tracking-tight mt-1 mb-5">{{ "Tell us what's on your mind"|t }}</div>
 
-        <div class="mb-6">
-          <label for="subject" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Subject"|t }} *</label>
-          <select id="subject" name="subject"
-            class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            required>
-            <option value="">{{ "Select a subject..."|t }}</option>
-            {% for subject in Subject::VARIANTS %}
-            <option value="{{ subject }}">{{ subject.as_ref()|t }}</option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <div class="mb-6">
-          <label for="message" class="block text-sm font-semibold text-ink-2 mb-2">{{ "Message"|t }} *</label>
-          <textarea id="message" name="message" maxlength="2000" rows="8" placeholder="{{ "Tell us how we can help you..."|t }}"
-            class="w-full px-4 py-3 border border-line rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            required></textarea>
-        </div>
-
-        <button type="submit"
-          class="w-full bg-primary-500 text-white font-semibold py-3 rounded-xl hover:bg-primary-600 transition">
-          {{ "Send Message"|t }}
-        </button>
-
-        <p class="text-sm text-ink-3 mt-4 text-center">
-          {{ "We typically respond within 24-48 hours"|t }}
-        </p>
-      </form>
-    </div>
-
-    <!-- Contact Info & FAQ -->
-    <div class="space-y-6">
-      <!-- Contact Information -->
-      <div class="bg-paper rounded-xl shadow-md p-6">
-        <h3 class="font-bold text-lg mb-4">{{ "Contact Information"|t }}</h3>
-        <div class="space-y-4 text-sm">
-          <div>
-            <div class="text-ink-2 mb-1">{{ "Email"|t }}</div>
-            <a href="mailto:support@imkitchen.app" class="font-semibold text-primary-500 hover:text-primary-600">
-              support@imkitchen.app
-            </a>
+        <form action="/contact" method="post" ts-req="" ts-swap="skip" class="grid gap-3.5">
+          <div class="grid md:grid-cols-2 gap-3.5">
+            <div>
+              <label for="name" class="block text-xs font-medium text-ink-2 mb-1.5">{{ "Name"|t }} <span class="text-primary-500">*</span></label>
+              <input id="name" name="name" type="text" maxlength="25" required placeholder="{{ "Jane Cooper"|t }}"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-cream border border-line text-sm text-ink focus:outline-none focus:border-ink-3 transition" />
+            </div>
+            <div>
+              <label for="email" class="block text-xs font-medium text-ink-2 mb-1.5">{{ "Email"|t }} <span class="text-primary-500">*</span></label>
+              <input id="email" name="email" type="email" required placeholder="{{ "jane@example.com"|t }}"
+                class="w-full px-3.5 py-2.5 rounded-xl bg-cream border border-line text-sm text-ink focus:outline-none focus:border-ink-3 transition" />
+            </div>
           </div>
+
+          {# Subject chips — radio buttons styled as pills #}
           <div>
-            <div class="text-ink-2 mb-1">{{ "Response Time"|t }}</div>
-            <div class="font-semibold">{{ "24-48 hours"|t }}</div>
+            <label class="block text-xs font-medium text-ink-2 mb-1.5">{{ "What's this about?"|t }} <span class="text-primary-500">*</span></label>
+            <div class="flex flex-wrap gap-1.5">
+              {% for subject in Subject::VARIANTS %}
+              <label class="cursor-pointer">
+                <input type="radio" name="subject" value="{{ subject }}" class="peer sr-only" {% if loop.first %}required checked{% endif %} />
+                <span class="inline-block px-3 py-2 rounded-full text-xs font-medium border border-line bg-paper text-ink-2 peer-checked:bg-ink peer-checked:text-cream peer-checked:border-ink transition">{{ subject.as_ref()|t }}</span>
+              </label>
+              {% endfor %}
+            </div>
           </div>
+
           <div>
-            <div class="text-ink-2 mb-1">{{ "Support Hours"|t }}</div>
-            <div class="font-semibold">{{ "Mon-Fri, 9am-5pm EST"|t }}</div>
+            <label for="message" class="block text-xs font-medium text-ink-2 mb-1.5">{{ "Message"|t }} <span class="text-primary-500">*</span></label>
+            <textarea id="message" name="message" rows="6" maxlength="2000" required placeholder="{{ "Share the details — the more specific, the faster we can help."|t }}"
+              class="w-full px-3.5 py-3 rounded-xl bg-cream border border-line text-sm text-ink focus:outline-none focus:border-ink-3 transition resize-none leading-relaxed"></textarea>
           </div>
-        </div>
+
+          <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition shadow-sm">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M22 2L11 13"/><path stroke-linecap="round" stroke-linejoin="round" d="M22 2l-7 20-4-9-9-4z"/></svg>
+            {{ "Send message"|t }}
+          </button>
+
+          <p class="text-[11px] text-ink-3 text-center leading-relaxed">
+            {{ "By sending, you agree to our"|t }} <a href="/policy" class="underline">{{ "privacy policy"|t }}</a>. {{ "No spam — ever."|t }}
+          </p>
+        </form>
       </div>
 
-      <!-- Quick Help -->
-      <div class="bg-paper rounded-xl shadow-md p-6">
-        <h3 class="font-bold text-lg mb-4">{{ "Quick Help"|t }}</h3>
-        <div class="space-y-3 text-sm">
-          <a href="/help" class="block text-primary-500 hover:text-primary-600 font-semibold">
-            📚 {{ "Help Center"|t }}
+      {# Side cards #}
+      <div class="grid gap-3.5 content-start">
+
+        <div class="bg-paper rounded-2xl border border-line-2 p-5 shadow-sm">
+          <div class="flex items-center gap-2.5">
+            <div class="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+              <svg class="w-4 h-4 text-primary-800" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 7l9 6 9-6"/></svg>
+            </div>
+            <div>
+              <div class="font-mono text-[10px] text-ink-3 uppercase tracking-widest">{{ "Direct email"|t }}</div>
+              <a href="mailto:support@imkitchen.app" class="text-base font-semibold text-ink">support@imkitchen.app</a>
+            </div>
+          </div>
+          <p class="text-xs text-ink-2 leading-relaxed mt-3">
+            {{ "Best for account, billing, or anything you want kept private. Typical response:"|t }} <strong class="text-ink">{{ "under 24 hours"|t }}</strong>.
+          </p>
+        </div>
+
+        <div class="bg-paper rounded-2xl border border-line-2 p-5 shadow-sm">
+          <div class="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-2.5">{{ "Response times"|t }}</div>
+          <div class="grid gap-2">
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-herb-500"></span>
+              <div class="text-sm text-ink-2 flex-1">{{ "General"|t }}</div>
+              <div class="font-mono text-xs text-ink">&lt; 24 {{ "hours"|t }}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-primary-500"></span>
+              <div class="text-sm text-ink-2 flex-1">{{ "Technical"|t }}</div>
+              <div class="font-mono text-xs text-ink">&lt; 12 {{ "hours"|t }}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-meal-side"></span>
+              <div class="text-sm text-ink-2 flex-1">{{ "Billing"|t }}</div>
+              <div class="font-mono text-xs text-ink">&lt; 4 {{ "hours"|t }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-paper rounded-2xl border border-line-2 p-5 shadow-sm">
+          <div class="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-2.5">{{ "Quick help"|t }}</div>
+
+          <a href="/help" class="flex items-center gap-2.5 py-2.5 border-t border-line-2 hover:opacity-90 transition">
+            <div class="w-8 h-8 rounded-lg bg-cream flex items-center justify-center shrink-0">
+              <svg class="w-3.5 h-3.5 text-ink-2" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2V5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M4 19a2 2 0 012-2h13"/></svg>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-semibold text-ink">{{ "Browse help center"|t }}</div>
+              <div class="text-[11px] text-ink-3 mt-0.5">{{ "40+ articles"|t }}</div>
+            </div>
+            <svg class="w-3.5 h-3.5 text-ink-3" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </a>
-          <a href="/help" class="block text-primary-500 hover:text-primary-600 font-semibold">
-            💬 {{ "FAQs"|t }}
+          <a href="/register" class="flex items-center gap-2.5 py-2.5 border-t border-line-2 hover:opacity-90 transition">
+            <div class="w-8 h-8 rounded-lg bg-cream flex items-center justify-center shrink-0">
+              <svg class="w-3.5 h-3.5 text-ink-2" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 4.5L18.5 9l-4.6 1.5L12 15l-1.9-4.5L5.5 9l4.6-1.5z"/></svg>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-semibold text-ink">{{ "Try it free"|t }}</div>
+              <div class="text-[11px] text-ink-3 mt-0.5">{{ "No credit card"|t }}</div>
+            </div>
+            <svg class="w-3.5 h-3.5 text-ink-3" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </a>
-          <!-- <a href="#" class="block text-primary-500 hover:text-primary-600 font-semibold"> -->
-          <!--   📖 API Documentation -->
-          <!-- </a> -->
+          <a href="https://github.com/timayz/imkitchen/discussions" class="flex items-center gap-2.5 py-2.5 border-t border-line-2 hover:opacity-90 transition">
+            <div class="w-8 h-8 rounded-lg bg-cream flex items-center justify-center shrink-0">
+              <svg class="w-3.5 h-3.5 text-ink-2" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="8" r="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 15c2 .5 4 2 4 5"/></svg>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-semibold text-ink">{{ "Community forum"|t }}</div>
+              <div class="text-[11px] text-ink-3 mt-0.5">{{ "Ask the cooks"|t }}</div>
+            </div>
+            <svg class="w-3.5 h-3.5 text-ink-3" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </a>
         </div>
       </div>
-
-      <!-- Social Media -->
-      <!-- <div class="bg-white rounded-lg shadow-lg p-6"> -->
-      <!--   <h3 class="font-bold text-lg mb-4">Follow Us</h3> -->
-      <!--   <div class="flex gap-3"> -->
-      <!--     <a href="#" -->
-      <!--       class="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center hover:bg-blue-600"> -->
-      <!--       F -->
-      <!--     </a> -->
-      <!--     <a href="#" -->
-      <!--       class="w-10 h-10 bg-blue-400 text-white rounded-full flex items-center justify-center hover:bg-blue-500"> -->
-      <!--       T -->
-      <!--     </a> -->
-      <!--     <a href="#" -->
-      <!--       class="w-10 h-10 bg-pink-500 text-white rounded-full flex items-center justify-center hover:bg-pink-600"> -->
-      <!--       I -->
-      <!--     </a> -->
-      <!--   </div> -->
-      <!-- </div> -->
     </div>
-  </div>
+  </section>
 
-  <!-- Common Questions -->
-  <div class="mt-16">
-    <h2 class="text-3xl font-bold font-serif tracking-tight text-center mb-8">{{ "Frequently Asked Questions"|t }}</h2>
-    <div class="grid md:grid-cols-2 gap-6">
-      <!-- FAQ 1 -->
-      <div class="bg-paper rounded-xl shadow-md p-6">
-        <h3 class="font-bold mb-2">{{ "How do I upgrade to Premium?"|t }}</h3>
-        <p class="text-ink-2 text-sm">
-          {{ "You can upgrade to Premium from your profile settings or dashboard. Choose between monthly ($4.99/mo) or annual ($47.90/yr) plans."|t }}
-        </p>
-      </div>
-
-      <!-- FAQ 2 -->
-      <div class="bg-paper rounded-xl shadow-md p-6">
-        <h3 class="font-bold mb-2">{{ "Can I import my existing recipes?"|t }}</h3>
-        <p class="text-ink-2 text-sm">
-          {{ "Yes! Use our bulk import feature with JSON files. Download our schema documentation for the correct format."|t }}
-        </p>
-      </div>
-
-      <!-- FAQ 3 -->
-      <div class="bg-paper rounded-xl shadow-md p-6">
-        <h3 class="font-bold mb-2">{{ "How does meal plan generation work?"|t }}</h3>
-        <p class="text-ink-2 text-sm">
-          {{ "Our algorithm generates meal plans for all remaining weeks of the current month, considering your dietary restrictions, cuisine preferences, and available recipes."|t }}
-        </p>
-      </div>
-
-      <!-- FAQ 4 -->
-      <div class="bg-paper rounded-xl shadow-md p-6">
-        <h3 class="font-bold mb-2">{{ "Can I cancel my subscription anytime?"|t }}</h3>
-        <p class="text-ink-2 text-sm">
-          {{ "Yes, you can cancel anytime from your profile settings. You'll retain Premium access until the end of your billing period."|t }}
-        </p>
-      </div>
+  {# ── FAQ ─────────────────────────────────────────────────────── #}
+  <section class="container mx-auto px-5 md:px-12 pb-16 max-w-3xl">
+    <div class="text-center mb-7 md:mb-8">
+      <div class="font-mono text-[10px] text-ink-3 uppercase tracking-widest">{{ "FAQ"|t }}</div>
+      <h2 class="font-serif text-2xl md:text-4xl text-ink leading-tight tracking-tight mt-1.5">{{ "Before you write"|t }}</h2>
     </div>
-  </div>
+
+    <div class="grid gap-2">
+      <details class="group bg-paper rounded-2xl border border-line-2 overflow-hidden" open>
+        <summary class="flex items-center gap-2.5 px-5 py-4 cursor-pointer list-none">
+          <span class="flex-1 text-sm md:text-base font-semibold text-ink leading-snug">{{ "How does weekly meal generation work?"|t }}</span>
+          <span class="w-7 h-7 rounded-xl bg-cream flex items-center justify-center transition group-open:rotate-45">
+            <svg class="w-3.5 h-3.5 text-ink-2" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+          </span>
+        </summary>
+        <p class="px-5 pb-5 text-sm text-ink-2 leading-relaxed">{{ "Pick a window of weeks and imkitchen assembles a plan from your favourites — balancing cuisines, prep time, and leftover use. Every meal is swappable, and a fresh generation takes about two seconds."|t }}</p>
+      </details>
+
+      <details class="group bg-paper rounded-2xl border border-line-2 overflow-hidden">
+        <summary class="flex items-center gap-2.5 px-5 py-4 cursor-pointer list-none">
+          <span class="flex-1 text-sm md:text-base font-semibold text-ink leading-snug">{{ "Can I import my existing recipes?"|t }}</span>
+          <span class="w-7 h-7 rounded-xl bg-cream flex items-center justify-center transition group-open:rotate-45">
+            <svg class="w-3.5 h-3.5 text-ink-2" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+          </span>
+        </summary>
+        <p class="px-5 pb-5 text-sm text-ink-2 leading-relaxed">{{ "Yes — upload a JSON export, up to 20 recipes per batch. The importer reports successes, duplicates, and failures so you can fix and retry."|t }}</p>
+      </details>
+
+      <details class="group bg-paper rounded-2xl border border-line-2 overflow-hidden">
+        <summary class="flex items-center gap-2.5 px-5 py-4 cursor-pointer list-none">
+          <span class="flex-1 text-sm md:text-base font-semibold text-ink leading-snug">{{ "What's the difference between Free and Premium?"|t }}</span>
+          <span class="w-7 h-7 rounded-xl bg-cream flex items-center justify-center transition group-open:rotate-45">
+            <svg class="w-3.5 h-3.5 text-ink-2" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+          </span>
+        </summary>
+        <p class="px-5 pb-5 text-sm text-ink-2 leading-relaxed">
+          {{ "Free is read-only."|t }}
+          {% if let Ok(config) = "config"|value::<crate::config::Config> %}
+            {% if let Some(premium) = config.premium %}
+            {{ "Premium ("|t }}${{ *premium.monthly_price|amount }}{{ "/mo or"|t }} ${{ premium.annual_price()|amount }}{{ "/yr) unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features."|t }}
+            {% else %}
+            {{ "Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features."|t }}
+            {% endif %}
+          {% endif %}
+        </p>
+      </details>
+
+      <details class="group bg-paper rounded-2xl border border-line-2 overflow-hidden">
+        <summary class="flex items-center gap-2.5 px-5 py-4 cursor-pointer list-none">
+          <span class="flex-1 text-sm md:text-base font-semibold text-ink leading-snug">{{ "How do I cancel my subscription?"|t }}</span>
+          <span class="w-7 h-7 rounded-xl bg-cream flex items-center justify-center transition group-open:rotate-45">
+            <svg class="w-3.5 h-3.5 text-ink-2" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/></svg>
+          </span>
+        </summary>
+        <p class="px-5 pb-5 text-sm text-ink-2 leading-relaxed">{{ "Settings → Billing → Cancel. Your plan stays active until the end of the billing period, and your recipes are kept forever."|t }}</p>
+      </details>
+    </div>
+
+    <div class="text-center text-sm text-ink-3 mt-6">
+      {{ "Didn't find it?"|t }} <a href="/help" class="text-primary-800 font-medium hover:underline">{{ "Search the help center"|t }}</a>
+    </div>
+  </section>
 </div>
 {% endblock %}

@@ -1,417 +1,459 @@
 {% extends "_base.html" %}
 {%- import "_footer.html" as scope -%}
 
-{% block title %} {{ "imkitchen - Intelligent Meal Planning"|t }} {% endblock %}
+{% block title %} {{ "imkitchen — Cook more. Plan less."|t }} {% endblock %}
 
 {% block body %}
-<body>
-    <main>
-    <!-- Nav -->
-    <div class="bg-cream border-b border-line-2 relative z-10">
-        <nav class="container mx-auto px-4">
-            <div class="flex items-center justify-between h-16">
-              <a href="/"><div class="text-2xl font-serif font-bold text-ink">🍳 imkitchen</div></a>
+<body class="bg-cream">
+  <main>
 
-                {% if show_nav %}
-                <!-- Desktop Navigation -->
-                <div class="hidden md:flex gap-4">
-                    <a href="/login" class="px-4 py-2 text-ink hover:bg-ink/5 rounded-xl transition">{{ "Login"|t }}</a>
-                    <a href="/register" class="px-6 py-2 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition">{{ "Get Started"|t }}</a>
-                </div>
+  {# ── Nav ─────────────────────────────────────────────────────── #}
+  <nav class="bg-cream border-b border-line-2 relative z-30">
+    <div class="container mx-auto px-5 md:px-12">
+      <div class="flex items-center h-16 md:h-20 gap-4">
 
-                <!-- Mobile Menu Button -->
-                <label for="mobile-menu-button" class="md:hidden p-2 text-ink hover:bg-ink/5 rounded-xl transition cursor-pointer" role="button" aria-label="{{ "Toggle navigation menu"|t }}">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-                    </svg>
-                </label>
-                {% endif %}
-            </div>
+        <a href="/" class="flex items-center gap-2.5 shrink-0" aria-label="imkitchen">
+          <span class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-linear-to-br from-primary-500 to-primary-300 text-white font-serif text-lg shadow-sm">k</span>
+          <span class="font-serif text-xl md:text-2xl text-ink tracking-tight leading-none">imkitchen</span>
+        </a>
 
-            <input id="mobile-menu-button" type="checkbox" aria-label="{{ "Toggle navigation menu"|t }}">
-
-            <!-- Mobile Navigation -->
-            <div id="mobile-menu" class="hidden md:hidden mt-4 pb-4">
-                <div class="flex flex-col gap-2">
-                    <a href="/login" class="px-4 py-3 text-ink hover:bg-ink/5 rounded-xl transition text-center">{{ "Login"|t }}</a>
-                    <a href="/register" class="px-4 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition text-center">{{ "Get Started"|t }}</a>
-                </div>
-            </div>
-        </nav>
-    </div>
-
-    <!-- Hero Section -->
-    <div class="bg-linear-to-br from-primary-100 to-cream" style="background: radial-gradient(ellipse at 80% 20%, #fde3cf 0%, #fbf5e9 55%);">
-        <div class="container mx-auto px-4 py-20 text-center">
-            <h1 class="text-5xl md:text-7xl font-serif font-bold tracking-tight text-ink mb-6">{{ "Cook More."|t }} <em class="text-primary-500">{{ "Plan Less."|t }}</em></h1>
-            <p class="text-xl md:text-2xl mb-8 text-ink-2 max-w-3xl mx-auto">
-                {{ "Intelligent meal planning that unlocks your entire recipe collection. Generate weeks of meals in seconds with automatic accompaniment pairing."|t }}
-            </p>
-            <div class="flex gap-4 justify-center flex-wrap">
-                <a href="/register" class="px-8 py-4 bg-primary-500 text-white font-bold text-lg rounded-xl hover:bg-primary-600 transition">
-                    {{ "Start Planning Free"|t }}
-                </a>
-                <a href="/#features" class="px-8 py-4 bg-paper text-ink font-bold text-lg rounded-xl border border-line-2 hover:bg-cream transition">
-                    {{ "See How It Works"|t }}
-                </a>
-            </div>
-            <p class="mt-4 text-ink-3 text-sm">{{ "No credit card required • Free tier includes 1 week visibility"|t }}</p>
+        <div class="hidden md:flex items-center gap-7 ml-8">
+          <a href="#features" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Features"|t }}</a>
+          <a href="#pricing" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Pricing"|t }}</a>
+          <a href="/help" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Help"|t }}</a>
+          <a href="/contact" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Contact"|t }}</a>
         </div>
-    </div>
 
-    <!-- Problem Statement -->
-    <div class="bg-paper py-16">
-        <div class="container mx-auto px-4 max-w-4xl text-center">
-            <h2 class="text-3xl md:text-4xl font-serif font-bold tracking-tight text-ink mb-6">{{ "You Have 100 Saved Recipes."|t }} <em class="text-primary-500">{{ "You Cook the Same 10."|t }}</em></h2>
-            <p class="text-xl text-ink-2 mb-8">
-                {{ "Sound familiar? You're avoiding complex recipes not because you can't cook them, but because planning accompaniments, timing prep work, and coordinating multiple dishes is exhausting."|t }}
-            </p>
-            <div class="grid md:grid-cols-3 gap-8 text-left">
-                <div class="p-6 bg-cream rounded-2xl border border-line-2">
-                    <div class="text-4xl mb-3" aria-hidden="true">😰</div>
-                    <h3 class="font-serif font-bold text-lg mb-2 text-ink">{{ "Decision Fatigue"|t }}</h3>
-                    <p class="text-ink-2">{{ "Spending 30 minutes every week deciding what to cook"|t }}</p>
-                </div>
-                <div class="p-6 bg-cream rounded-2xl border border-line-2">
-                    <div class="text-4xl mb-3" aria-hidden="true">🍝</div>
-                    <h3 class="font-serif font-bold text-lg mb-2 text-ink">{{ "Incomplete Meals"|t }}</h3>
-                    <p class="text-ink-2">{{ "Forgetting to plan rice with curry or pasta with sauce"|t }}</p>
-                </div>
-                <div class="p-6 bg-cream rounded-2xl border border-line-2">
-                    <div class="text-4xl mb-3" aria-hidden="true">📅</div>
-                    <h3 class="font-serif font-bold text-lg mb-2 text-ink">{{ "Short-Term Planning"|t }}</h3>
-                    <p class="text-ink-2">{{ "Only planning one week ahead, missing bulk shopping savings"|t }}</p>
-                </div>
-            </div>
+        <div class="flex-1"></div>
+
+        {% if show_nav %}
+        <div class="hidden md:flex items-center gap-2.5">
+          <a href="/login" class="px-4 py-2 text-sm font-semibold text-ink rounded-xl border border-line hover:bg-cream-2 transition">{{ "Log in"|t }}</a>
+          <a href="/register" class="px-4 py-2 text-sm font-semibold text-cream bg-ink rounded-xl border border-ink hover:bg-ink-2 transition shadow-sm">{{ "Get started"|t }}</a>
         </div>
-    </div>
 
-    <!-- How It Works -->
-    <div id="features" class="bg-cream py-16">
-        <div class="container mx-auto px-4 max-w-6xl">
-            <h2 class="text-3xl md:text-4xl font-serif font-bold tracking-tight text-ink text-center mb-12">{{ "Meal Planning on"|t }} <em class="text-primary-500">{{ "Autopilot"|t }}</em></h2>
+        <a href="/register" class="md:hidden px-3.5 py-2 text-sm font-semibold text-cream bg-ink rounded-xl border border-ink shadow-sm">{{ "Get started"|t }}</a>
+        <label for="mobile-menu-button" class="md:hidden p-2 text-ink hover:bg-cream-2 rounded-xl transition cursor-pointer" role="button" aria-label="{{ "Toggle navigation menu"|t }}">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M3 12h18M3 18h18" />
+          </svg>
+        </label>
+        {% endif %}
+      </div>
 
-            <div class="grid md:grid-cols-2 gap-12 items-center mb-16">
-                <div>
-                    <div class="text-primary-500 font-bold mb-2">{{ "STEP 1"|t }}</div>
-                    <h3 class="text-2xl font-serif font-bold tracking-tight text-ink mb-4">{{ "Import or Create Your Recipes"|t }}</h3>
-                    <p class="text-ink-2 mb-4">
-                        {{ "Add your favorite recipes (appetizers, main courses, desserts, and accompaniments). Bulk import from JSON or create them one by one. Mark dietary restrictions and whether mains need sides."|t }}
-                    </p>
-                    <ul class="space-y-2 text-ink-2">
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "4 recipe types: appetizer, main, dessert, accompaniment"|t }}</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "Bulk JSON import (up to 20 files)"|t }}</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "Community recipe sharing"|t }}</span>
-                        </li>
-                    </ul>
-                </div>
-                <div class="bg-paper rounded-2xl shadow-md p-5 sm:p-8 border border-line-2">
-                    <div class="text-sm text-ink-3 mb-4">{{ "Recipe Library Preview"|t }}</div>
-                    <div class="space-y-3">
-                        <div class="flex items-center gap-3 p-3 bg-primary-50 rounded-xl border border-primary-200">
-                            <span class="text-2xl">🥗</span>
-                            <div>
-                                <div class="font-semibold text-ink">{{ "Caesar Salad"|t }}</div>
-                                <div class="text-sm text-ink-2">{{ "Appetizer • 15 min"|t }}</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 p-3 bg-primary-50 rounded-xl border border-primary-200">
-                            <span class="text-2xl">🍛</span>
-                            <div>
-                                <div class="font-semibold text-ink">{{ "Thai Red Curry"|t }}</div>
-                                <div class="text-sm text-ink-2">{{ "Main Course • 45 min"|t }}</div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 p-3 bg-primary-50 rounded-xl border border-primary-200">
-                            <span class="text-2xl">🍚</span>
-                            <div>
-                                <div class="font-semibold text-ink">{{ "Jasmine Rice"|t }}</div>
-                                <div class="text-sm text-ink-2">{{ "Accompaniment • 20 min"|t }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid md:grid-cols-2 gap-12 items-center mb-16">
-                <div class="order-2 md:order-1 bg-paper rounded-2xl shadow-md p-5 sm:p-8 border border-line-2">
-                    <div class="text-sm text-ink-3 mb-4">{{ "Generated Meal Plan"|t }}</div>
-                    <div class="space-y-4">
-                        <div class="border-l-4 border-primary-500 pl-4">
-                            <div class="font-bold text-ink">{{ "Monday, Nov 4"|t }}</div>
-                            <div class="text-sm text-ink-2 mt-1">🥗 {{ "Caesar Salad"|t }}</div>
-                            <div class="text-sm text-ink-2">🍛 {{ "Thai Red Curry"|t }} + 🍚 {{ "Jasmine Rice"|t }}</div>
-                            <div class="text-sm text-ink-2">🍰 {{ "Chocolate Mousse"|t }}</div>
-                        </div>
-                        <div class="border-l-4 border-line-2 pl-4">
-                            <div class="font-bold text-ink">{{ "Tuesday, Nov 5"|t }}</div>
-                            <div class="text-sm text-ink-2 mt-1">🍝 {{ "Pasta Carbonara"|t }} + 🥖 {{ "Garlic Bread"|t }}</div>
-                            <div class="text-sm text-ink-2">🍨 {{ "Tiramisu"|t }}</div>
-                        </div>
-                        <div class="border-l-4 border-line-2 pl-4 opacity-50">
-                            <div class="font-bold flex items-center gap-2 text-ink">
-                                {{ "Wednesday, Nov 6"|t }}
-                                <span class="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full">{{ "Premium"|t }}</span>
-                            </div>
-                            <div class="text-sm text-ink-3 mt-1">{{ "Upgrade to view all weeks →"|t }}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="order-1 md:order-2">
-                    <div class="text-primary-500 font-bold mb-2">{{ "STEP 2"|t }}</div>
-                    <h3 class="text-2xl font-serif font-bold tracking-tight text-ink mb-4">{{ "One-Click Month Generation"|t }}</h3>
-                    <p class="text-ink-2 mb-4">
-                        {{ "Click \"Generate\" and watch weeks of meals appear instantly. The algorithm considers your dietary restrictions, pairs main courses with appropriate sides, and ensures variety across weeks."|t }}
-                    </p>
-                    <ul class="space-y-2 text-ink-2">
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "Generates all remaining weeks of current month"|t }}</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "Automatic accompaniment pairing (rice with curry, pasta with sauce)"|t }}</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "Respects dietary restrictions and preferences"|t }}</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "No duplicate main courses across weeks"|t }}</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="grid md:grid-cols-2 gap-12 items-center">
-                <div>
-                    <div class="text-primary-500 font-bold mb-2">{{ "STEP 3"|t }}</div>
-                    <h3 class="text-2xl font-serif font-bold tracking-tight text-ink mb-4">{{ "Shop, Prep, Cook"|t }}</h3>
-                    <p class="text-ink-2 mb-4">
-                        {{ "Get weekly shopping lists with all ingredients (including accompaniments). Receive morning reminders for advance prep. Adjust or regenerate anytime."|t }}
-                    </p>
-                    <ul class="space-y-2 text-ink-2">
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "Separate shopping lists per week"|t }}</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "Morning prep reminders (8 AM daily)"|t }}</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1" aria-hidden="true">✓</span>
-                            <span>{{ "Unlimited regenerations to find perfect plan"|t }}</span>
-                        </li>
-                    </ul>
-                </div>
-                <div class="bg-paper rounded-2xl shadow-md p-5 sm:p-8 border border-line-2">
-                    <div class="text-sm text-ink-3 mb-4">{{ "Shopping List - Week 1"|t }}</div>
-                    <div class="space-y-3">
-                        <div>
-                            <div class="font-bold text-sm text-ink mb-2">{{ "Proteins"|t }}</div>
-                            <ul class="text-sm text-ink-2 space-y-1 ml-4">
-                                <li>• {{ "Chicken breast (500g)"|t }}</li>
-                                <li>• {{ "Salmon fillet (300g)"|t }}</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <div class="font-bold text-sm text-ink mb-2">{{ "Vegetables"|t }}</div>
-                            <ul class="text-sm text-ink-2 space-y-1 ml-4">
-                                <li>• {{ "Bell peppers (3)"|t }}</li>
-                                <li>• {{ "Tomatoes (6)"|t }}</li>
-                                <li>• {{ "Lettuce (1 head)"|t }}</li>
-                            </ul>
-                        </div>
-                        <div>
-                            <div class="font-bold text-sm text-ink mb-2">{{ "Pantry"|t }}</div>
-                            <ul class="text-sm text-ink-2 space-y-1 ml-4">
-                                <li>• {{ "Jasmine rice (1kg)"|t }}</li>
-                                <li>• {{ "Pasta (500g)"|t }}</li>
-                                <li>• {{ "Coconut milk (2 cans)"|t }}</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      {% if show_nav %}
+      <input id="mobile-menu-button" type="checkbox" aria-label="{{ "Toggle navigation menu"|t }}">
+      <div id="mobile-menu" class="hidden md:hidden pb-4">
+        <div class="flex flex-col gap-1 pt-2">
+          <a href="#features" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Features"|t }}</a>
+          <a href="#pricing" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Pricing"|t }}</a>
+          <a href="/help" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Help"|t }}</a>
+          <a href="/contact" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Contact"|t }}</a>
+          <a href="/login" class="mt-2 px-3 py-2.5 rounded-xl text-ink border border-line hover:bg-cream-2 transition text-sm font-semibold text-center">{{ "Log in"|t }}</a>
         </div>
+      </div>
+      {% endif %}
     </div>
+  </nav>
 
-    <!-- Key Features -->
-    <div class="bg-paper py-16">
-        <div class="container mx-auto px-4 max-w-6xl">
-            <h2 class="text-3xl md:text-4xl font-serif font-bold tracking-tight text-ink text-center mb-12">{{ "Everything You"|t }} <em class="text-primary-500">{{ "Need"|t }}</em></h2>
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="text-center p-6 bg-cream rounded-2xl border border-line-2">
-                    <div class="text-5xl mb-4" aria-hidden="true">🗓️</div>
-                    <h3 class="font-serif font-bold text-xl mb-2 text-ink">{{ "Month-Based Planning"|t }}</h3>
-                    <p class="text-ink-2">{{ "Generate all future weeks of current month in seconds. See the whole picture."|t }}</p>
-                </div>
-                <div class="text-center p-6 bg-cream rounded-2xl border border-line-2">
-                    <div class="text-5xl mb-4" aria-hidden="true">🍚</div>
-                    <h3 class="font-serif font-bold text-xl mb-2 text-ink">{{ "Smart Pairing"|t }}</h3>
-                    <p class="text-ink-2">{{ "Automatically pair mains with sides. Curry gets rice, pasta gets bread."|t }}</p>
-                </div>
-                <div class="text-center p-6 bg-cream rounded-2xl border border-line-2">
-                    <div class="text-5xl mb-4" aria-hidden="true">🎯</div>
-                    <h3 class="font-serif font-bold text-xl mb-2 text-ink">{{ "Preference-Aware"|t }}</h3>
-                    <p class="text-ink-2">{{ "Respects dietary restrictions and cuisine variety preferences."|t }}</p>
-                </div>
-                <div class="text-center p-6 bg-cream rounded-2xl border border-line-2">
-                    <div class="text-5xl mb-4" aria-hidden="true">🔄</div>
-                    <h3 class="font-serif font-bold text-xl mb-2 text-ink">{{ "Smart Rotation"|t }}</h3>
-                    <p class="text-ink-2">{{ "No duplicate main courses across weeks. Maximum variety guaranteed."|t }}</p>
-                </div>
-                <div class="text-center p-6 bg-cream rounded-2xl border border-line-2">
-                    <div class="text-5xl mb-4" aria-hidden="true">🛒</div>
-                    <h3 class="font-serif font-bold text-xl mb-2 text-ink">{{ "Shopping Lists"|t }}</h3>
-                    <p class="text-ink-2">{{ "Separate lists per week with ingredient grouping and quantity optimization."|t }}</p>
-                </div>
-                <div class="text-center p-6 bg-cream rounded-2xl border border-line-2">
-                    <div class="text-5xl mb-4" aria-hidden="true">👥</div>
-                    <h3 class="font-serif font-bold text-xl mb-2 text-ink">{{ "Community Sharing"|t }}</h3>
-                    <p class="text-ink-2">{{ "Share and discover recipes with ratings and reviews."|t }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
+  {# ── Hero ─────────────────────────────────────────────────────── #}
+  <section class="relative overflow-hidden" style="background: radial-gradient(ellipse at 80% 20%, #fde3cf 0%, #fbf5e9 55%);">
+    <div class="container mx-auto px-5 md:px-12 py-12 md:py-24">
+      <div class="grid md:grid-cols-[1.2fr_1fr] gap-10 md:gap-14 items-center">
 
-    <!-- Pricing -->
-    <div id="pricing" class="bg-cream py-16">
-        <div class="container mx-auto px-4 max-w-5xl">
-            <h2 class="text-3xl md:text-4xl font-serif font-bold tracking-tight text-ink text-center mb-4">{{ "Simple, Transparent"|t }} <em class="text-primary-500">{{ "Pricing"|t }}</em></h2>
-            <p class="text-center text-ink-2 mb-12">{{ "Start free. Upgrade when you're ready to create."|t }}</p>
-
-            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto pt-3">
-                <!-- Free Tier -->
-                <div class="bg-paper rounded-2xl shadow-md p-5 sm:p-8 border border-line-2">
-                    <h3 class="text-2xl font-serif font-bold text-ink mb-2">{{ "Free"|t }}</h3>
-                    <div class="text-3xl sm:text-4xl font-serif font-bold text-ink mb-6">$0<span class="text-lg text-ink-3 font-normal">{{ "/month"|t }}</span></div>
-                    <ul class="space-y-3 mb-8 min-w-0">
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1 shrink-0" aria-hidden="true">✓</span>
-                            <span class="text-ink-2">{{ "Browse community recipes"|t }}</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1 shrink-0" aria-hidden="true">✓</span>
-                            <span class="text-ink-2">{{ "Preview meal plans and kitchen tools"|t }}</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1 shrink-0" aria-hidden="true">✓</span>
-                            <span class="text-ink-2">{{ "Read-only access to all features"|t }}</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-primary-500 mt-1 shrink-0" aria-hidden="true">✓</span>
-                            <span class="text-ink-2">{{ "Upgrade anytime to create and edit"|t }}</span>
-                        </li>
-                    </ul>
-                    <a href="/register" class="block text-center px-6 py-3 bg-cream text-ink font-semibold rounded-xl border border-line-2 hover:bg-primary-50 transition">
-                        {{ "Get Started Free"|t }}
-                    </a>
-                </div>
-
-                <!-- Premium Tier -->
-                <div class="bg-linear-to-br from-herb-500 to-herb-700 text-white rounded-2xl shadow-md p-5 sm:p-8 relative overflow-visible">
-                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary-400 text-white px-4 py-1 rounded-full text-sm font-bold whitespace-nowrap">
-                        {{ "MOST POPULAR"|t }}
-                    </div>
-                    <h3 class="text-2xl font-serif font-bold mb-2">{{ "Premium"|t }}</h3>
-                    <div class="text-3xl sm:text-4xl font-serif font-bold mb-2">$4.99<span class="text-lg font-normal">{{ "/month"|t }}</span></div>
-                    <div class="text-sm mb-6 text-white/80">{{ "or $47.90/year"|t }} <span class="bg-primary-400 text-white px-2 py-0.5 rounded-full text-xs font-bold">{{ "save 20%"|t }}</span></div>
-                    <ul class="space-y-3 mb-8 min-w-0">
-                        <li class="flex items-start gap-2">
-                            <span class="text-white/80 mt-1 shrink-0" aria-hidden="true">✓</span>
-                            <span>{{ "Create and edit your own recipes"|t }}</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-white/80 mt-1 shrink-0" aria-hidden="true">✓</span>
-                            <span>{{ "Generate personalized meal plans"|t }}</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-white/80 mt-1 shrink-0" aria-hidden="true">✓</span>
-                            <span>{{ "Cook with step-by-step kitchen tools"|t }}</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-white/80 mt-1 shrink-0" aria-hidden="true">✓</span>
-                            <span>{{ "Bulk import recipes from the web"|t }}</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-white/80 mt-1 shrink-0" aria-hidden="true">✓</span>
-                            <span>{{ "Priority support"|t }}</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <span class="text-white/80 mt-1 shrink-0" aria-hidden="true">✓</span>
-                            <span>{{ "Early access to new features"|t }}</span>
-                        </li>
-                    </ul>
-                    <a href="/register" class="block text-center px-6 py-3 bg-primary-500 text-white font-bold rounded-xl hover:bg-primary-600 transition">
-                        {{ "Start Free Trial"|t }}
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Social Proof / Testimonials -->
-    <div class="bg-paper py-16">
-        <div class="container mx-auto px-4 max-w-6xl">
-            <h2 class="text-3xl font-serif font-bold tracking-tight text-ink text-center mb-12">{{ "What Home Cooks"|t }} <em class="text-primary-500">{{ "Say"|t }}</em></h2>
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="bg-cream p-6 rounded-2xl border border-line-2">
-                    <div class="flex gap-1 mb-3" role="img" aria-label="{{ "5 out of 5 stars"|t }}">
-                        <span class="text-primary-400" aria-hidden="true">★★★★★</span>
-                    </div>
-                    <p class="text-ink-2 mb-4 font-serif">{{ "\"Finally using recipes I saved years ago! The accompaniment pairing is genius - no more forgetting to make rice.\""|t }}</p>
-                    <div class="font-semibold text-ink">{{ "Sarah M."|t }}</div>
-                    <div class="text-sm text-ink-3">{{ "Busy mom of 3"|t }}</div>
-                </div>
-                <div class="bg-cream p-6 rounded-2xl border border-line-2">
-                    <div class="flex gap-1 mb-3" role="img" aria-label="{{ "5 out of 5 stars"|t }}">
-                        <span class="text-primary-400" aria-hidden="true">★★★★★</span>
-                    </div>
-                    <p class="text-ink-2 mb-4 font-serif">{{ "\"Planning a whole month at once saves SO much time. I can bulk shop and actually stick to my meal plan.\""|t }}</p>
-                    <div class="font-semibold text-ink">{{ "Michael T."|t }}</div>
-                    <div class="text-sm text-ink-3">{{ "Home cooking enthusiast"|t }}</div>
-                </div>
-                <div class="bg-cream p-6 rounded-2xl border border-line-2">
-                    <div class="flex gap-1 mb-3" role="img" aria-label="{{ "5 out of 5 stars"|t }}">
-                        <span class="text-primary-400" aria-hidden="true">★★★★★</span>
-                    </div>
-                    <p class="text-ink-2 mb-4 font-serif">{{ "\"The dietary restriction filtering is perfect. Every meal fits my preferences without me having to check manually.\""|t }}</p>
-                    <div class="font-semibold text-ink">{{ "Jessica L."|t }}</div>
-                    <div class="text-sm text-ink-3">{{ "Gluten-free household"|t }}</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Final CTA -->
-    <div class="bg-linear-to-br from-primary-500 to-primary-700 text-white py-16">
-        <div class="container mx-auto px-4 text-center max-w-3xl">
-            <h2 class="text-4xl font-serif font-bold tracking-tight mb-6">{{ "Ready to Cook More and Plan Less?"|t }}</h2>
-            <p class="text-xl mb-8 text-white/80">
-                {{ "Join thousands of home cooks who've unlocked their recipe collections. Start free, upgrade anytime."|t }}
-            </p>
-            <a href="/register" class="inline-block px-8 py-4 bg-white text-primary-600 font-bold text-lg rounded-xl hover:bg-cream transition">
-                {{ "Get Started Free"|t }}
+        {# Headline column #}
+        <div>
+          <div class="inline-flex items-center gap-1.5 bg-paper/95 backdrop-blur text-primary-800 text-xs font-medium px-3 py-1.5 rounded-full border border-line-2 shadow-sm">
+            <svg class="w-3 h-3 text-primary-500" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 4.5L18.5 9l-4.6 1.5L12 15l-1.9-4.5L5.5 9l4.6-1.5z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 16l.7 1.7 1.8.6-1.8.6-.7 1.7-.7-1.7-1.8-.6 1.8-.6z" />
+            </svg>
+            {{ "New · Smart meal pairing"|t }}
+          </div>
+          <h1 class="font-serif text-5xl md:text-7xl text-ink leading-[0.95] tracking-tighter mt-5">
+            {{ "Cook more."|t }}<br>
+            <em class="text-primary-500 not-italic"><span class="italic">{{ "Plan less."|t }}</span></em>
+          </h1>
+          <p class="text-lg md:text-xl text-ink-2 leading-relaxed mt-6 max-w-xl">
+            {{ "Intelligent meal planning that unlocks your entire recipe collection. Generate weeks of meals in seconds, with auto-paired sides and desserts."|t }}
+          </p>
+          <div class="flex flex-wrap gap-2.5 mt-7">
+            <a href="/register" class="inline-flex items-center justify-center px-6 py-3.5 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition shadow-sm">
+              {{ "Get started — free"|t }}
             </a>
-            <p class="mt-4 text-white/70 text-sm">{{ "No credit card required • Cancel anytime"|t }}</p>
+            <a href="#features" class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-paper text-ink font-semibold rounded-xl border border-line hover:bg-cream-2 transition">
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8V4z"/></svg>
+              {{ "See it in action"|t }}
+            </a>
+          </div>
+          <div class="flex flex-wrap gap-5 mt-8 text-sm text-ink-3">
+            <span class="flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              {{ "No credit card"|t }}
+            </span>
+            <span class="flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              {{ "Free tier included"|t }}
+            </span>
+            <span class="flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              {{ "Cancel anytime"|t }}
+            </span>
+          </div>
         </div>
+
+        {# Phone mockup column #}
+        <div class="relative h-[460px] md:h-[520px] order-first md:order-last hidden sm:block">
+
+          {# Phone frame #}
+          <div class="relative mx-auto w-[280px] h-[520px] rounded-[44px] bg-ink p-2.5" style="box-shadow: 0 40px 80px rgba(0,0,0,.22), 0 12px 24px rgba(0,0,0,.12);">
+            <div class="w-full h-full rounded-[36px] overflow-hidden bg-cream relative">
+              <div class="pt-10 px-5 pb-2">
+                <div class="font-mono text-[9px] text-ink-3 tracking-widest">{{ "TUESDAY · APR 21"|t }}</div>
+                <div class="font-serif text-2xl text-ink tracking-tight mt-0.5">{{ "Today's table"|t }}</div>
+              </div>
+              <div class="mx-4 mt-2 rounded-2xl p-3.5 relative overflow-hidden" style="background: linear-gradient(160deg, #fff3e4, #ffc99b);">
+                <div class="font-mono text-[9px] text-primary-800 uppercase tracking-widest">🍛 {{ "Main · 65m"|t }}</div>
+                <div class="font-serif text-xl text-ink tracking-tight mt-1 leading-none">{{ "Arroz con Pollo"|t }}</div>
+                <div class="absolute -right-2 -bottom-3 text-[70px] leading-none select-none">🍛</div>
+                <div class="mt-3.5 inline-flex items-center gap-1 bg-ink text-cream px-2.5 py-1.5 rounded-lg text-[11px] font-semibold">
+                  ▶ {{ "Start cooking"|t }}
+                </div>
+              </div>
+              <div class="pt-3.5 px-4">
+                <div class="font-mono text-[9px] text-ink-3 uppercase tracking-widest">{{ "This week"|t }}</div>
+                <div class="grid grid-cols-7 gap-1 mt-2">
+                  {# Each day cell #}
+                  <div class="bg-paper border border-line-2 rounded-lg py-1.5 text-center">
+                    <div class="font-mono text-[8px] text-ink opacity-70">M</div>
+                    <div class="font-serif text-[13px] text-ink leading-none mt-0.5">20</div>
+                    <div class="flex justify-center gap-px mt-1 min-h-[3px]"><span class="w-[3px] h-[3px] rounded-full bg-primary-500"></span><span class="w-[3px] h-[3px] rounded-full bg-meal-dessert"></span></div>
+                  </div>
+                  <div class="bg-primary-500 rounded-lg py-1.5 text-center">
+                    <div class="font-mono text-[8px] text-white opacity-70">T</div>
+                    <div class="font-serif text-[13px] text-white leading-none mt-0.5">21</div>
+                    <div class="flex justify-center gap-px mt-1 min-h-[3px]"><span class="w-[3px] h-[3px] rounded-full bg-white"></span><span class="w-[3px] h-[3px] rounded-full bg-white/70"></span><span class="w-[3px] h-[3px] rounded-full bg-white/50"></span></div>
+                  </div>
+                  <div class="bg-paper border border-line-2 rounded-lg py-1.5 text-center">
+                    <div class="font-mono text-[8px] text-ink opacity-70">W</div>
+                    <div class="font-serif text-[13px] text-ink leading-none mt-0.5">22</div>
+                    <div class="flex justify-center gap-px mt-1 min-h-[3px]"></div>
+                  </div>
+                  <div class="bg-paper border border-line-2 rounded-lg py-1.5 text-center">
+                    <div class="font-mono text-[8px] text-ink opacity-70">T</div>
+                    <div class="font-serif text-[13px] text-ink leading-none mt-0.5">23</div>
+                    <div class="flex justify-center gap-px mt-1 min-h-[3px]"><span class="w-[3px] h-[3px] rounded-full bg-primary-500"></span></div>
+                  </div>
+                  <div class="bg-paper border border-line-2 rounded-lg py-1.5 text-center">
+                    <div class="font-mono text-[8px] text-ink opacity-70">F</div>
+                    <div class="font-serif text-[13px] text-ink leading-none mt-0.5">24</div>
+                    <div class="flex justify-center gap-px mt-1 min-h-[3px]"><span class="w-[3px] h-[3px] rounded-full bg-primary-500"></span><span class="w-[3px] h-[3px] rounded-full bg-meal-dessert"></span></div>
+                  </div>
+                  <div class="bg-paper border border-line-2 rounded-lg py-1.5 text-center">
+                    <div class="font-mono text-[8px] text-ink opacity-70">S</div>
+                    <div class="font-serif text-[13px] text-ink leading-none mt-0.5">25</div>
+                    <div class="flex justify-center gap-px mt-1 min-h-[3px]"><span class="w-[3px] h-[3px] rounded-full bg-primary-500"></span><span class="w-[3px] h-[3px] rounded-full bg-meal-dessert"></span><span class="w-[3px] h-[3px] rounded-full bg-herb-500"></span></div>
+                  </div>
+                  <div class="bg-paper border border-line-2 rounded-lg py-1.5 text-center">
+                    <div class="font-mono text-[8px] text-ink opacity-70">S</div>
+                    <div class="font-serif text-[13px] text-ink leading-none mt-0.5">26</div>
+                    <div class="flex justify-center gap-px mt-1 min-h-[3px]"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {# Floating notification cards #}
+          <div class="hidden lg:flex absolute top-12 -left-6 lg:-left-10 bg-paper rounded-2xl shadow-lg px-3.5 py-2.5 gap-2 items-center -rotate-[4deg]">
+            <div class="w-7 h-7 rounded-xl bg-herb-100 flex items-center justify-center">
+              <svg class="w-3.5 h-3.5 text-herb-700" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 4.5L18.5 9l-4.6 1.5L12 15l-1.9-4.5L5.5 9l4.6-1.5z"/>
+              </svg>
+            </div>
+            <div>
+              <div class="font-semibold text-xs text-ink">{{ "Plan generated"|t }}</div>
+              <div class="text-[11px] text-ink-3">{{ "7 days · 15 meals"|t }}</div>
+            </div>
+          </div>
+
+          <div class="hidden lg:flex absolute bottom-16 -right-4 lg:-right-8 bg-paper rounded-2xl shadow-lg px-3.5 py-2.5 gap-2 items-center rotate-[3deg]">
+            <div class="w-7 h-7 rounded-xl bg-primary-100 flex items-center justify-center text-base">🍛</div>
+            <div>
+              <div class="font-semibold text-xs text-ink">{{ "Time to cook"|t }}</div>
+              <div class="text-[11px] text-ink-3">{{ "Arroz con Pollo"|t }}</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
+  </section>
 
-    </main>
+  {# ── Problem statement ───────────────────────────────────────── #}
+  <section class="bg-paper border-t border-line-2 py-14 md:py-20">
+    <div class="container mx-auto px-5 md:px-12 max-w-4xl text-center">
+      <div class="font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-4">{{ "The problem"|t }}</div>
+      <h2 class="font-serif text-3xl md:text-5xl text-ink leading-[1.05] tracking-tight">
+        {{ "You have 100 recipes saved."|t }}<br>
+        {{ "You cook the same"|t }} <span class="italic text-primary-500">{{ "ten"|t }}</span>.
+      </h2>
+      <p class="text-base md:text-lg text-ink-2 leading-relaxed max-w-2xl mx-auto mt-5">
+        {{ "Planning a week of meals is a choose-your-own-adventure of indecision. imkitchen reads your whole collection, your dietary needs, and your tastes — then builds a balanced, varied week in seconds."|t }}
+      </p>
+      <div class="grid grid-cols-3 gap-4 md:gap-8 mt-10 md:mt-12">
+        <div>
+          <div class="font-serif text-4xl md:text-6xl text-primary-500 leading-none tracking-tighter">100+</div>
+          <div class="text-xs md:text-sm text-ink-2 mt-2">{{ "recipes auto-organized"|t }}</div>
+        </div>
+        <div>
+          <div class="font-serif text-4xl md:text-6xl text-primary-500 leading-none tracking-tighter">3 {{ "sec"|t }}</div>
+          <div class="text-xs md:text-sm text-ink-2 mt-2">{{ "to generate a week"|t }}</div>
+        </div>
+        <div>
+          <div class="font-serif text-4xl md:text-6xl text-primary-500 leading-none tracking-tighter">$0</div>
+          <div class="text-xs md:text-sm text-ink-2 mt-2">{{ "to get started"|t }}</div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    <!-- Footer -->
-    {% call scope::footer() %}
-    {% endcall %}
+  {# ── How it works ────────────────────────────────────────────── #}
+  <section id="features" class="bg-cream py-16 md:py-24">
+    <div class="container mx-auto px-5 md:px-12 max-w-6xl">
+      <div class="text-center mb-10 md:mb-14">
+        <div class="font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-3.5">{{ "How it works"|t }}</div>
+        <h2 class="font-serif text-3xl md:text-5xl text-ink leading-[1.05] tracking-tight">
+          {{ "Three steps to the week's menu"|t }}
+        </h2>
+      </div>
+      <div class="grid md:grid-cols-3 gap-5">
+        <div class="bg-paper rounded-3xl p-7 border border-line-2">
+          <div class="w-14 h-14 rounded-2xl bg-primary-100 flex items-center justify-center text-3xl mb-5">📖</div>
+          <div class="font-mono text-[11px] text-primary-800 tracking-wider mb-2">{{ "Step 01"|t }}</div>
+          <h3 class="font-serif text-2xl text-ink tracking-tight mb-2.5">{{ "Save your recipes"|t }}</h3>
+          <p class="text-sm text-ink-2 leading-relaxed">{{ "Write your own, import by JSON, or save from the community. Starters, mains, sides, desserts."|t }}</p>
+        </div>
+        <div class="bg-paper rounded-3xl p-7 border border-line-2">
+          <div class="w-14 h-14 rounded-2xl bg-herb-100 flex items-center justify-center text-3xl mb-5">✨</div>
+          <div class="font-mono text-[11px] text-herb-700 tracking-wider mb-2">{{ "Step 02"|t }}</div>
+          <h3 class="font-serif text-2xl text-ink tracking-tight mb-2.5">{{ "Generate a plan"|t }}</h3>
+          <p class="text-sm text-ink-2 leading-relaxed">{{ "Pick how many days. The algorithm balances cuisines, respects your diet, and auto-pairs sides."|t }}</p>
+        </div>
+        <div class="bg-paper rounded-3xl p-7 border border-line-2">
+          <div class="w-14 h-14 rounded-2xl bg-meal-dessert-soft flex items-center justify-center text-3xl mb-5">🍳</div>
+          <div class="font-mono text-[11px] text-meal-dessert-ink tracking-wider mb-2">{{ "Step 03"|t }}</div>
+          <h3 class="font-serif text-2xl text-ink tracking-tight mb-2.5">{{ "Cook, step by step"|t }}</h3>
+          <p class="text-sm text-ink-2 leading-relaxed">{{ "Cooking Mode walks you through each recipe with timers, ingredient checklists, and the shopping list ready."|t }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {# ── Smart shopping spotlight ────────────────────────────────── #}
+  <section class="bg-paper py-16 md:py-24">
+    <div class="container mx-auto px-5 md:px-12 max-w-6xl">
+      <div class="grid md:grid-cols-2 gap-10 md:gap-14 items-center">
+        <div>
+          <div class="font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-3.5">{{ "Smart shopping"|t }}</div>
+          <h2 class="font-serif text-2xl md:text-4xl text-ink leading-[1.05] tracking-tight">
+            {{ "A shopping list that walks with you through the store."|t }}
+          </h2>
+          <p class="text-base text-ink-2 leading-relaxed mt-4">
+            {{ "Ingredients are grouped by aisle — produce, butcher, dairy, pantry — and sequenced into a path. No more zig-zag laps or forgotten garlic."|t }}
+          </p>
+          <ul class="grid gap-2.5 mt-6">
+            <li class="flex items-center gap-2.5 text-sm text-ink-2">
+              <span class="w-5 h-5 rounded-full bg-herb-100 flex items-center justify-center shrink-0">
+                <svg class="w-3 h-3 text-herb-700" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              </span>
+              {{ "Aisle-by-aisle grouping"|t }}
+            </li>
+            <li class="flex items-center gap-2.5 text-sm text-ink-2">
+              <span class="w-5 h-5 rounded-full bg-herb-100 flex items-center justify-center shrink-0">
+                <svg class="w-3 h-3 text-herb-700" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              </span>
+              {{ "Quantities merged across recipes"|t }}
+            </li>
+            <li class="flex items-center gap-2.5 text-sm text-ink-2">
+              <span class="w-5 h-5 rounded-full bg-herb-100 flex items-center justify-center shrink-0">
+                <svg class="w-3 h-3 text-herb-700" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              </span>
+              {{ "Check off as you go"|t }}
+            </li>
+          </ul>
+        </div>
+
+        {# Aisle path illustration #}
+        <div class="bg-cream rounded-3xl p-7 md:p-8 border border-line-2">
+          <div class="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-5">{{ "Your route — 28 items"|t }}</div>
+          <div class="flex items-center gap-1">
+            <div class="flex-1 flex flex-col items-center gap-1.5">
+              <div class="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-herb-500 flex items-center justify-center text-xl text-white shadow-md">🥬</div>
+              <div class="text-[11px] text-ink font-semibold">{{ "Produce"|t }}</div>
+              <div class="text-[10px] text-ink-3 font-mono">12</div>
+            </div>
+            <div class="w-3 md:w-5 h-0.5 bg-line shrink-0"></div>
+            <div class="flex-1 flex flex-col items-center gap-1.5">
+              <div class="w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center text-xl text-white shadow-md" style="background:#c4428d;">🥩</div>
+              <div class="text-[11px] text-ink font-semibold">{{ "Butcher"|t }}</div>
+              <div class="text-[10px] text-ink-3 font-mono">4</div>
+            </div>
+            <div class="w-3 md:w-5 h-0.5 bg-line shrink-0"></div>
+            <div class="flex-1 flex flex-col items-center gap-1.5">
+              <div class="w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center text-xl text-white shadow-md" style="background:#3b6fb0;">🧀</div>
+              <div class="text-[11px] text-ink font-semibold">{{ "Dairy"|t }}</div>
+              <div class="text-[10px] text-ink-3 font-mono">6</div>
+            </div>
+            <div class="w-3 md:w-5 h-0.5 bg-line shrink-0"></div>
+            <div class="flex-1 flex flex-col items-center gap-1.5">
+              <div class="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-primary-500 flex items-center justify-center text-xl text-white shadow-md">🍞</div>
+              <div class="text-[11px] text-ink font-semibold">{{ "Pantry"|t }}</div>
+              <div class="text-[10px] text-ink-3 font-mono">6</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {# ── Pricing ─────────────────────────────────────────────────── #}
+  <section id="pricing" class="bg-cream py-16 md:py-24">
+    <div class="container mx-auto px-5 md:px-12 max-w-5xl">
+      <div class="text-center mb-10 md:mb-12">
+        <div class="font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-3.5">{{ "Pricing"|t }}</div>
+        <h2 class="font-serif text-3xl md:text-5xl text-ink leading-[1.05] tracking-tight">
+          {{ "Simple."|t }} <span class="italic">{{ "Transparent."|t }}</span>
+        </h2>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+        {# Free tier #}
+        <div class="bg-paper rounded-3xl p-7 border border-line-2">
+          <div class="font-mono text-[11px] text-ink-3 uppercase tracking-widest">{{ "Free"|t }}</div>
+          <div class="flex items-baseline gap-1.5 mt-1.5 mb-4">
+            <span class="font-serif text-5xl text-ink tracking-tighter">$0</span>
+            <span class="text-sm text-ink-3">{{ "/ month"|t }}</span>
+          </div>
+          <a href="/register" class="block text-center w-full px-4 py-3 bg-cream-2 text-ink font-semibold rounded-xl border border-line hover:bg-cream transition">
+            {{ "Start free"|t }}
+          </a>
+          <ul class="grid gap-2.5 mt-5">
+            <li class="flex items-center gap-2 text-sm text-ink-2">
+              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              {{ "Browse community recipes"|t }}
+            </li>
+            <li class="flex items-center gap-2 text-sm text-ink-2">
+              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              {{ "Preview meal plans"|t }}
+            </li>
+            <li class="flex items-center gap-2 text-sm text-ink-2">
+              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              {{ "Read-only kitchen tools"|t }}
+            </li>
+            <li class="flex items-center gap-2 text-sm text-ink-2">
+              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              {{ "Upgrade anytime"|t }}
+            </li>
+          </ul>
+        </div>
+
+        {# Premium tier #}
+        <div class="rounded-3xl p-7 relative overflow-hidden text-white shadow-md" style="background: linear-gradient(160deg, #2c8551, #1f6d42);">
+          {% if let Ok(config) = "config"|value::<crate::config::Config> %}
+            {% if let Some(premium) = config.premium %}
+          <div class="absolute top-3.5 right-3.5 bg-[#ffd27a] text-primary-800 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide">
+            {{ "Save"|t }} {{ premium.annual_rate }}%
+          </div>
+          <div class="font-mono text-[11px] text-white/85 uppercase tracking-widest">{{ "Premium"|t }}</div>
+          <div class="flex items-baseline gap-1.5 mt-1.5 mb-4">
+            <span class="font-serif text-5xl tracking-tighter">${{ *premium.monthly_price|amount }}</span>
+            <span class="text-sm text-white/85">{{ "/ month"|t }}</span>
+          </div>
+            {% endif %}
+          {% endif %}
+          <a href="/register" class="block text-center w-full px-4 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition shadow-sm">
+            {{ "Go Premium"|t }}
+          </a>
+          <ul class="grid gap-2.5 mt-5">
+            <li class="flex items-center gap-2 text-sm">
+              <svg class="w-3.5 h-3.5 text-[#ffd27a] shrink-0" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              {{ "Create and edit your own recipes"|t }}
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <svg class="w-3.5 h-3.5 text-[#ffd27a] shrink-0" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              {{ "Generate personalized meal plans"|t }}
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <svg class="w-3.5 h-3.5 text-[#ffd27a] shrink-0" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              {{ "Step-by-step kitchen tools"|t }}
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <svg class="w-3.5 h-3.5 text-[#ffd27a] shrink-0" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              {{ "Bulk import from JSON"|t }}
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <svg class="w-3.5 h-3.5 text-[#ffd27a] shrink-0" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              {{ "Priority support"|t }}
+            </li>
+            <li class="flex items-center gap-2 text-sm">
+              <svg class="w-3.5 h-3.5 text-[#ffd27a] shrink-0" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
+              {{ "Early access to new features"|t }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {# ── Testimonials ────────────────────────────────────────────── #}
+  <section class="bg-paper py-14 md:py-20">
+    <div class="container mx-auto px-5 md:px-12 max-w-6xl">
+      <div class="grid md:grid-cols-3 gap-4">
+        <figure class="bg-cream rounded-3xl p-6 border border-line-2">
+          <div class="text-3xl mb-3.5">🥐</div>
+          <blockquote class="font-serif text-lg text-ink tracking-tight leading-snug">
+            {{ "\"I finally cook the recipes I pinned three years ago.\""|t }}
+          </blockquote>
+          <figcaption class="text-sm text-ink-3 mt-3.5">{{ "Léa · Paris"|t }}</figcaption>
+        </figure>
+        <figure class="bg-cream rounded-3xl p-6 border border-line-2">
+          <div class="text-3xl mb-3.5">🛒</div>
+          <blockquote class="font-serif text-lg text-ink tracking-tight leading-snug">
+            {{ "\"The shopping list by aisle saves me 30 minutes every Saturday.\""|t }}
+          </blockquote>
+          <figcaption class="text-sm text-ink-3 mt-3.5">{{ "Marc · Lyon"|t }}</figcaption>
+        </figure>
+        <figure class="bg-cream rounded-3xl p-6 border border-line-2">
+          <div class="text-3xl mb-3.5">🔥</div>
+          <blockquote class="font-serif text-lg text-ink tracking-tight leading-snug">
+            {{ "\"Cooking Mode is like having a sous chef. The timers are gold.\""|t }}
+          </blockquote>
+          <figcaption class="text-sm text-ink-3 mt-3.5">{{ "Priya · Brussels"|t }}</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  {# ── Final CTA ───────────────────────────────────────────────── #}
+  <section class="text-center py-16 md:py-24 text-white" style="background: linear-gradient(160deg, #ef6c1e, #d5541a);">
+    <div class="container mx-auto px-5 md:px-12 max-w-3xl">
+      <h2 class="font-serif text-4xl md:text-6xl leading-[1.05] tracking-tighter">
+        {{ "Tonight's dinner is"|t }}<br>{{ "already decided."|t }}
+      </h2>
+      <p class="text-lg text-white/90 max-w-xl mx-auto mt-4 leading-relaxed">
+        {{ "Browse the catalogue for free. Go Premium when you're ready to cook."|t }}
+      </p>
+      <a href="/register" class="inline-block mt-7 px-7 py-4 bg-ink text-cream font-semibold text-lg rounded-xl hover:bg-ink-2 transition shadow-md">
+        {{ "Get started — free"|t }}
+      </a>
+    </div>
+  </section>
+
+  </main>
+
+  {# Footer #}
+  {% call scope::footer() %}
+  {% endcall %}
 </body>
 {% endblock %}
