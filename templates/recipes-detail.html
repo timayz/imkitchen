@@ -59,7 +59,7 @@
 {# ── Compact suggestion card used in the right rail ── #}
 {% macro suggestion_card(node) %}
 {% let srt = node.recipe_type.0 %}
-<a href="/recipes/{{ node.id }}" class="flex gap-3 group">
+<a href="{{ "/recipes/"|demo_href }}{{ node.id }}" class="flex gap-3 group">
   <div class="relative w-32 h-20 rounded-xl overflow-hidden bg-linear-to-br {% call type_hero_classes(srt) %}{% endcall %}
     flex items-center justify-center shrink-0">
     {% if let Some(version) = node.thumbnail_version %}
@@ -81,6 +81,7 @@
 {% endmacro %}
 
 {% block content %}
+{% let demo = ""|is_demo %}
 {% let rt = recipe.recipe_type.0 %}
 {% let is_owner = recipe.owner_id == user.id %}
 
@@ -88,7 +89,7 @@
 
   {# ── Top utility bar ──────────────────────────────────────── #}
   <div class="flex items-center gap-2 mb-4 md:mb-5">
-    <a href="/recipes{% if is_owner %}?mine=true{% endif %}"
+    <a href="{% if demo %}/demo/recipes{% else %}/recipes{% if is_owner %}?mine=true{% endif %}{% endif %}"
       class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-paper border border-line-2 text-ink hover:bg-cream transition shrink-0"
       title="{% if is_owner %}{{ "Back to My Recipes"|t }}{% else %}{{ "Back to Recipes"|t }}{% endif %}">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -147,8 +148,9 @@
         </button>
       {% else %}
         {# Save (non-owner) #}
-        <button id="save-btn" ts-swap-push="#save-btn"
-          ts-req="/recipes/{{ recipe.id }}/{% if favorite.saved %}un{% endif %}save" ts-req-method="post"
+        <button id="save-btn" {% if !demo %}ts-swap-push="#save-btn"{% endif %}
+          ts-req="{% if demo %}/demo/signup{% else %}/recipes/{{ recipe.id }}/{% if favorite.saved %}un{% endif %}save{% endif %}"
+          {% if demo %}ts-req-method="GET" ts-target="body" ts-swap="append"{% else %}ts-req-method="post"{% endif %}
           class="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl text-sm font-semibold transition
             {% if favorite.saved %}bg-ink text-cream border border-ink{% else %}bg-paper text-ink border border-line-2 hover:bg-cream{% endif %}">
           {% if favorite.saved %}

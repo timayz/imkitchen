@@ -1,6 +1,7 @@
 {% extends "_user.html" %}
 {% block title %}{{ "Menu"|t }} - imkitchen{% endblock %}
 {% block content %}
+{% let demo = ""|is_demo %}
 <div class="container mx-auto px-4 py-6">
 
   {# ── Header — eyebrow + serif title + month nav ── #}
@@ -15,24 +16,24 @@
       {# Desktop-only Regenerate/Generate inline with header #}
       {% if user.is_premium() && !is_past %}
       {% if selected_slot.is_some() %}
-      <button ts-trigger="click" ts-req="/menu/{{ current_date }}/generate" ts-target="body" ts-swap="append"
+      <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/menu/{{ current_date }}/generate{% endif %}" ts-target="body" ts-swap="append"
         class="hidden md:inline-flex items-center gap-1.5 px-3 h-9 bg-meal-main-soft text-meal-main-ink font-semibold rounded-xl text-xs hover:opacity-90 transition mr-1.5">
         <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
         {{ "Regenerate plan"|t }}
       </button>
       {% else %}
-      <button ts-trigger="click" ts-req="/menu/{{ current_date }}/generate" ts-target="body" ts-swap="append"
+      <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/menu/{{ current_date }}/generate{% endif %}" ts-target="body" ts-swap="append"
         class="hidden md:inline-flex items-center gap-1.5 px-3 h-9 bg-primary-500 text-white font-semibold rounded-xl text-xs hover:bg-primary-600 shadow-sm transition mr-1.5">
         <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
         {{ "Generate plan"|t }}
       </button>
       {% endif %}
       {% endif %}
-      <a href="/menu/{{ prev_month }}" aria-label="{{ "Previous"|t }}"
+      <a href="{{ "/menu/"|demo_href }}{{ prev_month }}" aria-label="{{ "Previous"|t }}"
         class="w-9 h-9 rounded-xl border border-line bg-paper text-ink-2 hover:text-ink hover:bg-cream-2 flex items-center justify-center transition">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
       </a>
-      <a href="/menu/{{ next_month }}" aria-label="{{ "Next"|t }}"
+      <a href="{{ "/menu/"|demo_href }}{{ next_month }}" aria-label="{{ "Next"|t }}"
         class="w-9 h-9 rounded-xl border border-line bg-paper text-ink-2 hover:text-ink hover:bg-cream-2 flex items-center justify-center transition">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </a>
@@ -43,13 +44,13 @@
   {% if user.is_premium() && !is_past %}
   <div class="flex gap-2 mb-3 md:hidden">
     {% if selected_slot.is_some() %}
-    <button ts-trigger="click" ts-req="/menu/{{ current_date }}/generate" ts-target="body" ts-swap="append"
+    <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/menu/{{ current_date }}/generate{% endif %}" ts-target="body" ts-swap="append"
       class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-meal-main-soft text-meal-main-ink font-semibold rounded-xl text-sm hover:opacity-90 transition">
       <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
       {{ "Regenerate plan"|t }}
     </button>
     {% else %}
-    <button ts-trigger="click" ts-req="/menu/{{ current_date }}/generate" ts-target="body" ts-swap="append"
+    <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/menu/{{ current_date }}/generate{% endif %}" ts-target="body" ts-swap="append"
       class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-semibold rounded-xl text-sm hover:bg-primary-600 shadow-sm transition">
       <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
       {{ "Generate plan"|t }}
@@ -74,7 +75,7 @@
     {% for week in board_weeks %}
     <div class="grid grid-cols-7 gap-3">
       {% for d in week %}
-      <a href="/menu/{{ d.date }}"
+      <a href="{{ "/menu/"|demo_href }}{{ d.date }}"
         class="block rounded-2xl border p-3 min-h-[240px] flex flex-col gap-2 transition
           {% if d.is_today %}bg-primary-50 border-primary-200 hover:bg-primary-100/60
           {% else if !d.is_in_month %}bg-transparent border-line-2/40 opacity-50 hover:opacity-80
@@ -202,7 +203,7 @@
           {% for m_slot in slots %}
           {% if let Some(slot) = m_slot.slot %}
           {% let is_selected = slot.day == selected_day %}
-          <a href="/menu/{{ slot.day|yyyymmdd }}"
+          <a href="{{ "/menu/"|demo_href }}{{ slot.day|yyyymmdd }}"
             class="aspect-square md:max-w-14 md:mx-auto rounded-xl flex flex-col items-center justify-between p-1.5 transition {% if is_selected %}bg-ink text-cream{% else %}text-ink hover:bg-cream-2{% endif %}">
             <div class="font-serif text-base leading-none mt-1 tracking-tight">{{ m_slot.day }}</div>
             <div class="flex justify-center items-center gap-0.5 mb-0.5 min-h-[6px]">
@@ -261,7 +262,7 @@
            Desktop: 2-col grid of vertical cards matching WebMealCard from the mock. #}
         <div class="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3">
           {% if let Some(appetizer) = slot.appetizer %}
-          <a href="/recipes/{{ appetizer.id }}"
+          <a href="{{ "/recipes/"|demo_href }}{{ appetizer.id }}"
             class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-entree shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
             <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
               <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-entree-soft">🥗</div>
@@ -284,7 +285,7 @@
           </a>
           {% endif %}
 
-          <a href="/recipes/{{ slot.main_course.id }}"
+          <a href="{{ "/recipes/"|demo_href }}{{ slot.main_course.id }}"
             class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-main shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
             <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
               <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-main-soft">🍛</div>
@@ -307,7 +308,7 @@
           </a>
 
           {% if let Some(accompaniment) = slot.accompaniment %}
-          <a href="/recipes/{{ accompaniment.id }}"
+          <a href="{{ "/recipes/"|demo_href }}{{ accompaniment.id }}"
             class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-side shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
             <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
               <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-side-soft">🥖</div>
@@ -331,7 +332,7 @@
           {% endif %}
 
           {% if let Some(dessert) = slot.dessert %}
-          <a href="/recipes/{{ dessert.id }}"
+          <a href="{{ "/recipes/"|demo_href }}{{ dessert.id }}"
             class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-dessert shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
             <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
               <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-dessert-soft">🍰</div>
@@ -355,7 +356,7 @@
           {% endif %}
 
           {% if let Some(beverage) = slot.beverage %}
-          <a href="/recipes/{{ beverage.id }}"
+          <a href="{{ "/recipes/"|demo_href }}{{ beverage.id }}"
             class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-cyan-500 shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
             <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
               <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-cyan-100">🥤</div>
@@ -373,7 +374,7 @@
           {% endif %}
 
           {% if let Some(condiment) = slot.condiment %}
-          <a href="/recipes/{{ condiment.id }}"
+          <a href="{{ "/recipes/"|demo_href }}{{ condiment.id }}"
             class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-amber-500 shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
             <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
               <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-amber-100">🥫</div>
@@ -398,7 +399,7 @@
         <h3 class="font-serif text-lg text-ink mb-1">{{ "No plan for this day yet"|t }}</h3>
         <p class="text-xs text-ink-3 mb-4">{{ "Generate a weekly plan from your recipes."|t }}</p>
         {% if user.is_premium() && !is_past %}
-        <button ts-trigger="click" ts-req="/menu/{{ current_date }}/generate" ts-target="body" ts-swap="append"
+        <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/menu/{{ current_date }}/generate{% endif %}" ts-target="body" ts-swap="append"
           class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-semibold rounded-xl text-sm hover:bg-primary-600 shadow-sm transition">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
           {{ "Generate plan"|t }}

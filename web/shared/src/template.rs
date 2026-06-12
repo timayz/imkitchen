@@ -308,16 +308,50 @@ pub mod filters {
         let value = value.into();
         Ok(format!("{:.2}", value as f64 / 100.0))
     }
+
+    /// True when the current render is a demo-mode page. Read from the
+    /// `is_demo` runtime value injected by [`super::Template`]. The piped
+    /// value is ignored — call as `{% if ""|is_demo %}`.
+    #[askama::filter_fn]
+    pub fn is_demo(_value: &str, values: &dyn askama::Values) -> askama::Result<bool> {
+        Ok(askama::get_value::<bool>(values, "is_demo")
+            .map(|b| *b)
+            .unwrap_or(false))
+    }
+
+    /// Prefixes an internal path with `/demo` when rendering in demo mode so
+    /// navigation stays inside the demo, otherwise returns it untouched.
+    /// Call as `{{ "/menu"|demo_href }}`.
+    #[askama::filter_fn]
+    pub fn demo_href(path: &str, values: &dyn askama::Values) -> askama::Result<String> {
+        let is_demo = askama::get_value::<bool>(values, "is_demo")
+            .map(|b| *b)
+            .unwrap_or(false);
+
+        Ok(if is_demo {
+            format!("/demo{path}")
+        } else {
+            path.to_owned()
+        })
+    }
 }
 
 pub struct Template {
     pub preferred_language: String,
     pub preferred_language_iso: String,
     pub timezone: String,
+    pub is_demo: bool,
     config: crate::config::Config,
 }
 
 impl Template {
+    /// Marks this render as demo mode. Templates can branch on it via the
+    /// `is_demo` / `demo_href` filters (see [`filters`]).
+    pub fn demo(mut self) -> Self {
+        self.is_demo = true;
+        self
+    }
+
     fn render_with_values<T: askama::Template>(
         &self,
         template: T,
@@ -332,6 +366,7 @@ impl Template {
             Box::new(self.preferred_language_iso.to_owned()),
         );
         values.insert("config", Box::new(self.config.clone()));
+        values.insert("is_demo", Box::new(self.is_demo));
 
         #[cfg(debug_assertions)]
         {
@@ -399,6 +434,7 @@ impl FromRequestParts<crate::AppState> for Template {
             preferred_language,
             preferred_language_iso,
             timezone,
+            is_demo: false,
             config: state.config.clone(),
         })
     }

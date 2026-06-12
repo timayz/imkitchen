@@ -58,6 +58,7 @@
 {%- endmacro %}
 
 {% block content %}
+{% let demo = ""|is_demo %}
 {% let view = query.view.as_deref().unwrap_or("grid") %}
 {% let active_type = query.recipe_type.as_deref().unwrap_or("") %}
 {% let mine_active = query.mine.unwrap_or(false) %}
@@ -67,7 +68,7 @@
   {# ── Filters form — wraps header + search + filter rows so live filtering
        picks up changes from every control, including the view toggle that
        now sits next to the title. ────────────────────────────────────── #}
-  <form ts-trigger="change,input" ts-req="/recipes" ts-req-selector="#recipes-list" ts-req-method="GET"
+  <form ts-trigger="change,input" ts-req="{% if demo %}/demo/recipes{% else %}/recipes{% endif %}" ts-req-selector="#recipes-list" ts-req-method="GET"
     ts-req-strategy="last" ts-target="#recipes-list" autocomplete="off">
 
     {# Header — title block on the left, view toggle on the right #}
@@ -114,15 +115,16 @@
           placeholder="{{ "Search by name, description or ingredient..."|t }}"
           class="flex-1 min-w-0 bg-transparent outline-none text-sm placeholder:text-ink-3"/>
       </label>
-      <a href="/recipes/import" title="{{ "Import"|t }}"
-        class="h-11 px-4 inline-flex items-center gap-1.5 bg-paper border border-line-2 hover:bg-cream text-ink text-sm
+      <a {% if demo %}ts-req="/demo/signup" ts-target="body" ts-swap="append"{% else %}href="/recipes/import"{% endif %} title="{{ "Import"|t }}"
+        class="h-11 px-4 inline-flex items-center gap-1.5 bg-paper border border-line-2 hover:bg-cream text-ink text-sm cursor-pointer
           font-semibold rounded-2xl transition shrink-0">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
         </svg>
         <span class="hidden sm:inline">{{ "Import"|t }}</span>
       </a>
-      <button type="button" ts-req="/recipes/create" ts-req-method="post"
+      <button type="button" ts-req="{% if demo %}/demo/signup{% else %}/recipes/create{% endif %}"
+        {% if demo %}ts-target="body" ts-swap="append"{% else %}ts-req-method="post"{% endif %}
         class="h-11 px-4 inline-flex items-center gap-1.5 bg-primary-500 hover:bg-primary-600 text-white text-sm
           font-semibold rounded-2xl shadow-sm transition shrink-0">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -165,8 +167,7 @@
         cursor-pointer transition lg:ml-auto
         bg-paper border-line-2 text-ink hover:bg-cream
         has-checked:bg-primary-500 has-checked:border-primary-500 has-checked:text-white">
-        <input name="mine" type="checkbox" value="true" class="sr-only"
-          {% if let Some(true) = query.mine %}checked{% endif %}/>
+        <input {% if demo %}type="button" ts-trigger="click" ts-req="/demo/signup" ts-req-method="GET" ts-target="body" ts-swap="append"{% else %}name="mine" type="checkbox" value="true" {% if let Some(true) = query.mine %}checked{% endif %}{% endif %} class="sr-only"/>
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
         </svg>
@@ -181,8 +182,7 @@
         cursor-pointer transition
         bg-paper border-line-2 text-ink hover:bg-cream
         has-checked:bg-herb-500 has-checked:border-herb-500 has-checked:text-white">
-        <input name="in_meal_plan" type="checkbox" value="true" class="sr-only"
-          {% if let Some(true) = query.in_meal_plan %}checked{% endif %}/>
+        <input {% if demo %}type="button" ts-trigger="click" ts-req="/demo/signup" ts-req-method="GET" ts-target="body" ts-swap="append"{% else %}name="in_meal_plan" type="checkbox" value="true" {% if let Some(true) = query.in_meal_plan %}checked{% endif %}{% endif %} class="sr-only"/>
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
         </svg>
@@ -195,8 +195,7 @@
         cursor-pointer transition
         bg-paper border-line-2 text-ink hover:bg-cream
         has-checked:bg-ink has-checked:border-ink has-checked:text-cream">
-        <input name="no_image" type="checkbox" value="true" class="sr-only"
-          {% if let Some(true) = query.no_image %}checked{% endif %}/>
+        <input {% if demo %}type="button" ts-trigger="click" ts-req="/demo/signup" ts-req-method="GET" ts-target="body" ts-swap="append"{% else %}name="no_image" type="checkbox" value="true" {% if let Some(true) = query.no_image %}checked{% endif %}{% endif %} class="sr-only"/>
         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 16l5-5 4 4 8-8M3 3h18v18H3z"/>
         </svg>
@@ -247,7 +246,7 @@
 
     {% if view == "list" %}
     {# ── List row ── #}
-    <a id="recipe-{{ recipe.node.id }}" href="/recipes/{{ recipe.node.id }}"
+    <a id="recipe-{{ recipe.node.id }}" href="{{ "/recipes/"|demo_href }}{{ recipe.node.id }}"
       {% if let (true, true, Some(cursor)) = (loop.last, recipes.page_info.has_next_page, recipes.page_info.end_cursor.to_owned()) %}
       ts-req="/recipes?after={{ cursor.to_string() }}{% if let Some(sort_by) = query.sort_by %}&sort_by={{ sort_by }}{% endif %}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if let Some(true) = query.in_meal_plan %}&in_meal_plan=true{% endif %}{% if let Some(true) = query.mine %}&mine=true{% endif %}{% if let Some(true) = query.no_image %}&no_image=true{% endif %}&view=list"
       ts-req-method="GET" ts-req-selector="children #recipes-list" ts-swap="afterend" ts-trigger="visible once"
@@ -289,7 +288,7 @@
 
     {% else %}
     {# ── Grid card ── #}
-    <a id="recipe-{{ recipe.node.id }}" href="/recipes/{{ recipe.node.id }}"
+    <a id="recipe-{{ recipe.node.id }}" href="{{ "/recipes/"|demo_href }}{{ recipe.node.id }}"
       {% if let (true, true, Some(cursor)) = (loop.last, recipes.page_info.has_next_page, recipes.page_info.end_cursor.to_owned()) %}
       ts-req="/recipes?after={{ cursor.to_string() }}{% if let Some(sort_by) = query.sort_by %}&sort_by={{ sort_by }}{% endif %}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if let Some(true) = query.in_meal_plan %}&in_meal_plan=true{% endif %}{% if let Some(true) = query.mine %}&mine=true{% endif %}{% if let Some(true) = query.no_image %}&no_image=true{% endif %}"
       ts-req-method="GET" ts-req-selector="children #recipes-list" ts-swap="afterend" ts-trigger="visible once"

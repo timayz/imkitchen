@@ -1,0 +1,51 @@
+<!-- Demo sign-up modal — shown when a visitor triggers a real action in demo mode -->
+<div id="demo-signup-modal" ts-swap-push="body" ts-swap="append"
+  class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+  <div class="bg-paper rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+
+    <!-- Header with gradient -->
+    <div class="bg-linear-to-br from-primary-500 to-primary-600 text-white p-6 relative">
+      <button ts-trigger="click" ts-action="remove #demo-signup-modal"
+        class="absolute top-4 right-4 text-white hover:text-primary-100 transition" aria-label="{{ "Close"|t }}">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+      <div class="text-center pr-8">
+        <div class="text-5xl mb-3">✨</div>
+        <h3 class="text-2xl font-bold font-serif mb-2">{{ "Like what you see?"|t }}</h3>
+        <p class="text-primary-100 text-sm">{{ "This is a live demo with sample data. Create your free account to plan, cook and shop for real."|t }}</p>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="p-6">
+      <div class="space-y-3 mb-6">
+        <div class="flex items-start gap-3">
+          <span class="shrink-0 text-primary-500 mt-0.5">✓</span>
+          <p class="text-sm text-ink">{{ "Generate weeks of balanced meals in seconds"|t }}</p>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="shrink-0 text-primary-500 mt-0.5">✓</span>
+          <p class="text-sm text-ink">{{ "Cook step-by-step with built-in timers"|t }}</p>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="shrink-0 text-primary-500 mt-0.5">✓</span>
+          <p class="text-sm text-ink">{{ "Auto-built shopping lists grouped by aisle"|t }}</p>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-3">
+        <a href="/register"
+          class="block text-center px-6 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition shadow-sm">
+          {{ "Get started — free"|t }}
+        </a>
+        <a href="/login"
+          class="block text-center px-6 py-2.5 text-ink-2 font-semibold hover:text-ink transition">
+          {{ "I already have an account"|t }}
+        </a>
+      </div>
+      <p class="text-center text-xs text-ink-3 mt-4">{{ "No credit card • Free tier included"|t }}</p>
+    </div>
+  </div>
+</div>

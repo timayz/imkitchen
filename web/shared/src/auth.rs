@@ -131,6 +131,15 @@ impl FromRequestParts<crate::AppState> for Option<AuthToken> {
 #[derive(Clone, Default)]
 pub struct AuthUser(imkitchen_identity::login::Login);
 
+impl AuthUser {
+    /// Wraps a `Login` into an `AuthUser` without going through the request
+    /// extractor. Used by demo mode to render authenticated pages with
+    /// synthetic data.
+    pub fn new(login: imkitchen_identity::login::Login) -> Self {
+        Self(login)
+    }
+}
+
 impl Deref for AuthUser {
     type Target = imkitchen_identity::login::Login;
 

@@ -2,6 +2,7 @@
 {%- import "_footer.html" as scope -%}
 
 {% block body %}
+{% let demo = ""|is_demo %}
 
 <body class="bg-cream pb-20 md:pb-0">
 
@@ -10,7 +11,7 @@
     class="hidden md:flex fixed top-0 left-0 h-screen w-20 xl:w-60 flex-col bg-paper border-r border-line-2 px-3 xl:px-3.5 pt-6 xl:pt-8 pb-4 z-40">
 
     {# Brand #}
-    <a href="{% if user.is_admin() %}/admin/users{% else %}/about{% endif %}"
+    <a href="{% if demo %}/demo/kitchen{% else if user.is_admin() %}/admin/users{% else %}/about{% endif %}"
       class="flex items-center gap-2.5 px-1 xl:px-2 pb-5 mb-1 justify-center xl:justify-start"
       title="imkitchen">
       <div
@@ -30,7 +31,7 @@
     </div>
 
     {# Nav: Kitchen #}
-    <a href="/"
+    <a href="{% if demo %}/demo/kitchen{% else %}/{% endif %}"
       class="flex items-center gap-3 px-0 xl:px-3 py-2.5 rounded-xl text-sm font-medium tracking-tight justify-center xl:justify-start
         {% if current_path == "kitchen" %}bg-primary-100 text-primary-800 font-semibold{% else %}text-ink hover:bg-cream-2{% endif %}"
       title="{{ "Kitchen"|t }}">
@@ -58,7 +59,7 @@
     </a>
 
     {# Nav: Menu #}
-    <a href="/menu"
+    <a href="{{ "/menu"|demo_href }}"
       class="flex items-center gap-3 px-0 xl:px-3 py-2.5 rounded-xl text-sm font-medium tracking-tight justify-center xl:justify-start
         {% if current_path == "menu" %}bg-primary-100 text-primary-800 font-semibold{% else %}text-ink hover:bg-cream-2{% endif %}"
       title="{{ "Menu"|t }}">
@@ -86,7 +87,7 @@
     </a>
 
     {# Nav: Recipes #}
-    <a href="/recipes"
+    <a href="{{ "/recipes"|demo_href }}"
       class="flex items-center gap-3 px-0 xl:px-3 py-2.5 rounded-xl text-sm font-medium tracking-tight justify-center xl:justify-start
         {% if current_path == "recipes" %}bg-primary-100 text-primary-800 font-semibold{% else %}text-ink hover:bg-cream-2{% endif %}"
       title="{{ "Recipes"|t }}">
@@ -114,7 +115,7 @@
     </a>
 
     {# Nav: Groceries #}
-    <a href="/groceries"
+    <a href="{{ "/groceries"|demo_href }}"
       class="flex items-center gap-3 px-0 xl:px-3 py-2.5 rounded-xl text-sm font-medium tracking-tight justify-center xl:justify-start
         {% if current_path == "groceries" %}bg-primary-100 text-primary-800 font-semibold{% else %}text-ink hover:bg-cream-2{% endif %}"
       title="{{ "Groceries"|t }}">
@@ -143,7 +144,7 @@
     </a>
 
     {# Nav: Settings #}
-    <a href="/settings/general"
+    <a href="{% if demo %}/register{% else %}/settings/general{% endif %}"
       class="flex items-center gap-3 px-0 xl:px-3 py-2.5 rounded-xl text-sm font-medium tracking-tight justify-center xl:justify-start
         {% if current_path == "settings" %}bg-primary-100 text-primary-800 font-semibold{% else %}text-ink hover:bg-cream-2{% endif %}"
       title="{{ "Settings"|t }}">
@@ -194,7 +195,7 @@
         </div>
       </a>
       {% endif %}
-      <a href="/settings/account"
+      <a href="{% if demo %}/register{% else %}/settings/account{% endif %}"
         class="flex items-center gap-2.5 px-0 xl:px-1 py-1 rounded-xl hover:bg-cream-2 transition justify-center xl:justify-start"
         title="{{ user.username() }}">
         <div
@@ -222,7 +223,7 @@
   <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-paper border-t border-line-2 z-50">
     <div class="flex items-center justify-around">
       {% block before_mobile_nav_items %}
-      <a href="/" class="flex flex-col items-center py-2 px-3{% if current_path == "kitchen"%} text-primary-500{% else
+      <a href="{% if demo %}/demo/kitchen{% else %}/{% endif %}" class="flex flex-col items-center py-2 px-3{% if current_path == "kitchen"%} text-primary-500{% else
         %} text-ink-3{% endif %}">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -234,7 +235,7 @@
         <span class="text-xs mt-1">{{ "Kitchen"|t }}</span>
       </a>
       {% endblock %}
-      <a href="/menu" class="flex flex-col items-center py-2 px-3{% if current_path == "menu"%}
+      <a href="{{ "/menu"|demo_href }}" class="flex flex-col items-center py-2 px-3{% if current_path == "menu"%}
         text-primary-500{% else %} text-ink-3{% endif %}">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -242,7 +243,7 @@
         </svg>
         <span class="text-xs mt-1">{{ "Menu"|t }}</span>
       </a>
-      <a href="/recipes" class="flex flex-col items-center py-2 px-3{% if current_path == "recipes"%} text-primary-500{%
+      <a href="{{ "/recipes"|demo_href }}" class="flex flex-col items-center py-2 px-3{% if current_path == "recipes"%} text-primary-500{%
         else %} text-ink-3{% endif %}">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -251,7 +252,7 @@
         </svg>
         <span class="text-xs mt-1">{{ "Recipes"|t }}</span>
       </a>
-      <a href="/groceries" class="flex flex-col items-center py-2 px-3{% if current_path == "groceries"%} text-primary-500{%
+      <a href="{{ "/groceries"|demo_href }}" class="flex flex-col items-center py-2 px-3{% if current_path == "groceries"%} text-primary-500{%
         else %} text-ink-3{% endif %}">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -276,6 +277,12 @@
 
   {# ── Main area (shifted right on md+) ─────────────────────────── #}
   <div class="md:ml-20 xl:ml-60">
+    {% if demo %}
+    <div class="bg-ink text-cream px-4 py-2.5 flex items-center justify-center gap-x-3 gap-y-1 text-sm flex-wrap text-center">
+      <span>👋 {{ "You're exploring a live demo with sample data."|t }}</span>
+      <a href="/register" class="font-semibold underline underline-offset-2 hover:text-white">{{ "Create your free account"|t }}</a>
+    </div>
+    {% endif %}
     {% block hero %}{% endblock %}
     {% block content %}{% endblock %}
     {% call scope::small_footer() %}{% endcall %}
