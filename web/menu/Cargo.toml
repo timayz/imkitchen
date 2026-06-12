@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-web-menu"
-version = "1.1.0"
+version = "1.1.1"
 edition.workspace = true
 
 [dependencies]
@@ -8,5 +8,5 @@ axum = { workspace = true }
 askama = { workspace = true }
 tracing = { workspace = true }
 time = { workspace = true }
-imkitchen-core = { path = "../../crates/core", version = "1.1.0" }
-imkitchen-web-shared = { path = "../shared", version = "1.1.0" }
+imkitchen-core = { path = "../../crates/core", version = "1.1.1" }
+imkitchen-web-shared = { path = "../shared", version = "1.1.1" }
