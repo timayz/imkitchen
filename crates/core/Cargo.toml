@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-core"
-version = "1.1.1"
+version = "1.1.2"
 edition.workspace = true
 authors.workspace = true
 
@@ -27,7 +27,7 @@ time = { workspace = true }
 rand = { workspace = true }
 tracing.workspace = true
 time-tz.workspace = true
-imkitchen-types = { path = "../types", version = "1.1.1" }
-imkitchen-db = { path = "../db", version = "1.1.1" }
+imkitchen-types = { path = "../types", version = "1.1.2" }
+imkitchen-db = { path = "../db", version = "1.1.2" }
 
 [dev-dependencies]

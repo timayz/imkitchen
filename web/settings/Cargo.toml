@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-web-settings"
-version = "1.1.1"
+version = "1.1.2"
 edition.workspace = true
 
 [package.metadata.cargo-machete]
@@ -17,8 +17,8 @@ evento = { workspace = true }
 async-stripe-core = { workspace = true }
 async-stripe-payment = { workspace = true }
 async-stripe-shared = { workspace = true }
-imkitchen-core = { path = "../../crates/core", version = "1.1.1" }
-imkitchen-types = { path = "../../crates/types", version = "1.1.1" }
-imkitchen-identity = { path = "../../crates/identity", version = "1.1.1" }
-imkitchen-billing = { path = "../../crates/billing", version = "1.1.1" }
-imkitchen-web-shared = { path = "../shared", version = "1.1.1" }
+imkitchen-core = { path = "../../crates/core", version = "1.1.2" }
+imkitchen-types = { path = "../../crates/types", version = "1.1.2" }
+imkitchen-identity = { path = "../../crates/identity", version = "1.1.2" }
+imkitchen-billing = { path = "../../crates/billing", version = "1.1.2" }
+imkitchen-web-shared = { path = "../shared", version = "1.1.2" }
