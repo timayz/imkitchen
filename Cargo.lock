@@ -2838,6 +2838,7 @@ dependencies = [
  "imkitchen-types",
  "imkitchen-web-shared",
  "serde",
+ "serde_json",
  "strum 0.28.0",
  "tracing",
 ]

@@ -10,7 +10,8 @@ use imkitchen_core::recipe::{
         user_stat::UserStatView,
     },
 };
-use imkitchen_types::recipe::{IngredientUnitFormat, RecipeType};
+use imkitchen_types::recipe::{DietaryRestriction, IngredientUnitFormat, RecipeType};
+use serde_json::json;
 
 use imkitchen_web_shared::{
     AppState,
@@ -54,6 +55,92 @@ pub struct DetailTemplate<'a> {
     pub cook_recipes: ReadResult<UserViewList>,
     pub similar_recipes: ReadResult<UserViewList>,
     pub owner_description: String,
+    /// Pre-serialized schema.org/Recipe JSON-LD for search-engine rich
+    /// results. Empty string renders no `<script>` (e.g. in demo mode).
+    pub json_ld: String,
+}
+
+/// Builds a schema.org/Recipe JSON-LD document for a recipe. The `<`, `>` and
+/// `&` bytes are escaped to their `\uXXXX` form so the result is safe to embed
+/// verbatim inside a `<script type="application/ld+json">` tag.
+pub fn recipe_json_ld(recipe: &UserView, base_url: &str) -> String {
+    let url = format!("{base_url}/recipes/{}", recipe.id);
+    let image = match &recipe.thumbnail_version {
+        Some(v) => format!(
+            "{base_url}/recipes/{}/thumbnail/desktop/image.webp?v={v}",
+            recipe.id
+        ),
+        None => format!("{base_url}/static/icons/icon-512.png"),
+    };
+
+    let ingredients: Vec<String> = recipe
+        .ingredients
+        .iter()
+        .map(|i| format!("{} {}", i.unit.format(i.quantity), i.name).trim().to_owned())
+        .collect();
+
+    let instructions: Vec<serde_json::Value> = recipe
+        .instructions
+        .iter()
+        .enumerate()
+        .map(|(idx, ins)| {
+            json!({
+                "@type": "HowToStep",
+                "position": idx + 1,
+                "text": ins.description,
+            })
+        })
+        .collect();
+
+    let diets: Vec<&str> = recipe
+        .dietary_restrictions
+        .iter()
+        .filter_map(|d| match d {
+            DietaryRestriction::Vegetarian => Some("https://schema.org/VegetarianDiet"),
+            DietaryRestriction::Vegan => Some("https://schema.org/VeganDiet"),
+            DietaryRestriction::GlutenFree => Some("https://schema.org/GlutenFreeDiet"),
+            DietaryRestriction::DairyFree => Some("https://schema.org/LowLactoseDiet"),
+            DietaryRestriction::NutFree => None,
+        })
+        .collect();
+
+    let mut doc = json!({
+        "@context": "https://schema.org",
+        "@type": "Recipe",
+        "name": recipe.name,
+        "url": url,
+        "image": [image],
+        "recipeCategory": recipe.recipe_type.0.to_string(),
+        "recipeYield": format!("{} servings", recipe.household_size),
+        "author": {
+            "@type": "Person",
+            "name": recipe.owner_name.clone().unwrap_or_else(|| "imkitchen".to_owned()),
+        },
+        "recipeIngredient": ingredients,
+        "recipeInstructions": instructions,
+    });
+
+    if !recipe.description.is_empty() {
+        doc["description"] = json!(recipe.description);
+    }
+    if recipe.prep_time > 0 {
+        doc["prepTime"] = json!(format!("PT{}M", recipe.prep_time));
+    }
+    if recipe.cook_time > 0 {
+        doc["cookTime"] = json!(format!("PT{}M", recipe.cook_time));
+    }
+    if recipe.prep_time + recipe.cook_time > 0 {
+        doc["totalTime"] = json!(format!("PT{}M", recipe.prep_time + recipe.cook_time));
+    }
+    if !diets.is_empty() {
+        doc["suitableForDiet"] = json!(diets);
+    }
+
+    serde_json::to_string(&doc)
+        .unwrap_or_default()
+        .replace('<', "\\u003c")
+        .replace('>', "\\u003e")
+        .replace('&', "\\u0026")
 }
 
 impl<'a> Default for DetailTemplate<'a> {
@@ -68,6 +155,7 @@ impl<'a> Default for DetailTemplate<'a> {
             favorite: Default::default(),
             username: "john_doe",
             owner_description: String::new(),
+            json_ld: String::new(),
         }
     }
 }
@@ -215,6 +303,9 @@ pub async fn page(
     );
 
     let username = user.username();
+    // Structured data for search engines — only on the canonical public page
+    // (signed-in or guest), not the demo tour.
+    let json_ld = recipe_json_ld(&recipe, &app.config.server.url);
 
     template
         .render(DetailTemplate {
@@ -226,6 +317,7 @@ pub async fn page(
             favorite,
             username: username.as_str(),
             owner_description: owner_profile.description,
+            json_ld,
             ..Default::default()
         })
         .into_response()

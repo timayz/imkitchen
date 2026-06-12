@@ -1,6 +1,18 @@
 {% extends "_user.html" %}
 {% block title %}{{ recipe.name }} - imkitchen{% endblock %}
 
+{# ── Social sharing metadata — recipe-specific Open Graph / Twitter cards so
+     shared links preview the recipe (name, description, photo) rather than the
+     generic app branding. ──────────────────────────────────────────────── #}
+{% block meta_description %}{% if recipe.description.is_empty() %}{{ "Discover this recipe on imkitchen — cook more, plan less."|t }}{% else %}{{ recipe.description }}{% endif %}{% endblock %}
+{% block og_title %}{{ recipe.name }}{% endblock %}
+{% block og_description %}{% if recipe.description.is_empty() %}{{ "Discover this recipe on imkitchen — cook more, plan less."|t }}{% else %}{{ recipe.description }}{% endif %}{% endblock %}
+{% block og_image %}{% if let Ok(config) = "config"|value::<crate::config::Config> %}{% if let Some(version) = recipe.thumbnail_version %}{{ config.server.url }}/recipes/{{ recipe.id }}/thumbnail/desktop/image.webp?v={{ version }}{% else %}{{ config.server.url }}/static/icons/icon-512.png{% endif %}{% else %}https://imkitchen.app/static/icons/icon-512.png{% endif %}{% endblock %}
+{% block og_url %}{% if let Ok(config) = "config"|value::<crate::config::Config> %}<meta property="og:url" content="{{ config.server.url }}/recipes/{{ recipe.id }}">{% endif %}{% endblock %}
+{% block canonical %}{% if let Ok(config) = "config"|value::<crate::config::Config> %}<link rel="canonical" href="{{ config.server.url }}/recipes/{{ recipe.id }}">{% endif %}{% endblock %}
+{% block twitter_card %}{% if recipe.thumbnail_version.is_some() %}summary_large_image{% else %}summary{% endif %}{% endblock %}
+{% block extra_head %}{% if !json_ld.is_empty() %}<script type="application/ld+json">{{ json_ld|safe }}</script>{% endif %}{% endblock %}
+
 {# ── Recipe-type → emoji + color tokens (mirrors partials/kitchen-dish.html) ── #}
 {% macro type_emoji(rt) -%}
 {%- match rt -%}
@@ -102,6 +114,18 @@
     <div class="flex-1"></div>
 
     <div class="flex items-center gap-1.5 md:gap-2">
+      {# Share — native share sheet with copy-link fallback (works for everyone) #}
+      <button type="button" id="recipe-share-btn"
+        data-label-share="{{ "Share"|t }}" data-label-copied="{{ "Link copied!"|t }}"
+        class="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl bg-paper border border-line-2 text-ink hover:bg-cream transition text-sm font-semibold"
+        title="{{ "Share recipe"|t }}">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+        </svg>
+        <span class="hidden md:inline" data-share-label>{{ "Share"|t }}</span>
+      </button>
+
       {% if is_owner %}
         {# Edit #}
         <a href="/recipes/{{ recipe.id }}/edit"
@@ -435,6 +459,49 @@
       dt.items.add(file);
       input.files = dt.files;
       input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  })();
+
+  // Share button — native share sheet, falling back to copy-to-clipboard.
+  (() => {
+    const btn = document.getElementById("recipe-share-btn");
+    if (!btn) return;
+    const labelEl = btn.querySelector("[data-share-label]");
+    const shareLabel = btn.dataset.labelShare;
+    const copiedLabel = btn.dataset.labelCopied;
+    let resetTimer;
+
+    async function copy(url) {
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch (_) {
+        const t = document.createElement("textarea");
+        t.value = url;
+        t.style.position = "fixed";
+        t.style.opacity = "0";
+        document.body.appendChild(t);
+        t.select();
+        try { document.execCommand("copy"); } catch (_) {}
+        document.body.removeChild(t);
+      }
+      if (labelEl) {
+        labelEl.textContent = copiedLabel;
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(() => { labelEl.textContent = shareLabel; }, 1600);
+      }
+    }
+
+    btn.addEventListener("click", async () => {
+      const url = window.location.href;
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: document.title, url });
+          return;
+        } catch (e) {
+          if (e && e.name === "AbortError") return;
+        }
+      }
+      copy(url);
     });
   })();
 </script>
