@@ -177,7 +177,7 @@
 
     {# Sidebar footer — upgrade card (free, expanded) + profile #}
     <div class="border-t border-line-2 pt-3.5 mt-2">
-      {% if !user.is_premium() %}
+      {% if !user.is_premium() && !demo %}
       <a href="/upgrade"
         class="hidden xl:block bg-linear-to-br from-herb-500 to-herb-700 rounded-2xl p-3 text-white mb-3 shadow-sm hover:shadow-md transition">
         <div class="flex items-center gap-2 mb-1">
@@ -279,7 +279,7 @@
   <div class="md:ml-20 xl:ml-60">
     {% if demo %}
     <div class="bg-ink text-cream px-4 py-2.5 flex items-center justify-center gap-x-3 gap-y-1 text-sm flex-wrap text-center">
-      <span>👋 {{ "You're exploring a live demo with sample data."|t }}</span>
+      <span>👋 {{ "You're browsing imkitchen as a guest."|t }}</span>
       <a href="/register" class="font-semibold underline underline-offset-2 hover:text-white">{{ "Create your free account"|t }}</a>
     </div>
     {% endif %}

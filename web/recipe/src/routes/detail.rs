@@ -72,18 +72,30 @@ impl<'a> Default for DetailTemplate<'a> {
     }
 }
 
-#[tracing::instrument(skip_all, fields(user = user.id))]
+#[tracing::instrument(skip_all)]
 pub async fn page(
     template: Template,
-    user: AuthUser,
+    user: Option<AuthUser>,
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
     let recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.user(&id), template);
 
+    // Public recipes are viewable by anyone. Anonymous visitors get a demo
+    // "guest" identity and the page renders in demo mode — links point into
+    // /demo and actions (Save, etc.) lead to sign-up.
+    let is_anonymous = user.is_none();
+    let user = user.unwrap_or_else(AuthUser::demo);
+
     if recipe.owner_id != user.id && !recipe.is_shared {
         return template.render(NotFoundTemplate).into_response();
     }
+
+    let template = if is_anonymous {
+        template.demo()
+    } else {
+        template
+    };
 
     let stat = imkitchen_web_shared::try_page_response!(
         app.core.recipe.find_user_stat(&recipe.owner_id),

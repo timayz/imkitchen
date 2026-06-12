@@ -43,7 +43,10 @@ async fn kitchen(template: Template) -> impl IntoResponse {
     template.demo().render(fixtures::kitchen())
 }
 
-async fn cook(template: Template, Path((_date, recipe_id)): Path<(String, String)>) -> impl IntoResponse {
+async fn cook(
+    template: Template,
+    Path((_date, recipe_id)): Path<(String, String)>,
+) -> impl IntoResponse {
     template.demo().render(fixtures::cooking(&recipe_id))
 }
 
@@ -60,7 +63,17 @@ async fn recipes(template: Template, Query(query): Query<PageQuery>) -> impl Int
 }
 
 async fn recipes_detail(template: Template, Path((id,)): Path<(String,)>) -> impl IntoResponse {
-    template.demo().render(fixtures::recipe_detail(&id))
+    // Demo catalog recipes render from fixtures. Any other id (e.g. a real
+    // recipe reached from an anonymous public page) redirects to the real,
+    // now-public detail route, which renders in demo mode for guests.
+    if fixtures::find_recipe(&id).is_some() {
+        template
+            .demo()
+            .render(fixtures::recipe_detail(&id))
+            .into_response()
+    } else {
+        Redirect::to(&format!("/recipes/{id}")).into_response()
+    }
 }
 
 async fn groceries(template: Template) -> impl IntoResponse {
@@ -70,12 +83,9 @@ async fn groceries(template: Template) -> impl IntoResponse {
 async fn signup_modal(template: Template) -> impl IntoResponse {
     // ts-swap="skip" so twinspark appends the modal instead of replacing the
     // element that triggered it.
-    ([("ts-swap", "skip")], template.demo().render(DemoSignupModalTemplate)).into_response()
-}
-
-/// Bare redirect helper kept for symmetry; the landing page links straight to
-/// `/demo/kitchen`, but `/demo/` (trailing slash) lands here.
-#[allow(dead_code)]
-async fn index() -> impl IntoResponse {
-    Redirect::to("/demo/kitchen")
+    (
+        [("ts-swap", "skip")],
+        template.demo().render(DemoSignupModalTemplate),
+    )
+        .into_response()
 }

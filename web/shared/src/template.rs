@@ -315,7 +315,7 @@ pub mod filters {
     #[askama::filter_fn]
     pub fn is_demo(_value: &str, values: &dyn askama::Values) -> askama::Result<bool> {
         Ok(askama::get_value::<bool>(values, "is_demo")
-            .map(|b| *b)
+            .copied()
             .unwrap_or(false))
     }
 
@@ -325,7 +325,7 @@ pub mod filters {
     #[askama::filter_fn]
     pub fn demo_href(path: &str, values: &dyn askama::Values) -> askama::Result<String> {
         let is_demo = askama::get_value::<bool>(values, "is_demo")
-            .map(|b| *b)
+            .copied()
             .unwrap_or(false);
 
         Ok(if is_demo {

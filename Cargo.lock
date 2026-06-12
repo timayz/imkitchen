@@ -2746,23 +2746,19 @@ dependencies = [
 name = "imkitchen-web-demo"
 version = "1.0.12"
 dependencies = [
- "anyhow",
  "askama",
  "axum",
  "axum-extra",
  "evento",
  "imkitchen-core",
- "imkitchen-identity",
  "imkitchen-types",
  "imkitchen-web-grocery",
  "imkitchen-web-kitchen",
  "imkitchen-web-menu",
  "imkitchen-web-recipe",
  "imkitchen-web-shared",
- "serde",
  "sqlx",
  "time",
- "tracing",
 ]
 
 [[package]]

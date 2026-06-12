@@ -8,14 +8,10 @@ axum = { workspace = true }
 axum-extra = { workspace = true }
 askama = { workspace = true }
 sqlx = { workspace = true }
-serde = { workspace = true }
-anyhow = { workspace = true }
 time = { workspace = true }
-tracing = { workspace = true }
 evento = { workspace = true }
 imkitchen-core = { path = "../../crates/core", version = "1.0.12" }
 imkitchen-types = { path = "../../crates/types", version = "1.0.12" }
-imkitchen-identity = { path = "../../crates/identity", version = "1.0.12" }
 imkitchen-web-shared = { path = "../shared", version = "1.0.12" }
 imkitchen-web-kitchen = { path = "../kitchen", version = "1.0.12" }
 imkitchen-web-menu = { path = "../menu", version = "1.0.12" }

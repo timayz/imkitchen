@@ -13,9 +13,10 @@ use imkitchen_core::mealplan::slot::SlotRow;
 use imkitchen_core::recipe::favorite::Favorite;
 use imkitchen_core::recipe::query::user::{SortBy, UserView, UserViewList};
 use imkitchen_core::recipe::query::user_stat::UserStatView;
-use imkitchen_identity::login::Login;
 use imkitchen_types::mealplan::{DaySlotRecipe, DaySlotStatus};
-use imkitchen_types::recipe::{Ingredient, IngredientCategory, IngredientUnit, Instruction, RecipeType};
+use imkitchen_types::recipe::{
+    Ingredient, IngredientCategory, IngredientUnit, Instruction, RecipeType,
+};
 use imkitchen_web_grocery::{AisleSection, GroceriesTemplate};
 use imkitchen_web_kitchen::{CookingTemplate, KitchenTemplate, KitchenWeekDay};
 use imkitchen_web_menu::{MenuBoardDay, MenuSlot, MenuTemplate};
@@ -34,18 +35,9 @@ fn ymd(date: OffsetDateTime) -> String {
 // ── Demo user ────────────────────────────────────────────────────────────
 
 /// A premium, active demo account. Premium so every feature renders without
-/// upsell banners; subscription is set 10 years out so `is_premium()` holds.
+/// upsell banners; subscription is set far out so `is_premium()` holds.
 pub fn demo_user() -> AuthUser {
-    let expire = (OffsetDateTime::now_utc() + Duration::days(3650)).unix_timestamp() as u64;
-
-    AuthUser::new(Login {
-        id: "demo".to_owned(),
-        email: "chef@imkitchen.app".to_owned(),
-        username: Some("demo_chef".to_owned()),
-        subscription_expire_at: expire,
-        tz: TZ.to_owned(),
-        ..Default::default()
-    })
+    AuthUser::demo()
 }
 
 // ── Recipe catalog ───────────────────────────────────────────────────────
@@ -124,11 +116,26 @@ pub fn catalog() -> Vec<UserView> {
                 ing("Frozen peas", 150, Some(G), Frozen),
             ],
             vec![
-                step("Season the chicken thighs and sear skin-side down until golden. Set aside.", 0),
-                step("Soften the onion, pepper and garlic in the same pan until fragrant.", 0),
-                step("Stir in the rice and saffron, coating every grain in the oil.", 0),
-                step("Pour in the stock, nestle the chicken back in, cover and simmer.", 25),
-                step("Scatter the peas over the top, cover again and rest off the heat.", 5),
+                step(
+                    "Season the chicken thighs and sear skin-side down until golden. Set aside.",
+                    0,
+                ),
+                step(
+                    "Soften the onion, pepper and garlic in the same pan until fragrant.",
+                    0,
+                ),
+                step(
+                    "Stir in the rice and saffron, coating every grain in the oil.",
+                    0,
+                ),
+                step(
+                    "Pour in the stock, nestle the chicken back in, cover and simmer.",
+                    25,
+                ),
+                step(
+                    "Scatter the peas over the top, cover again and rest off the heat.",
+                    5,
+                ),
                 step("Fluff with a fork, check the seasoning and serve.", 0),
             ],
         ),
@@ -149,7 +156,10 @@ pub fn catalog() -> Vec<UserView> {
                 ing("Butter", 50, Some(G), DairyAndEggs),
             ],
             vec![
-                step("Brown the lardons, then the chicken, in a heavy casserole.", 0),
+                step(
+                    "Brown the lardons, then the chicken, in a heavy casserole.",
+                    0,
+                ),
                 step("Deglaze with the red wine, scraping up every brown bit.", 0),
                 step("Add the onions and mushrooms, cover and braise gently.", 60),
                 step("Reduce the sauce until glossy and whisk in cold butter.", 0),
@@ -171,10 +181,19 @@ pub fn catalog() -> Vec<UserView> {
                 ing("Thai basil", 1, None, FruitsAndVegetables),
             ],
             vec![
-                step("Fry the curry paste in a little coconut cream until it splits.", 0),
+                step(
+                    "Fry the curry paste in a little coconut cream until it splits.",
+                    0,
+                ),
                 step("Add the chicken and seal on all sides.", 0),
-                step("Pour in the rest of the coconut milk and the aubergine, simmer.", 18),
-                step("Finish with fish sauce, sugar and a handful of Thai basil.", 0),
+                step(
+                    "Pour in the rest of the coconut milk and the aubergine, simmer.",
+                    18,
+                ),
+                step(
+                    "Finish with fish sauce, sugar and a handful of Thai basil.",
+                    0,
+                ),
             ],
         ),
         recipe(
@@ -193,10 +212,16 @@ pub fn catalog() -> Vec<UserView> {
                 ing("Parmesan", 80, Some(G), DairyAndEggs),
             ],
             vec![
-                step("Soften the diced carrot, celery and onion — the soffritto base.", 0),
+                step(
+                    "Soften the diced carrot, celery and onion — the soffritto base.",
+                    0,
+                ),
                 step("Brown the beef hard until caramelised, not grey.", 0),
                 step("Add the tomatoes and simmer low and slow.", 90),
-                step("Cook the spaghetti, toss with the ragù and a little pasta water.", 0),
+                step(
+                    "Cook the spaghetti, toss with the ragù and a little pasta water.",
+                    0,
+                ),
             ],
         ),
         recipe(
@@ -216,7 +241,10 @@ pub fn catalog() -> Vec<UserView> {
             vec![
                 step("Dice and salt the tomatoes, then leave to drain.", 0),
                 step("Grill the sourdough and rub each slice with raw garlic.", 0),
-                step("Spoon the tomatoes on top and finish with basil and oil.", 0),
+                step(
+                    "Spoon the tomatoes on top and finish with basil and oil.",
+                    0,
+                ),
             ],
         ),
         recipe(
@@ -236,7 +264,10 @@ pub fn catalog() -> Vec<UserView> {
             vec![
                 step("Toss the bread cubes in oil and bake until crisp.", 10),
                 step("Whisk the dressing — anchovy, garlic, lemon, parmesan.", 0),
-                step("Coat the romaine, add croutons and shave over more parmesan.", 0),
+                step(
+                    "Coat the romaine, add croutons and shave over more parmesan.",
+                    0,
+                ),
             ],
         ),
         recipe(
@@ -254,7 +285,10 @@ pub fn catalog() -> Vec<UserView> {
             ],
             vec![
                 step("Toast the garlic in butter until just golden.", 0),
-                step("Stir in the rinsed rice and the water, then simmer covered.", 15),
+                step(
+                    "Stir in the rinsed rice and the water, then simmer covered.",
+                    15,
+                ),
                 step("Rest off the heat and fluff before serving.", 0),
             ],
         ),
@@ -293,7 +327,10 @@ pub fn catalog() -> Vec<UserView> {
                 ing("Caster sugar", 120, Some(G), Grocery),
             ],
             vec![
-                step("Infuse the cream with vanilla, then whisk into the yolks and sugar.", 0),
+                step(
+                    "Infuse the cream with vanilla, then whisk into the yolks and sugar.",
+                    0,
+                ),
                 step("Bake the custards in a water bath until just set.", 35),
                 step("Chill thoroughly, then torch a sugar crust on top.", 0),
             ],
@@ -332,7 +369,10 @@ pub fn catalog() -> Vec<UserView> {
             ],
             vec![
                 step("Make a syrup with the sugar and a splash of water.", 0),
-                step("Muddle the mint into the syrup, then add lemon juice and cold water.", 0),
+                step(
+                    "Muddle the mint into the syrup, then add lemon juice and cold water.",
+                    0,
+                ),
             ],
         ),
         recipe(
@@ -376,16 +416,76 @@ fn dsr(id: &str, status: DaySlotStatus) -> DaySlotRecipe {
 
 // ── Meal-plan slots ──────────────────────────────────────────────────────
 
+/// `(appetizer, main, accompaniment, dessert, beverage, condiment)` — recipe
+/// ids for one day. Optional courses are `None`.
+type DayPlan = (
+    &'static str,
+    &'static str,
+    &'static str,
+    Option<&'static str>,
+    Option<&'static str>,
+    Option<&'static str>,
+);
+
 /// A repeating week of plans. Index by day-of-month so each calendar day is
-/// deterministic. `(appetizer, main, accompaniment, dessert, beverage, condiment)`.
-const PLANS: &[(&str, &str, &str, Option<&str>, Option<&str>, Option<&str>)] = &[
-    ("tomato-bruschetta", "arroz-con-pollo", "garlic-butter-rice", Some("creme-brulee"), Some("mint-lemonade"), None),
-    ("caesar-salad", "coq-au-vin", "roasted-vegetables", Some("chocolate-mousse"), None, None),
-    ("tomato-bruschetta", "thai-green-curry", "garlic-butter-rice", Some("creme-brulee"), None, Some("chimichurri")),
-    ("caesar-salad", "spaghetti-bolognese", "roasted-vegetables", Some("chocolate-mousse"), Some("mint-lemonade"), None),
-    ("tomato-bruschetta", "coq-au-vin", "garlic-butter-rice", Some("creme-brulee"), None, None),
-    ("caesar-salad", "arroz-con-pollo", "roasted-vegetables", Some("chocolate-mousse"), None, Some("chimichurri")),
-    ("tomato-bruschetta", "spaghetti-bolognese", "garlic-butter-rice", Some("creme-brulee"), Some("mint-lemonade"), None),
+/// deterministic.
+const PLANS: &[DayPlan] = &[
+    (
+        "tomato-bruschetta",
+        "arroz-con-pollo",
+        "garlic-butter-rice",
+        Some("creme-brulee"),
+        Some("mint-lemonade"),
+        None,
+    ),
+    (
+        "caesar-salad",
+        "coq-au-vin",
+        "roasted-vegetables",
+        Some("chocolate-mousse"),
+        None,
+        None,
+    ),
+    (
+        "tomato-bruschetta",
+        "thai-green-curry",
+        "garlic-butter-rice",
+        Some("creme-brulee"),
+        None,
+        Some("chimichurri"),
+    ),
+    (
+        "caesar-salad",
+        "spaghetti-bolognese",
+        "roasted-vegetables",
+        Some("chocolate-mousse"),
+        Some("mint-lemonade"),
+        None,
+    ),
+    (
+        "tomato-bruschetta",
+        "coq-au-vin",
+        "garlic-butter-rice",
+        Some("creme-brulee"),
+        None,
+        None,
+    ),
+    (
+        "caesar-salad",
+        "arroz-con-pollo",
+        "roasted-vegetables",
+        Some("chocolate-mousse"),
+        None,
+        Some("chimichurri"),
+    ),
+    (
+        "tomato-bruschetta",
+        "spaghetti-bolognese",
+        "garlic-butter-rice",
+        Some("creme-brulee"),
+        Some("mint-lemonade"),
+        None,
+    ),
 ];
 
 fn slot_for(day: OffsetDateTime) -> SlotRow {
@@ -407,7 +507,11 @@ fn slot_for(day: OffsetDateTime) -> SlotRow {
 
 fn meal_types_for(day: OffsetDateTime) -> Vec<RecipeType> {
     let plan = PLANS[(day.day() as usize) % PLANS.len()];
-    let mut types = vec![RecipeType::Appetizer, RecipeType::MainCourse, RecipeType::Accompaniment];
+    let mut types = vec![
+        RecipeType::Appetizer,
+        RecipeType::MainCourse,
+        RecipeType::Accompaniment,
+    ];
     if plan.3.is_some() {
         types.push(RecipeType::Dessert);
     }
@@ -480,7 +584,8 @@ pub fn kitchen() -> KitchenTemplate {
 
 pub fn cooking(recipe_id: &str) -> CookingTemplate {
     let today = mealplan::now(TZ);
-    let slot_recipe = find_recipe(recipe_id).unwrap_or_else(|| find_recipe("arroz-con-pollo").unwrap());
+    let slot_recipe =
+        find_recipe(recipe_id).unwrap_or_else(|| find_recipe("arroz-con-pollo").unwrap());
 
     // Start one step in so both Back and Next are visible.
     let coming_instructions: Vec<(usize, String)> = slot_recipe
@@ -526,7 +631,10 @@ pub fn menu(date: Option<String>) -> MenuTemplate {
     // Mobile calendar list: leading weekday padding, then each in-month day.
     let mut menu_slots: Vec<MenuSlot> = mealplan::week_days_before(bounds.first)
         .iter()
-        .map(|d| MenuSlot { day: d.day(), slot: None })
+        .map(|d| MenuSlot {
+            day: d.day(),
+            slot: None,
+        })
         .collect();
 
     let mut d = bounds.first;
@@ -538,7 +646,10 @@ pub fn menu(date: Option<String>) -> MenuTemplate {
         d += Duration::days(1);
     }
     for d in mealplan::week_days_after(bounds.last) {
-        menu_slots.push(MenuSlot { day: d.day(), slot: None });
+        menu_slots.push(MenuSlot {
+            day: d.day(),
+            slot: None,
+        });
     }
 
     // Desktop board: Mon..Sun padded grid grouped into weeks.
