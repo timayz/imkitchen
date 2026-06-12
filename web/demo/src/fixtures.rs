@@ -6,6 +6,7 @@
 //! hand-authored placeholder data instead of the database.
 
 use std::collections::HashSet;
+use std::str::FromStr;
 
 use evento::cursor::{Edge, PageInfo, ReadResult, Value};
 use imkitchen_core::mealplan;
@@ -825,14 +826,21 @@ fn to_list(uv: &UserView) -> UserViewList {
 
 pub fn recipes(query: PageQuery) -> RecipesIndexTemplate {
     let search = query.search.clone().unwrap_or_default().to_lowercase();
-    let recipe_type = query.recipe_type.clone().unwrap_or_default();
+    // Parse like the real handler so unknown values (e.g. the "All" radio,
+    // whose empty `value=""` is dropped by HTML minification and submitted as
+    // the browser default `on`) mean "no type filter" rather than matching
+    // nothing.
+    let recipe_type = query
+        .recipe_type
+        .as_deref()
+        .and_then(|v| RecipeType::from_str(v).ok());
 
     // Type chips, search and sort behave like the real page. The Mine / Saved /
     // No-image filters never reach here — in demo they open the sign-up modal
     // instead of submitting the form.
     let mut matches: Vec<UserView> = catalog()
         .into_iter()
-        .filter(|r| recipe_type.is_empty() || r.recipe_type.0.to_string() == recipe_type)
+        .filter(|r| recipe_type.as_ref().is_none_or(|rt| &r.recipe_type.0 == rt))
         .filter(|r| {
             search.is_empty()
                 || r.name.to_lowercase().contains(&search)
