@@ -1,10 +1,8 @@
 [package]
 name = "imkitchen-web-settings"
-version = "1.0.12"
+version = "1.1.0"
 edition.workspace = true
 
-# imkitchen-core is consumed only through `try_response!` macro expansion from
-# imkitchen-web-shared, which cargo-machete can't see — keep it ignored.
 [package.metadata.cargo-machete]
 ignored = ["imkitchen-core"]
 
@@ -19,8 +17,8 @@ evento = { workspace = true }
 async-stripe-core = { workspace = true }
 async-stripe-payment = { workspace = true }
 async-stripe-shared = { workspace = true }
-imkitchen-core = { path = "../../crates/core", version = "1.0.12" }
-imkitchen-types = { path = "../../crates/types", version = "1.0.12" }
-imkitchen-identity = { path = "../../crates/identity", version = "1.0.12" }
-imkitchen-billing = { path = "../../crates/billing", version = "1.0.12" }
-imkitchen-web-shared = { path = "../shared", version = "1.0.12" }
+imkitchen-core = { path = "../../crates/core", version = "1.1.0" }
+imkitchen-types = { path = "../../crates/types", version = "1.1.0" }
+imkitchen-identity = { path = "../../crates/identity", version = "1.1.0" }
+imkitchen-billing = { path = "../../crates/billing", version = "1.1.0" }
+imkitchen-web-shared = { path = "../shared", version = "1.1.0" }
