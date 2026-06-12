@@ -2589,6 +2589,7 @@ dependencies = [
  "imkitchen-identity",
  "imkitchen-notification",
  "imkitchen-web-admin",
+ "imkitchen-web-demo",
  "imkitchen-web-grocery",
  "imkitchen-web-kitchen",
  "imkitchen-web-menu",
@@ -2742,6 +2743,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "imkitchen-web-demo"
+version = "1.0.12"
+dependencies = [
+ "askama",
+ "axum",
+ "axum-extra",
+ "evento",
+ "imkitchen-core",
+ "imkitchen-types",
+ "imkitchen-web-grocery",
+ "imkitchen-web-kitchen",
+ "imkitchen-web-menu",
+ "imkitchen-web-recipe",
+ "imkitchen-web-shared",
+ "sqlx",
+ "time",
+]
+
+[[package]]
 name = "imkitchen-web-grocery"
 version = "1.0.12"
 dependencies = [
@@ -2818,6 +2838,7 @@ dependencies = [
  "imkitchen-types",
  "imkitchen-web-shared",
  "serde",
+ "serde_json",
  "strum 0.28.0",
  "tracing",
 ]

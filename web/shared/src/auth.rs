@@ -131,6 +131,34 @@ impl FromRequestParts<crate::AppState> for Option<AuthToken> {
 #[derive(Clone, Default)]
 pub struct AuthUser(imkitchen_identity::login::Login);
 
+impl AuthUser {
+    /// Wraps a `Login` into an `AuthUser` without going through the request
+    /// extractor. Used by demo mode to render authenticated pages with
+    /// synthetic data.
+    pub fn new(login: imkitchen_identity::login::Login) -> Self {
+        Self(login)
+    }
+
+    /// A synthetic premium "guest" account used to render pages in demo mode —
+    /// both the `/demo/*` tour and anonymous views of public recipes. Premium
+    /// so feature-gated UI shows without upsell; the subscription is set far in
+    /// the future so `is_premium()` holds.
+    pub fn demo() -> Self {
+        let subscription_expire_at = (SystemTime::now() + time::Duration::weeks(10 * 52))
+            .duration_since(UNIX_EPOCH)
+            .map_or(0, |d| d.as_secs());
+
+        Self(imkitchen_identity::login::Login {
+            id: "demo".to_owned(),
+            email: "chef@imkitchen.app".to_owned(),
+            username: Some("demo_chef".to_owned()),
+            subscription_expire_at,
+            tz: "UTC".to_owned(),
+            ..Default::default()
+        })
+    }
+}
+
 impl Deref for AuthUser {
     type Target = imkitchen_identity::login::Login;
 

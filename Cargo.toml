@@ -101,6 +101,7 @@ imkitchen-web-grocery = { path = "web/grocery", version = "1.0.12" }
 imkitchen-web-settings = { path = "web/settings", version = "1.0.12" }
 imkitchen-web-public = { path = "web/public", version = "1.0.12" }
 imkitchen-web-admin = { path = "web/admin", version = "1.0.12" }
+imkitchen-web-demo = { path = "web/demo", version = "1.0.12" }
 
 [[bin]]
 name = "imkitchen"

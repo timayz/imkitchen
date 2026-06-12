@@ -41,7 +41,7 @@
 
   {# ── Top bar ──────────────────────────────────────────────────── #}
   <header class="px-4 pt-7 pb-2 flex items-center gap-2.5">
-    <a href="/kitchen/{{ date }}"
+    <a href="{{ "/kitchen/"|demo_href }}{{ date }}"
       class="w-9 h-9 rounded-xl border border-line bg-paper/70 backdrop-blur-sm flex items-center justify-center hover:bg-paper transition"
       aria-label="{{ "Back"|t }}">
       <svg class="w-4 h-4 text-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
@@ -135,8 +135,8 @@
     <div class="flex gap-2">
       {% if !completed_instructions.is_empty() %}
       <button type="button"
-        ts-req="/kitchen/{{ date }}/{{ slot_recipe.id }}/step/prev" ts-req-method="post"
-        ts-target="#cooking-screen"
+        ts-req="{% if ""|is_demo %}/demo/signup{% else %}/kitchen/{{ date }}/{{ slot_recipe.id }}/step/prev{% endif %}"
+        {% if ""|is_demo %}ts-target="body" ts-swap="append"{% else %}ts-req-method="post" ts-target="#cooking-screen"{% endif %}
         class="flex-1 h-13 rounded-xl bg-paper border border-line text-ink font-semibold text-sm flex items-center justify-center gap-2 hover:bg-paper/80 transition">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5M11 6l-6 6 6 6"/>
@@ -147,7 +147,7 @@
 
       {% if coming_instructions.is_empty() %}
         {# Final / Completed state — Done is a link, no state change needed #}
-        <a href="/kitchen/{{ date }}"
+        <a href="{{ "/kitchen/"|demo_href }}{{ date }}"
           class="{% if completed_instructions.is_empty() %}flex-1{% else %}flex-[2]{% endif %} h-13 rounded-xl bg-primary-500 text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-sm hover:bg-primary-600 transition">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
@@ -156,8 +156,8 @@
         </a>
       {% else %}
         <button type="button"
-          ts-req="/kitchen/{{ date }}/{{ slot_recipe.id }}/step/next" ts-req-method="post"
-          ts-target="#cooking-screen"
+          ts-req="{% if ""|is_demo %}/demo/signup{% else %}/kitchen/{{ date }}/{{ slot_recipe.id }}/step/next{% endif %}"
+          {% if ""|is_demo %}ts-target="body" ts-swap="append"{% else %}ts-req-method="post" ts-target="#cooking-screen"{% endif %}
           class="{% if completed_instructions.is_empty() %}flex-1{% else %}flex-[2]{% endif %} h-13 rounded-xl bg-ink text-cream font-semibold text-sm flex items-center justify-center gap-2 shadow-sm hover:opacity-90 transition">
           {{ "Next step"|t }}
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">

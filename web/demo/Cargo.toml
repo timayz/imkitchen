@@ -1,5 +1,5 @@
 [package]
-name = "imkitchen-web-recipe"
+name = "imkitchen-web-demo"
 version = "1.0.12"
 edition.workspace = true
 
@@ -7,12 +7,13 @@ edition.workspace = true
 axum = { workspace = true }
 axum-extra = { workspace = true }
 askama = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-tracing = { workspace = true }
-base64 = { workspace = true }
-strum = { workspace = true }
+sqlx = { workspace = true }
+time = { workspace = true }
 evento = { workspace = true }
 imkitchen-core = { path = "../../crates/core", version = "1.0.12" }
 imkitchen-types = { path = "../../crates/types", version = "1.0.12" }
 imkitchen-web-shared = { path = "../shared", version = "1.0.12" }
+imkitchen-web-kitchen = { path = "../kitchen", version = "1.0.12" }
+imkitchen-web-menu = { path = "../menu", version = "1.0.12" }
+imkitchen-web-recipe = { path = "../recipe", version = "1.0.12" }
+imkitchen-web-grocery = { path = "../grocery", version = "1.0.12" }

@@ -21,7 +21,7 @@
   {% block og_url %}{% endblock %}
 
   <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary">
+  <meta name="twitter:card" content="{% block twitter_card %}summary{% endblock %}">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href={{ "/static/icons/icon-192.png?v=" ~ env!("CARGO_PKG_VERSION") }}>

@@ -190,6 +190,7 @@ pub async fn serve(
         .merge(imkitchen_web_settings::routes())
         .merge(imkitchen_web_public::routes())
         .merge(imkitchen_web_admin::routes())
+        .merge(imkitchen_web_demo::routes())
         .fallback(fallback)
         .nest_service(
             "/static",

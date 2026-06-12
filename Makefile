@@ -44,11 +44,11 @@ lint:
 	cargo clippy --workspace --all-targets --all-features -- -D warnings
 
 # Check code formatting (fails if not formatted)
-fmt:
+fmt-check:
 	cargo fmt --all -- --check
 
 # Auto-fix code formatting
-fmt-fix:
+fmt:
 	cargo fmt --all
 
 # Run ALL tests (sequential - use test-parallel for faster execution)

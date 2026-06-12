@@ -77,6 +77,7 @@ if (workbox) {
   // API/Data endpoints: Network-first with cache fallback
   workbox.routing.registerRoute(
     ({ url }) => url.pathname === '/' ||
+      url.pathname.startsWith('/demo') ||
       url.pathname.startsWith('/health') ||
       url.pathname.startsWith('/ready') ||
       url.pathname.startsWith('/kitchen') ||
