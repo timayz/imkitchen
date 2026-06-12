@@ -59,7 +59,10 @@ sea-query = { version = "1.0.1", default-features = false, features = ["derive",
 sea-query-sqlx = { version = "0.9.1", features = ["runtime-tokio", "sqlx-sqlite", "with-json"] }
 async-trait = "0.1"
 futures = "0.3"
-time = { version = "0.3", features = ["formatting", "parsing", "macros"] }
+# Pinned to <0.3.48: time 0.3.48 introduced a trait impl that conflicts with
+# cookie 0.18.1 (via axum-extra), breaking the build with E0119. 0.3.47 is the
+# minimum required by simple_asn1 (via jsonwebtoken), so it's the only working version.
+time = { version = ">=0.3.47, <0.3.48", features = ["formatting", "parsing", "macros"] }
 strum = { version = "0.28", features = ["derive"] }
 sha3 = "0.12"
 temp-dir = "0.2"
