@@ -71,6 +71,20 @@
       "type": "image/png",
       "platform": "narrow",
       "label": "{{ "Weekly meal calendar"|t }}"
+    },
+    {
+      "src": "/static/{{ "screenshots/groceries-mobile"|t }}.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "{{ "Grocery list by aisle"|t }}"
+    },
+    {
+      "src": "/static/{{ "screenshots/cooking-mobile"|t }}.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "{{ "Step-by-step cooking guidance"|t }}"
     }
   ],
   "shortcuts": []
