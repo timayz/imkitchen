@@ -10,6 +10,7 @@ pub enum RecipeUser {
     RecipeType,
     CuisineType,
     Name,
+    Slug,
     Origin,
     Description,
     HouseholdSize,
@@ -594,6 +595,62 @@ pub(crate) mod m0004 {
             &self,
             _connection: &mut sqlx::SqliteConnection,
         ) -> Result<(), sqlx_migrator::Error> {
+            Ok(())
+        }
+    }
+}
+
+pub(crate) mod m0005 {
+    pub struct AddSlug;
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for AddSlug {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            sqlx::query("ALTER TABLE recipe_user ADD COLUMN slug TEXT NOT NULL DEFAULT ''")
+                .execute(&mut *connection)
+                .await
+                .ok();
+
+            // Slugs are derived during projection, so drop every row and replay
+            // the recipe-query subscription from the start to backfill them.
+            // `is_shared` rebuilds correctly from each recipe's own
+            // SharedToCommunity/MadePrivate events (the recipe-saga-share saga
+            // emits those per recipe), so only this subscription is reset.
+            //
+            // The truncate must precede the UNIQUE index: every pre-existing row
+            // would otherwise share the empty default slug and collide.
+            sqlx::query("DELETE FROM recipe_user")
+                .execute(&mut *connection)
+                .await?;
+
+            sqlx::query(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_recipe_user_slug ON recipe_user (slug)",
+            )
+            .execute(&mut *connection)
+            .await?;
+
+            sqlx::query("UPDATE subscriber SET cursor = NULL WHERE key = 'recipe-query'")
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            sqlx::query("DROP INDEX IF EXISTS idx_recipe_user_slug")
+                .execute(&mut *connection)
+                .await?;
+            sqlx::query("ALTER TABLE recipe_user DROP COLUMN slug")
+                .execute(connection)
+                .await
+                .ok();
+
             Ok(())
         }
     }

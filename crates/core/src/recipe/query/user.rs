@@ -33,6 +33,7 @@ pub struct UserView {
     pub owner_name: Option<String>,
     pub recipe_type: sqlx::types::Text<RecipeType>,
     pub name: String,
+    pub slug: String,
     pub origin: Option<String>,
     pub description: String,
     pub household_size: u16,
@@ -58,6 +59,7 @@ pub struct UserViewList {
     pub owner_name: Option<String>,
     pub recipe_type: sqlx::types::Text<RecipeType>,
     pub name: String,
+    pub slug: String,
     pub description: String,
     pub prep_time: u16,
     pub cook_time: u16,
@@ -97,6 +99,7 @@ impl<E: Executor> crate::recipe::Module<E> {
                 RecipeUser::OwnerName,
                 RecipeUser::RecipeType,
                 RecipeUser::Name,
+                RecipeUser::Slug,
                 RecipeUser::Description,
                 RecipeUser::PrepTime,
                 RecipeUser::CookTime,
@@ -240,6 +243,26 @@ impl<E: Executor> crate::recipe::Module<E> {
         find_user(&self.read_db, id).await
     }
 
+    /// Resolves a recipe slug to its id. Returns `None` when no recipe carries
+    /// the slug. See [`slugify`] for how slugs are derived.
+    pub async fn find_id_by_slug(&self, slug: impl Into<String>) -> anyhow::Result<Option<String>> {
+        let statement = sea_query::Query::select()
+            .columns([RecipeUser::Id])
+            .from(RecipeUser::Table)
+            .and_where(Expr::col(RecipeUser::Slug).eq(slug.into()))
+            .limit(1)
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(
+            sqlx::query_as_with::<_, (String,), _>(sqlx::AssertSqlSafe(sql), values)
+                .fetch_optional(&self.read_db)
+                .await?
+                .map(|(id,)| id),
+        )
+    }
+
     pub async fn find_user_draft(
         &self,
         user_id: impl Into<String>,
@@ -298,6 +321,33 @@ impl<E: Executor> crate::recipe::Module<E> {
                 .map(|(id,)| id),
         )
     }
+
+    /// Maps a batch of recipe ids to their current slugs. Ids without a row are
+    /// simply absent from the result, so callers should fall back to the id.
+    pub async fn slugs(
+        &self,
+        ids: Vec<String>,
+    ) -> anyhow::Result<std::collections::HashMap<String, String>> {
+        if ids.is_empty() {
+            return Ok(std::collections::HashMap::new());
+        }
+
+        let statement = sea_query::Query::select()
+            .columns([RecipeUser::Id, RecipeUser::Slug])
+            .from(RecipeUser::Table)
+            .and_where(Expr::col(RecipeUser::Id).is_in(ids))
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(
+            sqlx::query_as_with::<_, (String, String), _>(sqlx::AssertSqlSafe(sql), values)
+                .fetch_all(&self.read_db)
+                .await?
+                .into_iter()
+                .collect(),
+        )
+    }
 }
 
 async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<Option<UserView>> {
@@ -309,6 +359,7 @@ async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<O
             RecipeUser::OwnerName,
             RecipeUser::RecipeType,
             RecipeUser::Name,
+            RecipeUser::Slug,
             RecipeUser::Origin,
             RecipeUser::Description,
             RecipeUser::HouseholdSize,
@@ -334,6 +385,55 @@ async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<O
     Ok(sqlx::query_as_with(sqlx::AssertSqlSafe(sql), values)
         .fetch_optional(pool)
         .await?)
+}
+
+/// Turns a recipe name into a URL-friendly slug: lowercased, with every run of
+/// non-alphanumeric characters collapsed into a single hyphen and no leading or
+/// trailing hyphen (e.g. `"Arroz con Pollo!"` becomes `"arroz-con-pollo"`).
+pub fn slugify(name: &str) -> String {
+    let mut slug = String::with_capacity(name.len());
+    let mut pending_dash = false;
+
+    for ch in name.chars() {
+        if ch.is_alphanumeric() {
+            if pending_dash && !slug.is_empty() {
+                slug.push('-');
+            }
+            pending_dash = false;
+            slug.extend(ch.to_lowercase());
+        } else {
+            pending_dash = true;
+        }
+    }
+
+    slug
+}
+
+/// Builds the slug stored for a recipe. The base slug comes from the recipe
+/// name; if another recipe already owns that slug, the last six characters of
+/// this recipe's id are appended to keep it unique. Nameless drafts fall back to
+/// the id so the column stays unique and non-empty.
+async fn build_slug(write_db: &SqlitePool, id: &str, name: &str) -> anyhow::Result<String> {
+    let base = slugify(name);
+    if base.is_empty() {
+        return Ok(id.to_lowercase());
+    }
+
+    let taken = sqlx::query_scalar::<_, String>(
+        "SELECT id FROM recipe_user WHERE slug = ? AND id <> ? LIMIT 1",
+    )
+    .bind(&base)
+    .bind(id)
+    .fetch_optional(write_db)
+    .await?
+    .is_some();
+
+    if taken {
+        let suffix = &id[id.len().saturating_sub(6)..];
+        Ok(format!("{base}-{}", suffix.to_lowercase()))
+    } else {
+        Ok(base)
+    }
 }
 
 pub fn create_projection<E: Executor>() -> Projection<E, UserView> {
@@ -384,6 +484,8 @@ impl<E: Executor> Snapshot<E> for UserView {
     ) -> anyhow::Result<()> {
         let (_, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
 
+        let slug = build_slug(&write_db, &self.id, &self.name).await?;
+
         let ingredients = bitcode::encode(&self.ingredients.0);
         let instructions = bitcode::encode(&self.instructions.0);
         let difficulty_score: u16 =
@@ -403,6 +505,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                 RecipeUser::OwnerName,
                 RecipeUser::RecipeType,
                 RecipeUser::Name,
+                RecipeUser::Slug,
                 RecipeUser::Origin,
                 RecipeUser::Description,
                 RecipeUser::HouseholdSize,
@@ -425,6 +528,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                 self.owner_name.to_owned().into(),
                 self.recipe_type.to_string().into(),
                 self.name.to_owned().into(),
+                slug.to_owned().into(),
                 self.origin.to_owned().into(),
                 self.description.to_owned().into(),
                 self.household_size.into(),
@@ -448,6 +552,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                         RecipeUser::OwnerName,
                         RecipeUser::RecipeType,
                         RecipeUser::Name,
+                        RecipeUser::Slug,
                         RecipeUser::Origin,
                         RecipeUser::Description,
                         RecipeUser::HouseholdSize,

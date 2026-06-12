@@ -106,7 +106,7 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
-    let sub_recipe_query_share = imkitchen_core::recipe::query::subscription()
+    let sub_recipe_saga_share = imkitchen_core::recipe::saga::subscription()
         .data((read_pool.clone(), write_pool.clone()))
         .all()
         .start(&executor)
@@ -260,7 +260,7 @@ pub async fn serve(
         sub_contact_global_stat.shutdown(),
         sub_recipe_command.shutdown(),
         sub_recipe_query.shutdown(),
-        sub_recipe_query_share.shutdown(),
+        sub_recipe_saga_share.shutdown(),
         sub_recipe_user_fts.shutdown(),
         sub_recipe_user_stat.shutdown(),
         sub_recipe_thumbnail.shutdown(),

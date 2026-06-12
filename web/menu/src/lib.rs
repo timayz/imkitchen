@@ -54,6 +54,17 @@ pub struct MenuTemplate {
     pub prev_month: String,
     pub next_month: String,
     pub board_weeks: Vec<Vec<MenuBoardDay>>,
+    /// Recipe id → slug for every recipe shown, so course cards can link to the
+    /// canonical `/r/{slug}` detail page. Missing ids fall back to the id.
+    pub slugs: std::collections::HashMap<String, String>,
+}
+
+impl MenuTemplate {
+    /// Slug for a slot recipe id, falling back to the id when unknown (the
+    /// `/r/{param}` route also accepts a raw id).
+    pub fn dish_slug<'a>(&'a self, id: &'a str) -> &'a str {
+        self.slugs.get(id).map(String::as_str).unwrap_or(id)
+    }
 }
 
 impl Default for MenuTemplate {
@@ -70,8 +81,30 @@ impl Default for MenuTemplate {
             prev_month: "".to_owned(),
             next_month: "".to_owned(),
             board_weeks: vec![],
+            slugs: std::collections::HashMap::new(),
         }
     }
+}
+
+/// Collects every course recipe id present in a set of slots.
+fn slot_recipe_ids(slots: &[SlotRow]) -> Vec<String> {
+    let mut ids = vec![];
+    for slot in slots {
+        ids.push(slot.main_course.id.to_owned());
+        for course in [
+            &slot.appetizer,
+            &slot.accompaniment,
+            &slot.dessert,
+            &slot.beverage,
+            &slot.condiment,
+        ]
+        .into_iter()
+        .flatten()
+        {
+            ids.push(course.id.to_owned());
+        }
+    }
+    ids
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -90,6 +123,11 @@ pub async fn page(
     let (prev_month, next_month) = imkitchen_web_shared::try_page_response!(sync: imkitchen_core::mealplan::prev_next_month(bounds.first), template);
     let slots = imkitchen_web_shared::try_page_response!(
         app.core.mealplan.range(&user.id, bounds.first, bounds.last),
+        template
+    );
+
+    let slugs = imkitchen_web_shared::try_page_response!(
+        app.core.recipe.slugs(slot_recipe_ids(&slots)),
         template
     );
 
@@ -199,6 +237,7 @@ pub async fn page(
             selected_slot,
             selected_day,
             board_weeks,
+            slugs,
             ..Default::default()
         })
         .into_response()

@@ -73,6 +73,7 @@ fn recipe(
 ) -> UserView {
     UserView {
         id: id.to_owned(),
+        slug: id.to_owned(),
         owner_id: "demo".to_owned(),
         owner_name: Some("imkitchen".to_owned()),
         recipe_type: sqlx::types::Text(rt),
@@ -810,6 +811,7 @@ fn to_read_result(nodes: Vec<UserViewList>) -> ReadResult<UserViewList> {
 fn to_list(uv: &UserView) -> UserViewList {
     UserViewList {
         id: uv.id.clone(),
+        slug: uv.slug.clone(),
         owner_id: uv.owner_id.clone(),
         owner_name: uv.owner_name.clone(),
         recipe_type: sqlx::types::Text(uv.recipe_type.0.clone()),

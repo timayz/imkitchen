@@ -262,7 +262,7 @@
            Desktop: 2-col grid of vertical cards matching WebMealCard from the mock. #}
         <div class="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3">
           {% if let Some(appetizer) = slot.appetizer %}
-          <a href="{{ "/recipes/"|demo_href }}{{ appetizer.id }}"
+          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(appetizer.id.as_str()) }}"
             class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-entree shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
             <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
               <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-entree-soft">🥗</div>
@@ -285,7 +285,7 @@
           </a>
           {% endif %}
 
-          <a href="{{ "/recipes/"|demo_href }}{{ slot.main_course.id }}"
+          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(slot.main_course.id.as_str()) }}"
             class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-main shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
             <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
               <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-main-soft">🍛</div>
@@ -308,7 +308,7 @@
           </a>
 
           {% if let Some(accompaniment) = slot.accompaniment %}
-          <a href="{{ "/recipes/"|demo_href }}{{ accompaniment.id }}"
+          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(accompaniment.id.as_str()) }}"
             class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-side shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
             <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
               <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-side-soft">🥖</div>
@@ -332,7 +332,7 @@
           {% endif %}
 
           {% if let Some(dessert) = slot.dessert %}
-          <a href="{{ "/recipes/"|demo_href }}{{ dessert.id }}"
+          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(dessert.id.as_str()) }}"
             class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-dessert shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
             <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
               <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-dessert-soft">🍰</div>
@@ -356,7 +356,7 @@
           {% endif %}
 
           {% if let Some(beverage) = slot.beverage %}
-          <a href="{{ "/recipes/"|demo_href }}{{ beverage.id }}"
+          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(beverage.id.as_str()) }}"
             class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-cyan-500 shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
             <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
               <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-cyan-100">🥤</div>
@@ -374,7 +374,7 @@
           {% endif %}
 
           {% if let Some(condiment) = slot.condiment %}
-          <a href="{{ "/recipes/"|demo_href }}{{ condiment.id }}"
+          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(condiment.id.as_str()) }}"
             class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-amber-500 shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
             <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
               <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-amber-100">🥫</div>
