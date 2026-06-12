@@ -116,7 +116,7 @@
           class="flex-1 min-w-0 bg-transparent outline-none text-sm placeholder:text-ink-3"/>
       </label>
       <a {% if demo %}ts-req="/demo/signup" ts-target="body" ts-swap="append"{% else %}href="/recipes/import"{% endif %} title="{{ "Import"|t }}"
-        class="h-11 px-4 inline-flex items-center gap-1.5 bg-paper border border-line-2 hover:bg-cream text-ink text-sm cursor-pointer
+        class="h-11 px-4 hidden sm:inline-flex items-center gap-1.5 bg-paper border border-line-2 hover:bg-cream text-ink text-sm cursor-pointer
           font-semibold rounded-2xl transition shrink-0">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
