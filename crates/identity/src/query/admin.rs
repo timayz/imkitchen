@@ -94,7 +94,9 @@ impl AdminView {
             return "".to_owned();
         };
 
-        let Ok(format) = time::format_description::parse("[month repr:short] [day], [year]") else {
+        let Ok(format) =
+            time::format_description::parse_borrowed::<2>("[month repr:short] [day], [year]")
+        else {
             return "".to_owned();
         };
 
