@@ -64,7 +64,7 @@ pub struct DetailTemplate<'a> {
 /// `&` bytes are escaped to their `\uXXXX` form so the result is safe to embed
 /// verbatim inside a `<script type="application/ld+json">` tag.
 pub fn recipe_json_ld(recipe: &UserView, base_url: &str) -> String {
-    let url = format!("{base_url}/recipes/{}", recipe.id);
+    let url = format!("{base_url}/r/{}", recipe.slug);
     let image = match &recipe.thumbnail_version {
         Some(v) => format!(
             "{base_url}/recipes/{}/thumbnail/desktop/image.webp?v={v}",
@@ -164,13 +164,35 @@ impl<'a> Default for DetailTemplate<'a> {
     }
 }
 
+/// Permanent redirect from the legacy `/recipes/{id}` URL to the canonical
+/// slug-based `/r/{slug}` detail page, keeping old links and bookmarks working.
+#[tracing::instrument(skip_all)]
+pub async fn redirect_to_slug(
+    template: Template,
+    Path((id,)): Path<(String,)>,
+    State(app): State<AppState>,
+) -> impl IntoResponse {
+    let recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.user(&id), template);
+
+    Redirect::permanent(&format!("/r/{}", recipe.slug)).into_response()
+}
+
 #[tracing::instrument(skip_all)]
 pub async fn page(
     template: Template,
     user: Option<AuthUser>,
-    Path((id,)): Path<(String,)>,
+    Path((slug,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
+    // Resolve the path segment as a slug; fall back to treating it as a raw
+    // recipe id so legacy/id-shaped links under `/r/` keep working.
+    let id = match imkitchen_web_shared::try_page_response!(
+        app.core.recipe.find_id_by_slug(&slug),
+        template
+    ) {
+        Some(id) => id,
+        None => slug.clone(),
+    };
     let recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.user(&id), template);
 
     // Public recipes are viewable by anyone. Anonymous visitors get a demo

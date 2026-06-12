@@ -86,3 +86,38 @@ pub(crate) mod m0001 {
         }
     }
 }
+
+pub(crate) mod m0005 {
+    /// Rebuilds `recipe_user_stat` from each recipe's own events. The
+    /// recipe-user-stat-view subscription no longer handles the bulk
+    /// `AllSharedToCommunity` / `AllMadePrivate` events — the recipe-saga-share
+    /// saga now turns those into per-recipe `SharedToCommunity` / `MadePrivate`
+    /// events — so the `shared` count is recomputed purely from per-recipe
+    /// events to avoid double-counting the saga's historical backfill.
+    pub struct Rebuild;
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for Rebuild {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            sqlx::query("DELETE FROM recipe_user_stat")
+                .execute(&mut *connection)
+                .await?;
+
+            sqlx::query("UPDATE subscriber SET cursor = NULL WHERE key = 'recipe-user-stat-view'")
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            _connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            Ok(())
+        }
+    }
+}

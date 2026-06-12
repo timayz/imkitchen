@@ -63,6 +63,17 @@ pub struct KitchenTemplate {
     pub current_instruction: Option<(usize, Instruction)>,
     pub date: String,
     pub week_days: Vec<KitchenWeekDay>,
+    /// Recipe id → slug for the prep-reminder cards, so they can link to the
+    /// canonical `/r/{slug}` detail page. Missing ids fall back to the id.
+    pub slugs: std::collections::HashMap<String, String>,
+}
+
+impl KitchenTemplate {
+    /// Slug for a slot recipe id, falling back to the id when unknown (the
+    /// `/r/{param}` route also accepts a raw id).
+    pub fn dish_slug<'a>(&'a self, id: &'a str) -> &'a str {
+        self.slugs.get(id).map(String::as_str).unwrap_or(id)
+    }
 }
 
 impl Default for KitchenTemplate {
@@ -80,6 +91,7 @@ impl Default for KitchenTemplate {
             current_instruction: None,
             date: "".to_owned(),
             week_days: vec![],
+            slugs: std::collections::HashMap::new(),
         }
     }
 }
@@ -319,6 +331,17 @@ pub async fn page(
         None
     };
 
+    let slugs = if let Some(ref remiders) = prep_remiders {
+        imkitchen_web_shared::try_page_response!(
+            app.core
+                .recipe
+                .slugs(remiders.iter().map(|r| r.id.to_owned()).collect()),
+            template
+        )
+    } else {
+        std::collections::HashMap::new()
+    };
+
     if let (Some(recipe), Some(slot)) = (slot_recipe.as_mut(), &slot) {
         for ingredient in recipe.ingredients.iter_mut() {
             ingredient.quantity += ((recipe.household_size as u32 * ingredient.quantity
@@ -408,6 +431,7 @@ pub async fn page(
             current_instruction,
             date,
             week_days,
+            slugs,
             ..Default::default()
         }),
     )

@@ -11,6 +11,7 @@ pub mod contact_global_stat;
 pub mod mealplan_recipe;
 pub mod mealplan_slot;
 pub mod notification_recipient;
+pub mod recipe_owner;
 pub mod recipe_thumbnail;
 pub mod recipe_user;
 pub mod recipe_user_stat;

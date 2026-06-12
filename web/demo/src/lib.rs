@@ -35,6 +35,7 @@ pub fn routes() -> axum::Router<AppState> {
         .route("/demo/menu/{date}", get(menu_date))
         .route("/demo/recipes", get(recipes))
         .route("/demo/recipes/{id}", get(recipes_detail))
+        .route("/demo/r/{slug}", get(recipes_detail))
         .route("/demo/groceries", get(groceries))
         .route("/demo/signup", get(signup_modal))
 }
@@ -62,17 +63,18 @@ async fn recipes(template: Template, Query(query): Query<PageQuery>) -> impl Int
     template.demo().render(fixtures::recipes(query))
 }
 
-async fn recipes_detail(template: Template, Path((id,)): Path<(String,)>) -> impl IntoResponse {
-    // Demo catalog recipes render from fixtures. Any other id (e.g. a real
-    // recipe reached from an anonymous public page) redirects to the real,
-    // now-public detail route, which renders in demo mode for guests.
-    if fixtures::find_recipe(&id).is_some() {
+async fn recipes_detail(template: Template, Path((slug,)): Path<(String,)>) -> impl IntoResponse {
+    // Demo catalog recipes render from fixtures (their ids double as slugs). Any
+    // other slug (e.g. a real recipe reached from an anonymous public page)
+    // redirects to the real, now-public detail route, which renders in demo mode
+    // for guests and resolves both slugs and ids.
+    if fixtures::find_recipe(&slug).is_some() {
         template
             .demo()
-            .render(fixtures::recipe_detail(&id))
+            .render(fixtures::recipe_detail(&slug))
             .into_response()
     } else {
-        Redirect::to(&format!("/recipes/{id}")).into_response()
+        Redirect::to(&format!("/r/{slug}")).into_response()
     }
 }
 
