@@ -76,7 +76,11 @@ pub fn recipe_json_ld(recipe: &UserView, base_url: &str) -> String {
     let ingredients: Vec<String> = recipe
         .ingredients
         .iter()
-        .map(|i| format!("{} {}", i.unit.format(i.quantity), i.name).trim().to_owned())
+        .map(|i| {
+            format!("{} {}", i.unit.format(i.quantity), i.name)
+                .trim()
+                .to_owned()
+        })
         .collect();
 
     let instructions: Vec<serde_json::Value> = recipe
