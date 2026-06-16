@@ -181,7 +181,9 @@ pub async fn serve(
     let admin_upload = imkitchen_web_admin::upload_routes()
         .with_state(app_state.clone())
         .layer(DefaultBodyLimit::disable())
-        .layer(tower_http::limit::RequestBodyLimitLayer::new(50 * 1024 * 1024)); // 50MB
+        .layer(tower_http::limit::RequestBodyLimitLayer::new(
+            50 * 1024 * 1024,
+        )); // 50MB
 
     let app = axum::Router::new()
         .route("/health", get(imkitchen_web_public::routes::health::health))
