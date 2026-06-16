@@ -10,7 +10,7 @@ static RE_ALPHA_NUM: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[A-Za-z0-9
 
 #[derive(Validate)]
 pub struct SetUsernameInput {
-    #[validate(length(min = 3, max = 15), regex(path = *RE_ALPHA_NUM, message = "Only letters (A-Z, a-z) and numbers (0-9) are allowed."))]
+    #[validate(length(min = 3, max = 30), regex(path = *RE_ALPHA_NUM, message = "Only letters (A-Z, a-z) and numbers (0-9) are allowed."))]
     pub username: String,
 }
 
