@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use imkitchen_types::recipe_share::AllSharedToCommunity;
 
 impl<E: Executor + Clone> super::Module<E> {
@@ -13,7 +13,7 @@ impl<E: Executor + Clone> super::Module<E> {
         let share = self.load_share(&request_by).await?;
 
         share
-            .aggregator()?
+            .write()?
             .event(&AllSharedToCommunity { owner_name })
             .requested_by(&request_by)
             .commit(&self.executor)

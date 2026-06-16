@@ -46,7 +46,7 @@ pub enum Status {
     Resolved,
 }
 
-#[evento::aggregator]
+#[evento::aggregate]
 pub enum Contact {
     FormSubmitted {
         name: String,

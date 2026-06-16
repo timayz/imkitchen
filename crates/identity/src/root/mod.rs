@@ -3,7 +3,7 @@ use crate::types::user::{
     UsernameChanged,
 };
 use bitcode::{Decode, Encode};
-use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
+use evento::{Executor, Projection, ProjectionAggregate, metadata::Event};
 use std::ops::Deref;
 
 use crate::repository::{self};
@@ -81,18 +81,18 @@ pub fn create_projection<E: Executor>() -> Projection<E, User> {
         .skip::<LoggedIn>()
         .skip::<Logout>()
         .skip::<UsernameChanged>()
-        .safety_check()
+        .strict()
 }
 
-impl ProjectionAggregator for User {
-    fn aggregator_id(&self) -> String {
+impl ProjectionAggregate for User {
+    fn aggregate_id(&self) -> String {
         self.id.to_owned()
     }
 }
 
 #[evento::handler]
 async fn handle_registered(event: Event<Registered>, data: &mut User) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.state = State::Active;
     data.role = Role::User;
 

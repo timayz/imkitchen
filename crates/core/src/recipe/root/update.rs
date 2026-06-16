@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use sha3::{Digest, Sha3_224};
 use validator::Validate;
 
@@ -47,7 +47,7 @@ impl<E: Executor + Clone> super::Module<E> {
             crate::forbidden!("not owner of recipe");
         }
 
-        let mut builder = recipe.aggregator()?.requested_by(request_by).to_owned();
+        let mut builder = recipe.write()?.requested_by(request_by).to_owned();
         let mut has_data = false;
 
         if recipe.recipe_type != input.recipe_type {

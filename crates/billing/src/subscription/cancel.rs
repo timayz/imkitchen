@@ -1,5 +1,5 @@
 use crate::types::subscription::Cancelled;
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 
 impl<E: Executor> super::Module<E> {
     pub async fn cancel(&self, request_by: impl Into<String>) -> imkitchen_core::Result<()> {
@@ -8,7 +8,7 @@ impl<E: Executor> super::Module<E> {
 
         if subscription.is_active {
             subscription
-                .aggregator()?
+                .write()?
                 .event(&Cancelled)
                 .requested_by(request_by)
                 .commit(&self.executor)

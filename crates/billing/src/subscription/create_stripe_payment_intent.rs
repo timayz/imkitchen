@@ -1,5 +1,5 @@
 use crate::types::subscription::{PaymentDetails, StripePaymentIntentCreated};
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 
 impl<E: Executor> super::Module<E> {
     pub async fn create_stripe_payment_intent(
@@ -14,7 +14,7 @@ impl<E: Executor> super::Module<E> {
         let subscription = self.load(&request_by).await?;
 
         subscription
-            .aggregator()?
+            .write()?
             .event(&StripePaymentIntentCreated {
                 id: id.into(),
                 email,

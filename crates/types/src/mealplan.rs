@@ -79,7 +79,7 @@ pub enum Status {
     Failed,
 }
 
-#[evento::aggregator]
+#[evento::aggregate]
 pub enum MealPlan {
     DaysGenerated {
         start: u64,

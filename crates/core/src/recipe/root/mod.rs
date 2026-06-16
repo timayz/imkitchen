@@ -1,6 +1,6 @@
 use bitcode::{Decode, Encode};
 use evento::{
-    AggregatorExecutor, Executor, Projection, ProjectionAggregator,
+    AggregateExt, Executor, Projection, ProjectionAggregate,
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
@@ -94,11 +94,11 @@ pub fn create_share_projection<E: Executor>() -> Projection<E, RecipeShareState>
     Projection::new::<recipe_share::RecipeShare>()
         .handler(handle_all_shared_to_community())
         .handler(handle_all_made_private())
-        .safety_check()
+        .strict()
 }
 
-impl ProjectionAggregator for RecipeShareState {
-    fn aggregator_id(&self) -> String {
+impl ProjectionAggregate for RecipeShareState {
+    fn aggregate_id(&self) -> String {
         self.id.to_owned()
     }
 }
@@ -108,7 +108,7 @@ async fn handle_all_shared_to_community(
     event: Event<AllSharedToCommunity>,
     data: &mut RecipeShareState,
 ) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     Ok(())
 }
 
@@ -117,7 +117,7 @@ async fn handle_all_made_private(
     event: Event<AllMadePrivate>,
     data: &mut RecipeShareState,
 ) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     Ok(())
 }
 
@@ -139,18 +139,18 @@ pub fn create_projection<E: Executor>() -> Projection<E, Recipe> {
         .skip::<ThumbnailUploaded>()
         .skip::<ThumbnailResized>()
         .skip::<CuisineTypeChanged>()
-        .safety_check()
+        .strict()
 }
 
-impl ProjectionAggregator for Recipe {
-    fn aggregator_id(&self) -> String {
+impl ProjectionAggregate for Recipe {
+    fn aggregate_id(&self) -> String {
         self.id.to_owned()
     }
 }
 
 #[evento::handler]
 async fn handle_created(event: Event<Created>, data: &mut Recipe) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.owner_id = event.metadata.requested_by()?;
 
     Ok(())
@@ -158,7 +158,7 @@ async fn handle_created(event: Event<Created>, data: &mut Recipe) -> anyhow::Res
 
 #[evento::handler]
 async fn handle_imported(event: Event<Imported>, data: &mut Recipe) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.owner_id = event.metadata.requested_by()?;
     data.recipe_type = event.data.recipe_type;
 
@@ -358,7 +358,7 @@ async fn handle_thumbnail_uploaded<E: Executor>(
 ) -> anyhow::Result<()> {
     let original_version = context
         .executor
-        .original_version::<ThumbnailResized>(&event.aggregator_id)
+        .original_version::<ThumbnailResized>(&event.aggregate_id)
         .await?
         .expect("aggregator exist");
     let img = match image::load_from_memory(&event.data.data) {
@@ -369,7 +369,7 @@ async fn handle_thumbnail_uploaded<E: Executor>(
             return Ok(());
         }
     };
-    let mut builder = evento::aggregator(&event.aggregator_id)
+    let mut builder = evento::append(&event.aggregate_id)
         .original_version(original_version)
         .metadata_from(&event.metadata)
         .to_owned();

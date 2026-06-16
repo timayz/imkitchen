@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use imkitchen_types::recipe::SharedToCommunity;
 
 impl<E: Executor + Clone> super::Module<E> {
@@ -19,7 +19,7 @@ impl<E: Executor + Clone> super::Module<E> {
 
         if !recipe.is_shared {
             recipe
-                .aggregator()?
+                .write()?
                 .event(&SharedToCommunity {
                     owner_name: owner_name.into(),
                 })

@@ -64,7 +64,7 @@ async fn handle_resized<E: Executor>(
             RecipeThumbnail::Data,
         ])
         .values_panic([
-            event.aggregator_id.to_owned().into(),
+            event.aggregate_id.to_owned().into(),
             event.data.device.to_owned().into(),
             event.data.data.into(),
         ])
@@ -93,7 +93,7 @@ async fn handle_deleted<E: Executor>(
 
     let statement = Query::delete()
         .from_table(RecipeThumbnail::Table)
-        .and_where(Expr::col(RecipeThumbnail::Id).eq(&event.aggregator_id))
+        .and_where(Expr::col(RecipeThumbnail::Id).eq(&event.aggregate_id))
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);

@@ -24,7 +24,7 @@ impl<E: Executor> crate::Module<E> {
         create_projection()
             .data((self.read_db.clone(), self.write_db.clone()))
             .load(&id)
-            .aggregator::<Subscription>(id)
+            .aggregate::<Subscription>(id)
             .execute(&self.executor)
             .await
     }
@@ -179,7 +179,7 @@ impl<E: Executor> Snapshot<E> for LoginView {
 
 #[evento::handler]
 async fn handle_registered(event: Event<Registered>, data: &mut LoginView) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.email = event.data.email.to_owned();
 
     Ok(())
@@ -201,7 +201,7 @@ async fn handle_username_changed(
 
 #[evento::handler]
 async fn handle_logged_in(event: Event<LoggedIn>, data: &mut LoginView) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.logins
         .retain(|r| r.user_agent != event.data.user_agent);
     data.logins.push(Login {

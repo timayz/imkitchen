@@ -35,7 +35,7 @@ async fn handle_created<E: Executor>(
             RecipeUserFts::Ingredients,
         ])
         .values([
-            event.aggregator_id.to_owned().into(),
+            event.aggregate_id.to_owned().into(),
             event.data.name.into(),
             "".into(),
             "".into(),
@@ -72,7 +72,7 @@ async fn handle_imported<E: Executor>(
             RecipeUserFts::Ingredients,
         ])
         .values([
-            event.aggregator_id.to_owned().into(),
+            event.aggregate_id.to_owned().into(),
             event.data.name.into(),
             event.data.description.into(),
             ingredients.into(),
@@ -96,7 +96,7 @@ async fn handle_basic_information_changed<E: Executor>(
         .table(RecipeUserFts::Table)
         .and_where(Expr::cust_with_values(
             "recipe_user_fts = ?",
-            [event.aggregator_id.to_owned()],
+            [event.aggregate_id.to_owned()],
         ))
         .values([
             (RecipeUserFts::Name, event.data.name.into()),
@@ -130,7 +130,7 @@ async fn handle_ingredients_changed<E: Executor>(
         .table(RecipeUserFts::Table)
         .and_where(Expr::cust_with_values(
             "recipe_user_fts = ?",
-            [event.aggregator_id.to_owned()],
+            [event.aggregate_id.to_owned()],
         ))
         .value(RecipeUserFts::Name, ingredients)
         .build_sqlx(SqliteQueryBuilder);
@@ -151,7 +151,7 @@ async fn handle_deleted<E: Executor>(
         .from_table(RecipeUserFts::Table)
         .and_where(Expr::cust_with_values(
             "recipe_user_fts = ?",
-            [event.aggregator_id.to_owned()],
+            [event.aggregate_id.to_owned()],
         ))
         .build_sqlx(SqliteQueryBuilder);
 

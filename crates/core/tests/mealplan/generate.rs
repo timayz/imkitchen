@@ -28,7 +28,7 @@ async fn test_random() -> anyhow::Result<()> {
 
     imkitchen_core::mealplan::subscription()
         .data(state.write_db.clone())
-        .unretry_execute(&state.executor)
+        .no_retry().run_once(&state.executor)
         .await?;
 
     cmd.generate(imkitchen_core::mealplan::Generate {

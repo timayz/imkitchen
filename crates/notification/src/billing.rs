@@ -80,7 +80,7 @@ async fn handle_invoice_created<E: Executor>(
     let price = event.data.details.price + event.data.details.tax;
     let amount = format!("{}.{:02} EUR", price / 100, price % 100);
     let invoice_number = format!("{}-{:04}", event.data.key, event.data.number);
-    let invoice_url = format!("{}/invoices/{}", service.app_url, event.aggregator_id);
+    let invoice_url = format!("{}/invoices/{}", service.app_url, event.aggregate_id);
 
     let html = template.to_string(InvoiceCreatedHtmlTemplate {
         email: email.to_owned(),
@@ -118,7 +118,7 @@ async fn handle_subscription_cancelled<E: Executor>(
     let service = context.extract::<EmailService>();
     let year = OffsetDateTime::from_unix_timestamp(event.timestamp.try_into()?)?.year();
 
-    let user_id = event.aggregator_id.to_owned();
+    let user_id = event.aggregate_id.to_owned();
     let (read_db, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
     let recipient = match recipient::load(context.executor, &read_db, &write_db, &user_id).await? {
         Some(r) => r,

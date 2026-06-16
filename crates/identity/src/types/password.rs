@@ -1,4 +1,4 @@
-#[evento::aggregator]
+#[evento::aggregate]
 pub enum Password {
     ResetRequested {
         user_id: String,

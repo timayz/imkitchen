@@ -1,5 +1,5 @@
 use crate::types::user::{Activated, State};
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 
 impl<E: Executor> super::Module<E> {
     pub async fn activate(
@@ -15,7 +15,7 @@ impl<E: Executor> super::Module<E> {
             return Ok(());
         }
 
-        user.aggregator()?
+        user.write()?
             .event(&Activated)
             .requested_by(request_by)
             .commit(&self.executor)

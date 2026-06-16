@@ -22,7 +22,7 @@ askama = "0.16"
 world-tax = "0.5"
 sqlx = { version = "0.9", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.19", features = ["sqlite"] }
-evento = { version = "2.0.0-alpha.20", features = ["sqlite", "rw"] }
+evento = { version = "2.0.0-alpha.21", features = ["sqlite", "rw"] }
 argon2 = { version = "0.5", features = ["std"] }
 jsonwebtoken = { version = "10.4", features = ["aws_lc_rs"] }
 lettre = { version = "0.11", features = ["rustls-tls", "builder"] }

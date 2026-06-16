@@ -44,18 +44,18 @@ pub struct UserProfile {
 fn create_projection<E: Executor>() -> Projection<E, UserProfile> {
     Projection::new::<user_profile::UserProfile>()
         .handler(handle_changed())
-        .safety_check()
+        .strict()
 }
 
-impl evento::ProjectionAggregator for UserProfile {
-    fn aggregator_id(&self) -> String {
+impl evento::ProjectionAggregate for UserProfile {
+    fn aggregate_id(&self) -> String {
         self.id.to_owned()
     }
 }
 
 #[evento::handler]
 async fn handle_changed(event: Event<Changed>, data: &mut UserProfile) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.description = event.data.description;
 
     Ok(())

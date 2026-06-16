@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use imkitchen_types::recipe::ThumbnailUploaded;
 
 impl<E: Executor + Clone> super::Module<E> {
@@ -22,7 +22,7 @@ impl<E: Executor + Clone> super::Module<E> {
         };
 
         recipe
-            .aggregator()?
+            .write()?
             .event(&ThumbnailUploaded { data })
             .requested_by(request_by)
             .commit(&self.executor)

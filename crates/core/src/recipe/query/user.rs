@@ -598,7 +598,7 @@ async fn handle_created(event: Event<Created>, data: &mut UserView) -> anyhow::R
     data.owner_id = event.metadata.requested_by()?;
     data.owner_name = event.data.owner_name.to_owned();
     data.created_at = event.timestamp;
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.name = event.data.name;
     data.household_size = 4;
 
@@ -610,7 +610,7 @@ async fn handle_imported(event: Event<Imported>, data: &mut UserView) -> anyhow:
     data.created_at = event.timestamp;
     data.owner_id = event.metadata.requested_by()?;
     data.owner_name = event.data.owner_name.to_owned();
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.name = event.data.name;
     data.origin = event.data.origin;
     data.description = event.data.description;

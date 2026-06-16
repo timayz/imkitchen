@@ -1,6 +1,6 @@
 use crate::recipe::Ingredient;
 
-#[evento::aggregator]
+#[evento::aggregate]
 pub enum Shopping {
     Checked {
         ingredient: String,

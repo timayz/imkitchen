@@ -44,7 +44,7 @@ async fn handle_reset_requested<E: Executor>(
 
     let reset_url = format!(
         "{}/reset-password/new/{}",
-        event.data.host, event.aggregator_id
+        event.data.host, event.aggregate_id
     );
 
     let html = template.to_string(ResetPasswordHtmlTemplate {

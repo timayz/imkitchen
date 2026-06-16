@@ -1,5 +1,5 @@
 use crate::types::user::UsernameChanged;
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use regex::Regex;
 use std::sync::LazyLock;
 use validator::Validate;
@@ -53,7 +53,7 @@ impl<E: Executor> super::Module<E> {
             imkitchen_core::server!("user in set_username");
         };
 
-        user.aggregator()?
+        user.write()?
             .event(&UsernameChanged {
                 value: input.username,
             })

@@ -41,7 +41,7 @@ pub enum State {
     Suspended,
 }
 
-#[evento::aggregator]
+#[evento::aggregate]
 pub enum User {
     Registered {
         email: String,

@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use imkitchen_types::user_profile::Changed;
 use validator::Validate;
 
@@ -20,7 +20,7 @@ impl<E: Executor> super::Module<E> {
         let profile = self.load(&id).await?;
 
         profile
-            .aggregator()?
+            .write()?
             .event(&Changed {
                 description: input.description,
             })

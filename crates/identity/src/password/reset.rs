@@ -3,7 +3,7 @@ use argon2::{
     Argon2, PasswordHasher,
     password_hash::{SaltString, rand_core::OsRng},
 };
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use time::OffsetDateTime;
 use validator::Validate;
 
@@ -52,7 +52,7 @@ impl<E: Executor> super::Module<E> {
         .await?;
 
         password
-            .aggregator()?
+            .write()?
             .event(&ResetCompleted)
             .requested_by(&password.user_id)
             .commit(&self.executor)

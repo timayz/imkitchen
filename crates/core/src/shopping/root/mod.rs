@@ -5,7 +5,7 @@ use bitcode::{Decode, Encode};
 pub use generate::Generate;
 pub use toogle::*;
 
-use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
+use evento::{Executor, Projection, ProjectionAggregate, metadata::Event};
 use imkitchen_types::shopping::{self, Checked, Generated, Unchecked};
 use std::{collections::HashSet, ops::Deref};
 
@@ -45,8 +45,8 @@ pub struct Shopping {
     pub generated_at: u64,
 }
 
-impl ProjectionAggregator for Shopping {
-    fn aggregator_id(&self) -> String {
+impl ProjectionAggregate for Shopping {
+    fn aggregate_id(&self) -> String {
         self.user_id.to_owned()
     }
 }
@@ -56,7 +56,7 @@ pub fn create_projection<E: Executor>() -> Projection<E, Shopping> {
         .handler(handle_checked())
         .handler(handle_generated())
         .handler(handle_unchecked())
-        .safety_check()
+        .strict()
 }
 
 #[evento::handler]

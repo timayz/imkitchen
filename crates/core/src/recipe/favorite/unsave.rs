@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use imkitchen_types::favorite::Unsaved;
 
 impl<E: Executor + Clone> super::Module<E> {
@@ -12,7 +12,7 @@ impl<E: Executor + Clone> super::Module<E> {
         let favorite = self.load(&id, &user_id).await?;
         if favorite.saved {
             favorite
-                .aggregator()?
+                .write()?
                 .event(&Unsaved { recipe_id: id })
                 .requested_by(user_id)
                 .commit(&self.executor)

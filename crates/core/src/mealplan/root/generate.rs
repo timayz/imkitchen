@@ -1,6 +1,6 @@
 use evento::Executor;
 use evento::cursor::Args;
-use evento::{Aggregator, ReadAggregator};
+use evento::{Aggregate, EventFilter};
 use imkitchen_db::mealplan_recipe::MealPlanRecipe;
 use imkitchen_types::mealplan::{DaysGenerated, MealPlan, Slot, SlotRecipe};
 use imkitchen_types::recipe::{DietaryRestriction, RecipeType};
@@ -64,8 +64,8 @@ impl<E: Executor> super::Module<E> {
         let last_event = self
             .executor
             .read(
-                Some(vec![ReadAggregator::id(
-                    MealPlan::aggregator_type(),
+                Some(vec![EventFilter::by_id(
+                    MealPlan::aggregate_type(),
                     &input.user_id,
                 )]),
                 None,
@@ -80,7 +80,7 @@ impl<E: Executor> super::Module<E> {
             .unwrap_or_default();
 
         let mut main_course_recipes = main_course_recipes.iter().cycle().take(input.days as usize);
-        let mut builder = evento::aggregator(&input.user_id)
+        let mut builder = evento::append(&input.user_id)
             .original_version(version)
             .requested_by(&input.user_id)
             .to_owned();
