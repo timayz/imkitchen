@@ -58,7 +58,8 @@ async fn test_safety_check() -> anyhow::Result<()> {
         .skip::<MadeAdmin>()
         .skip::<UsernameChanged>()
         .data(state.write_db.clone())
-        .no_retry().run_once(&state.executor)
+        .no_retry()
+        .run_once(&state.executor)
         .await?;
 
     Ok(())

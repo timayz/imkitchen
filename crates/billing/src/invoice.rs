@@ -3,7 +3,7 @@ use crate::types::{
     subscription::{Address, StripePaymentIntentSucceeded},
 };
 use evento::{
-    Aggregate, AggregateEvent, Executor, EventFilter,
+    Aggregate, AggregateEvent, EventFilter, Executor,
     cursor::Args,
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
