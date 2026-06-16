@@ -57,7 +57,7 @@ fn minify_js(source: &str) -> String {
     let source_type = SourceType::mjs();
 
     let parser_ret = Parser::new(&allocator, source, source_type).parse();
-    if !parser_ret.errors.is_empty() {
+    if !parser_ret.diagnostics.is_empty() {
         return source.to_string();
     }
     let mut program = parser_ret.program;
