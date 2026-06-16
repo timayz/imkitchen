@@ -54,7 +54,7 @@ pub(crate) mod m0001 {
                     .string_len(320),
             )
             .col(ColumnDef::new(UserAdmin::FullName).string().string_len(25))
-            .col(ColumnDef::new(UserAdmin::Username).string().string_len(15))
+            .col(ColumnDef::new(UserAdmin::Username).string().string_len(25))
             .col(
                 ColumnDef::new(UserAdmin::State)
                     .string()

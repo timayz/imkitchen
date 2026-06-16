@@ -45,7 +45,7 @@ struct ZipEntry {
     image: Option<Vec<u8>>,
 }
 
-/// Sanitize an author folder name into a valid username (3-15 chars, `[a-z0-9_]`).
+/// Sanitize an author folder name into a valid username (3-25 chars, `[a-z0-9_]`).
 ///
 /// Letters and digits are lowercased and kept; spaces, hyphens and underscores collapse to a
 /// single underscore; everything else is dropped. Returns `None` when the result cannot satisfy
@@ -68,8 +68,8 @@ pub fn sanitize_username(folder: &str) -> Option<String> {
         out.pop();
     }
 
-    if out.chars().count() > 15 {
-        out = out.chars().take(15).collect();
+    if out.chars().count() > 25 {
+        out = out.chars().take(25).collect();
         while out.ends_with('_') {
             out.pop();
         }
@@ -245,7 +245,7 @@ pub async fn process_zip<E: Executor + Clone>(
                 scope: "author".into(),
                 name: author,
                 message:
-                    "Could not derive a valid username (needs 3-15 letters, digits or underscores)."
+                    "Could not derive a valid username (needs 3-25 letters, digits or underscores)."
                         .into(),
             });
             continue;
@@ -363,10 +363,10 @@ mod tests {
     }
 
     #[test]
-    fn truncates_to_fifteen() {
-        let out = sanitize_username("abcdefghijklmnopqrstuvwxyz").unwrap();
-        assert_eq!(out, "abcdefghijklmno");
-        assert!(out.chars().count() <= 15);
+    fn truncates_to_twenty_five() {
+        let out = sanitize_username("abcdefghijklmnopqrstuvwxyzabcdefghijklmn").unwrap();
+        assert_eq!(out, "abcdefghijklmnopqrstuvwxy");
+        assert!(out.chars().count() <= 25);
     }
 
     #[test]
