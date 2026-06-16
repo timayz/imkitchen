@@ -31,7 +31,7 @@ pub(crate) mod m0001 {
                     .primary_key(),
             )
             .col(ColumnDef::new(UserLogin::Cursor).string().not_null())
-            .col(ColumnDef::new(UserLogin::Username).string().string_len(30))
+            .col(ColumnDef::new(UserLogin::Username).string().string_len(25))
             .col(ColumnDef::new(UserLogin::Logins).blob().not_null())
             .col(
                 ColumnDef::new(UserLogin::Role)
