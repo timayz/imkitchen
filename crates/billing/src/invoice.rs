@@ -3,7 +3,7 @@ use crate::types::{
     subscription::{Address, StripePaymentIntentSucceeded},
 };
 use evento::{
-    Aggregator, AggregatorEvent, Executor, ReadAggregator,
+    Aggregate, AggregateEvent, EventFilter, Executor,
     cursor::Args,
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
@@ -29,8 +29,8 @@ async fn handler_payment_intent_succeeded<E: Executor>(
     let result = context
         .executor
         .read(
-            Some(vec![ReadAggregator::event(
-                Created::aggregator_type(),
+            Some(vec![EventFilter::by_event(
+                Created::aggregate_type(),
                 Created::event_name(),
             )]),
             None,

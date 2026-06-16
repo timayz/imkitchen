@@ -1,5 +1,5 @@
 use bitcode::{Decode, Encode};
-use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
+use evento::{Executor, Projection, ProjectionAggregate, metadata::Event};
 use imkitchen_types::contact::{
     self, FormSubmitted, MarkedReadAndReply, Reopened, Resolved, Status,
 };
@@ -39,8 +39,8 @@ pub struct Contact {
     pub status: Status,
 }
 
-impl ProjectionAggregator for Contact {
-    fn aggregator_id(&self) -> String {
+impl ProjectionAggregate for Contact {
+    fn aggregate_id(&self) -> String {
         self.id.to_owned()
     }
 }
@@ -51,7 +51,7 @@ pub fn create_projection<E: Executor>() -> Projection<E, Contact> {
         .handler(handle_reopened())
         .handler(handle_resolved())
         .handler(handle_marked_read_and_reply())
-        .safety_check()
+        .strict()
 }
 
 #[evento::handler]
@@ -59,7 +59,7 @@ async fn handle_form_submitted(
     event: Event<FormSubmitted>,
     row: &mut Contact,
 ) -> anyhow::Result<()> {
-    row.id = event.aggregator_id.to_owned();
+    row.id = event.aggregate_id.to_owned();
     row.status = Status::Unread;
 
     Ok(())

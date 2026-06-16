@@ -16,7 +16,7 @@ async fn test_mark_read_and_reply() -> anyhow::Result<()> {
 
     imkitchen_core::contact::global_stat::subscription()
         .data(state.write_db.clone())
-        .unretry_execute(&state.executor)
+        .no_retry().run_once(&state.executor)
         .await?;
 
     Ok(())

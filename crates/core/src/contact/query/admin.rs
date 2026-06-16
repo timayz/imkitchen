@@ -232,7 +232,7 @@ async fn handle_form_submmited(
     event: Event<FormSubmitted>,
     data: &mut AdminView,
 ) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.email = event.data.email.to_owned();
     data.status.0 = Status::Unread;
     data.subject.0 = event.data.subject.to_owned();

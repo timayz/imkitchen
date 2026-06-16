@@ -2,7 +2,7 @@ mod save;
 mod unsave;
 
 use bitcode::{Decode, Encode};
-use evento::{Executor, Projection, ProjectionAggregator, metadata::Event};
+use evento::{Executor, Projection, ProjectionAggregate, metadata::Event};
 use imkitchen_types::favorite::{self};
 use std::ops::Deref;
 
@@ -50,18 +50,18 @@ pub fn create_projection<E: Executor>() -> Projection<E, Favorite> {
     Projection::new::<favorite::Favorite>()
         .handler(handle_saved())
         .handler(handle_unsaved())
-        .safety_check()
+        .strict()
 }
 
-impl ProjectionAggregator for Favorite {
-    fn aggregator_id(&self) -> String {
+impl ProjectionAggregate for Favorite {
+    fn aggregate_id(&self) -> String {
         self.id.to_owned()
     }
 }
 
 #[evento::handler]
 async fn handle_saved(event: Event<favorite::Saved>, data: &mut Favorite) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.saved = true;
 
     Ok(())
@@ -72,7 +72,7 @@ async fn handle_unsaved(
     event: Event<favorite::Unsaved>,
     data: &mut Favorite,
 ) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.saved = false;
 
     Ok(())

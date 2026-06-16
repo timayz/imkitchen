@@ -155,7 +155,7 @@ async fn handle_stripe_payment_intent_succeeded<E: Executor>(
         .into_table(UserSubscription::Table)
         .columns([UserSubscription::Id, UserSubscription::ExpireAt])
         .values_panic([
-            event.aggregator_id.to_owned().into(),
+            event.aggregate_id.to_owned().into(),
             event.data.expire_at.into(),
         ])
         .on_conflict(
@@ -181,7 +181,7 @@ async fn handle_cancelled<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::delete()
         .from_table(UserSubscription::Table)
-        .and_where(Expr::col(UserSubscription::Id).eq(&event.aggregator_id))
+        .and_where(Expr::col(UserSubscription::Id).eq(&event.aggregate_id))
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);

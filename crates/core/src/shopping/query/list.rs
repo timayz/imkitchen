@@ -67,7 +67,7 @@ async fn handle_generated<E: Executor>(
             ShoppingList::GeneratedAt,
         ])
         .values_panic([
-            event.aggregator_id.to_owned().into(),
+            event.aggregate_id.to_owned().into(),
             ingredients.into(),
             event.data.from_date.into(),
             (event.data.days as i32).into(),

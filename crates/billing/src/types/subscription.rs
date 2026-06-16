@@ -203,7 +203,7 @@ fn country_name(code: &str) -> &'static str {
     }
 }
 
-#[evento::aggregator]
+#[evento::aggregate]
 pub enum Subscription {
     LifePremiumToggled {
         expire_at: u64,

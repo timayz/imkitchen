@@ -1,4 +1,4 @@
-use evento::{Aggregator, Executor, ProjectionAggregator};
+use evento::{Aggregate, Executor, ProjectionAggregate};
 use imkitchen_types::recipe::{self, Deleted};
 
 impl<E: Executor> super::Module<E> {
@@ -18,14 +18,14 @@ impl<E: Executor> super::Module<E> {
         }
 
         recipe
-            .aggregator()?
+            .write()?
             .event(&Deleted)
             .requested_by(request_by)
             .commit(&self.executor)
             .await?;
 
         self.executor
-            .delete_snapshot(recipe::Recipe::aggregator_type().to_owned(), id)
+            .delete_snapshot(recipe::Recipe::aggregate_type().to_owned(), id)
             .await?;
 
         Ok(())

@@ -40,11 +40,11 @@ fn create_projection<E: Executor>() -> Projection<E, Password> {
     Projection::new::<password::Password>()
         .handler(handle_reset_requested())
         .handler(handle_reset_completed())
-        .safety_check()
+        .strict()
 }
 
-impl evento::ProjectionAggregator for Password {
-    fn aggregator_id(&self) -> String {
+impl evento::ProjectionAggregate for Password {
+    fn aggregate_id(&self) -> String {
         self.id.to_owned()
     }
 }
@@ -54,7 +54,7 @@ async fn handle_reset_requested(
     event: Event<ResetRequested>,
     data: &mut Password,
 ) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.user_id = event.data.user_id.to_owned();
     data.completed = false;
     data.expire_at = (OffsetDateTime::from_unix_timestamp(event.timestamp.try_into()?)?

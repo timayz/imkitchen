@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use imkitchen_types::recipe::MadePrivate;
 
 impl<E: Executor + Clone> super::Module<E> {
@@ -18,7 +18,7 @@ impl<E: Executor + Clone> super::Module<E> {
 
         if recipe.is_shared {
             recipe
-                .aggregator()?
+                .write()?
                 .event(&MadePrivate)
                 .requested_by(request_by)
                 .commit(&self.executor)

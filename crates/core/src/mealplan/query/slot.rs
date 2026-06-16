@@ -284,7 +284,7 @@ async fn handle_days_generated<E: Executor>(
             MealPlanRecipe::AdvancePrep,
         ])
         .from(MealPlanRecipe::Table)
-        .and_where(Expr::col(MealPlanRecipe::UserId).eq(&event.aggregator_id))
+        .and_where(Expr::col(MealPlanRecipe::UserId).eq(&event.aggregate_id))
         .and_where(Expr::col(MealPlanRecipe::Id).is_in(recipe_ids))
         .to_owned();
 
@@ -310,7 +310,7 @@ async fn handle_days_generated<E: Executor>(
         ])
         .to_owned();
     let mut has_values = false;
-    let user_id = event.aggregator_id.to_owned();
+    let user_id = event.aggregate_id.to_owned();
     let timestamp = event.timestamp;
     for slot in event.data.slots {
         let Some(main_course): Option<DaySlotRecipe> = recipes
@@ -408,7 +408,7 @@ async fn handle_slot_recipe_status_changed<E: Executor>(
     event: Event<SlotRecipeStatusChanged>,
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
-    let user_id = event.aggregator_id.to_owned();
+    let user_id = event.aggregate_id.to_owned();
 
     let (sql, values) = Query::select()
         .columns([

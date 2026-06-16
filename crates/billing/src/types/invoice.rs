@@ -10,7 +10,7 @@ pub struct InvoiceAddress {
     pub address: Address,
 }
 
-#[evento::aggregator]
+#[evento::aggregate]
 pub enum Invoice {
     Created {
         key: String,

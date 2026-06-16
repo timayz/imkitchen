@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use imkitchen_types::favorite::Saved;
 
 impl<E: Executor + Clone> super::Module<E> {
@@ -14,7 +14,7 @@ impl<E: Executor + Clone> super::Module<E> {
 
         if !favorite.saved {
             favorite
-                .aggregator()?
+                .write()?
                 .event(&Saved {
                     recipe_id: id,
                     recipe_owner: owner_id.into(),

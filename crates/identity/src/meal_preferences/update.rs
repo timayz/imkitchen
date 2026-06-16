@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use imkitchen_types::meal_preferences::Changed;
 use imkitchen_types::recipe::DietaryRestriction;
 use validator::Validate;
@@ -24,7 +24,7 @@ impl<E: Executor> super::Module<E> {
         let preferences = self.load(&id).await?;
 
         preferences
-            .aggregator()?
+            .write()?
             .event(&Changed {
                 dietary_restrictions: input.dietary_restrictions,
                 household_size: input.household_size,

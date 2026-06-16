@@ -200,7 +200,7 @@ impl DietaryRestriction {
     }
 }
 
-#[evento::aggregator]
+#[evento::aggregate]
 pub enum Recipe {
     Created {
         name: String,

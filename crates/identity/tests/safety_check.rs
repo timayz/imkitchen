@@ -52,13 +52,14 @@ async fn test_safety_check() -> anyhow::Result<()> {
     cmd.logout(&id, access_id).await?;
 
     imkitchen_identity::global_stat::subscription()
-        .safety_check()
+        .strict()
         .skip::<LoggedIn>()
         .skip::<Logout>()
         .skip::<MadeAdmin>()
         .skip::<UsernameChanged>()
         .data(state.write_db.clone())
-        .unretry_execute(&state.executor)
+        .no_retry()
+        .run_once(&state.executor)
         .await?;
 
     Ok(())

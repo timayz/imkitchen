@@ -16,7 +16,7 @@
 //! truncate). That is what keeps the historical backfill race-free.
 
 use evento::{
-    Executor, ProjectionAggregator,
+    Executor, ProjectionAggregate,
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
@@ -83,7 +83,7 @@ async fn handle_created<E: Executor>(
     let (_, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
     index_owner(
         &write_db,
-        &event.aggregator_id,
+        &event.aggregate_id,
         &event.metadata.requested_by()?,
     )
     .await
@@ -97,7 +97,7 @@ async fn handle_imported<E: Executor>(
     let (_, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
     index_owner(
         &write_db,
-        &event.aggregator_id,
+        &event.aggregate_id,
         &event.metadata.requested_by()?,
     )
     .await
@@ -111,7 +111,7 @@ async fn handle_deleted<E: Executor>(
     let (_, write_db) = context.extract::<(SqlitePool, SqlitePool)>();
     let (sql, values) = Query::delete()
         .from_table(RecipeOwner::Table)
-        .and_where(Expr::col(RecipeOwner::RecipeId).eq(&event.aggregator_id))
+        .and_where(Expr::col(RecipeOwner::RecipeId).eq(&event.aggregate_id))
         .build_sqlx(SqliteQueryBuilder);
 
     sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
@@ -145,7 +145,7 @@ async fn handle_all_shared_to_community<E: Executor>(
         }
 
         recipe
-            .aggregator()?
+            .write()?
             .event(&SharedToCommunity {
                 owner_name: event.data.owner_name.to_owned(),
             })
@@ -179,7 +179,7 @@ async fn handle_all_made_private<E: Executor>(
         }
 
         recipe
-            .aggregator()?
+            .write()?
             .event(&MadePrivate)
             .requested_by(owner_id.as_str())
             .commit(context.executor)

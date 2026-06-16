@@ -89,7 +89,7 @@ async fn handle_recipe_created<E: Executor>(
             ShoppingRecipe::Ingredients,
         ])
         .values([
-            event.aggregator_id.to_owned().into(),
+            event.aggregate_id.to_owned().into(),
             event.metadata.requested_by()?.into(),
             ingredients.into(),
         ])?
@@ -118,7 +118,7 @@ async fn handle_recipe_imported<E: Executor>(
             ShoppingRecipe::Ingredients,
         ])
         .values([
-            event.aggregator_id.to_owned().into(),
+            event.aggregate_id.to_owned().into(),
             event.metadata.requested_by()?.into(),
             ingredients.into(),
         ])?
@@ -139,7 +139,7 @@ async fn handle_recipe_deleted<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::delete()
         .from_table(ShoppingRecipe::Table)
-        .and_where(Expr::col(ShoppingRecipe::Id).eq(&event.aggregator_id))
+        .and_where(Expr::col(ShoppingRecipe::Id).eq(&event.aggregate_id))
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
@@ -160,7 +160,7 @@ async fn handle_recipe_ingredients_changed<E: Executor>(
 
     update_col(
         &pool,
-        &event.aggregator_id,
+        &event.aggregate_id,
         ShoppingRecipe::Ingredients,
         ingredients,
     )

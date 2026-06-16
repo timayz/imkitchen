@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use imkitchen_db::shopping_recipe::ShoppingRecipe;
 use imkitchen_db::shopping_slot::ShoppingSlot;
 use imkitchen_types::{recipe::Ingredient, shopping::Generated};
@@ -61,7 +61,7 @@ impl<E: Executor> super::Module<E> {
         }
 
         shopping
-            .aggregator()?
+            .write()?
             .event(&Generated {
                 ingredients: ingredients.values().cloned().collect(),
                 from_date: input.date,

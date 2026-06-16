@@ -50,18 +50,18 @@ pub struct MealPreferences {
 fn create_projection<E: Executor>() -> Projection<E, MealPreferences> {
     Projection::new::<meal_preferences::MealPreferences>()
         .handler(handle_updated())
-        .safety_check()
+        .strict()
 }
 
-impl evento::ProjectionAggregator for MealPreferences {
-    fn aggregator_id(&self) -> String {
+impl evento::ProjectionAggregate for MealPreferences {
+    fn aggregate_id(&self) -> String {
         self.id.to_owned()
     }
 }
 
 #[evento::handler]
 async fn handle_updated(event: Event<Changed>, data: &mut MealPreferences) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.household_size = event.data.household_size;
     data.dietary_restrictions = event.data.dietary_restrictions;
     data.cuisine_variety_weight = event.data.cuisine_variety_weight;

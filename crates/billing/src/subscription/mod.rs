@@ -73,11 +73,11 @@ fn create_projection<E: Executor>() -> Projection<E, Subscription> {
         .handler(handle_cancelled())
         .handler(handle_stripe_setup_intent_created())
         .handler(handle_stripe_setup_intent_succeeded())
-        .safety_check()
+        .strict()
 }
 
-impl evento::ProjectionAggregator for Subscription {
-    fn aggregator_id(&self) -> String {
+impl evento::ProjectionAggregate for Subscription {
+    fn aggregate_id(&self) -> String {
         self.id.to_owned()
     }
 }
@@ -87,7 +87,7 @@ async fn handle_life_premium_toggled(
     event: Event<subscription::LifePremiumToggled>,
     data: &mut Subscription,
 ) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.expire_at = event.data.expire_at;
 
     Ok(())
@@ -98,7 +98,7 @@ async fn handle_stripe_customer_created(
     event: Event<subscription::StripeCustomerCreated>,
     data: &mut Subscription,
 ) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.customer_id = Some(event.data.id);
 
     Ok(())
@@ -109,7 +109,7 @@ async fn handle_stripe_payment_intent_created(
     event: Event<subscription::StripePaymentIntentCreated>,
     data: &mut Subscription,
 ) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.payment_intent_id = Some(event.data.id);
     data.payment_details = Some(event.data.details);
     data.email = Some(event.data.email.to_owned());
@@ -122,7 +122,7 @@ async fn handle_stripe_setup_intent_created(
     event: Event<subscription::StripeSetupIntentCreated>,
     data: &mut Subscription,
 ) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.setup_intent_id = Some(event.data.id);
 
     Ok(())
@@ -133,7 +133,7 @@ async fn handle_stripe_payment_intent_succeeded(
     event: Event<subscription::StripePaymentIntentSucceeded>,
     data: &mut Subscription,
 ) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.payment_intent_id = None;
     data.payment_method_id = Some(event.data.payment_method_id);
     data.name = Some(event.data.name);
@@ -149,7 +149,7 @@ async fn handle_stripe_setup_intent_succeeded(
     event: Event<subscription::StripeSetupIntentSucceeded>,
     data: &mut Subscription,
 ) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.setup_intent_id = None;
     data.name = event.data.name;
     data.address = event.data.address;

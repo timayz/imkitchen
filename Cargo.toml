@@ -15,14 +15,14 @@ axum = { version = "0.8", features = ["macros", "multipart"] }
 axum-extra = { version = "0.12", features = ["cookie", "form", "query", "typed-header"] }
 webp = "0.3"
 tower = "0.5"
-tower-http = { version = "0.6", features = ["fs", "trace", "limit", "compression-br", "compression-gzip"] }
+tower-http = { version = "0.7", features = ["fs", "trace", "limit", "compression-br", "compression-gzip"] }
 rust-i18n = "4.1"
 time-tz = "3.0.0-rc.5.0.0"
 askama = "0.16"
 world-tax = "0.5"
 sqlx = { version = "0.9", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.19", features = ["sqlite"] }
-evento = { version = "2.0.0-alpha.20", features = ["sqlite", "rw"] }
+evento = { version = "2.0.0-alpha.21", features = ["sqlite", "rw"] }
 argon2 = { version = "0.5", features = ["std"] }
 jsonwebtoken = { version = "10.4", features = ["aws_lc_rs"] }
 lettre = { version = "0.11", features = ["rustls-tls", "builder"] }
@@ -52,14 +52,14 @@ urlencoding = "2.1"
 base64 = "0.22"
 url = "2.5"
 minify-html = "0.18"
-oxc = { version = "0.135.0", features = ["minifier", "codegen"] }
+oxc = { version = "0.136.0", features = ["minifier", "codegen"] }
 lightningcss = { version = "1.0.0-alpha.71", default-features = false }
 ulid = "1.2"
 sea-query = { version = "1.0.1", default-features = false, features = ["derive", "audit", "backend-sqlite"] }
 sea-query-sqlx = { version = "0.9.1", features = ["runtime-tokio", "sqlx-sqlite", "with-json"] }
 async-trait = "0.1"
 futures = "0.3"
-time = { version = ">=0.3.47, <0.3.48", features = ["formatting", "parsing", "macros"] }
+time = { version = "0.3.49", features = ["formatting", "parsing", "macros"] }
 strum = { version = "0.28", features = ["derive"] }
 sha3 = "0.12"
 temp-dir = "0.2"

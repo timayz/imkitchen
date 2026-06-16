@@ -1,6 +1,6 @@
 use crate::types::user::{LoggedIn, Logout, State};
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use ulid::Ulid;
 use validator::Validate;
 
@@ -47,7 +47,7 @@ impl<E: Executor> super::Module<E> {
 
         let access_id = Ulid::new().to_string();
 
-        user.aggregator()?
+        user.write()?
             .event(&LoggedIn {
                 lang: input.lang,
                 timezone: input.timezone,
@@ -69,7 +69,7 @@ impl<E: Executor> super::Module<E> {
             imkitchen_core::not_found!("user in logout");
         };
 
-        user.aggregator()?
+        user.write()?
             .event(&Logout {
                 access_id: access_id.to_owned(),
             })

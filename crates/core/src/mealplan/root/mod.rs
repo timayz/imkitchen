@@ -3,7 +3,7 @@ mod generate;
 
 use bitcode::{Decode, Encode};
 use evento::{
-    Executor, Projection, ProjectionAggregator,
+    Executor, Projection, ProjectionAggregate,
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
@@ -49,8 +49,8 @@ pub struct MealPlan {
     pub generated_at: u64,
 }
 
-impl ProjectionAggregator for MealPlan {
-    fn aggregator_id(&self) -> String {
+impl ProjectionAggregate for MealPlan {
+    fn aggregate_id(&self) -> String {
         self.user_id.to_owned()
     }
 }
@@ -59,7 +59,7 @@ pub fn create_projection<E: Executor>() -> Projection<E, MealPlan> {
     Projection::new::<mealplan::MealPlan>()
         .handler(handle_generated())
         .skip::<SlotRecipeStatusChanged>()
-        .safety_check()
+        .strict()
 }
 
 #[evento::handler]
@@ -104,7 +104,7 @@ async fn handle_recipe_created<E: Executor>(
             MealPlanRecipe::DietaryRestrictions,
         ])
         .values_panic([
-            event.aggregator_id.to_owned().into(),
+            event.aggregate_id.to_owned().into(),
             event.metadata.requested_by()?.into(),
             RecipeType::default().to_string().into(),
             event.data.name.into(),
@@ -146,7 +146,7 @@ async fn handle_recipe_imported<E: Executor>(
             MealPlanRecipe::AcceptsAccompaniment,
         ])
         .values_panic([
-            event.aggregator_id.to_owned().into(),
+            event.aggregate_id.to_owned().into(),
             event.metadata.requested_by()?.into(),
             event.data.recipe_type.to_string().into(),
             event.data.name.into(),
@@ -173,7 +173,7 @@ async fn handle_recipe_type_changed<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     update_col(
         &pool,
-        &event.aggregator_id,
+        &event.aggregate_id,
         MealPlanRecipe::RecipeType,
         event.data.recipe_type.to_string(),
     )
@@ -190,7 +190,7 @@ async fn handle_recipe_deleted<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     let statement = Query::delete()
         .from_table(MealPlanRecipe::Table)
-        .and_where(Expr::col(MealPlanRecipe::Id).eq(&event.aggregator_id))
+        .and_where(Expr::col(MealPlanRecipe::Id).eq(&event.aggregate_id))
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
@@ -212,7 +212,7 @@ async fn handle_recipe_basic_information_changed<E: Executor>(
         .value(MealPlanRecipe::Name, &event.data.name)
         .value(MealPlanRecipe::PrepTime, event.data.prep_time)
         .value(MealPlanRecipe::CookTime, event.data.cook_time)
-        .and_where(Expr::col(MealPlanRecipe::Id).eq(&event.aggregator_id))
+        .and_where(Expr::col(MealPlanRecipe::Id).eq(&event.aggregate_id))
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
@@ -238,7 +238,7 @@ async fn handle_recipe_dietary_restrictions_changed<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     update_col(
         &pool,
-        &event.aggregator_id,
+        &event.aggregate_id,
         MealPlanRecipe::DietaryRestrictions,
         serde_json::Value::Array(dietary_restrictions),
     )
@@ -255,7 +255,7 @@ async fn handle_recipe_main_course_changed<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     update_col(
         &pool,
-        &event.aggregator_id,
+        &event.aggregate_id,
         MealPlanRecipe::AcceptsAccompaniment,
         event.data.accepts_accompaniment,
     )
@@ -272,7 +272,7 @@ async fn handle_recipe_advance_prep_changed<E: Executor>(
     let pool = context.extract::<sqlx::SqlitePool>();
     update_col(
         &pool,
-        &event.aggregator_id,
+        &event.aggregate_id,
         MealPlanRecipe::AdvancePrep,
         &event.data.advance_prep,
     )

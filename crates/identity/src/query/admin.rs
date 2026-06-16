@@ -36,7 +36,7 @@ pub(crate) async fn load<E: Executor>(
     create_projection()
         .data((read_db.clone(), write_db.clone()))
         .load(&id)
-        .aggregator::<Subscription>(id)
+        .aggregate::<Subscription>(id)
         .execute(executor)
         .await
 }
@@ -321,7 +321,7 @@ impl<E: Executor> Snapshot<E> for AdminView {
 
 #[evento::handler]
 async fn handle_registered(event: Event<Registered>, data: &mut AdminView) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.email = event.data.email.to_owned();
     data.role.0 = Role::User;
     data.state.0 = State::Active;

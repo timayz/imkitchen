@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use imkitchen_types::contact::{Reopened, Status};
 
 impl<E: Executor + Clone> super::Module<E> {
@@ -16,7 +16,7 @@ impl<E: Executor + Clone> super::Module<E> {
         }
 
         contact
-            .aggregator()?
+            .write()?
             .event(&Reopened)
             .requested_by(request_by)
             .commit(&self.executor)

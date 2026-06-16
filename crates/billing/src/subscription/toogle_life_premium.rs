@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use time::UtcDateTime;
 
 use crate::types::subscription::LifePremiumToggled;
@@ -18,7 +18,7 @@ impl<E: Executor> super::Module<E> {
         };
 
         subscription
-            .aggregator()?
+            .write()?
             .event(&LifePremiumToggled {
                 expire_at: expire_at.try_into()?,
             })

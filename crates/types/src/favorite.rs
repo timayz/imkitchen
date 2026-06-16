@@ -1,4 +1,4 @@
-#[evento::aggregator]
+#[evento::aggregate]
 pub enum Favorite {
     Saved {
         recipe_id: String,

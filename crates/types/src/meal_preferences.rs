@@ -1,6 +1,6 @@
 use crate::recipe::DietaryRestriction;
 
-#[evento::aggregator]
+#[evento::aggregate]
 pub enum MealPreferences {
     Changed {
         household_size: u16,

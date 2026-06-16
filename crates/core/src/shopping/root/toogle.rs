@@ -1,4 +1,4 @@
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use imkitchen_types::shopping::{Checked, Unchecked};
 
 pub struct ToggleInput {
@@ -24,7 +24,7 @@ impl<E: Executor> super::Module<E> {
 
         if checked {
             shopping
-                .aggregator()?
+                .write()?
                 .event(&Unchecked {
                     ingredient: input.name,
                 })
@@ -33,7 +33,7 @@ impl<E: Executor> super::Module<E> {
                 .await?;
         } else {
             shopping
-                .aggregator()?
+                .write()?
                 .event(&Checked {
                     ingredient: input.name,
                 })

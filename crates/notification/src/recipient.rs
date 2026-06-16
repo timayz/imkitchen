@@ -39,8 +39,8 @@ pub fn create_projection<E: Executor>() -> Projection<E, Recipient> {
         .handler(handle_logged_in())
 }
 
-impl evento::ProjectionAggregator for Recipient {
-    fn aggregator_id(&self) -> String {
+impl evento::ProjectionAggregate for Recipient {
+    fn aggregate_id(&self) -> String {
         self.id.to_owned()
     }
 }
@@ -130,7 +130,7 @@ impl<E: Executor> Snapshot<E> for Recipient {
 
 #[evento::handler]
 async fn handle_registered(event: Event<Registered>, data: &mut Recipient) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.email = event.data.email.to_owned();
     data.lang = event.data.lang.to_owned();
     data.timezone = event.data.timezone.to_owned();

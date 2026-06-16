@@ -272,7 +272,7 @@ impl<E: Executor> Snapshot<E> for InvoiceUserView {
 
 #[evento::handler]
 async fn handle_created(event: Event<Created>, data: &mut InvoiceUserView) -> anyhow::Result<()> {
-    data.id = event.aggregator_id.to_owned();
+    data.id = event.aggregate_id.to_owned();
     data.invoice_number = format!("{}-{:02}", event.data.key, event.data.number);
     data.user_id = event.metadata.requested_by()?;
     data.due_at = event.data.paid_at;

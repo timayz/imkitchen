@@ -1,5 +1,5 @@
 use crate::types::subscription::StripeSetupIntentSucceeded;
-use evento::{Executor, ProjectionAggregator};
+use evento::{Executor, ProjectionAggregate};
 use stripe_shared::{SetupIntent, SetupIntentStatus};
 use stripe_types::Expandable;
 
@@ -17,7 +17,7 @@ impl<E: Executor> super::Module<E> {
             (intent.status, intent.payment_method)
         {
             subscription
-                .aggregator()?
+                .write()?
                 .event(&StripeSetupIntentSucceeded {
                     id: intent.id.to_string(),
                     name: method.billing_details.name.to_owned(),
