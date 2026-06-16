@@ -15,6 +15,10 @@
             class="text-cream/60 hover:text-cream transition" {% endif %}>
             Users
           </a>
+          <a href="/admin/recipes/import" {% if current_path=="recipes" %} class="text-cream font-semibold" {% else %}
+            class="text-cream/60 hover:text-cream transition" {% endif %}>
+            Recipes
+          </a>
           <a href="/admin/invoices" {% if current_path=="invoices" %} class="text-cream font-semibold" {% else %}
             class="text-cream/60 hover:text-cream transition" {% endif %}>
             Invoices
@@ -42,6 +46,15 @@
           </path>
         </svg>
         <span class="text-xs mt-1 font-semibold">Users</span>
+      </a>
+      <a href="/admin/recipes/import" {% if current_path=="recipes" %}class="flex flex-col items-center py-2 px-3 text-cream"
+        {% else %}class="flex flex-col items-center py-2 px-3 text-cream/50" {% endif %}>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12">
+          </path>
+        </svg>
+        <span class="text-xs mt-1">Recipes</span>
       </a>
       <a href="/admin/invoices" {% if current_path=="invoices" %}class="flex flex-col items-center py-2 px-3 text-cream"
         {% else %}class="flex flex-col items-center py-2 px-3 text-cream/50" {% endif %}>

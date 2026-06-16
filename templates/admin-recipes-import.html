@@ -1,0 +1,133 @@
+{% extends "_admin.html" %}
+{% block title %}{{ "Batch Import Recipes - Admin"|t }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 max-w-3xl pb-24">
+
+  <header class="mb-6">
+    <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3">
+      {{ "Admin"|t }} <span class="mx-1">/</span> {{ "Recipes"|t }}
+    </div>
+    <h1 class="font-serif text-2xl md:text-3xl leading-tight tracking-tight text-ink mt-0.5">
+      {{ "Batch import recipes"|t }}
+    </h1>
+    <p class="text-sm text-ink-2 mt-2 leading-relaxed">
+      {{ "Upload a .zip archive of recipes grouped by author. Each author becomes a Chef account."|t }}
+    </p>
+  </header>
+
+  {# ── Drop zone ── #}
+  <label for="archive" class="block">
+    <div id="archive-drop"
+      class="border-2 border-dashed border-primary-300 bg-primary-50/60 rounded-3xl p-8 md:p-12 text-center cursor-pointer
+        hover:border-primary-500 hover:bg-primary-50 transition">
+      <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-primary-500 text-white flex items-center justify-center shadow-md">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+      </div>
+      <div class="font-serif text-xl md:text-2xl text-ink tracking-tight leading-tight">
+        {{ "Drop a .zip archive"|t }}
+      </div>
+      <p class="text-sm text-ink-2 mt-2 max-w-xs mx-auto leading-relaxed">
+        {{ "or click to browse"|t }}
+      </p>
+      <div class="inline-flex items-center gap-1.5 mt-5 h-10 px-4 bg-ink hover:bg-ink-2 text-cream text-sm font-semibold rounded-2xl shadow-sm transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+        {{ "Choose file"|t }}
+      </div>
+      <p class="text-[11px] font-mono uppercase tracking-wider text-ink-3 mt-5">
+        {{ "Max 50MB · ZIP only"|t }}
+      </p>
+      <input type="file" id="archive" class="hidden" accept=".zip,application/zip"/>
+    </div>
+  </label>
+
+  {# ── Status / results area (filled in by JS after POST) ── #}
+  <div id="admin-import-area" class="mt-4"></div>
+
+  {# ── Archive layout doc ── #}
+  <section class="mt-6">
+    <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3 mb-2">
+      {{ "Archive layout"|t }}
+    </div>
+    <div class="bg-paper border border-line-2 rounded-2xl p-4 md:p-5">
+      <p class="text-sm text-ink-2 leading-relaxed mb-3">
+        {{ "One folder per author. Each recipe is a .json file (same schema as the user import) with an optional image of the same name."|t }}
+      </p>
+      <div class="bg-cream border border-line-2 rounded-xl p-3 md:p-4 overflow-x-auto">
+        <pre class="text-[11px] md:text-xs font-mono text-ink-2 leading-relaxed"><code>gordon_ramsay/
+  beef-wellington.json
+  beef-wellington.jpg
+  scrambled-eggs.json
+julia_child/
+  boeuf-bourguignon.json
+  boeuf-bourguignon.png</code></pre>
+      </div>
+      <p class="text-xs text-ink-3 mt-3 leading-relaxed">
+        {{ "Folder names are converted to a Chef username (3-15 letters, digits or underscores). A Chef account recipe+{username}@imkitchen.app is created if it does not already exist."|t }}
+      </p>
+    </div>
+
+    <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3 mb-2 mt-6 flex items-baseline gap-2">
+      <span>{{ "Recipe JSON schema"|t }}</span>
+      <span class="font-sans normal-case tracking-normal text-ink-3 font-normal text-[11px]">· v1.0</span>
+    </div>
+    <div class="bg-cream border border-line-2 rounded-xl p-3 md:p-4 overflow-x-auto">
+      <pre class="text-[11px] md:text-xs font-mono text-ink-2 leading-relaxed"><code>{
+  "name": "Thai Red Curry", (min 3, max 100)
+  "origin": "https://example.com/recipe", (url, min 10, max 255, optional)
+  "description": "Spicy coconut curry", (min 3, max 2000)
+  "recipe_type": "Appetizer|MainCourse|Dessert|Accompaniment|Beverage|Condiment",
+  "household_size": 2, (u16 &gt; 0)
+  "prep_time": 15, ({{ "minutes > 0"|t }})
+  "cook_time": 30, ({{ "minutes > 0"|t }})
+  "ingredients": [
+    { "quantity": 500, "unit": "G|ML", "name": "Chicken breast", "category": null },
+    { "quantity": 1, "unit": null, "name": "Lemon",
+      "category": "Frozen|Refrigerated|Grocery|FruitsAndVegetables|Butcher|Seafood|DairyAndEggs|Bakery|SnacksAndConfectionery" }
+  ],
+  "instructions": [
+    { "description": "Heat oil in wok", "time_next": 12 ({{ "time to wait before next instruction, minutes >= 0"|t }}) }
+  ],
+  "advance_prep": "Marinate chicken 2 hours before", ({{ "optional"|t }})
+  "dietary_restrictions": ["Vegetarian|Vegan|GlutenFree|DairyFree|NutFree"],
+  "accepts_accompaniment": false
+}</code></pre>
+    </div>
+  </section>
+</div>
+
+<script>
+  (() => {
+    const area = document.getElementById("admin-import-area");
+    const input = document.getElementById("archive");
+    const drop = document.getElementById("archive-drop");
+
+    async function upload(file) {
+      if (!file) return;
+      const form = new FormData();
+      form.append("archive", file, file.name);
+      try {
+        const resp = await fetch("/admin/recipes/import", { method: "POST", body: form });
+        const html = await resp.text();
+        area.innerHTML = html;
+        if (window.twinspark) {
+          window.twinspark.activate(area);
+        }
+      } catch (err) {
+        console.error("admin import error:", err);
+      }
+    }
+
+    drop.addEventListener("dragover", (e) => { e.preventDefault(); }, false);
+    drop.addEventListener("drop", (e) => {
+      e.preventDefault();
+      upload(e.dataTransfer.files[0]);
+    });
+    input.addEventListener("change", (e) => upload(e.target.files[0]));
+  })();
+</script>
+{% endblock %}

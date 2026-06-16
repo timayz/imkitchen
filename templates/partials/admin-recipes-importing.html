@@ -1,0 +1,20 @@
+<div>
+  <div id="admin-importing-alert"
+    class="bg-paper border border-line-2 rounded-2xl p-5 md:p-6 flex flex-col items-center text-center mb-3">
+    <div class="w-14 h-14 rounded-2xl bg-primary-500 text-white flex items-center justify-center shadow-md mb-4">
+      <svg class="w-7 h-7" style="animation: ikspin 1.2s linear infinite" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+      </svg>
+    </div>
+    <div class="font-serif text-xl md:text-2xl text-ink tracking-tight leading-tight">
+      {{ "Importing recipes…"|t }}
+    </div>
+    <p class="text-sm text-ink-2 mt-2 max-w-xs leading-relaxed">
+      {{ "Creating Chef accounts and importing recipes"|t }}
+    </p>
+    <div class="text-[10px] font-mono uppercase tracking-widest text-ink-3 mt-4">
+      {{ "This may take a while for large archives"|t }}
+    </div>
+  </div>
+  <div ts-trigger="load delay 500ms" ts-req="/admin/recipes/import/{{ job_id }}/status"></div>
+</div>

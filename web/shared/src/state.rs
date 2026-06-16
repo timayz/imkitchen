@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use std::ops::Deref;
+use std::sync::{Arc, Mutex};
 
 use evento::Evento;
 
@@ -10,6 +12,7 @@ pub struct AppState {
     pub identity: imkitchen_identity::Module<Evento>,
     pub billing: imkitchen_billing::Billing<Evento>,
     pub core: imkitchen_core::Core<Evento>,
+    pub import_jobs: AdminImportJobs,
 }
 
 impl Deref for AppState {
@@ -19,3 +22,25 @@ impl Deref for AppState {
         &self.inner
     }
 }
+
+/// One error encountered while processing an admin batch import. `scope` is either
+/// `"author"` (the whole author folder was skipped) or `"recipe"` (a single recipe failed).
+#[derive(Clone, Default)]
+pub struct AdminImportError {
+    pub scope: String,
+    pub name: String,
+    pub message: String,
+}
+
+/// Progress / result of a single admin batch-import job, tracked in memory while the
+/// background task runs and read back by the status-polling endpoint.
+#[derive(Clone, Default)]
+pub struct AdminImportProgress {
+    pub done: bool,
+    pub authors_total: usize,
+    pub recipes_imported: usize,
+    pub errors: Vec<AdminImportError>,
+}
+
+/// In-memory registry of running/completed import jobs, keyed by job id.
+pub type AdminImportJobs = Arc<Mutex<HashMap<String, AdminImportProgress>>>;

@@ -1,8 +1,14 @@
+pub mod import;
 pub mod routes;
 
 pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
     use axum::routing::{get, post};
     axum::Router::new()
+        .route("/admin/recipes/import", get(routes::recipe_import::page))
+        .route(
+            "/admin/recipes/import/{id}/status",
+            get(routes::recipe_import::status),
+        )
         .route("/admin/users", get(routes::users::page))
         .route("/admin/users/{id}/suspend", post(routes::users::suspend))
         .route("/admin/users/{id}/activate", post(routes::users::activate))
@@ -24,4 +30,11 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             post(routes::contact::resolve),
         )
         .route("/admin/contact/{id}/reopen", post(routes::contact::reopen))
+}
+
+/// The ZIP upload endpoint is exported separately so the server can give it a larger request
+/// body limit than the global cap (it is merged after the global limit layer).
+pub fn upload_routes() -> axum::Router<imkitchen_web_shared::AppState> {
+    use axum::routing::post;
+    axum::Router::new().route("/admin/recipes/import", post(routes::recipe_import::action))
 }
