@@ -62,6 +62,38 @@ impl<E: Executor> Module<E> {
                 .map(|row| row.email),
         )
     }
+
+    /// Look up an account by email, returning its id, role and state. The role/state are read
+    /// from the event-sourced aggregate so they reflect the latest committed events even when
+    /// the read-model projection has not caught up yet.
+    pub async fn find_account(
+        &self,
+        email: impl Into<String>,
+    ) -> imkitchen_core::Result<Option<Account>> {
+        let Some(row) =
+            repository::find(&self.read_db, repository::FindType::Email(email.into())).await?
+        else {
+            return Ok(None);
+        };
+
+        let Some(user) = self.load(&row.id).await? else {
+            return Ok(None);
+        };
+
+        Ok(Some(Account {
+            id: row.id,
+            role: user.role,
+            state: user.state,
+        }))
+    }
+}
+
+/// A minimal account view used when resolving an existing user by email.
+#[derive(Clone, Debug)]
+pub struct Account {
+    pub id: String,
+    pub role: Role,
+    pub state: State,
 }
 
 #[evento::projection(Encode, Decode)]

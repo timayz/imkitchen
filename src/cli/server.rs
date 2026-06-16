@@ -172,8 +172,18 @@ pub async fn serve(
         identity: imkitchen_identity::Module::new(state.clone()),
         billing: imkitchen_billing::Billing::new(state.clone()),
         core: imkitchen_core::Core::new(state.clone()),
+        import_jobs: Default::default(),
         inner: state,
     };
+
+    // The ZIP upload endpoint needs a much larger body than the global 1MB cap, so it is
+    // built separately and merged *after* the global limit layer with its own limit.
+    let admin_upload = imkitchen_web_admin::upload_routes()
+        .with_state(app_state.clone())
+        .layer(DefaultBodyLimit::disable())
+        .layer(tower_http::limit::RequestBodyLimitLayer::new(
+            50 * 1024 * 1024,
+        )); // 50MB
 
     let app = axum::Router::new()
         .route("/health", get(imkitchen_web_public::routes::health::health))
@@ -199,6 +209,7 @@ pub async fn serve(
         .with_state(app_state)
         .layer(DefaultBodyLimit::disable())
         .layer(tower_http::limit::RequestBodyLimitLayer::new(1024 * 1024)) // 1MB
+        .merge(admin_upload)
         .layer(axum::middleware::from_fn(
             imkitchen_web_shared::middleware::cache_control_middleware,
         ))
