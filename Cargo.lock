@@ -67,9 +67,9 @@ checksum = "cc7bb162ec39d46ab1ca8c77bf72e890535becd1751bb45f64c597edb4c8c6b3"
 
 [[package]]
 name = "alloc-stdlib"
-version = "0.2.2"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "94fb8275041c72129eb51b7d0322c29b8387a0386127718b096429201a5d6ece"
+checksum = "0e76a019e91224d279006ff972f1e984179a6e9feb050adba6ce8274aef23195"
 dependencies = [
  "alloc-no-stdlib",
 ]
@@ -734,9 +734,9 @@ dependencies = [
 
 [[package]]
 name = "brotli"
-version = "8.0.3"
+version = "8.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8119e4516436f5708bbc474a9d395bf12f1b5395e93a92a56e647ac3388c8610"
+checksum = "5cc91aac060a7a1e25823bdccbfb6af1875b88f17c6daac97894eed8207166b3"
 dependencies = [
  "alloc-no-stdlib",
  "alloc-stdlib",
@@ -745,9 +745,9 @@ dependencies = [
 
 [[package]]
 name = "brotli-decompressor"
-version = "5.0.1"
+version = "5.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5962523e1b92ce1b5e793d9169b9943eece10d39f62550bc04bb605d75b94924"
+checksum = "3a32acac15fe1967bc3986b2a6347dffc965602354ea6f450ad07e8bfd253583"
 dependencies = [
  "alloc-no-stdlib",
  "alloc-stdlib",
@@ -1240,9 +1240,9 @@ dependencies = [
 
 [[package]]
 name = "crypto-common"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bfb12502f3fc46cca1bb51ac28df9d618d813cdc3d2f25b9fe775a34af26bb3"
+checksum = "78c8292055d1c1df0cce5d180393dc8cce0abec0a7102adb6c7b1eef6016d60a"
 dependencies = [
  "generic-array",
  "typenum",
@@ -1447,7 +1447,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ed9a281f7bc9b7576e61468ba615a66a5c8cfdff42420a70aa82701a3b1e292"
 dependencies = [
  "block-buffer 0.10.4",
- "crypto-common 0.1.6",
+ "crypto-common 0.1.7",
  "subtle",
 ]
 
@@ -1977,9 +1977,9 @@ dependencies = [
 
 [[package]]
 name = "generic-array"
-version = "0.14.9"
+version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4bb6743198531e02858aeaea5398fcc883e71851fcbcb5a2f773e2fb6cb1edf2"
+checksum = "85649ca51fd72272d7821adaf274ad91c288277713d9c18820d8499a7ff69e9a"
 dependencies = [
  "typenum",
  "version_check",
@@ -2082,9 +2082,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.4.14"
+version = "0.4.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "171fefbc92fe4a4de27e0698d6a5b392d6a0e333506bc49133760b3bcf948733"
+checksum = "6cb093c84e8bd9b188d4c4a8cb6579fc016968d14c99882163cd3ff402a4f155"
 dependencies = [
  "atomic-waker",
  "bytes",
@@ -2571,7 +2571,7 @@ checksum = "89194689a993ab15268672e99e7b0e19da2da3268ac682e8f02d29d4d1434cd7"
 
 [[package]]
 name = "imkitchen"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "anyhow",
  "async-stripe",
@@ -2602,7 +2602,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-billing"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "anyhow",
  "async-stripe",
@@ -2624,7 +2624,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-core"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "anyhow",
  "argon2",
@@ -2651,7 +2651,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-db"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "async-trait",
  "evento",
@@ -2662,7 +2662,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-identity"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "anyhow",
  "argon2",
@@ -2687,7 +2687,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-notification"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "anyhow",
  "askama",
@@ -2709,7 +2709,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-types"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "bitcode",
  "evento",
@@ -2721,7 +2721,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-admin"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "anyhow",
  "askama",
@@ -2740,7 +2740,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-demo"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "askama",
  "axum",
@@ -2759,7 +2759,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-grocery"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "anyhow",
  "askama",
@@ -2775,7 +2775,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-kitchen"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "askama",
  "axum",
@@ -2789,7 +2789,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-menu"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "askama",
  "axum",
@@ -2801,7 +2801,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-public"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "anyhow",
  "askama",
@@ -2823,7 +2823,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-recipe"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "askama",
  "axum",
@@ -2841,7 +2841,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-settings"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "askama",
  "async-stripe-core",
@@ -2862,7 +2862,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-shared"
-version = "1.1.3"
+version = "1.1.4"
 dependencies = [
  "anyhow",
  "askama",
@@ -2998,9 +2998,9 @@ dependencies = [
 
 [[package]]
 name = "js-sys"
-version = "0.3.100"
+version = "0.3.102"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2025f20d7a4fa7785846e7b63d10a76d3f1cee98ee5cb79ea59703f95e42162"
+checksum = "03d04c30968dffe80775bd4d7fb676131cd04a1fb46d2686dbffbaec2d9dfd31"
 dependencies = [
  "cfg-if",
  "futures-util",
@@ -3526,9 +3526,9 @@ checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
 name = "openssl"
-version = "0.10.80"
+version = "0.10.81"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a45fa2aa886c42762255da344f0a0d313e254066c46aad76f300c3d3da62d967"
+checksum = "77823a27f0babb03091cb9ed9ef80af3b39dbc82f97e8fa530374b7dafd87a45"
 dependencies = [
  "bitflags 2.13.0",
  "cfg-if",
@@ -3557,9 +3557,9 @@ checksum = "7c87def4c32ab89d880effc9e097653c8da5d6ef28e6b539d313baaacfbafcbe"
 
 [[package]]
 name = "openssl-sys"
-version = "0.9.116"
+version = "0.9.117"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f28a22dc7140cda5f096e5e7724a6962ca81a7f8bfd2979f9b18c11af56318c4"
+checksum = "b47e7e6bb2c38cd930d25a23b40fa52e068c10e85f3e03a7f5ba5aaca5713695"
 dependencies = [
  "cc",
  "libc",
@@ -3629,9 +3629,9 @@ dependencies = [
 
 [[package]]
 name = "oxc-browserslist"
-version = "3.0.4"
+version = "3.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed057e45c57a87f33e7942215417089e3c038ba6c5dd5e4a6b3ecaa09bbd58d8"
+checksum = "209091efbb07de356beae15cf5fd8bd2b3ab94a17f19cc19a7f8b094aec2559c"
 dependencies = [
  "flate2",
  "postcard",
@@ -3863,7 +3863,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c6bba8c18ebfa685b289ab434e1215f8945a885344905fdcf8610aeaa559178e"
 dependencies = [
  "cow-utils",
- "oxc-browserslist 3.0.4",
+ "oxc-browserslist 3.0.5",
  "oxc_syntax 0.136.0",
  "rustc-hash",
  "serde",
@@ -5773,9 +5773,9 @@ dependencies = [
 
 [[package]]
 name = "smawk"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7c388c1b5e93756d0c740965c41e8822f866621d41acbdf6336a6a168f8840c"
+checksum = "e8e2fb0f499abb4d162f2bedad68f5ef91a1682b5a03596ddb67efd37768d100"
 
 [[package]]
 name = "smol_str"
@@ -6906,9 +6906,9 @@ checksum = "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b"
 
 [[package]]
 name = "wasip2"
-version = "1.0.3+wasi-0.2.9"
+version = "1.0.4+wasi-0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20064672db26d7cdc89c7798c48a0fdfac8213434a1186e5ef29fd560ae223d6"
+checksum = "b67efb37e106e55ce722a510d6b5f9c17f083e5fc79afc2badeb12cc313d9487"
 dependencies = [
  "wit-bindgen 0.57.1",
 ]
@@ -6924,9 +6924,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen"
-version = "0.2.123"
+version = "0.2.125"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a254a4b10c19a76f09a27640e7ffbf9bc30bf67e16a3bf28aaefa4920fe81563"
+checksum = "8ddb3f79143bced6de84270411622a2699cee572fc0875aeaf1e7867cf9fca1a"
 dependencies = [
  "cfg-if",
  "once_cell",
@@ -6938,9 +6938,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro"
-version = "0.2.123"
+version = "0.2.125"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24a40fc75b0ec6f3746ceb10d36f53a93dcd68a93b11b6445983945d79eba0dc"
+checksum = "4e21a184b13fb19e157296e2c46056aec9092264fab83e4ba59e68c61b323c3d"
 dependencies = [
  "quote",
  "wasm-bindgen-macro-support",
@@ -6948,9 +6948,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.123"
+version = "0.2.125"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "908f34bd9b9ce3d4caf07b72dfab63d61504d156856c6bd3cd87fa350cf3985b"
+checksum = "fecefd9c35bd935a20fc3fc344b5f29138961e4f47fb03297d88f2587afb5ebd"
 dependencies = [
  "bumpalo",
  "proc-macro2",
@@ -6961,9 +6961,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-shared"
-version = "0.2.123"
+version = "0.2.125"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7acbf7616c27b194bbb550bf77ed0c2c3e5b7fd1260a93082b95fb7f47959b92"
+checksum = "23939e44bb9a5d7576fa2b563dc2e136628f1224e88a8deed09e04858b77871f"
 dependencies = [
  "unicode-ident",
 ]
@@ -7451,18 +7451,18 @@ dependencies = [
 
 [[package]]
 name = "zeroize"
-version = "1.8.2"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b97154e67e32c85465826e8bcc1c59429aaaf107c1e4a9e53c8d8ccd5eff88d0"
+checksum = "e13c156562582aa81c60cb29407084cdb54c4164760106ab78e6c5b0858cf64e"
 dependencies = [
  "zeroize_derive",
 ]
 
 [[package]]
 name = "zeroize_derive"
-version = "1.4.3"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85a5b4158499876c763cb03bc4e49185d3cccbabb15b33c627f7884f43db852e"
+checksum = "3c50655cbb0fe3fc43170059e702f1ce5e19b84cec58dc87b037a09935c2f328"
 dependencies = [
  "proc-macro2",
  "quote",
