@@ -93,7 +93,7 @@ async fn imports_recipes_and_creates_chef_accounts() -> anyhow::Result<()> {
     // Pre-create a plain (non-chef) account that author "existing_user" maps to.
     identity
         .register(RegisterInput {
-            email: "recipe+existing_user@imkitchen.app".to_owned(),
+            email: "recipes+existing_user@imkitchen.app".to_owned(),
             password: "my_password".to_owned(),
             lang: "en".to_owned(),
             timezone: "UTC".to_owned(),
@@ -131,14 +131,14 @@ async fn imports_recipes_and_creates_chef_accounts() -> anyhow::Result<()> {
 
     // A Chef account was created for the new author.
     let chef = identity
-        .find_account("recipe+gordon_ramsay@imkitchen.app")
+        .find_account("recipes+gordon_ramsay@imkitchen.app")
         .await?
         .expect("chef account created");
     assert_eq!(chef.role, Role::Chef);
 
     // The pre-existing account was left untouched (still not a chef).
     let existing = identity
-        .find_account("recipe+existing_user@imkitchen.app")
+        .find_account("recipes+existing_user@imkitchen.app")
         .await?
         .expect("existing account");
     assert_ne!(existing.role, Role::Chef);
