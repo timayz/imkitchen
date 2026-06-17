@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-web-admin"
-version = "1.1.4"
+version = "1.2.0"
 edition.workspace = true
 
 [dependencies]
@@ -16,15 +16,15 @@ evento = { workspace = true }
 tokio = { workspace = true }
 zip = { workspace = true }
 ulid = { workspace = true }
-imkitchen-billing = { path = "../../crates/billing", version = "1.1.4" }
-imkitchen-core = { path = "../../crates/core", version = "1.1.4" }
-imkitchen-types = { path = "../../crates/types", version = "1.1.4" }
-imkitchen-identity = { path = "../../crates/identity", version = "1.1.4" }
-imkitchen-web-shared = { path = "../shared", version = "1.1.4" }
+imkitchen-billing = { path = "../../crates/billing", version = "1.2.0" }
+imkitchen-core = { path = "../../crates/core", version = "1.2.0" }
+imkitchen-types = { path = "../../crates/types", version = "1.2.0" }
+imkitchen-identity = { path = "../../crates/identity", version = "1.2.0" }
+imkitchen-web-shared = { path = "../shared", version = "1.2.0" }
 
 [dev-dependencies]
 tokio = { workspace = true }
 temp-dir = { workspace = true }
 sqlx = { workspace = true }
 image = { workspace = true }
-imkitchen-db = { path = "../../crates/db", version = "1.1.4" }
+imkitchen-db = { path = "../../crates/db" }
