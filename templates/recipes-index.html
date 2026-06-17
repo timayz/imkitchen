@@ -251,7 +251,7 @@
       ts-req="/recipes?after={{ cursor.to_string() }}{% if let Some(sort_by) = query.sort_by %}&sort_by={{ sort_by }}{% endif %}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if let Some(true) = query.in_meal_plan %}&in_meal_plan=true{% endif %}{% if let Some(true) = query.mine %}&mine=true{% endif %}{% if let Some(true) = query.no_image %}&no_image=true{% endif %}&view=list"
       ts-req-method="GET" ts-req-selector="children #recipes-list" ts-swap="afterend" ts-trigger="visible once"
       {% endif %}
-      class="bg-paper border border-line-2 rounded-2xl px-3 py-2.5 shadow-sm hover:shadow-md transition flex items-center gap-3">
+      class="min-w-0 bg-paper border border-line-2 rounded-2xl px-3 py-2.5 shadow-sm hover:shadow-md transition flex items-center gap-3">
       <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-linear-to-br {% call type_hero_classes(rt) %}{% endcall %}
         flex items-center justify-center shrink-0">
         {% if let Some(version) = recipe.node.thumbnail_version %}
