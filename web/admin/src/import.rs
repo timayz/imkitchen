@@ -6,7 +6,7 @@
 //! {author}/{recipe_slug}.{jpg|jpeg|png|webp}       # optional thumbnail for that recipe
 //! ```
 //!
-//! Each `{author}` folder maps to a Chef account `recipe+{username}@imkitchen.app`, where
+//! Each `{author}` folder maps to a Chef account `recipes+{username}@imkitchen.app`, where
 //! `username` is the folder name sanitized to the username rules. The account is created (as a
 //! Chef) if it does not exist; an existing non-Chef account is reported as an error and skipped.
 
@@ -128,7 +128,7 @@ async fn resolve_or_create_chef<E: Executor + Clone>(
         return Ok(id.clone());
     }
 
-    let email = format!("recipe+{username}@imkitchen.app");
+    let email = format!("recipes+{username}@imkitchen.app");
 
     let id = match identity.find_account(&email).await.map_err(user_message)? {
         Some(account) => {
