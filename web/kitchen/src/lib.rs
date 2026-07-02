@@ -4,7 +4,7 @@ use axum_extra::extract::CookieJar;
 use imkitchen_core::mealplan::slot::SlotRow;
 use imkitchen_core::mealplan::{ChangeSlotRecipeStatus, Recipe};
 use imkitchen_types::mealplan::DaySlotStatus;
-use imkitchen_types::recipe::Instruction;
+use imkitchen_types::recipe::{Instruction, IngredientUnitFormat};
 use imkitchen_types::{mealplan::DaySlotRecipe, recipe::RecipeType};
 
 pub use imkitchen_web_shared::config;
@@ -124,6 +124,61 @@ async fn cook_is_external(
             .unwrap_or(false),
         None => false,
     }
+}
+
+/// A single grocery aisle section of a recipe's ingredient list, keyed by the
+/// `shopping_<Category>` string so the cooking-screen template can reuse the
+/// groceries aisle macros (emoji / label / accent color).
+pub struct IngredientAisle {
+    pub name: String,
+    pub items: Vec<imkitchen_types::recipe::Ingredient>,
+}
+
+/// Scale a recipe's ingredient quantities to the meal-plan slot's household size
+/// and sort them by name. Shared by every kitchen screen that shows ingredients
+/// (dashboard, dish preview, and the cooking screen) so they stay consistent.
+fn scale_ingredients(
+    recipe: &mut imkitchen_core::recipe::query::user::UserView,
+    slot_household_size: u16,
+) {
+    // Recipes are authored for `recipe.household_size` servings; scale each
+    // quantity to the meal-plan slot's household size. Guard the divisor since
+    // household size comes from an unvalidated form field.
+    let recipe_household_size = recipe.household_size.max(1) as f64;
+    for ingredient in recipe.ingredients.iter_mut() {
+        ingredient.quantity = (ingredient.quantity as f64 * slot_household_size as f64
+            / recipe_household_size)
+            .ceil() as u32;
+    }
+    recipe.ingredients.sort_by_key(|i| i.name.to_owned());
+}
+
+/// Group (already-scaled) ingredients into ordered aisle sections keyed by
+/// `shopping_<Category>`, mirroring the groceries page grouping.
+fn group_ingredients_by_aisle(
+    ingredients: &[imkitchen_types::recipe::Ingredient],
+) -> Vec<IngredientAisle> {
+    let mut categories: std::collections::HashMap<
+        String,
+        Vec<imkitchen_types::recipe::Ingredient>,
+    > = std::collections::HashMap::new();
+
+    for ingredient in ingredients.iter() {
+        let key = match &ingredient.category {
+            Some(c) => format!("shopping_{c}"),
+            None => "shopping_Unknown".to_owned(),
+        };
+        categories.entry(key).or_default().push(ingredient.clone());
+    }
+
+    let mut aisles = categories
+        .into_iter()
+        .map(|(name, items)| IngredientAisle { name, items })
+        .collect::<Vec<_>>();
+
+    aisles.sort_by(|a, b| a.name.cmp(&b.name));
+
+    aisles
 }
 
 #[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
@@ -373,12 +428,7 @@ pub async fn page(
     };
 
     if let (Some(recipe), Some(slot)) = (slot_recipe.as_mut(), &slot) {
-        for ingredient in recipe.ingredients.iter_mut() {
-            ingredient.quantity += ((recipe.household_size as u32 * ingredient.quantity
-                / slot.household_size as u32) as f64)
-                .ceil() as u32;
-        }
-        recipe.ingredients.sort_by_key(|i| i.name.to_owned());
+        scale_ingredients(recipe, slot.household_size);
     }
 
     let fmt = time::macros::format_description!("[year]-[month]-[day]");
@@ -483,6 +533,10 @@ pub struct CookingTemplate {
     pub current_instruction: Option<(usize, Instruction)>,
     pub date: String,
     pub show_iframe: bool,
+    /// When true, render the ingredient list (grouped in `ingredient_aisles`)
+    /// as the first screen of the cooking flow instead of a step.
+    pub show_ingredients: bool,
+    pub ingredient_aisles: Vec<IngredientAisle>,
 }
 
 // Fragment version of CookingTemplate — same fields, but renders only the
@@ -496,6 +550,8 @@ pub struct CookingScreenTemplate {
     pub current_instruction: Option<(usize, Instruction)>,
     pub date: String,
     pub show_iframe: bool,
+    pub show_ingredients: bool,
+    pub ingredient_aisles: Vec<IngredientAisle>,
 }
 
 #[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
@@ -555,23 +611,37 @@ pub async fn update_slot_step_action(
         return template.render(NotFoundTemplate).into_response();
     };
 
-    let slot_recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.find_user(&recipe_id), template);
+    let mut slot_recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.find_user(&recipe_id), template);
+    scale_ingredients(&mut slot_recipe, slot.household_size);
 
+    // `Idle` is the ingredients screen; `Cooking(0)` is the first instruction,
+    // `Cooking(len-2)` the second-to-last, and `Completed` the last.
+    let len = slot_recipe.instructions.len();
     let slot_recipe_status = match (direction.as_str(), slot_recipe_status) {
         ("prev", DaySlotStatus::Idle) => DaySlotStatus::Idle,
         ("prev", DaySlotStatus::Cooking(pos)) => {
-            if *pos > 1 {
-                DaySlotStatus::Cooking(pos - 1)
-            } else {
+            if *pos == 0 {
                 DaySlotStatus::Idle
+            } else {
+                DaySlotStatus::Cooking(pos - 1)
             }
         }
         ("prev", DaySlotStatus::Completed) => {
-            DaySlotStatus::Cooking((slot_recipe.instructions.len() - 2) as u8)
+            if len <= 1 {
+                DaySlotStatus::Idle
+            } else {
+                DaySlotStatus::Cooking((len - 2) as u8)
+            }
         }
-        ("next", DaySlotStatus::Idle) => DaySlotStatus::Cooking(1),
+        ("next", DaySlotStatus::Idle) => {
+            if len <= 1 {
+                DaySlotStatus::Completed
+            } else {
+                DaySlotStatus::Cooking(0)
+            }
+        }
         ("next", DaySlotStatus::Cooking(pos)) => {
-            if ((*pos + 1) as usize) < slot_recipe.instructions.len() - 1 {
+            if ((*pos + 1) as usize) < len - 1 {
                 DaySlotStatus::Cooking(pos + 1)
             } else {
                 DaySlotStatus::Completed
@@ -601,16 +671,8 @@ pub async fn update_slot_step_action(
     let mut completed_instructions = vec![];
     let mut coming_instructions = vec![];
     let current_instruction = match (&slot_recipe_status, &slot_recipe) {
-        (DaySlotStatus::Idle, recipe) => {
-            coming_instructions = recipe
-                .instructions
-                .iter()
-                .enumerate()
-                .skip(1)
-                .map(|(p, i)| (p, i.description.to_owned()))
-                .collect();
-            recipe.instructions.first().map(|i| (0, i.clone()))
-        }
+        // Ingredients screen — no current step.
+        (DaySlotStatus::Idle, _) => None,
         (DaySlotStatus::Cooking(pos), recipe) => {
             completed_instructions = recipe
                 .instructions
@@ -649,6 +711,16 @@ pub async fn update_slot_step_action(
         }
     };
 
+    // Ingredient list is the first screen of the cooking flow — shown while the
+    // recipe is Idle, but only when it actually has in-app steps to cook.
+    let show_ingredients =
+        matches!(slot_recipe_status, DaySlotStatus::Idle) && !slot_recipe.instructions.is_empty();
+    let ingredient_aisles = if show_ingredients {
+        group_ingredients_by_aisle(&slot_recipe.ingredients)
+    } else {
+        vec![]
+    };
+
     let show_iframe = match slot_recipe.origin.as_deref() {
         Some(origin) => app
             .core
@@ -667,6 +739,8 @@ pub async fn update_slot_step_action(
             current_instruction,
             date,
             show_iframe,
+            show_ingredients,
+            ingredient_aisles,
         })
         .into_response()
 }
@@ -744,13 +818,7 @@ pub async fn select_dish(
 
     let mut slot_recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.find_user(&recipe_id), template);
 
-    for ingredient in slot_recipe.ingredients.iter_mut() {
-        ingredient.quantity += ((slot_recipe.household_size as u32 * ingredient.quantity
-            / slot.household_size as u32) as f64)
-            .ceil() as u32;
-    }
-
-    slot_recipe.ingredients.sort_by_key(|i| i.name.to_owned());
+    scale_ingredients(&mut slot_recipe, slot.household_size);
 
     let current_instruction = match (&slot_recipe_status, &slot_recipe) {
         (DaySlotStatus::Idle, recipe) => {
@@ -873,19 +941,13 @@ pub async fn cook_page(
         return template.render(NotFoundTemplate).into_response();
     };
 
-    let slot_recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.find_user(&recipe_id), template);
+    let mut slot_recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.find_user(&recipe_id), template);
+    scale_ingredients(&mut slot_recipe, slot.household_size);
 
+    // `Idle` renders the ingredient list (first screen); `Cooking(0)` is the
+    // first instruction and `Completed` the last.
     let current_instruction = match (&slot_recipe_status, &slot_recipe) {
-        (DaySlotStatus::Idle, recipe) => {
-            coming_instructions = recipe
-                .instructions
-                .iter()
-                .enumerate()
-                .skip(1)
-                .map(|(p, i)| (p, i.description.to_owned()))
-                .collect();
-            recipe.instructions.first().map(|i| (0, i.clone()))
-        }
+        (DaySlotStatus::Idle, _) => None,
         (DaySlotStatus::Cooking(pos), recipe) => {
             completed_instructions = recipe
                 .instructions
@@ -924,6 +986,16 @@ pub async fn cook_page(
         }
     };
 
+    // Ingredient list is the first screen — shown while Idle, but only when the
+    // recipe actually has in-app steps to cook.
+    let show_ingredients =
+        matches!(slot_recipe_status, DaySlotStatus::Idle) && !slot_recipe.instructions.is_empty();
+    let ingredient_aisles = if show_ingredients {
+        group_ingredients_by_aisle(&slot_recipe.ingredients)
+    } else {
+        vec![]
+    };
+
     let show_iframe = match slot_recipe.origin.as_deref() {
         Some(origin) => app
             .core
@@ -938,7 +1010,7 @@ pub async fn cook_page(
     // nothing to show in-app, so send the user straight to the original instead of
     // rendering a "Open Original Recipe" button they'd have to tap.
     if !show_iframe
-        && current_instruction.is_none()
+        && slot_recipe.instructions.is_empty()
         && let Some(origin) = slot_recipe.origin.as_deref()
     {
         return Redirect::to(origin).into_response();
@@ -952,6 +1024,8 @@ pub async fn cook_page(
             current_instruction,
             date,
             show_iframe,
+            show_ingredients,
+            ingredient_aisles,
         })
         .into_response()
 }

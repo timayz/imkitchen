@@ -613,6 +613,8 @@ pub fn cooking(recipe_id: &str) -> CookingTemplate {
         current_instruction,
         date: ymd(today),
         show_iframe: false,
+        show_ingredients: false,
+        ingredient_aisles: vec![],
     }
 }
 
