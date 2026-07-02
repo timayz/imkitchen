@@ -937,10 +937,11 @@ pub async fn cook_page(
     // Imported recipe with no parsed steps whose origin refuses framing: there is
     // nothing to show in-app, so send the user straight to the original instead of
     // rendering a "Open Original Recipe" button they'd have to tap.
-    if !show_iframe && current_instruction.is_none() {
-        if let Some(origin) = slot_recipe.origin.as_deref() {
-            return Redirect::to(origin).into_response();
-        }
+    if !show_iframe
+        && current_instruction.is_none()
+        && let Some(origin) = slot_recipe.origin.as_deref()
+    {
+        return Redirect::to(origin).into_response();
     }
 
     template

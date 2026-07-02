@@ -18,7 +18,9 @@ use evento::{
 use imkitchen_types::recipe::{BasicInformationChanged, Imported};
 use sqlx::SqlitePool;
 
-use crate::recipe::query::embeddable::{check_embeddable, domain_of, is_domain_cached, store_verdict};
+use crate::recipe::query::embeddable::{
+    check_embeddable, domain_of, is_domain_cached, store_verdict,
+};
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
     SubscriptionBuilder::new("recipe-saga-embeddable")
