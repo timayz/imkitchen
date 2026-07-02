@@ -2,6 +2,9 @@
 {% block title %}{{ "Recipes"|t }} - imkitchen{% endblock %}
 
 {% macro lazy_thumbnail(recipe, version) %}
+{% if let Some(blur) = recipe.blur_placeholder %}
+<div class="absolute inset-0 bg-cover bg-center scale-110 blur-lg" style="background-image:url({{ blur }})"></div>
+{% endif %}
 <picture>
   <source data-media="(max-width: 480px)"
     data-srcset="/recipes/{{ recipe.id }}/thumbnail/mobile/image.webp?v={{ version }}" />
