@@ -26,6 +26,7 @@ pub enum RecipeUser {
     UpdatedAt,
     ThumbnailVersion,
     DifficultyScore,
+    BlurPlaceholder,
 }
 
 #[derive(Iden, Clone)]
@@ -647,6 +648,45 @@ pub(crate) mod m0005 {
                 .execute(&mut *connection)
                 .await?;
             sqlx::query("ALTER TABLE recipe_user DROP COLUMN slug")
+                .execute(connection)
+                .await
+                .ok();
+
+            Ok(())
+        }
+    }
+}
+
+pub(crate) mod m0007 {
+    pub struct AddBlurPlaceholder;
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for AddBlurPlaceholder {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            sqlx::query("ALTER TABLE recipe_user ADD COLUMN blur_placeholder TEXT")
+                .execute(&mut *connection)
+                .await
+                .ok();
+
+            // The blur placeholder is derived during projection from the mobile
+            // thumbnail variant, so reset the subscription to replay every
+            // ThumbnailResized event and backfill existing recipes. The column is
+            // nullable, so no truncate is required.
+            sqlx::query("UPDATE subscriber SET cursor = NULL WHERE key = 'recipe-query'")
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            sqlx::query("ALTER TABLE recipe_user DROP COLUMN blur_placeholder")
                 .execute(connection)
                 .await
                 .ok();

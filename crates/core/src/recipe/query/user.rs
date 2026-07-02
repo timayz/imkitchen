@@ -1,9 +1,11 @@
+use base64::{Engine, engine::general_purpose::STANDARD};
 use evento::{
     Cursor, Executor, Projection, Snapshot,
     cursor::{Args, ReadResult},
     metadata::Event,
     sql::Reader,
 };
+use image::imageops::FilterType;
 use imkitchen_db::mealplan_recipe::MealPlanRecipe;
 use imkitchen_db::recipe_user::{RecipeUser, RecipeUserFts};
 use imkitchen_types::recipe::{
@@ -17,6 +19,7 @@ use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
 use sqlx::{SqlitePool, prelude::FromRow};
 use strum::{Display, EnumString};
+use webp::Encoder;
 
 #[derive(Default, Debug, Deserialize, EnumString, Display, Clone)]
 pub enum SortBy {
@@ -48,6 +51,7 @@ pub struct UserView {
     pub difficulty_score: u16,
     pub created_at: u64,
     pub thumbnail_version: Option<String>,
+    pub blur_placeholder: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, FromRow, Cursor)]
@@ -71,6 +75,7 @@ pub struct UserViewList {
     #[cursor(RecipeUser::CreatedAt, 2)]
     pub created_at: u64,
     pub thumbnail_version: Option<String>,
+    pub blur_placeholder: Option<String>,
 }
 
 pub struct RecipesQuery {
@@ -109,6 +114,7 @@ impl<E: Executor> crate::recipe::Module<E> {
                 RecipeUser::DifficultyScore,
                 RecipeUser::CreatedAt,
                 RecipeUser::ThumbnailVersion,
+                RecipeUser::BlurPlaceholder,
             ])
             .from(RecipeUser::Table)
             .to_owned();
@@ -374,6 +380,7 @@ async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<O
             RecipeUser::DifficultyScore,
             RecipeUser::CreatedAt,
             RecipeUser::ThumbnailVersion,
+            RecipeUser::BlurPlaceholder,
         ])
         .from(RecipeUser::Table)
         .and_where(Expr::col(RecipeUser::Id).eq(id.into()))
@@ -520,6 +527,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                 RecipeUser::DifficultyScore,
                 RecipeUser::CreatedAt,
                 RecipeUser::ThumbnailVersion,
+                RecipeUser::BlurPlaceholder,
             ])
             .values([
                 self.id.to_owned().into(),
@@ -543,6 +551,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                 difficulty_score.into(),
                 self.created_at.into(),
                 self.thumbnail_version.to_owned().into(),
+                self.blur_placeholder.to_owned().into(),
             ])?
             .on_conflict(
                 OnConflict::column(RecipeUser::Id)
@@ -567,6 +576,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                         RecipeUser::DifficultyScore,
                         RecipeUser::CreatedAt,
                         RecipeUser::ThumbnailVersion,
+                        RecipeUser::BlurPlaceholder,
                     ])
                     .to_owned(),
             )
@@ -730,5 +740,33 @@ async fn handle_thumbnail_resized(
 ) -> anyhow::Result<()> {
     data.thumbnail_version = Some(event.id.to_string());
 
+    // Derive a tiny blurred base64 placeholder (LQIP) from the mobile variant only,
+    // so it is generated once per upload rather than once per device.
+    if event.data.device == "mobile" {
+        data.blur_placeholder = build_blur_placeholder(&event.data.data);
+    }
+
     Ok(())
+}
+
+/// Downscale the given WebP thumbnail to a tiny blurred base64 data URL used as a
+/// low-quality image placeholder while the full image lazy-loads. Returns `None`
+/// (falling back to the gradient) if the bytes cannot be decoded.
+fn build_blur_placeholder(bytes: &[u8]) -> Option<String> {
+    let img = match image::load_from_memory(bytes) {
+        Ok(img) => img,
+        Err(err) => {
+            tracing::warn!(error = ?err, "recipe-query.handle_thumbnail_resized.load_from_memory");
+            return None;
+        }
+    };
+
+    let tiny = img.resize(32, u32::MAX, FilterType::Triangle).blur(1.0);
+    let rgba = tiny.to_rgba8();
+    let encoded = Encoder::from_rgba(rgba.as_raw(), rgba.width(), rgba.height()).encode(40.0);
+
+    Some(format!(
+        "data:image/webp;base64,{}",
+        STANDARD.encode(&*encoded)
+    ))
 }
