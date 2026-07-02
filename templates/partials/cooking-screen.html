@@ -50,6 +50,7 @@
     </a>
     <div class="flex-1 text-center min-w-0">
       <div class="text-[10px] font-mono tracking-widest uppercase text-ink-3">
+        {% if !show_iframe %}
         {% if let Some((pos, _)) = current_instruction %}
           {% if coming_instructions.is_empty() %}
             {{ "Cooking · final step"|t }}
@@ -57,13 +58,19 @@
             {{ "Cooking · step"|t }} {{ pos + 1 }} {{ "of"|t }} {{ slot_recipe.instructions.len() }}
           {% endif %}
         {% endif %}
+        {% endif %}
       </div>
       <div class="font-serif text-base leading-none mt-0.5 tracking-tight text-ink truncate">{{ slot_recipe.name }}</div>
     </div>
     <div class="w-9 shrink-0"></div>
   </header>
 
-  {% if let Some((pos, ins)) = current_instruction %}
+  {% if show_iframe %}
+  {# ── Imported recipe whose origin permits framing (checked server-side) ── #}
+  {% if let Some(origin) = slot_recipe.origin %}
+  <iframe class="w-full flex-1 border-0" src="{{ origin }}" loading="lazy"></iframe>
+  {% endif %}
+  {% else if let Some((pos, ins)) = current_instruction %}
   {# ── Progress dots ────────────────────────────────────────────── #}
   <div class="px-4 pb-1 flex gap-0.5">
     {% for _ in completed_instructions %}
@@ -168,8 +175,25 @@
     </div>
   </footer>
   {% else if let Some(origin) = slot_recipe.origin %}
-  {# ── Fallback for recipes imported from a URL but with no parsed steps ── #}
-  <iframe class="w-full flex-1 border-0" src="{{ origin }}" loading="lazy"></iframe>
+  {# ── Imported recipe with no parsed steps whose origin refuses framing:
+        link out to the original instead of embedding it. ── #}
+  <main class="flex-1 min-h-0 overflow-y-auto px-4 py-6 flex items-center justify-center">
+    <div class="bg-paper border border-line-2 rounded-2xl p-8 flex flex-col items-center text-center gap-4 max-w-md">
+      <svg class="w-10 h-10 text-ink-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+      </svg>
+      <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3">{{ "Imported"|t }}</div>
+      <p class="text-ink-2">{{ "This recipe was imported from an external source."|t }}</p>
+      <a href="{{ origin }}" target="_blank" rel="noopener noreferrer"
+        class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold rounded-2xl shadow-sm transition">
+        {{ "Open Original Recipe"|t }}
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+        </svg>
+      </a>
+    </div>
+  </main>
   {% endif %}
 
   <script>

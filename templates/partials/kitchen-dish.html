@@ -132,11 +132,23 @@
       <p class="text-sm text-ink-2 mt-2 leading-relaxed max-w-prose">{{ slot_recipe.description }}</p>
       {% endif %}
       <div class="flex gap-2 mt-4">
+        {% if cook_external %}
+        {# ── Imported recipe with no in-app steps and an unframeable origin:
+              start straight from the original source in a new tab. ── #}
+        {% if let Some(origin) = slot_recipe.origin %}
+        <a href="{{ origin }}" target="_blank" rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 px-4 py-2.5 bg-ink text-cream rounded-xl text-sm font-semibold shadow-sm hover:opacity-90 transition">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg>
+          {{ "Start cooking"|t }}
+        </a>
+        {% endif %}
+        {% else %}
         <a href="{{ "/kitchen/"|demo_href }}{{ date }}/{{ slot_recipe.id }}/cook"
           class="inline-flex items-center gap-2 px-4 py-2.5 bg-ink text-cream rounded-xl text-sm font-semibold shadow-sm hover:opacity-90 transition">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg>
           {{ "Start cooking"|t }}
         </a>
+        {% endif %}
         <a href="{{ "/r/"|demo_href }}{{ slot_recipe.slug }}"
           class="inline-flex items-center gap-2 px-4 py-2.5 border border-line bg-paper/80 text-ink rounded-xl text-sm font-semibold hover:bg-paper transition">
           {{ "See recipe"|t }}

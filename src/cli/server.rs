@@ -112,6 +112,12 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
+    let sub_recipe_saga_embeddable = imkitchen_core::recipe::saga::embeddable::subscription()
+        .data((read_pool.clone(), write_pool.clone()))
+        .all()
+        .start(&executor)
+        .await?;
+
     let sub_recipe_user_fts = imkitchen_core::recipe::query::user_fts::subscription()
         .data(write_pool.clone())
         .all()
@@ -272,6 +278,7 @@ pub async fn serve(
         sub_recipe_command.shutdown(),
         sub_recipe_query.shutdown(),
         sub_recipe_saga_share.shutdown(),
+        sub_recipe_saga_embeddable.shutdown(),
         sub_recipe_user_fts.shutdown(),
         sub_recipe_user_stat.shutdown(),
         sub_recipe_thumbnail.shutdown(),
