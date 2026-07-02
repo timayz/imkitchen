@@ -4,7 +4,7 @@ use axum_extra::extract::CookieJar;
 use imkitchen_core::mealplan::slot::SlotRow;
 use imkitchen_core::mealplan::{ChangeSlotRecipeStatus, Recipe};
 use imkitchen_types::mealplan::DaySlotStatus;
-use imkitchen_types::recipe::{Instruction, IngredientUnitFormat};
+use imkitchen_types::recipe::{IngredientUnitFormat, Instruction};
 use imkitchen_types::{mealplan::DaySlotRecipe, recipe::RecipeType};
 
 pub use imkitchen_web_shared::config;
