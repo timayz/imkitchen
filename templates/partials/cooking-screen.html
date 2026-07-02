@@ -1,3 +1,65 @@
+{# ── Grocery-aisle presentation for the ingredients screen (keyed by
+     shopping_<Category>, mirrors the macros in groceries.html) ── #}
+{% macro aisle_emoji(name) -%}
+{%- match name.as_str() -%}
+{%- when "shopping_FruitsAndVegetables" -%}🥬
+{%- when "shopping_Butcher" -%}🥩
+{%- when "shopping_Seafood" -%}🐟
+{%- when "shopping_DairyAndEggs" -%}🥛
+{%- when "shopping_Bakery" -%}🥖
+{%- when "shopping_Grocery" -%}🥫
+{%- when "shopping_Frozen" -%}❄️
+{%- when "shopping_Refrigerated" -%}🧊
+{%- when "shopping_SnacksAndConfectionery" -%}🍬
+{%- when _ -%}🛒
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro aisle_label(name) -%}
+{%- match name.as_str() -%}
+{%- when "shopping_FruitsAndVegetables" -%}{{ "FruitsAndVegetables"|t }}
+{%- when "shopping_Butcher" -%}{{ "Butcher"|t }}
+{%- when "shopping_Seafood" -%}{{ "Seafood"|t }}
+{%- when "shopping_DairyAndEggs" -%}{{ "DairyAndEggs"|t }}
+{%- when "shopping_Bakery" -%}{{ "Bakery"|t }}
+{%- when "shopping_Grocery" -%}{{ "Grocery"|t }}
+{%- when "shopping_Frozen" -%}{{ "Frozen"|t }}
+{%- when "shopping_Refrigerated" -%}{{ "Refrigerated"|t }}
+{%- when "shopping_SnacksAndConfectionery" -%}{{ "SnacksAndConfectionery"|t }}
+{%- when _ -%}{{ "Unknown"|t }}
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro aisle_hex(name) -%}
+{%- match name.as_str() -%}
+{%- when "shopping_FruitsAndVegetables" -%}#2f7d4f
+{%- when "shopping_Butcher" -%}#b33b1f
+{%- when "shopping_Seafood" -%}#2563eb
+{%- when "shopping_DairyAndEggs" -%}#d97706
+{%- when "shopping_Bakery" -%}#ef6c1e
+{%- when "shopping_Grocery" -%}#78716c
+{%- when "shopping_Frozen" -%}#0284c7
+{%- when "shopping_Refrigerated" -%}#3b6fb0
+{%- when "shopping_SnacksAndConfectionery" -%}#c4428d
+{%- when _ -%}#8a7e70
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro aisle_soft(name) -%}
+{%- match name.as_str() -%}
+{%- when "shopping_FruitsAndVegetables" -%}bg-herb-100
+{%- when "shopping_Butcher" -%}bg-red-100
+{%- when "shopping_Seafood" -%}bg-blue-100
+{%- when "shopping_DairyAndEggs" -%}bg-amber-100
+{%- when "shopping_Bakery" -%}bg-meal-main-soft
+{%- when "shopping_Grocery" -%}bg-stone-100
+{%- when "shopping_Frozen" -%}bg-sky-100
+{%- when "shopping_Refrigerated" -%}bg-meal-entree-soft
+{%- when "shopping_SnacksAndConfectionery" -%}bg-meal-dessert-soft
+{%- when _ -%}bg-cream-2
+{%- endmatch -%}
+{%- endmacro %}
+
 {# ── Meal-type tint resolution (sets inline --tint vars used by the static <style> block) ── #}
 {% decl tint_hex -%}
 {% decl tint_soft_hex -%}
@@ -50,7 +112,9 @@
     </a>
     <div class="flex-1 text-center min-w-0">
       <div class="text-[10px] font-mono tracking-widest uppercase text-ink-3">
-        {% if !show_iframe %}
+        {% if show_ingredients %}
+          {{ "Ingredients"|t }} · {{ slot_recipe.ingredients.len() }} {{ "items"|t }}
+        {% else if !show_iframe %}
         {% if let Some((pos, _)) = current_instruction %}
           {% if coming_instructions.is_empty() %}
             {{ "Cooking · final step"|t }}
@@ -70,6 +134,53 @@
   {% if let Some(origin) = slot_recipe.origin %}
   <iframe class="w-full flex-1 border-0" src="{{ origin }}" loading="lazy"></iframe>
   {% endif %}
+  {% else if show_ingredients %}
+  {# ── Ingredients screen — the first stop before cooking begins ──── #}
+  <main class="px-4 pt-3 pb-2 flex-1 min-h-0 overflow-y-auto">
+    <div class="space-y-3">
+      {% for aisle in ingredient_aisles %}
+      <section style="--aisle: {% call aisle_hex(aisle.name) %}{% endcall %}"
+        class="bg-paper rounded-2xl border border-line-2 shadow-sm overflow-hidden">
+        <div class="flex items-center gap-3 p-3 border-b border-line-2">
+          <div class="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 {% call aisle_soft(aisle.name) %}{% endcall %}">
+            {% call aisle_emoji(aisle.name) %}{% endcall %}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="font-serif text-base leading-none tracking-tight text-ink">
+              {% call aisle_label(aisle.name) %}{% endcall %}
+            </div>
+          </div>
+        </div>
+        <div class="divide-y divide-line-2">
+          {% for ingredient in aisle.items %}
+          <label class="group flex items-center gap-3 px-3 py-3 hover:bg-cream/30 cursor-pointer transition has-checked:bg-cream/50">
+            <input type="checkbox" class="peer sr-only" autocomplete="off" />
+            <div class="w-6 h-6 rounded-lg border-[1.5px] border-line bg-cream flex items-center justify-center shrink-0 transition peer-checked:bg-herb-500 peer-checked:border-herb-500">
+              <svg class="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <span class="block text-sm font-semibold text-ink break-words peer-checked:font-medium peer-checked:text-ink-3 peer-checked:line-through">{{ ingredient.name }}</span>
+            </div>
+            <span class="text-xs font-mono text-ink-3 shrink-0">{{ ingredient.unit.format(ingredient.quantity.to_owned()) }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </section>
+      {% endfor %}
+    </div>
+  </main>
+
+  <footer class="px-4 pt-2 pb-7">
+    <button type="button"
+      ts-req="{% if ""|is_demo %}/demo/signup{% else %}/kitchen/{{ date }}/{{ slot_recipe.id }}/step/next{% endif %}"
+      {% if ""|is_demo %}ts-target="body" ts-swap="append"{% else %}ts-req-method="post" ts-target="#cooking-screen"{% endif %}
+      class="w-full h-13 rounded-xl bg-ink text-cream font-semibold text-sm flex items-center justify-center gap-2 shadow-sm hover:opacity-90 transition">
+      {{ "Start cooking"|t }}
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6"/>
+      </svg>
+    </button>
+  </footer>
   {% else if let Some((pos, ins)) = current_instruction %}
   {# ── Progress dots ────────────────────────────────────────────── #}
   <div class="px-4 pb-1 flex gap-0.5">
@@ -140,7 +251,8 @@
     {% endif %}
 
     <div class="flex gap-2">
-      {% if !completed_instructions.is_empty() %}
+      {# Always available on a step screen — Back from the first step (step 0)
+         returns to the ingredients screen. #}
       <button type="button"
         ts-req="{% if ""|is_demo %}/demo/signup{% else %}/kitchen/{{ date }}/{{ slot_recipe.id }}/step/prev{% endif %}"
         {% if ""|is_demo %}ts-target="body" ts-swap="append"{% else %}ts-req-method="post" ts-target="#cooking-screen"{% endif %}
@@ -150,7 +262,6 @@
         </svg>
         {{ "Back"|t }}
       </button>
-      {% endif %}
 
       {% if coming_instructions.is_empty() %}
         {# Final / Completed state — Done is a link, no state change needed #}

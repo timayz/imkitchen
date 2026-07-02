@@ -17,7 +17,12 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .handler(handle_recipe_deleted())
         .handler(handle_mealplan_days_generated())
         .handler(handle_recipe_ingredients_changed())
+        .handler(handle_recipe_basic_information_changed())
 }
+
+/// Recipes are authored for this many servings by default (matches the
+/// `recipe_user` projection default).
+const DEFAULT_HOUSEHOLD_SIZE: u16 = 4;
 
 #[evento::subscription]
 async fn handle_mealplan_days_generated<E: Executor>(
@@ -87,11 +92,13 @@ async fn handle_recipe_created<E: Executor>(
             ShoppingRecipe::Id,
             ShoppingRecipe::UserId,
             ShoppingRecipe::Ingredients,
+            ShoppingRecipe::HouseholdSize,
         ])
         .values([
             event.aggregate_id.to_owned().into(),
             event.metadata.requested_by()?.into(),
             ingredients.into(),
+            DEFAULT_HOUSEHOLD_SIZE.into(),
         ])?
         .to_owned();
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
@@ -116,11 +123,13 @@ async fn handle_recipe_imported<E: Executor>(
             ShoppingRecipe::Id,
             ShoppingRecipe::UserId,
             ShoppingRecipe::Ingredients,
+            ShoppingRecipe::HouseholdSize,
         ])
         .values([
             event.aggregate_id.to_owned().into(),
             event.metadata.requested_by()?.into(),
             ingredients.into(),
+            event.data.household_size.into(),
         ])?
         .to_owned();
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
@@ -163,6 +172,24 @@ async fn handle_recipe_ingredients_changed<E: Executor>(
         &event.aggregate_id,
         ShoppingRecipe::Ingredients,
         ingredients,
+    )
+    .await?;
+
+    Ok(())
+}
+
+#[evento::subscription]
+async fn handle_recipe_basic_information_changed<E: Executor>(
+    context: &Context<'_, E>,
+    event: Event<imkitchen_types::recipe::BasicInformationChanged>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<sqlx::SqlitePool>();
+
+    update_col(
+        &pool,
+        &event.aggregate_id,
+        ShoppingRecipe::HouseholdSize,
+        event.data.household_size,
     )
     .await?;
 
