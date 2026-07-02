@@ -612,6 +612,7 @@ pub fn cooking(recipe_id: &str) -> CookingTemplate {
         coming_instructions,
         current_instruction,
         date: ymd(today),
+        show_iframe: false,
     }
 }
 

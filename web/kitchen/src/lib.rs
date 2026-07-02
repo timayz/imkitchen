@@ -1,5 +1,5 @@
 use axum::extract::{Path, State};
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::CookieJar;
 use imkitchen_core::mealplan::slot::SlotRow;
 use imkitchen_core::mealplan::{ChangeSlotRecipeStatus, Recipe};
@@ -66,6 +66,9 @@ pub struct KitchenTemplate {
     /// Recipe id → slug for the prep-reminder cards, so they can link to the
     /// canonical `/r/{slug}` detail page. Missing ids fall back to the id.
     pub slugs: std::collections::HashMap<String, String>,
+    /// When true, the "Start cooking" button links to the recipe's original URL
+    /// (external) instead of the in-app cooking screen. See [`cook_is_external`].
+    pub cook_external: bool,
 }
 
 impl KitchenTemplate {
@@ -92,7 +95,34 @@ impl Default for KitchenTemplate {
             date: "".to_owned(),
             week_days: vec![],
             slugs: std::collections::HashMap::new(),
+            cook_external: false,
         }
+    }
+}
+
+/// Whether the "Start cooking" button should link straight to the recipe's
+/// original URL (opened externally) rather than into the in-app cooking screen.
+///
+/// True only when the recipe has no parsed steps AND its origin refuses framing —
+/// i.e. there is nothing to cook in-app. The embeddability check runs only for
+/// step-less recipes (and is cached per-domain), so recipes with steps never
+/// trigger a network call here.
+async fn cook_is_external(
+    app: &AppState,
+    slot_recipe: &imkitchen_core::recipe::query::user::UserView,
+    current_instruction: &Option<(usize, Instruction)>,
+) -> bool {
+    if current_instruction.is_some() {
+        return false;
+    }
+    match slot_recipe.origin.as_deref() {
+        Some(origin) => !app
+            .core
+            .recipe
+            .is_origin_embeddable(origin)
+            .await
+            .unwrap_or(false),
+        None => false,
     }
 }
 
@@ -410,6 +440,11 @@ pub async fn page(
         })
         .collect();
 
+    let cook_external = match slot_recipe.as_ref() {
+        Some(recipe) => cook_is_external(&app, recipe, &current_instruction).await,
+        None => false,
+    };
+
     let auth_cookie = imkitchen_web_shared::try_page_response!(sync:
         imkitchen_web_shared::auth::build_cookie(app.config.jwt, token.sub.to_owned(), token.acc.to_owned()),
         template
@@ -432,6 +467,7 @@ pub async fn page(
             date,
             week_days,
             slugs,
+            cook_external,
             ..Default::default()
         }),
     )
@@ -446,6 +482,7 @@ pub struct CookingTemplate {
     pub coming_instructions: Vec<(usize, String)>,
     pub current_instruction: Option<(usize, Instruction)>,
     pub date: String,
+    pub show_iframe: bool,
 }
 
 // Fragment version of CookingTemplate — same fields, but renders only the
@@ -458,6 +495,7 @@ pub struct CookingScreenTemplate {
     pub coming_instructions: Vec<(usize, String)>,
     pub current_instruction: Option<(usize, Instruction)>,
     pub date: String,
+    pub show_iframe: bool,
 }
 
 #[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
@@ -611,6 +649,16 @@ pub async fn update_slot_step_action(
         }
     };
 
+    let show_iframe = match slot_recipe.origin.as_deref() {
+        Some(origin) => app
+            .core
+            .recipe
+            .is_origin_embeddable(origin)
+            .await
+            .unwrap_or(false),
+        None => false,
+    };
+
     template
         .render(CookingScreenTemplate {
             slot_recipe,
@@ -618,6 +666,7 @@ pub async fn update_slot_step_action(
             coming_instructions,
             current_instruction,
             date,
+            show_iframe,
         })
         .into_response()
 }
@@ -631,6 +680,7 @@ pub struct KitchenDishTemplate {
     pub completed_instructions: Vec<(usize, String)>,
     pub coming_instructions: Vec<(usize, String)>,
     pub current_instruction: Option<(usize, Instruction)>,
+    pub cook_external: bool,
 }
 
 #[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
@@ -754,6 +804,8 @@ pub async fn select_dish(
         }
     };
 
+    let cook_external = cook_is_external(&app, &slot_recipe, &current_instruction).await;
+
     template
         .render(KitchenDishTemplate {
             slot,
@@ -762,6 +814,7 @@ pub async fn select_dish(
             coming_instructions,
             current_instruction,
             date,
+            cook_external,
         })
         .into_response()
 }
@@ -871,6 +924,26 @@ pub async fn cook_page(
         }
     };
 
+    let show_iframe = match slot_recipe.origin.as_deref() {
+        Some(origin) => app
+            .core
+            .recipe
+            .is_origin_embeddable(origin)
+            .await
+            .unwrap_or(false),
+        None => false,
+    };
+
+    // Imported recipe with no parsed steps whose origin refuses framing: there is
+    // nothing to show in-app, so send the user straight to the original instead of
+    // rendering a "Open Original Recipe" button they'd have to tap.
+    if !show_iframe
+        && current_instruction.is_none()
+        && let Some(origin) = slot_recipe.origin.as_deref()
+    {
+        return Redirect::to(origin).into_response();
+    }
+
     template
         .render(CookingTemplate {
             slot_recipe,
@@ -878,6 +951,7 @@ pub async fn cook_page(
             coming_instructions,
             current_instruction,
             date,
+            show_iframe,
         })
         .into_response()
 }

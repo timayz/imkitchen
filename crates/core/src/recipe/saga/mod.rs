@@ -15,6 +15,8 @@
 //! recipe-query read model, which may be mid-rebuild (e.g. right after the m0005
 //! truncate). That is what keeps the historical backfill race-free.
 
+pub mod embeddable;
+
 use evento::{
     Executor, ProjectionAggregate,
     metadata::Event,
