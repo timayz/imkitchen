@@ -119,7 +119,7 @@ pub(crate) mod m0001 {
     }
 }
 
-pub(crate) mod m0007 {
+pub(crate) mod m0006 {
     use sea_query::{ColumnDef, Table, TableAlterStatement};
 
     use super::ShoppingRecipe;
