@@ -141,13 +141,16 @@ fn scale_ingredients(
     recipe: &mut imkitchen_core::recipe::query::user::UserView,
     slot_household_size: u16,
 ) {
-    // Recipes are authored for `recipe.household_size` servings; scale each
-    // quantity to the meal-plan slot's household size. Guard the divisor since
-    // household size comes from an unvalidated form field.
-    let recipe_household_size = recipe.household_size.max(1) as f64;
+    // Recipes are authored for `recipe.household_size` servings, which also acts
+    // as the recipe's minimum: a recipe can't realistically be made for fewer
+    // servings than it was written for (e.g. a whole chicken serves 4). So scale
+    // to `max(recipe, slot)` — up for larger households, never below the recipe's
+    // own size. Guard the divisor since household size is an unvalidated field.
+    let recipe_household_size = recipe.household_size.max(1);
+    let serving_target = recipe_household_size.max(slot_household_size);
     for ingredient in recipe.ingredients.iter_mut() {
-        ingredient.quantity = (ingredient.quantity as f64 * slot_household_size as f64
-            / recipe_household_size)
+        ingredient.quantity = (ingredient.quantity as f64 * serving_target as f64
+            / recipe_household_size as f64)
             .ceil() as u32;
     }
     recipe.ingredients.sort_by_key(|i| i.name.to_owned());
