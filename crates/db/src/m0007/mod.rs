@@ -7,5 +7,8 @@ sqlx_migrator::sqlite_migration!(
     "imkitchen",
     "m0007",
     vec_box![super::m0006::Migration],
-    vec_box![crate::recipe_user::m0007::AddBlurPlaceholder]
+    vec_box![
+        crate::recipe_user::m0007::AddBlurPlaceholder,
+        crate::user_admin::m0007::ResetPremiumSmear,
+    ]
 );

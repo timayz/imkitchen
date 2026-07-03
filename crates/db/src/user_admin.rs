@@ -269,3 +269,45 @@ DROP TABLE user_admin_fts;
         }
     }
 }
+
+pub(crate) mod m0007 {
+    pub struct ResetPremiumSmear;
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for ResetPremiumSmear {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            // Before evento 2.0.0-alpha.24, the background `user-query` projection read the
+            // co-keyed `Subscription` events (`LifePremiumToggled` / `StripePaymentIntentSucceeded`)
+            // unscoped (`by_type`) and smeared one user's premium expiry across every admin row.
+            // Delete the rows rather than resetting the per-row `cursor`. An empty cursor is not a
+            // valid encoding (reload fails to decode it), and a surviving row would carry its
+            // smeared `subscription_expire_at` forward via `snapshot.unwrap_or_default()` — a
+            // no-event victim has nothing in the replay to reset the field. Deleting makes each
+            // reload start from `Default` (expiry 0) and re-apply only that user's own (now
+            // id-scoped) subscription events. The `user_admin_delete` trigger clears the FTS rows;
+            // the insert trigger refills them as the projection rebuilds.
+            sqlx::query("DELETE FROM user_admin")
+                .execute(&mut *connection)
+                .await?;
+
+            // Rewind the projection's subscription so the worker replays the whole stream and
+            // rebuilds `user_admin` on next start (same mechanism as the m0007 recipe backfill).
+            sqlx::query("UPDATE subscriber SET cursor = NULL WHERE key = 'user-query'")
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            _connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            // One-way data repair: the projection rebuilds itself on replay, nothing to revert.
+            Ok(())
+        }
+    }
+}
