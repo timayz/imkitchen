@@ -1,6 +1,6 @@
 use crate::types::user::{
-    self, Activated, LoggedIn, Logout, MadeAdmin, Registered, Role, RoleChanged, State, Suspended,
-    UsernameChanged,
+    self, Activated, EmailChanged, LoggedIn, Logout, MadeAdmin, Registered, Role, RoleChanged,
+    State, Suspended, UsernameChanged,
 };
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, ProjectionAggregate, metadata::Event};
@@ -9,6 +9,7 @@ use std::ops::Deref;
 use crate::repository::{self};
 
 mod activate;
+mod change_email;
 mod change_role;
 mod login;
 mod made_admin;
@@ -113,6 +114,7 @@ pub fn create_projection<E: Executor>() -> Projection<E, User> {
         .skip::<LoggedIn>()
         .skip::<Logout>()
         .skip::<UsernameChanged>()
+        .skip::<EmailChanged>()
         .strict()
 }
 

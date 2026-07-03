@@ -57,6 +57,9 @@ pub enum User {
     UsernameChanged {
         value: String,
     },
+    EmailChanged {
+        value: String,
+    },
     Logout {
         access_id: String,
     },

@@ -41,6 +41,7 @@ impl<E: Executor> super::Module<E> {
             &self.write_db,
             repository::UpdateInput {
                 id: user.id.to_owned(),
+                email: None,
                 username: Some(input.username.to_owned()),
                 password: None,
                 role: None,

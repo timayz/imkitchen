@@ -17,7 +17,7 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             post(routes::users::toggle_premium),
         )
         .route("/admin/users/{id}/edit", get(routes::users::edit_modal))
-        .route("/admin/users/{id}/role", post(routes::users::update_role))
+        .route("/admin/users/{id}", post(routes::users::update_user))
         .route("/admin/invoices", get(routes::invoices::page))
         .route("/admin/invoices/{id}", get(routes::invoices::detail))
         .route("/admin/contact", get(routes::contact::page))
