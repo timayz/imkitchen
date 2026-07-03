@@ -1,16 +1,20 @@
 <div id="admin-user-edit-modal" class="fixed inset-0 bg-black/50 z-40 flex items-center justify-center p-4">
   <div class="bg-paper rounded-xl shadow-md max-w-md w-full">
-    <form ts-req="/admin/users/{{ user.id }}/role" ts-req-method="POST"
+    <form ts-req="/admin/users/{{ user.id }}" ts-req-method="POST"
       ts-req-selector="#user-{{ user.id }}" ts-target="#user-{{ user.id }}"
       ts-req-after="remove #admin-user-edit-modal">
       <div class="p-6 border-b">
         <h3 class="text-lg font-bold">Edit User</h3>
-        <p class="text-sm text-ink-2 mt-1">{{ user.email }}</p>
         {% if let Some(full_name) = user.full_name.as_deref() %}
         <p class="text-xs text-ink-3 mt-1">{{ full_name }}</p>
         {% endif %}
       </div>
       <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-ink-2 mb-2">Email</label>
+          <input name="email" type="email" value="{{ user.email }}" required
+            class="w-full px-4 py-2 border border-line rounded-xl focus:ring-2 focus:ring-primary-500" />
+        </div>
         <div>
           <label class="block text-sm font-semibold text-ink-2 mb-2">Role</label>
           <select name="role"

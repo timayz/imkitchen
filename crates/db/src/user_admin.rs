@@ -311,3 +311,53 @@ pub(crate) mod m0007 {
         }
     }
 }
+
+pub(crate) mod m0008 {
+    pub struct SyncEmailFts;
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for SyncEmailFts {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            // The original `user_admin_update` trigger only re-synced `username` to the FTS index,
+            // so an admin-changed email stayed searchable only by its old value. Recreate the
+            // trigger to also propagate `email`.
+            sqlx::query(
+                r#"
+DROP TRIGGER user_admin_update;
+
+CREATE TRIGGER user_admin_update AFTER
+UPDATE on user_admin BEGIN
+UPDATE user_admin_fts SET email = new.email, username = COALESCE(new.username, '')
+WHERE user_admin_fts = new.id; END;
+            "#,
+            )
+            .execute(connection)
+            .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            sqlx::query(
+                r#"
+DROP TRIGGER user_admin_update;
+
+CREATE TRIGGER user_admin_update AFTER
+UPDATE on user_admin BEGIN
+UPDATE user_admin_fts SET username = COALESCE(new.username, '')
+WHERE user_admin_fts = new.id; END;
+            "#,
+            )
+            .execute(connection)
+            .await?;
+
+            Ok(())
+        }
+    }
+}

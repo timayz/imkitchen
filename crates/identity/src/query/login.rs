@@ -7,8 +7,8 @@ use sqlx::{SqlitePool, prelude::FromRow};
 
 use crate::types::password::ResetCompleted;
 use crate::types::user::{
-    Activated, LoggedIn, Logout, MadeAdmin, Registered, Role, RoleChanged, State, Suspended, User,
-    UsernameChanged,
+    Activated, EmailChanged, LoggedIn, Logout, MadeAdmin, Registered, Role, RoleChanged, State,
+    Suspended, User, UsernameChanged,
 };
 use imkitchen_billing::types::subscription::{
     LifePremiumToggled, StripePaymentIntentSucceeded, Subscription,
@@ -94,6 +94,7 @@ pub fn create_projection<E: Executor>() -> Projection<E, LoginView> {
         .handler(handle_role_changed())
         .handler(handle_reset_completed())
         .handler(handle_username_changed())
+        .handler(handle_email_changed())
         .handler(handle_life_premium_toggled())
         .handler(handle_payment_intent_succeeded())
 }
@@ -194,6 +195,20 @@ async fn handle_username_changed(
 
     for login in data.logins.iter_mut() {
         login.username = Some(event.data.value.to_owned());
+    }
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_email_changed(
+    event: Event<EmailChanged>,
+    data: &mut LoginView,
+) -> anyhow::Result<()> {
+    data.email = event.data.value.to_owned();
+
+    for login in data.logins.iter_mut() {
+        login.email = event.data.value.to_owned();
     }
 
     Ok(())

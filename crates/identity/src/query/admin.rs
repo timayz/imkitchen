@@ -13,7 +13,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use strum::{AsRefStr, Display, EnumString, VariantArray};
 
 use crate::types::user::{
-    Activated, MadeAdmin, Registered, Role, RoleChanged, State, Suspended, User, UsernameChanged,
+    Activated, EmailChanged, MadeAdmin, Registered, Role, RoleChanged, State, Suspended, User,
+    UsernameChanged,
 };
 use imkitchen_billing::types::subscription::{
     LifePremiumToggled, StripePaymentIntentSucceeded, Subscription,
@@ -224,6 +225,7 @@ pub fn create_projection<E: Executor>() -> Projection<E, AdminView> {
         .handler(handle_life_premium_toggled())
         .handler(handle_payment_intent_succeeded())
         .handler(handle_username_changed())
+        .handler(handle_email_changed())
 }
 
 impl<E: Executor> Snapshot<E> for AdminView {
@@ -367,6 +369,16 @@ async fn handle_username_changed(
     data: &mut AdminView,
 ) -> anyhow::Result<()> {
     data.username = Some(event.data.value);
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_email_changed(
+    event: Event<EmailChanged>,
+    data: &mut AdminView,
+) -> anyhow::Result<()> {
+    data.email = event.data.value;
 
     Ok(())
 }

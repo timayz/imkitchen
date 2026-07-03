@@ -90,6 +90,7 @@ pub(super) async fn create(
 
 pub struct UpdateInput {
     pub id: String,
+    pub email: Option<String>,
     pub username: Option<String>,
     pub password: Option<String>,
     pub role: Option<Role>,
@@ -101,6 +102,10 @@ pub async fn update(pool: &SqlitePool, input: UpdateInput) -> imkitchen_core::Re
         .table(User::Table)
         .and_where(Expr::col(User::Id).eq(input.id))
         .to_owned();
+
+    if let Some(email) = input.email {
+        statement.value(User::Email, email);
+    }
 
     if let Some(username) = input.username {
         statement.value(User::Username, username);

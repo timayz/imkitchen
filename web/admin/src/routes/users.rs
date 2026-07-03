@@ -244,20 +244,26 @@ pub async fn edit_modal(
 }
 
 #[derive(Deserialize)]
-pub struct UpdateRoleForm {
+pub struct UpdateUserForm {
+    pub email: String,
     pub role: String,
 }
 
 #[tracing::instrument(skip_all, fields(admin = admin.id))]
-pub async fn update_role(
+pub async fn update_user(
     template: Template,
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
     admin: AuthAdmin,
-    axum::Form(form): axum::Form<UpdateRoleForm>,
+    axum::Form(form): axum::Form<UpdateUserForm>,
 ) -> impl IntoResponse {
     let role = imkitchen_web_shared::try_response!(sync anyhow:
         Role::from_str(&form.role).map_err(|_| anyhow::anyhow!("invalid role")),
+        template
+    );
+
+    imkitchen_web_shared::try_response!(
+        app.identity.change_email(&id, form.email, &admin.id),
         template
     );
 
