@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-web-demo"
-version = "1.4.0"
+version = "1.5.0"
 edition.workspace = true
 
 [dependencies]
@@ -10,10 +10,10 @@ askama = { workspace = true }
 sqlx = { workspace = true }
 time = { workspace = true }
 evento = { workspace = true }
-imkitchen-core = { path = "../../crates/core", version = "1.4.0" }
-imkitchen-types = { path = "../../crates/types", version = "1.4.0" }
-imkitchen-web-shared = { path = "../shared", version = "1.4.0" }
-imkitchen-web-kitchen = { path = "../kitchen", version = "1.4.0" }
-imkitchen-web-menu = { path = "../menu", version = "1.4.0" }
-imkitchen-web-recipe = { path = "../recipe", version = "1.4.0" }
-imkitchen-web-grocery = { path = "../grocery", version = "1.4.0" }
+imkitchen-core = { path = "../../crates/core", version = "1.5.0" }
+imkitchen-types = { path = "../../crates/types", version = "1.5.0" }
+imkitchen-web-shared = { path = "../shared", version = "1.5.0" }
+imkitchen-web-kitchen = { path = "../kitchen", version = "1.5.0" }
+imkitchen-web-menu = { path = "../menu", version = "1.5.0" }
+imkitchen-web-recipe = { path = "../recipe", version = "1.5.0" }
+imkitchen-web-grocery = { path = "../grocery", version = "1.5.0" }
