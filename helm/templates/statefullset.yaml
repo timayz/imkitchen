@@ -24,6 +24,7 @@ spec:
         fsGroup: 10001
         fsGroupChangePolicy: OnRootMismatch
         runAsNonRoot: true
+      {{- if or .Values.database.migrate .Values.database.reset }}
       initContainers:
         - name: imkitchen-migrate
           image: timayz/imkitchen:{{ .Values.image.tag }}
@@ -39,6 +40,7 @@ spec:
           envFrom:
             - secretRef:
                 name: imkitchen-env
+      {{- end }}
       containers:
         - name: imkitchen
           image: timayz/imkitchen:{{ .Values.image.tag }}

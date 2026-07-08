@@ -1,6 +1,6 @@
 # Container image.
 image:
-  tag: "1.0.5"
+  tag: "1.5.0"
 
 # Extra environment variables injected into the container, for
 # store credentials that live in plain text.
@@ -11,6 +11,7 @@ extraEnv: {}
 extraSecretEnv: {}
 
 database:
+  migrate: true
   reset: false
 
 hostname: "imkitchen.app"
