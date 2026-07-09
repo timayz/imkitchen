@@ -102,12 +102,15 @@ async fn imports_recipes_and_creates_chef_accounts() -> anyhow::Result<()> {
 
     let zip_bytes = build_zip()?;
 
+    let jobs = imkitchen_web_shared::AdminImportJobs::default();
     let progress = imkitchen_web_admin::import::process_zip(
         &identity,
         &recipe,
         "admin-id",
         "root_password",
         zip_bytes,
+        &jobs,
+        "test-job",
     )
     .await;
 

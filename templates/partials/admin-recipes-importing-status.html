@@ -1,4 +1,4 @@
-{% if let Some(result) = result %}
+{% if result.done %}
 <div>
   <div class="bg-herb-50 border border-herb-200 rounded-2xl p-4 mb-3 flex items-start gap-3">
     <svg class="w-5 h-5 text-herb-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -30,5 +30,20 @@
   <div ts-trigger="load" ts-action="remove #admin-importing-alert"></div>
 </div>
 {% else %}
-<div ts-trigger="load delay 800ms" ts-req="/admin/recipes/import/{{ job_id }}/status"></div>
+<div class="bg-paper border border-line-2 rounded-2xl p-4 md:p-5 mb-3"
+  ts-trigger="load delay 500ms" ts-req="/admin/recipes/import/{{ job_id }}/status">
+  <div class="flex items-baseline justify-between gap-3 mb-2">
+    <div class="text-sm font-semibold text-ink">{{ "Importing recipes…"|t }}</div>
+    <div class="text-[11px] font-mono uppercase tracking-wider text-ink-3">
+      {{ result.recipes_processed }} / {{ result.recipes_total }}
+    </div>
+  </div>
+  <div class="h-2 rounded-full bg-cream border border-line-2 overflow-hidden">
+    <div class="h-full bg-primary-500 rounded-full transition-all duration-300"
+      {% if result.recipes_total > 0 %}style="width: {{ result.recipes_processed * 100 / result.recipes_total }}%"{% else %}style="width: 0%"{% endif %}></div>
+  </div>
+  <div class="text-[11px] font-mono uppercase tracking-wider text-ink-3 mt-2">
+    {{ result.authors_total }} {{ "author(s)"|t }}
+  </div>
+</div>
 {% endif %}

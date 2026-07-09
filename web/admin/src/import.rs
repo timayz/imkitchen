@@ -18,7 +18,7 @@ use imkitchen_identity::RegisterInput;
 use imkitchen_identity::types::user::Role;
 use imkitchen_types::recipe::{DietaryRestriction, Ingredient, Instruction, RecipeType};
 use imkitchen_web_shared::template::SERVER_ERROR_MESSAGE;
-use imkitchen_web_shared::{AdminImportError, AdminImportProgress};
+use imkitchen_web_shared::{AdminImportError, AdminImportJobs, AdminImportProgress};
 use serde::Deserialize;
 
 /// One recipe payload, matching the user-facing import schema (`schema.json` v1.0).
@@ -175,8 +175,17 @@ pub async fn process_zip<E: Executor + Clone>(
     admin_id: &str,
     password: &str,
     zip_bytes: Vec<u8>,
+    jobs: &AdminImportJobs,
+    job_id: &str,
 ) -> AdminImportProgress {
     let mut progress = AdminImportProgress::default();
+
+    // Publish the current progress snapshot into the shared registry so the polling
+    // status endpoint can render a live progress bar while the import runs.
+    let publish = |p: &AdminImportProgress| {
+        let mut j = jobs.lock().unwrap_or_else(|e| e.into_inner());
+        j.insert(job_id.to_string(), p.clone());
+    };
 
     let mut archive = match zip::ZipArchive::new(Cursor::new(zip_bytes)) {
         Ok(archive) => archive,
@@ -237,6 +246,8 @@ pub async fn process_zip<E: Executor + Clone>(
     }
 
     progress.authors_total = authors.len();
+    progress.recipes_total = authors.values().map(|recipes| recipes.len()).sum();
+    publish(&progress);
     let mut cache: HashMap<String, String> = HashMap::new();
 
     for (author, recipes) in authors {
@@ -266,6 +277,11 @@ pub async fn process_zip<E: Executor + Clone>(
             };
 
         for (slug, entry) in recipes {
+            // Counted at the top so every branch below (which all `continue`) still
+            // advances the bar.
+            progress.recipes_processed += 1;
+            publish(&progress);
+
             let label = format!("{author}/{slug}");
 
             let Some(json) = entry.json else {
