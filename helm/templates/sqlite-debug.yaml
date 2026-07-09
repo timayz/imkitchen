@@ -1,0 +1,36 @@
+{{- if .Values.database.debug }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: imkitchen-sqlite-debug
+  labels:
+    app: imkitchen-sqlite-debug
+spec:
+  restartPolicy: Never
+  activeDeadlineSeconds: 3600
+  securityContext:
+    fsGroup: 10001
+    fsGroupChangePolicy: OnRootMismatch
+    runAsNonRoot: true
+    runAsUser: 10001
+    runAsGroup: 10001
+  containers:
+    - name: sqlite
+      image: {{ .Values.database.debugImage }}
+      command: ["/bin/sh", "-c"]
+      args:
+        - sleep 3600
+      volumeMounts:
+        - name: data
+          mountPath: /var/lib/imkitchen
+        - name: config
+          mountPath: /etc/imkitchen
+          readOnly: true
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: data-imkitchen-deployment-0
+    - name: config
+      configMap:
+        name: imkitchen-config
+{{- end }}

@@ -13,6 +13,8 @@ extraSecretEnv: {}
 database:
   migrate: true
   reset: false
+  debug: false
+  debugImage: "keinos/sqlite3"
 
 hostname: "imkitchen.app"
 
