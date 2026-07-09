@@ -22,7 +22,7 @@ use imkitchen_web_grocery::{AisleSection, GroceriesTemplate};
 use imkitchen_web_kitchen::{CookingTemplate, KitchenTemplate, KitchenWeekDay};
 use imkitchen_web_menu::{MenuBoardDay, MenuSlot, MenuTemplate};
 use imkitchen_web_recipe::routes::cook::{CookTemplate, PageQuery as CookPageQuery};
-use imkitchen_web_recipe::routes::detail::DetailTemplate;
+use imkitchen_web_recipe::routes::detail::{DetailTemplate, SimilarTemplate};
 use imkitchen_web_recipe::routes::index::{IndexTemplate as RecipesIndexTemplate, PageQuery};
 use imkitchen_web_shared::auth::AuthUser;
 use time::{Duration, OffsetDateTime};
@@ -896,16 +896,6 @@ pub fn recipe_detail(id: &str) -> DetailTemplate<'static> {
     recipe.owner_name = Some("imkitchen".to_owned());
     recipe.is_shared = true;
 
-    let rt = recipe.recipe_type.0.clone();
-    let current_id = recipe.id.clone();
-
-    let similar_nodes: Vec<UserViewList> = catalog()
-        .iter()
-        .filter(|r| r.id != current_id && r.recipe_type.0 == rt)
-        .take(4)
-        .map(to_list)
-        .collect();
-
     DetailTemplate {
         user: demo_user(),
         recipe,
@@ -915,9 +905,30 @@ pub fn recipe_detail(id: &str) -> DetailTemplate<'static> {
             ..Default::default()
         },
         favorite: Favorite::default(),
-        similar_recipes: to_read_result(similar_nodes),
         owner_description: "Home cook sharing tried-and-tested family recipes.".to_owned(),
         ..Default::default()
+    }
+}
+
+/// Lazily-loaded "Similar recipes" fragment for the demo detail page — the
+/// twinspark counterpart to [`recipe_detail`], picking catalog recipes of the
+/// same type as the current one.
+pub fn recipe_similar(id: &str) -> SimilarTemplate {
+    let recipe =
+        find_recipe(id).unwrap_or_else(|| find_recipe("arroz-con-pollo").expect("seed recipe"));
+
+    let rt = recipe.recipe_type.0.clone();
+    let current_id = recipe.id.clone();
+
+    let similar_nodes: Vec<UserViewList> = catalog()
+        .iter()
+        .filter(|r| r.id != current_id && r.recipe_type.0 == rt)
+        .take(10)
+        .map(to_list)
+        .collect();
+
+    SimilarTemplate {
+        similar_recipes: to_read_result(similar_nodes),
     }
 }
 

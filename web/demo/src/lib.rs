@@ -37,6 +37,7 @@ pub fn routes() -> axum::Router<AppState> {
         .route("/demo/recipes", get(recipes))
         .route("/demo/recipes/{id}", get(recipes_detail))
         .route("/demo/r/{slug}", get(recipes_detail))
+        .route("/demo/r/{slug}/similar", get(recipes_similar))
         .route("/demo/cooks/{username}", get(cooks))
         .route("/demo/groceries", get(groceries))
         .route("/demo/signup", get(signup_modal))
@@ -77,6 +78,20 @@ async fn recipes_detail(template: Template, Path((slug,)): Path<(String,)>) -> i
             .into_response()
     } else {
         Redirect::to(&format!("/r/{slug}")).into_response()
+    }
+}
+
+async fn recipes_similar(template: Template, Path((slug,)): Path<(String,)>) -> impl IntoResponse {
+    // Mirrors `recipes_detail`: fixture recipes render their similar rail from
+    // the demo catalog; any other slug is a real public recipe reached
+    // anonymously, so defer to the real fragment (which renders in demo mode).
+    if fixtures::find_recipe(&slug).is_some() {
+        template
+            .demo()
+            .render(fixtures::recipe_similar(&slug))
+            .into_response()
+    } else {
+        Redirect::to(&format!("/r/{slug}/similar")).into_response()
     }
 }
 

@@ -52,11 +52,19 @@ pub struct DetailTemplate<'a> {
     pub recipe: UserView,
     pub stat: UserStatView,
     pub favorite: favorite::Favorite,
-    pub similar_recipes: ReadResult<UserViewList>,
     pub owner_description: String,
     /// Pre-serialized schema.org/Recipe JSON-LD for search-engine rich
     /// results. Empty string renders no `<script>` (e.g. in demo mode).
     pub json_ld: String,
+}
+
+/// Right-rail "Similar recipes" fragment, lazily loaded via twinspark
+/// (`GET /r/{slug}/similar`) so the detail page returns its main content
+/// without waiting on the similar-recipes queries.
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-similar.html")]
+pub struct SimilarTemplate {
+    pub similar_recipes: ReadResult<UserViewList>,
 }
 
 /// Builds a schema.org/Recipe JSON-LD document for a recipe. The `<`, `>` and
@@ -153,7 +161,6 @@ impl<'a> Default for DetailTemplate<'a> {
             user: AuthUser::default(),
             recipe: Default::default(),
             stat: UserStatView::default(),
-            similar_recipes: Default::default(),
             favorite: Default::default(),
             username: "john_doe",
             owner_description: String::new(),
@@ -221,6 +228,65 @@ pub async fn page(
     )
     .to_owned();
 
+    let owner_profile = imkitchen_web_shared::try_page_response!(
+        app.identity.user_profile.load(&recipe.owner_id),
+        template
+    );
+
+    let username = user.username();
+    // Structured data for search engines — only on the canonical public page
+    // (signed-in or guest), not the demo tour.
+    let json_ld = recipe_json_ld(&recipe, &app.config.server.url);
+
+    template
+        .render(DetailTemplate {
+            user,
+            recipe,
+            stat,
+            favorite,
+            username: username.as_str(),
+            owner_description: owner_profile.description,
+            json_ld,
+            ..Default::default()
+        })
+        .into_response()
+}
+
+/// Right-rail "Similar recipes" fragment, lazily loaded by the detail page via
+/// twinspark (`ts-trigger="load"`). Kept off the page's critical path because
+/// finding suggestions runs up to three fallback queries.
+#[tracing::instrument(skip_all)]
+pub async fn similar(
+    template: Template,
+    user: Option<AuthUser>,
+    Path((slug,)): Path<(String,)>,
+    State(app): State<AppState>,
+) -> impl IntoResponse {
+    // Resolve slug → id with the same id-fallback as `page` so legacy links work.
+    let id = match imkitchen_web_shared::try_page_response!(
+        app.core.recipe.find_id_by_slug(&slug),
+        template
+    ) {
+        Some(id) => id,
+        None => slug.clone(),
+    };
+    let recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.user(&id), template);
+
+    // Mirror the page's visibility + demo handling: only shared recipes (or the
+    // owner's own) are viewable, and anonymous visitors render in demo mode.
+    let is_anonymous = user.is_none();
+    let user = user.unwrap_or_else(AuthUser::demo);
+
+    if recipe.owner_id != user.id && !recipe.is_shared {
+        return template.render(NotFoundTemplate).into_response();
+    }
+
+    let template = if is_anonymous {
+        template.demo()
+    } else {
+        template
+    };
+
     let exclude_ids = vec![recipe.id.to_owned()];
 
     let mut similar_recipes = imkitchen_web_shared::try_page_response!(
@@ -233,14 +299,14 @@ pub async fn page(
             dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
             dietary_where_any: false,
             in_meal_plan: None,
-            sort_by: SortBy::RecentlyAdded,
-            args: Args::forward(6, None),
+            sort_by: SortBy::Random,
+            args: Args::forward(10, None),
             search: None,
         }),
         template
     );
 
-    if similar_recipes.edges.len() < 6 {
+    if similar_recipes.edges.len() < 10 {
         let mut similar_ids = similar_recipes
             .edges
             .iter()
@@ -258,8 +324,8 @@ pub async fn page(
                 dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
                 dietary_where_any: true,
                 in_meal_plan: None,
-                sort_by: SortBy::RecentlyAdded,
-                args: Args::forward(6, None),
+                sort_by: SortBy::Random,
+                args: Args::forward(10, None),
                 search: None,
             }),
             template
@@ -268,7 +334,7 @@ pub async fn page(
         similar_recipes.edges.extend(more_recipes.edges);
     }
 
-    if similar_recipes.edges.len() < 6 {
+    if similar_recipes.edges.len() < 10 {
         let mut similar_ids = similar_recipes
             .edges
             .iter()
@@ -286,8 +352,8 @@ pub async fn page(
                 dietary_restrictions: vec![],
                 dietary_where_any: false,
                 in_meal_plan: None,
-                sort_by: SortBy::RecentlyAdded,
-                args: Args::forward(6, None),
+                sort_by: SortBy::Random,
+                args: Args::forward(10, None),
                 search: None,
             }),
             template
@@ -296,28 +362,12 @@ pub async fn page(
         similar_recipes.edges.extend(more_recipes.edges);
     }
 
-    let owner_profile = imkitchen_web_shared::try_page_response!(
-        app.identity.user_profile.load(&recipe.owner_id),
-        template
-    );
-
-    let username = user.username();
-    // Structured data for search engines — only on the canonical public page
-    // (signed-in or guest), not the demo tour.
-    let json_ld = recipe_json_ld(&recipe, &app.config.server.url);
+    // Fallback tiers can overshoot the target; keep at most 10 (exact matches,
+    // which are collected first, take precedence).
+    similar_recipes.edges.truncate(10);
 
     template
-        .render(DetailTemplate {
-            user,
-            recipe,
-            stat,
-            similar_recipes,
-            favorite,
-            username: username.as_str(),
-            owner_description: owner_profile.description,
-            json_ld,
-            ..Default::default()
-        })
+        .render(SimilarTemplate { similar_recipes })
         .into_response()
 }
 
