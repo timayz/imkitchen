@@ -13,6 +13,7 @@ use axum::{
 };
 use axum_extra::extract::Query;
 
+use imkitchen_web_recipe::routes::cook::PageQuery as CookPageQuery;
 use imkitchen_web_recipe::routes::index::PageQuery;
 use imkitchen_web_shared::{
     AppState,
@@ -36,6 +37,7 @@ pub fn routes() -> axum::Router<AppState> {
         .route("/demo/recipes", get(recipes))
         .route("/demo/recipes/{id}", get(recipes_detail))
         .route("/demo/r/{slug}", get(recipes_detail))
+        .route("/demo/cooks/{username}", get(cooks))
         .route("/demo/groceries", get(groceries))
         .route("/demo/signup", get(signup_modal))
 }
@@ -76,6 +78,14 @@ async fn recipes_detail(template: Template, Path((slug,)): Path<(String,)>) -> i
     } else {
         Redirect::to(&format!("/r/{slug}")).into_response()
     }
+}
+
+async fn cooks(
+    template: Template,
+    Path((username,)): Path<(String,)>,
+    Query(query): Query<CookPageQuery>,
+) -> impl IntoResponse {
+    template.demo().render(fixtures::cook(&username, query))
 }
 
 async fn groceries(template: Template) -> impl IntoResponse {

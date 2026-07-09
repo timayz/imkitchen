@@ -52,7 +52,6 @@ pub struct DetailTemplate<'a> {
     pub recipe: UserView,
     pub stat: UserStatView,
     pub favorite: favorite::Favorite,
-    pub cook_recipes: ReadResult<UserViewList>,
     pub similar_recipes: ReadResult<UserViewList>,
     pub owner_description: String,
     /// Pre-serialized schema.org/Recipe JSON-LD for search-engine rich
@@ -154,7 +153,6 @@ impl<'a> Default for DetailTemplate<'a> {
             user: AuthUser::default(),
             recipe: Default::default(),
             stat: UserStatView::default(),
-            cook_recipes: Default::default(),
             similar_recipes: Default::default(),
             favorite: Default::default(),
             username: "john_doe",
@@ -224,31 +222,6 @@ pub async fn page(
     .to_owned();
 
     let exclude_ids = vec![recipe.id.to_owned()];
-
-    let cook_recipes = imkitchen_web_shared::try_page_response!(
-        app.core.recipe.filter_user(RecipesQuery {
-            exclude_ids: Some(exclude_ids),
-            user_id: Some(recipe.owner_id.to_owned()),
-            recipe_type: None,
-            is_shared: Some(true),
-            has_thumbnail: None,
-            dietary_restrictions: vec![],
-            dietary_where_any: false,
-            in_meal_plan: None,
-            sort_by: SortBy::RecentlyAdded,
-            args: Args::forward(2, None),
-            search: None,
-        }),
-        template
-    );
-
-    let mut exclude_ids = cook_recipes
-        .edges
-        .iter()
-        .map(|n| n.node.id.to_owned())
-        .collect::<Vec<_>>();
-
-    exclude_ids.push(recipe.id.to_owned());
 
     let mut similar_recipes = imkitchen_web_shared::try_page_response!(
         app.core.recipe.filter_user(RecipesQuery {
@@ -338,7 +311,6 @@ pub async fn page(
             user,
             recipe,
             stat,
-            cook_recipes,
             similar_recipes,
             favorite,
             username: username.as_str(),

@@ -101,8 +101,8 @@ impl FromRequestParts<crate::AppState> for AuthToken {
             .ok_or(Redirect::to("/login"))?;
 
         let mut validation = Validation::new(Algorithm::HS256);
-        validation.set_issuer(&[state.config.jwt.issuer.to_owned()]);
-        validation.set_audience(&[state.config.jwt.audience.to_owned()]);
+        validation.set_issuer(std::slice::from_ref(&state.config.jwt.issuer));
+        validation.set_audience(std::slice::from_ref(&state.config.jwt.audience));
 
         let token_data = decode::<Claims>(
             &token,

@@ -103,21 +103,21 @@ async fn renew_subscription<E: Executor + Clone>(
     let Some(customer_id) = subscription.customer_id else {
         anyhow::bail!(
             "failed to renew user subscription, no customer_id found for {}",
-            &subscription.id
+            subscription.id
         );
     };
 
     let Some(payment_method_id) = subscription.payment_method_id else {
         anyhow::bail!(
             "failed to renew user subscription, no payment_method_id found for {}",
-            &subscription.id
+            subscription.id
         );
     };
 
     let Some(payment_details) = subscription.payment_details else {
         anyhow::bail!(
             "failed to renew user subscription, no payment_details found for {}",
-            &subscription.id
+            subscription.id
         );
     };
 

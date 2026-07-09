@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM rust:1.96-alpine
+FROM rust:1.97-alpine
 
 RUN apk add --no-cache musl-dev tzdata \
         openssl-dev openssl-libs-static \
