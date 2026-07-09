@@ -38,6 +38,11 @@ pub struct AdminImportError {
 pub struct AdminImportProgress {
     pub done: bool,
     pub authors_total: usize,
+    /// Total recipe entries discovered in the ZIP (drives the progress bar denominator).
+    pub recipes_total: usize,
+    /// Attempts completed so far (success + failure); drives the progress bar numerator.
+    pub recipes_processed: usize,
+    /// Successfully imported recipes; shown in the final summary.
     pub recipes_imported: usize,
     pub errors: Vec<AdminImportError>,
 }

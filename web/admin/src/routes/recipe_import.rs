@@ -33,7 +33,7 @@ pub struct ImportingTemplate {
 #[template(path = "partials/admin-recipes-importing-status.html")]
 pub struct ImportingStatusTemplate {
     pub job_id: String,
-    pub result: Option<AdminImportProgress>,
+    pub result: AdminImportProgress,
 }
 
 #[tracing::instrument(skip_all, fields(admin = admin.id))]
@@ -71,12 +71,16 @@ pub async fn action(
     let job = job_id.clone();
     tokio::spawn(async move {
         let password = app.config.root.password.clone();
+        // `process_zip` publishes intermediate snapshots for the live bar; this final
+        // write is the authoritative terminal state (`done = true`) for every return path.
         let progress = crate::import::process_zip(
             &app.identity,
             &app.core.recipe,
             &admin_id,
             &password,
             bytes,
+            &app.import_jobs,
+            &job,
         )
         .await;
         let mut jobs = app.import_jobs.lock().unwrap_or_else(|e| e.into_inner());
@@ -99,14 +103,14 @@ pub async fn status(
         let mut jobs = app.import_jobs.lock().unwrap_or_else(|e| e.into_inner());
         match jobs.get(&id) {
             // Finished: hand back the result once and drop it from the registry.
-            Some(p) if p.done => jobs.remove(&id),
-            // Still running: keep polling.
-            Some(_) => None,
+            Some(p) if p.done => jobs.remove(&id).unwrap_or_default(),
+            // Still running: return the current snapshot so the bar can advance.
+            Some(p) => p.clone(),
             // Unknown job (server restarted, or already consumed): stop polling.
-            None => Some(AdminImportProgress {
+            None => AdminImportProgress {
                 done: true,
                 ..Default::default()
-            }),
+            },
         }
     };
 
