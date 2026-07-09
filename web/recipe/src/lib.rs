@@ -46,6 +46,7 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
         .route("/recipes/{id}/thumbnail", post(routes::thumbnail::upload))
         .route("/cooks/{username}", get(routes::cook::page))
         .route("/r/{slug}", get(routes::detail::page))
+        .route("/r/{slug}/similar", get(routes::detail::similar))
         .route("/recipes/{id}", get(routes::detail::redirect_to_slug))
         .route(
             "/recipes/_edit/ingredient-row",

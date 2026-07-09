@@ -64,40 +64,6 @@
 </picture>
 {% endmacro %}
 
-{% macro lazy_card_thumbnail(recipe, version) %}
-{% if let Some(blur) = recipe.blur_placeholder %}
-<div class="absolute inset-0 bg-cover bg-center scale-110 blur-lg" style="background-image:url({{ blur }})"></div>
-{% endif %}
-<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-  data-src="/recipes/{{ recipe.id }}/thumbnail/mobile/image.webp?v={{ version }}" alt="{{ recipe.name }}"
-  class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 [&.loaded]:opacity-100"
-  ts-trigger="closeby once" ts-action="lazy" />
-{% endmacro %}
-
-{# ── Compact suggestion card used in the right rail ── #}
-{% macro suggestion_card(node) %}
-{% let srt = node.recipe_type.0 %}
-<a href="{{ "/r/"|demo_href }}{{ node.slug }}" class="flex gap-3 group">
-  <div class="relative w-32 h-20 rounded-xl overflow-hidden bg-linear-to-br {% call type_hero_classes(srt) %}{% endcall %}
-    flex items-center justify-center shrink-0">
-    {% if let Some(version) = node.thumbnail_version %}
-      {% call lazy_card_thumbnail(node, version) %}{% endcall %}
-    {% else %}
-      <span class="text-3xl">{% call type_emoji(srt) %}{% endcall %}</span>
-    {% endif %}
-  </div>
-  <div class="flex-1 min-w-0">
-    <h4 class="font-semibold text-sm text-ink leading-snug line-clamp-2 group-hover:text-primary-500">
-      {{ node.name }}
-    </h4>
-    {% if let Some(username) = node.owner_name %}
-    <p class="text-[11px] text-ink-3 mt-1">@{{ username }}</p>
-    {% endif %}
-    <p class="text-[11px] text-ink-3 mt-0.5">{{ node.created_at|relative_time }}</p>
-  </div>
-</a>
-{% endmacro %}
-
 {% block content %}
 {% let demo = ""|is_demo %}
 {% let rt = recipe.recipe_type.0 %}
@@ -409,18 +375,23 @@
     {# ───────────────────── RIGHT rail ───────────────────── #}
     <aside class="xl:w-90 shrink-0 min-w-0">
       <div class="xl:sticky xl:top-4 space-y-5">
-        {% if !similar_recipes.edges.is_empty() %}
-        <section>
-          <h3 class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3 mb-3">
-            {{ "Similar recipes"|t }}
-          </h3>
+        {# Similar recipes are loaded lazily via twinspark so they stay off the
+           page's critical render path. The skeleton below is swapped for the
+           fragment (or nothing, when there are no matches) once it arrives. #}
+        <div ts-trigger="load" ts-req="{{ "/r/"|demo_href }}{{ recipe.slug }}/similar">
+          <div class="h-2.5 w-24 shimmer mb-3"></div>
           <div class="space-y-3">
-            {% for similar_recipe in similar_recipes.edges.iter() %}
-              {% call suggestion_card(similar_recipe.node) %}{% endcall %}
+            {% for _ in 0..3 %}
+            <div class="flex gap-3">
+              <div class="w-32 h-20 rounded-xl shimmer shrink-0"></div>
+              <div class="flex-1 min-w-0 space-y-2 pt-1">
+                <div class="h-3.5 w-full shimmer"></div>
+                <div class="h-3 w-2/3 shimmer"></div>
+              </div>
+            </div>
             {% endfor %}
           </div>
-        </section>
-        {% endif %}
+        </div>
       </div>
     </aside>
 

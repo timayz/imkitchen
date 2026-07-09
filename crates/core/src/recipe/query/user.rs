@@ -1,7 +1,7 @@
 use base64::{Engine, engine::general_purpose::STANDARD};
 use evento::{
     Cursor, Executor, Projection, Snapshot,
-    cursor::{Args, ReadResult},
+    cursor::{Args, Edge, PageInfo, ReadResult, Value},
     metadata::Event,
     sql::Reader,
 };
@@ -14,7 +14,7 @@ use imkitchen_types::recipe::{
     InstructionsChanged, MadePrivate, MainCourseOptionsChanged, Recipe, RecipeType,
     RecipeTypeChanged, SharedToCommunity, ThumbnailResized,
 };
-use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
+use sea_query::{Expr, ExprTrait, Func, OnConflict, Query, SimpleExpr, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
 use sqlx::{SqlitePool, prelude::FromRow};
@@ -27,6 +27,7 @@ pub enum SortBy {
     RecentlyAdded,
     Easiest,
     Hardest,
+    Random,
 }
 
 #[evento::projection(FromRow)]
@@ -241,6 +242,36 @@ impl<E: Executor> crate::recipe::Module<E> {
                     .await?;
 
                 Ok(result.map(|item| item.0))
+            }
+            // Random ordering is incompatible with cursor pagination, so bypass
+            // `Reader` and run a one-shot `ORDER BY RANDOM()` query (same pattern
+            // as meal-plan generation). The limit comes from the caller's `Args`.
+            SortBy::Random => {
+                let limit = query.args.first.or(query.args.last).unwrap_or(10) as u64;
+
+                statement
+                    .order_by_expr(
+                        SimpleExpr::FunctionCall(Func::random()),
+                        sea_query::Order::Asc,
+                    )
+                    .limit(limit);
+
+                let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+                let nodes =
+                    sqlx::query_as_with::<_, UserViewList, _>(sqlx::AssertSqlSafe(sql), values)
+                        .fetch_all(&self.read_db)
+                        .await?;
+
+                Ok(ReadResult {
+                    edges: nodes
+                        .into_iter()
+                        .map(|node| Edge {
+                            cursor: Value(node.id.clone()),
+                            node,
+                        })
+                        .collect(),
+                    page_info: PageInfo::default(),
+                })
             }
         }
     }
