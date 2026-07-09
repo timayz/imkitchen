@@ -13,6 +13,14 @@ pub async fn migrate(config: imkitchen_web_shared::config::Config) -> Result<()>
     let pool = imkitchen::create_pool(&config.database.url, 1).await?;
 
     let mut conn = pool.acquire().await?;
+
+    // Collapse any leftover `-wal` from a previous unclean shutdown up front, so the
+    // migration transaction doesn't hit SQLITE_BUSY while WAL recovery runs lazily. The
+    // long busy_timeout on this pool (see create_pool) rides out recovery on slow storage.
+    sqlx::query("PRAGMA wal_checkpoint(TRUNCATE)")
+        .execute(&mut *conn)
+        .await?;
+
     imkitchen_db::migrator::<sqlx::Sqlite>()?
         .run(&mut conn, &Plan::apply_all())
         .await?;
