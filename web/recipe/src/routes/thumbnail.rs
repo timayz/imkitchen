@@ -66,7 +66,7 @@ pub async fn upload(
     imkitchen_web_shared::try_response!(
         app.core
             .recipe
-            .upload_thunmnail(&id, data.to_vec(), &user.id),
+            .upload_thumbnail(&id, data.to_vec(), &user.id),
         template
     );
     let encoded = STANDARD.encode(&data);

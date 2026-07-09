@@ -2,7 +2,7 @@ use evento::{Executor, ProjectionAggregate};
 use imkitchen_types::recipe::ThumbnailUploaded;
 
 impl<E: Executor + Clone> super::Module<E> {
-    pub async fn upload_thunmnail(
+    pub async fn upload_thumbnail(
         &self,
         id: impl Into<String>,
         data: Vec<u8>,

@@ -294,30 +294,33 @@ pub async fn process_zip<E: Executor + Clone>(
                 Ok(recipe_id) => {
                     progress.recipes_imported += 1;
 
-                    if let Some(image) = entry.image
-                        && let Err(e) = recipe.upload_thunmnail(&recipe_id, image, &chef_id).await
-                    {
-                        progress.errors.push(AdminImportError {
-                            scope: "recipe".into(),
-                            name: recipe_name.clone(),
-                            message: format!(
-                                "Recipe imported, but image failed: {}",
-                                user_message(e)
-                            ),
-                        });
-                    }
-
                     // Imported recipes are published to the community (idempotent: a recipe that
-                    // is already shared is left unchanged).
+                    // is already shared is left unchanged). This runs before the thumbnail upload:
+                    // `upload_thumbnail` triggers an async subscription that appends `ThumbnailResized`
+                    // events, bumping the aggregate version and causing a following synchronous write
+                    // to fail with "invalid version". Keeping the thumbnail upload last avoids that race.
                     if let Err(e) = recipe
                         .share_to_community(&recipe_id, &chef_id, username.clone())
                         .await
                     {
                         progress.errors.push(AdminImportError {
                             scope: "recipe".into(),
-                            name: recipe_name,
+                            name: recipe_name.clone(),
                             message: format!(
                                 "Recipe imported, but sharing failed: {}",
+                                user_message(e)
+                            ),
+                        });
+                    }
+
+                    if let Some(image) = entry.image
+                        && let Err(e) = recipe.upload_thumbnail(&recipe_id, image, &chef_id).await
+                    {
+                        progress.errors.push(AdminImportError {
+                            scope: "recipe".into(),
+                            name: recipe_name,
+                            message: format!(
+                                "Recipe imported, but image failed: {}",
                                 user_message(e)
                             ),
                         });
