@@ -18,6 +18,11 @@ database:
 
 hostname: "imkitchen.app"
 
+# Time allowed for the pod to shut down gracefully on a rolling update. Must be long
+# enough to drain HTTP, stop all evento projections, and checkpoint/close the SQLite WAL
+# so the next pod's migrate init container opens a clean database.
+terminationGracePeriodSeconds: 90
+
 config:
   server:
     url: "https://imkitchen.app"

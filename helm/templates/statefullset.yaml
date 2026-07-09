@@ -20,6 +20,7 @@ spec:
         app: imkitchen
     spec:
       hostname: {{ .Values.hostname | quote }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds | default 90 }}
       securityContext:
         fsGroup: 10001
         fsGroupChangePolicy: OnRootMismatch
@@ -58,6 +59,23 @@ spec:
                 name: imkitchen-env
           ports:
             - containerPort: 3000
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            periodSeconds: 15
+            failureThreshold: 3
       volumes:
         - name: config
           configMap:

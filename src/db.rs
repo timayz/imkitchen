@@ -12,10 +12,10 @@ use std::time::Duration;
 /// Returns options with all per-connection pragmas configured. sqlx re-applies
 /// these every time it opens a new connection, including replacement connections
 /// after idle timeout — which is the behavior you want.
-fn base_options(database_url: &str) -> Result<SqliteConnectOptions> {
+fn base_options(database_url: &str, busy_timeout: Duration) -> Result<SqliteConnectOptions> {
     Ok(
         SqliteConnectOptions::from_str(database_url)?
-            .busy_timeout(Duration::from_millis(5000))
+            .busy_timeout(busy_timeout)
             .foreign_keys(true)
             .pragma("wal_autocheckpoint", "1000") // explicit
             .pragma("journal_size_limit", "67108864")
@@ -30,7 +30,7 @@ fn base_options(database_url: &str) -> Result<SqliteConnectOptions> {
 /// write-side concerns and `PRAGMA journal_mode = WAL` would fail on a read-only
 /// connection anyway. The DB file's journal mode is set by the write pool.
 pub async fn create_read_pool(database_url: &str, max_connections: u32) -> Result<SqlitePool> {
-    let options = base_options(database_url)?.read_only(true);
+    let options = base_options(database_url, Duration::from_millis(5000))?.read_only(true);
 
     let pool = SqlitePoolOptions::new()
         .max_connections(max_connections)
@@ -50,7 +50,7 @@ pub async fn create_read_pool(database_url: &str, max_connections: u32) -> Resul
 /// transaction that will write, so it grabs the reserved lock up front instead
 /// of upgrading mid-transaction (which is what causes most BUSY errors).
 pub async fn create_write_pool(database_url: &str) -> Result<SqlitePool> {
-    let options = base_options(database_url)?
+    let options = base_options(database_url, Duration::from_millis(5000))?
         .journal_mode(SqliteJournalMode::Wal)
         .synchronous(SqliteSynchronous::Normal);
 
@@ -66,8 +66,12 @@ pub async fn create_write_pool(database_url: &str) -> Result<SqlitePool> {
 /// Standard pool for CLI commands (migrate, import, tests).
 ///
 /// Single-pool setup, so it owns the WAL/synchronous settings.
+///
+/// Uses a long `busy_timeout` because migrate/reset can open a database with a large
+/// leftover `-wal` from a previous unclean shutdown; recovering/checkpointing it on slow
+/// network storage (e.g. Longhorn) can take well over the 5s the serve pools use.
 pub async fn create_pool(database_url: &str, max_connections: u32) -> Result<SqlitePool> {
-    let options = base_options(database_url)?
+    let options = base_options(database_url, Duration::from_secs(60))?
         .journal_mode(SqliteJournalMode::Wal)
         .synchronous(SqliteSynchronous::Normal);
 
