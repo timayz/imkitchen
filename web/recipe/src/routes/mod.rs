@@ -1,3 +1,4 @@
+pub mod cook;
 pub mod detail;
 pub mod edit;
 pub mod import;

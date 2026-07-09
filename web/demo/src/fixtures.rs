@@ -21,6 +21,7 @@ use imkitchen_types::recipe::{
 use imkitchen_web_grocery::{AisleSection, GroceriesTemplate};
 use imkitchen_web_kitchen::{CookingTemplate, KitchenTemplate, KitchenWeekDay};
 use imkitchen_web_menu::{MenuBoardDay, MenuSlot, MenuTemplate};
+use imkitchen_web_recipe::routes::cook::{CookTemplate, PageQuery as CookPageQuery};
 use imkitchen_web_recipe::routes::detail::DetailTemplate;
 use imkitchen_web_recipe::routes::index::{IndexTemplate as RecipesIndexTemplate, PageQuery};
 use imkitchen_web_shared::auth::AuthUser;
@@ -898,13 +899,6 @@ pub fn recipe_detail(id: &str) -> DetailTemplate<'static> {
     let rt = recipe.recipe_type.0.clone();
     let current_id = recipe.id.clone();
 
-    let cook_nodes: Vec<UserViewList> = catalog()
-        .iter()
-        .filter(|r| r.id != current_id)
-        .take(2)
-        .map(to_list)
-        .collect();
-
     let similar_nodes: Vec<UserViewList> = catalog()
         .iter()
         .filter(|r| r.id != current_id && r.recipe_type.0 == rt)
@@ -921,9 +915,51 @@ pub fn recipe_detail(id: &str) -> DetailTemplate<'static> {
             ..Default::default()
         },
         favorite: Favorite::default(),
-        cook_recipes: to_read_result(cook_nodes),
         similar_recipes: to_read_result(similar_nodes),
         owner_description: "Home cook sharing tried-and-tested family recipes.".to_owned(),
+        ..Default::default()
+    }
+}
+
+// ── Cook's recipes page ──────────────────────────────────────────────────
+
+pub fn cook(username: &str, query: CookPageQuery) -> CookTemplate {
+    let search = query.search.clone().unwrap_or_default().to_lowercase();
+    let recipe_type = query
+        .recipe_type
+        .as_deref()
+        .and_then(|v| RecipeType::from_str(v).ok());
+
+    // The whole demo catalog stands in for this cook's shared recipes. Type
+    // chips, search and sort behave like the real page.
+    let mut matches: Vec<UserView> = catalog()
+        .into_iter()
+        .filter(|r| recipe_type.as_ref().is_none_or(|rt| &r.recipe_type.0 == rt))
+        .filter(|r| {
+            search.is_empty()
+                || r.name.to_lowercase().contains(&search)
+                || r.description.to_lowercase().contains(&search)
+        })
+        .collect();
+
+    match &query.sort_by {
+        Some(SortBy::Easiest) => matches.sort_by_key(|r| r.difficulty_score),
+        Some(SortBy::Hardest) => matches.sort_by_key(|r| std::cmp::Reverse(r.difficulty_score)),
+        _ => {}
+    }
+
+    let recipes = to_read_result(matches.iter().map(to_list).collect());
+
+    CookTemplate {
+        user: demo_user(),
+        username: username.to_owned(),
+        stat: UserStatView {
+            shared: catalog().len() as u32,
+            ..Default::default()
+        },
+        owner_description: "Home cook sharing tried-and-tested family recipes.".to_owned(),
+        recipes,
+        query,
         ..Default::default()
     }
 }

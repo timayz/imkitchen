@@ -1,0 +1,251 @@
+{% extends "_user.html" %}
+{% block title %}@{{ username }} - imkitchen{% endblock %}
+
+{% macro lazy_thumbnail(recipe, version) %}
+{% if let Some(blur) = recipe.blur_placeholder %}
+<div class="absolute inset-0 bg-cover bg-center scale-110 blur-lg" style="background-image:url({{ blur }})"></div>
+{% endif %}
+<picture>
+  <source data-media="(max-width: 480px)"
+    data-srcset="/recipes/{{ recipe.id }}/thumbnail/mobile/image.webp?v={{ version }}" />
+  <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+    data-src="/recipes/{{ recipe.id }}/thumbnail/tablet/image.webp?v={{ version }}" alt="{{ recipe.name }}"
+    class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 [&.loaded]:opacity-100"
+    ts-trigger="closeby once" ts-action="lazy" />
+</picture>
+{% endmacro %}
+
+{# Map RecipeType → emoji + meal-color classes (mirrors recipes-index.html) #}
+{% macro type_emoji(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}🥗
+{%- when RecipeType::MainCourse -%}🍛
+{%- when RecipeType::Accompaniment -%}🥖
+{%- when RecipeType::Dessert -%}🍰
+{%- when RecipeType::Beverage -%}🥤
+{%- when RecipeType::Condiment -%}🥫
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro type_hero_classes(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}from-meal-entree-soft to-blue-100
+{%- when RecipeType::MainCourse -%}from-meal-main-soft to-orange-100
+{%- when RecipeType::Accompaniment -%}from-meal-side-soft to-herb-100
+{%- when RecipeType::Dessert -%}from-meal-dessert-soft to-pink-100
+{%- when RecipeType::Beverage -%}from-cyan-100 to-cyan-200
+{%- when RecipeType::Condiment -%}from-amber-100 to-amber-200
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro type_pill_classes(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}bg-meal-entree-soft text-meal-entree-ink
+{%- when RecipeType::MainCourse -%}bg-meal-main-soft text-meal-main-ink
+{%- when RecipeType::Accompaniment -%}bg-meal-side-soft text-meal-side-ink
+{%- when RecipeType::Dessert -%}bg-meal-dessert-soft text-meal-dessert-ink
+{%- when RecipeType::Beverage -%}bg-cyan-100 text-cyan-900
+{%- when RecipeType::Condiment -%}bg-amber-100 text-amber-900
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro type_ink_class(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}text-meal-entree-ink
+{%- when RecipeType::MainCourse -%}text-meal-main-ink
+{%- when RecipeType::Accompaniment -%}text-meal-side-ink
+{%- when RecipeType::Dessert -%}text-meal-dessert-ink
+{%- when RecipeType::Beverage -%}text-cyan-900
+{%- when RecipeType::Condiment -%}text-amber-900
+{%- endmatch -%}
+{%- endmacro %}
+
+{% block content %}
+{% let active_type = query.recipe_type.as_deref().unwrap_or("") %}
+{% let view = query.view.as_deref().unwrap_or("grid") %}
+{% let cook_url = "/cooks/"|demo_href %}
+
+<div class="container mx-auto px-4 py-6 md:py-8">
+
+  {# ── Cook header ──────────────────────────────────────────── #}
+  <header class="mb-5 md:mb-7 bg-paper border border-line-2 rounded-2xl p-4 md:p-5 flex items-start gap-3">
+    <div class="w-11 h-11 shrink-0 {{ username|bg_color }} rounded-full flex items-center justify-center text-white font-bold text-sm">
+      {{ username|initials }}
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="font-semibold text-ink">@{{ username }}</div>
+      <div class="text-xs text-ink-3 mt-0.5">{{ stat.shared }} {{ "recipes shared"|t }}</div>
+      {% if !owner_description.is_empty() %}
+      <p class="text-sm text-ink-2 mt-2 leading-relaxed">{{ owner_description|nl2br|safe }}</p>
+      {% endif %}
+    </div>
+  </header>
+
+  {# ── Filters form — scoped to this cook ─────────────────────── #}
+  <form ts-trigger="change,input" ts-req="{{ cook_url }}{{ username }}" ts-req-selector="#recipes-list" ts-req-method="GET"
+    ts-req-strategy="last" ts-target="#recipes-list" autocomplete="off">
+
+    {# Header row — count on the left, view toggle on the right #}
+    <div class="flex items-center justify-between gap-3 mb-4">
+      <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3">
+        {{ "Library"|t }} · {{ recipes.edges.len() }} {{ "recipes"|t }}
+      </div>
+
+      {# View toggle (grid | list) #}
+      <div class="inline-flex p-1 bg-cream-2 rounded-xl gap-0.5 shrink-0">
+        <input type="radio" name="view" value="grid" id="view-grid" class="peer/g sr-only"
+          {% if view == "grid" %}checked{% endif %}/>
+        <label for="view-grid" title="{{ "Grid"|t }}"
+          class="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer text-ink-2 transition
+            peer-checked/g:bg-paper peer-checked/g:shadow-sm peer-checked/g:text-ink">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z"/>
+          </svg>
+        </label>
+        <input type="radio" name="view" value="list" id="view-list" class="peer/l sr-only"
+          {% if view == "list" %}checked{% endif %}/>
+        <label for="view-list" title="{{ "List"|t }}"
+          class="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer text-ink-2 transition
+            peer-checked/l:bg-paper peer-checked/l:shadow-sm peer-checked/l:text-ink">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 16 16">
+            <path stroke-linecap="round" d="M2 4h12M2 8h12M2 12h12"/>
+          </svg>
+        </label>
+      </div>
+    </div>
+
+    {# Search #}
+    <div class="flex gap-2 mb-3">
+      <label class="flex-1 flex items-center gap-2 h-11 px-3.5 bg-paper border border-line-2 rounded-2xl
+        focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100 transition">
+        <svg class="w-4 h-4 text-ink-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <circle cx="11" cy="11" r="7"></circle>
+          <path stroke-linecap="round" d="m20 20-3-3"></path>
+        </svg>
+        <input name="search" type="text" value="{{ query.search.as_deref().unwrap_or("") }}"
+          placeholder="{{ "Search by name, description or ingredient..."|t }}"
+          class="flex-1 min-w-0 bg-transparent outline-none text-sm placeholder:text-ink-3"/>
+      </label>
+    </div>
+
+    {# Type chips + Sort #}
+    <div class="flex flex-wrap items-center gap-1.5 mb-5 md:mb-6">
+      {# "All" chip — empty recipe_type #}
+      <label class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border text-xs font-semibold
+        cursor-pointer transition bg-paper border-line-2 text-ink hover:bg-cream
+        has-checked:bg-ink has-checked:text-cream has-checked:border-ink">
+        <input type="radio" name="recipe_type" value="" class="sr-only"
+          {% if active_type == "" %}checked{% endif %}/>
+        <span>🍴</span> {{ "All"|t }}
+      </label>
+
+      {% for variant in RecipeType::VARIANTS %}
+      <label class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border text-xs font-semibold
+        cursor-pointer transition bg-paper border-line-2 text-ink hover:bg-cream
+        has-checked:bg-ink has-checked:text-cream has-checked:border-ink">
+        <input type="radio" name="recipe_type" value="{{ variant }}" class="sr-only"
+          {% if active_type == variant.to_string() %}checked{% endif %}/>
+        <span>{% call type_emoji(variant) %}{% endcall %}</span>
+        {{ variant.as_ref()|t }}
+      </label>
+      {% endfor %}
+
+      {# Sort — subtle inline select #}
+      <label class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-line-2 bg-paper text-xs
+        font-mono uppercase tracking-wider text-ink-3 cursor-pointer lg:ml-auto">
+        <span>{{ "Sort"|t }}</span>
+        <select name="sort_by" class="bg-transparent outline-none font-semibold text-ink uppercase tracking-wider">
+          <option value="{{ SortBy::RecentlyAdded }}"
+            {% if let Some(SortBy::RecentlyAdded) = query.sort_by %}selected{% endif %}>{{ "Recently Added"|t }}</option>
+          <option value="{{ SortBy::Easiest }}"
+            {% if let Some(SortBy::Easiest) = query.sort_by %}selected{% endif %}>{{ "Easiest"|t }}</option>
+          <option value="{{ SortBy::Hardest }}"
+            {% if let Some(SortBy::Hardest) = query.sort_by %}selected{% endif %}>{{ "Hardest"|t }}</option>
+        </select>
+      </label>
+    </div>
+  </form>
+
+  {# ── Results ────────────────────────────────────────────────── #}
+  <div id="recipes-list" class="{% if view == "list" %}grid gap-2{% else %}grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4{% endif %}">
+    {% if recipes.edges.is_empty() %}
+    <div class="col-span-full">
+      <div class="bg-paper border border-line-2 rounded-2xl p-10 md:p-14 flex flex-col items-center text-center
+        shadow-sm">
+        <span class="text-5xl mb-4">🍽️</span>
+        <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3 mb-1">
+          {{ "Empty"|t }}
+        </div>
+        <h3 class="font-serif text-2xl text-ink mb-2">{{ "No recipes found"|t }}</h3>
+        <p class="text-sm text-ink-3 max-w-sm">{{ "Try adjusting your filters"|t }}</p>
+      </div>
+    </div>
+
+    {% else %}
+    {% for recipe in recipes.edges %}
+    {% let rt = recipe.node.recipe_type.0 %}
+
+    {% if view == "list" %}
+    {# ── List row ── #}
+    <a id="recipe-{{ recipe.node.id }}" href="{{ "/r/"|demo_href }}{{ recipe.node.slug }}"
+      {% if let (true, true, Some(cursor)) = (loop.last, recipes.page_info.has_next_page, recipes.page_info.end_cursor.to_owned()) %}
+      ts-req="{{ cook_url }}{{ username }}?after={{ cursor.to_string() }}{% if let Some(sort_by) = query.sort_by %}&sort_by={{ sort_by }}{% endif %}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if let Some(search) = query.search %}&search={{ search }}{% endif %}&view=list"
+      ts-req-method="GET" ts-req-selector="children #recipes-list" ts-swap="afterend" ts-trigger="visible once"
+      {% endif %}
+      class="min-w-0 bg-paper border border-line-2 rounded-2xl px-3 py-2.5 shadow-sm hover:shadow-md transition flex items-center gap-3">
+      <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-linear-to-br {% call type_hero_classes(rt) %}{% endcall %}
+        flex items-center justify-center shrink-0">
+        {% if let Some(version) = recipe.node.thumbnail_version %}
+          {% call lazy_thumbnail(recipe.node, version) %}{% endcall %}
+        {% else %}
+          <span class="text-2xl">{% call type_emoji(rt) %}{% endcall %}</span>
+        {% endif %}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[10px] font-semibold tracking-wider uppercase font-mono {% call type_ink_class(rt) %}{% endcall %}">
+          {{ rt.as_ref()|t }}
+        </div>
+        <div class="text-sm font-semibold text-ink truncate mt-0.5">{{ recipe.node.name }}</div>
+        <div class="text-xs text-ink-3 mt-0.5 flex items-center gap-2 flex-wrap">
+          <span>⏱ {{ (recipe.node.cook_time + recipe.node.prep_time)|minutes }}</span>
+        </div>
+      </div>
+      <svg class="w-4 h-4 text-ink-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6"/>
+      </svg>
+    </a>
+
+    {% else %}
+    {# ── Grid card ── #}
+    <a id="recipe-{{ recipe.node.id }}" href="{{ "/r/"|demo_href }}{{ recipe.node.slug }}"
+      {% if let (true, true, Some(cursor)) = (loop.last, recipes.page_info.has_next_page, recipes.page_info.end_cursor.to_owned()) %}
+      ts-req="{{ cook_url }}{{ username }}?after={{ cursor.to_string() }}{% if let Some(sort_by) = query.sort_by %}&sort_by={{ sort_by }}{% endif %}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if let Some(search) = query.search %}&search={{ search }}{% endif %}"
+      ts-req-method="GET" ts-req-selector="children #recipes-list" ts-swap="afterend" ts-trigger="visible once"
+      {% endif %}
+      class="group bg-paper border border-line-2 rounded-2xl shadow-sm hover:shadow-md transition overflow-hidden flex flex-col">
+      <div class="relative h-28 md:h-36 bg-linear-to-br {% call type_hero_classes(rt) %}{% endcall %} flex items-center justify-center overflow-hidden">
+        {% if let Some(version) = recipe.node.thumbnail_version %}
+          {% call lazy_thumbnail(recipe.node, version) %}{% endcall %}
+        {% else %}
+          <span class="text-5xl md:text-6xl drop-shadow-sm">{% call type_emoji(rt) %}{% endcall %}</span>
+        {% endif %}
+        <span class="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-semibold
+          bg-paper/90 backdrop-blur-sm {% call type_pill_classes(rt) %}{% endcall %}">
+          {{ rt.as_ref()|t }}
+        </span>
+        <span class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-semibold
+          bg-paper/90 backdrop-blur-sm text-ink-2 inline-flex items-center gap-1">
+          ⏱ {{ (recipe.node.cook_time + recipe.node.prep_time)|minutes }}
+        </span>
+      </div>
+      <div class="p-3 md:p-3.5 flex-1 flex flex-col gap-1.5">
+        <h3 class="font-semibold text-ink text-sm md:text-[15px] leading-tight line-clamp-2">{{ recipe.node.name }}</h3>
+      </div>
+    </a>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

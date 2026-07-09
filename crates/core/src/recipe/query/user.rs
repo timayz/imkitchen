@@ -269,6 +269,32 @@ impl<E: Executor> crate::recipe::Module<E> {
         )
     }
 
+    /// Resolves a cook's username to their owner id, considering only shared,
+    /// non-draft recipes. `owner_name` mirrors the unique `User.username`, so a
+    /// single row is enough. Returns `None` when the cook has no shared recipes.
+    pub async fn find_owner_id_by_name(
+        &self,
+        name: impl Into<String>,
+    ) -> anyhow::Result<Option<String>> {
+        let statement = sea_query::Query::select()
+            .columns([RecipeUser::OwnerId])
+            .from(RecipeUser::Table)
+            .and_where(Expr::col(RecipeUser::OwnerName).eq(name.into()))
+            .and_where(Expr::col(RecipeUser::IsShared).eq(true))
+            .and_where(Expr::col(RecipeUser::Name).not_equals(""))
+            .limit(1)
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(
+            sqlx::query_as_with::<_, (String,), _>(sqlx::AssertSqlSafe(sql), values)
+                .fetch_optional(&self.read_db)
+                .await?
+                .map(|(owner_id,)| owner_id),
+        )
+    }
+
     pub async fn find_user_draft(
         &self,
         user_id: impl Into<String>,

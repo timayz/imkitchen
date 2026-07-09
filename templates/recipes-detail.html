@@ -305,7 +305,7 @@
           {{ owner_name|initials }}
         </div>
         <div class="flex-1 min-w-0">
-          <div class="font-semibold text-ink">@{{ owner_name }}</div>
+          <a href="{{ "/cooks/"|demo_href }}{{ owner_name }}" class="font-semibold text-ink hover:text-primary-500 transition">@{{ owner_name }}</a>
           <div class="text-xs text-ink-3 mt-0.5">{{ stat.shared }} {{ "recipes shared"|t }}</div>
           {% if !owner_description.is_empty() %}
           <p class="text-sm text-ink-2 mt-2 leading-relaxed">{{ owner_description|nl2br|safe }}</p>
@@ -409,19 +409,6 @@
     {# ───────────────────── RIGHT rail ───────────────────── #}
     <aside class="xl:w-90 shrink-0 min-w-0">
       <div class="xl:sticky xl:top-4 space-y-5">
-        {% if !cook_recipes.edges.is_empty() %}
-        <section>
-          <h3 class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3 mb-3">
-            {{ "More from this cook"|t }}
-          </h3>
-          <div class="space-y-3">
-            {% for cook_recipe in cook_recipes.edges.iter() %}
-              {% call suggestion_card(cook_recipe.node) %}{% endcall %}
-            {% endfor %}
-          </div>
-        </section>
-        {% endif %}
-
         {% if !similar_recipes.edges.is_empty() %}
         <section>
           <h3 class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3 mb-3">
