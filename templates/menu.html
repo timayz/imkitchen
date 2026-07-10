@@ -75,11 +75,11 @@
     {% for week in board_weeks %}
     <div class="grid grid-cols-7 gap-3">
       {% for d in week %}
-      <a href="{{ "/menu/"|demo_href }}{{ d.date }}"
-        class="block rounded-2xl border p-3 min-h-[240px] flex flex-col gap-2 transition
-          {% if d.is_today %}bg-primary-50 border-primary-200 hover:bg-primary-100/60
-          {% else if !d.is_in_month %}bg-transparent border-line-2/40 opacity-50 hover:opacity-80
-          {% else %}bg-cream-2/40 border-line-2 hover:bg-cream-2{% endif %}">
+      <div
+        class="block rounded-2xl border p-3 min-h-[240px] flex flex-col gap-2
+          {% if d.is_today %}bg-primary-50 border-primary-200
+          {% else if !d.is_in_month %}bg-transparent border-line-2/40 opacity-50
+          {% else %}bg-cream-2/40 border-line-2{% endif %}">
 
         {# Day header — weekday + day number + meal count #}
         <div class="flex items-baseline justify-between pb-1">
@@ -100,7 +100,8 @@
         {% if let Some(slot) = d.slot %}
         <div class="flex flex-col gap-1.5 flex-1">
           {% if let Some(appetizer) = slot.appetizer %}
-          <div class="bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-entree p-2 shadow-sm">
+          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(appetizer.id.as_str()) }}"
+            class="block bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-entree p-2 shadow-sm hover:bg-cream/30 transition">
             <div class="flex items-center gap-1.5">
               <span class="text-base leading-none">🥗</span>
               <div class="min-w-0 flex-1">
@@ -108,10 +109,11 @@
               </div>
             </div>
             <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ appetizer.name }}</div>
-          </div>
+          </a>
           {% endif %}
 
-          <div class="bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-main p-2 shadow-sm">
+          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(slot.main_course.id.as_str()) }}"
+            class="block bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-main p-2 shadow-sm hover:bg-cream/30 transition">
             <div class="flex items-center gap-1.5">
               <span class="text-base leading-none">🍛</span>
               <div class="min-w-0 flex-1">
@@ -119,10 +121,11 @@
               </div>
             </div>
             <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ slot.main_course.name }}</div>
-          </div>
+          </a>
 
           {% if let Some(accompaniment) = slot.accompaniment %}
-          <div class="bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-side p-2 shadow-sm">
+          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(accompaniment.id.as_str()) }}"
+            class="block bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-side p-2 shadow-sm hover:bg-cream/30 transition">
             <div class="flex items-center gap-1.5">
               <span class="text-base leading-none">🥖</span>
               <div class="min-w-0 flex-1">
@@ -130,11 +133,12 @@
               </div>
             </div>
             <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ accompaniment.name }}</div>
-          </div>
+          </a>
           {% endif %}
 
           {% if let Some(dessert) = slot.dessert %}
-          <div class="bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-dessert p-2 shadow-sm">
+          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(dessert.id.as_str()) }}"
+            class="block bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-dessert p-2 shadow-sm hover:bg-cream/30 transition">
             <div class="flex items-center gap-1.5">
               <span class="text-base leading-none">🍰</span>
               <div class="min-w-0 flex-1">
@@ -142,11 +146,12 @@
               </div>
             </div>
             <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ dessert.name }}</div>
-          </div>
+          </a>
           {% endif %}
 
           {% if let Some(beverage) = slot.beverage %}
-          <div class="bg-paper rounded-lg border border-line-2 border-l-4 border-l-cyan-500 p-2 shadow-sm">
+          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(beverage.id.as_str()) }}"
+            class="block bg-paper rounded-lg border border-line-2 border-l-4 border-l-cyan-500 p-2 shadow-sm hover:bg-cream/30 transition">
             <div class="flex items-center gap-1.5">
               <span class="text-base leading-none">🥤</span>
               <div class="min-w-0 flex-1">
@@ -154,11 +159,12 @@
               </div>
             </div>
             <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ beverage.name }}</div>
-          </div>
+          </a>
           {% endif %}
 
           {% if let Some(condiment) = slot.condiment %}
-          <div class="bg-paper rounded-lg border border-line-2 border-l-4 border-l-amber-500 p-2 shadow-sm">
+          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(condiment.id.as_str()) }}"
+            class="block bg-paper rounded-lg border border-line-2 border-l-4 border-l-amber-500 p-2 shadow-sm hover:bg-cream/30 transition">
             <div class="flex items-center gap-1.5">
               <span class="text-base leading-none">🥫</span>
               <div class="min-w-0 flex-1">
@@ -166,7 +172,7 @@
               </div>
             </div>
             <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ condiment.name }}</div>
-          </div>
+          </a>
           {% endif %}
         </div>
         {% else %}
@@ -175,7 +181,7 @@
           <div class="text-[11px] font-mono text-ink-3 opacity-50">—</div>
         </div>
         {% endif %}
-      </a>
+      </div>
       {% endfor %}
     </div>
     {% endfor %}
