@@ -5,6 +5,7 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use image::imageops::FilterType;
+use imkitchen_db::recipe_thumbnail::RecipeThumbnail;
 use imkitchen_types::recipe::{
     self, AdvancePrepChanged, BasicInformationChanged, Created, CuisineTypeChanged, Deleted,
     DietaryRestrictionsChanged, Imported, IngredientsChanged, InstructionsChanged, MadePrivate,
@@ -12,6 +13,8 @@ use imkitchen_types::recipe::{
     ThumbnailUploaded,
 };
 use imkitchen_types::recipe_share::{self, AllMadePrivate, AllSharedToCommunity};
+use sea_query::{Expr, ExprTrait, OnConflict, Query as SeaQuery, SqliteQueryBuilder};
+use sea_query_sqlx::SqlxBinder;
 use sha3::{Digest, Sha3_224};
 use std::ops::Deref;
 use webp::Encoder;
@@ -356,36 +359,117 @@ async fn handle_thumbnail_uploaded<E: Executor>(
     context: &Context<'_, E>,
     event: Event<ThumbnailUploaded>,
 ) -> anyhow::Result<()> {
+    let (read_db, write_db) = context.extract::<(sqlx::SqlitePool, sqlx::SqlitePool)>();
+
+    // Load the transient original stashed by the upload command. If it is
+    // absent this is an idempotent replay (the original was already consumed
+    // and deleted); the resized variants are authoritative in recipe_thumbnail,
+    // so there is nothing to do.
+    let Some(original) = load_original(&read_db, &event.aggregate_id).await? else {
+        tracing::debug!(
+            id = %event.aggregate_id,
+            "recipe-command.handle_thumbnail_uploaded.original_absent"
+        );
+        return Ok(());
+    };
+
+    let img = match image::load_from_memory(&original) {
+        Ok(img) => img,
+        Err(err) => {
+            tracing::warn!(error = ?err, "recipe-command.handle_thumbnail_uploaded.load_from_memory");
+            // Drop the unusable original so it does not linger.
+            delete_original(&write_db, &event.aggregate_id).await?;
+            return Ok(());
+        }
+    };
+
     let original_version = context
         .executor
         .original_version::<ThumbnailResized>(&event.aggregate_id)
         .await?
         .expect("aggregator exist");
-    let img = match image::load_from_memory(&event.data.data) {
-        Ok(img) => img,
-        Err(err) => {
-            tracing::warn!(error = ?err, "recipe-command.handle_thumbnail_uploaded.load_from_memory");
-
-            return Ok(());
-        }
-    };
     let mut builder = evento::append(&event.aggregate_id)
         .original_version(original_version)
         .metadata_from(&event.metadata)
         .to_owned();
 
     for (name, width, quality) in IMAGE_VARIANTS {
-        let resized = img.resize(*width, u32::MAX, FilterType::Lanczos3);
-        let rgba = resized.to_rgba8();
+        // Scope the encode so the non-Send WebPMemory/Encoder are dropped before
+        // the await below; only the owned Vec<u8> crosses the await point.
+        let webp: Vec<u8> = {
+            let resized = img.resize(*width, u32::MAX, FilterType::Lanczos3);
+            let rgba = resized.to_rgba8();
+            let encoder = Encoder::from_rgba(rgba.as_raw(), rgba.width(), rgba.height());
+            encoder.encode(*quality).to_vec() // 0.0 - 100.0
+        };
 
-        let encoder = Encoder::from_rgba(rgba.as_raw(), rgba.width(), rgba.height());
+        // Authoritative write of the variant bytes. recipe_thumbnail is now the
+        // source of truth for images; the event carries no bytes.
+        upsert_variant(&write_db, &event.aggregate_id, name, webp).await?;
 
-        let webp = encoder.encode(*quality); // 0.0 - 100.0
+        // Byte-free marker so the version/blur projections react.
         builder.event(&ThumbnailResized {
             device: name.to_string(),
-            data: webp.to_vec(),
         });
     }
     builder.commit(context.executor).await?;
+
+    // Variants are persisted; drop the transient original.
+    delete_original(&write_db, &event.aggregate_id).await?;
+    Ok(())
+}
+
+async fn load_original(pool: &sqlx::SqlitePool, id: &str) -> anyhow::Result<Option<Vec<u8>>> {
+    let statement = SeaQuery::select()
+        .column(RecipeThumbnail::Data)
+        .from(RecipeThumbnail::Table)
+        .and_where(Expr::col(RecipeThumbnail::Id).eq(id))
+        .and_where(Expr::col(RecipeThumbnail::Device).eq("original"))
+        .to_owned();
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    Ok(
+        sqlx::query_scalar_with::<_, Vec<u8>, _>(sqlx::AssertSqlSafe(sql), values)
+            .fetch_optional(pool)
+            .await?,
+    )
+}
+
+async fn upsert_variant(
+    pool: &sqlx::SqlitePool,
+    id: &str,
+    device: &str,
+    data: Vec<u8>,
+) -> anyhow::Result<()> {
+    let statement = SeaQuery::insert()
+        .into_table(RecipeThumbnail::Table)
+        .columns([
+            RecipeThumbnail::Id,
+            RecipeThumbnail::Device,
+            RecipeThumbnail::Data,
+        ])
+        .values_panic([id.into(), device.into(), data.into()])
+        .on_conflict(
+            OnConflict::columns([RecipeThumbnail::Id, RecipeThumbnail::Device])
+                .update_column(RecipeThumbnail::Data)
+                .to_owned(),
+        )
+        .to_owned();
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+async fn delete_original(pool: &sqlx::SqlitePool, id: &str) -> anyhow::Result<()> {
+    let statement = SeaQuery::delete()
+        .from_table(RecipeThumbnail::Table)
+        .and_where(Expr::col(RecipeThumbnail::Id).eq(id))
+        .and_where(Expr::col(RecipeThumbnail::Device).eq("original"))
+        .to_owned();
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(pool)
+        .await?;
     Ok(())
 }

@@ -265,15 +265,66 @@ pub enum Recipe {
         owner_name: String,
     },
 
-    ThumbnailUploaded {
-        data: Vec<u8>,
-    },
+    // Byte-free trigger. The original upload bytes are stashed transiently in
+    // `recipe_thumbnail` (device='original') by the upload command and consumed
+    // by the resize subscription, so no image bytes ever enter the event log.
+    ThumbnailUploaded,
 
+    // Byte-free marker. The resized variant bytes are written directly to
+    // `recipe_thumbnail` (the authoritative image store); this event only
+    // signals which device variant was (re)generated so downstream version and
+    // blur-placeholder projections can react.
     ThumbnailResized {
         device: String,
-        data: Vec<u8>,
     },
 
     MadePrivate,
     Deleted,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ThumbnailResized, ThumbnailUploaded};
+
+    // The m0009 data migration strips image bytes out of existing thumbnail
+    // event blobs with pure SQL, relying on the fact that the new byte-free
+    // bitcode encoding is a *prefix* of the old one: a unit `ThumbnailUploaded`
+    // encodes to an empty blob, and `ThumbnailResized { device }` encodes to
+    // just the length-prefixed device string. If a bitcode upgrade ever changes
+    // this layout, the migration's byte-slicing would silently corrupt data, so
+    // pin the exact bytes here.
+    #[test]
+    fn thumbnail_uploaded_encodes_empty() {
+        assert!(bitcode::encode(&ThumbnailUploaded).is_empty());
+    }
+
+    #[test]
+    fn thumbnail_resized_encodes_to_device_prefix() {
+        // 0x06 = len("mobile"), then the utf8 bytes — matches substr(data,1,7).
+        assert_eq!(
+            bitcode::encode(&ThumbnailResized {
+                device: "mobile".to_string(),
+            }),
+            b"\x06mobile",
+        );
+        assert_eq!(
+            bitcode::encode(&ThumbnailResized {
+                device: "tablet".to_string(),
+            }),
+            b"\x06tablet",
+        );
+        // 0x07 = len("desktop") — matches substr(data,1,8).
+        assert_eq!(
+            bitcode::encode(&ThumbnailResized {
+                device: "desktop".to_string(),
+            }),
+            b"\x07desktop",
+        );
+    }
+
+    #[test]
+    fn stripped_resized_blob_decodes() {
+        let decoded: ThumbnailResized = bitcode::decode(b"\x06mobile").unwrap();
+        assert_eq!(decoded.device, "mobile");
+    }
 }
