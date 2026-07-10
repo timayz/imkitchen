@@ -64,6 +64,34 @@ config:
 
 persistence:
   size: 15Gi
+  # StorageClass for the SQLite data volume. Longhorn by default; set to a local-disk
+  # class (e.g. "local-path") for lower fsync latency on a single-node cluster.
+  storageClassName: "longhorn"
+  # When true, labels the PVC into Longhorn's "critical" recurring-job group (snapshots +
+  # S3 backups). Set false when the volume no longer lives on Longhorn (e.g. local-path +
+  # Litestream), since Longhorn recurring jobs only act on Longhorn volumes anyway.
+  longhornCritical: true
+
+# Litestream continuous streaming backup of the SQLite database to S3 (point-in-time
+# recovery). Meant to replace Longhorn snapshot/backup coverage when the DB moves to
+# local disk. When enabled, a `litestream replicate` native sidecar streams the WAL and
+# a restore init container rebuilds the DB from S3 if the local file is missing.
+litestream:
+  enabled: false
+  image: "litestream/litestream:0.5.14"
+  # S3 replica URL. Use a dedicated prefix — never share Longhorn's backup prefix.
+  replicaUrl: "s3://imkitchen-backups-893564622977-eu-west-3-an/litestream/imkitchen"
+  region: "eu-west-3"
+  # Optional custom S3 endpoint (e.g. non-AWS). Empty = AWS S3.
+  endpoint: ""
+  monitorInterval: "1s"
+  checkpointInterval: "1m"
+  minCheckpointPageCount: 1000
+  snapshotInterval: "24h"
+  retention: "168h" # snapshot retention / PITR window
+  # Secret providing AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY (litestream 0.5 uses the
+  # AWS SDK v2 default credential chain) for the S3 replica.
+  secretName: "imkitchen-env"
 
 certificate:
   annotations: {}

@@ -1,0 +1,25 @@
+{{- if .Values.litestream.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: imkitchen-litestream
+data:
+  # Litestream 0.5.x config schema: singular `replica:`, `snapshot:` block for
+  # interval/retention, and default LTX compaction levels. Credentials are resolved from
+  # the AWS SDK v2 default chain (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY env).
+  litestream.yml: |
+    dbs:
+      - path: /var/lib/imkitchen/db.sqlite3
+        monitor-interval: {{ .Values.litestream.monitorInterval | quote }}
+        checkpoint-interval: {{ .Values.litestream.checkpointInterval | quote }}
+        min-checkpoint-page-count: {{ .Values.litestream.minCheckpointPageCount }}
+        snapshot:
+          interval: {{ .Values.litestream.snapshotInterval | quote }}
+          retention: {{ .Values.litestream.retention | quote }}
+        replica:
+          url: {{ .Values.litestream.replicaUrl | quote }}
+          region: {{ .Values.litestream.region | quote }}
+          {{- if .Values.litestream.endpoint }}
+          endpoint: {{ .Values.litestream.endpoint | quote }}
+          {{- end }}
+{{- end }}
