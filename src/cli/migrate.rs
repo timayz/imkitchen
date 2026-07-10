@@ -26,6 +26,24 @@ pub async fn migrate(config: imkitchen_web_shared::config::Config) -> Result<()>
         .await?;
     drop(conn);
 
+    // Reclaim free pages left behind by data migrations that shrink rows (e.g.
+    // m0009 stripping ~1.9GB of image bytes out of the event log). VACUUM
+    // rewrites the whole file and cannot run inside the migration transaction,
+    // so it runs here on a fresh connection. Gate it on the freelist so routine
+    // deploys with nothing to reclaim don't pay the cost.
+    let mut conn = pool.acquire().await?;
+    let freelist: i64 = sqlx::query_scalar("PRAGMA freelist_count")
+        .fetch_one(&mut *conn)
+        .await?;
+    if freelist > 0 {
+        tracing::info!("Reclaiming {freelist} free pages (VACUUM)...");
+        sqlx::query("VACUUM").execute(&mut *conn).await?;
+        sqlx::query("PRAGMA wal_checkpoint(TRUNCATE)")
+            .execute(&mut *conn)
+            .await?;
+    }
+    drop(conn);
+
     tracing::info!("Migrations completed successfully");
 
     Ok(())

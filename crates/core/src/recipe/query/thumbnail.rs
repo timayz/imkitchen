@@ -4,8 +4,8 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::recipe_thumbnail::RecipeThumbnail;
-use imkitchen_types::recipe::{Deleted, ThumbnailResized};
-use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
+use imkitchen_types::recipe::Deleted;
+use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::prelude::FromRow;
 
@@ -44,44 +44,11 @@ impl<E: Executor> crate::recipe::Module<E> {
 }
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
-    SubscriptionBuilder::new("recipe-thumbnail-view")
-        .handler(handle_resized())
-        .handler(handle_deleted())
-}
-
-#[evento::subscription]
-async fn handle_resized<E: Executor>(
-    context: &Context<'_, E>,
-    event: Event<ThumbnailResized>,
-) -> anyhow::Result<()> {
-    let pool = context.extract::<sqlx::SqlitePool>();
-
-    let statement = Query::insert()
-        .into_table(RecipeThumbnail::Table)
-        .columns([
-            RecipeThumbnail::Id,
-            RecipeThumbnail::Device,
-            RecipeThumbnail::Data,
-        ])
-        .values_panic([
-            event.aggregate_id.to_owned().into(),
-            event.data.device.to_owned().into(),
-            event.data.data.into(),
-        ])
-        .on_conflict(
-            OnConflict::columns([RecipeThumbnail::Id, RecipeThumbnail::Device])
-                .update_column(RecipeThumbnail::Data)
-                .to_owned(),
-        )
-        .to_owned();
-
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
-        .execute(&pool)
-        .await?;
-
-    Ok(())
+    // Resized variant bytes are now written directly to recipe_thumbnail by the
+    // "recipe-command" resize subscription (the authoritative image store), so
+    // there is no longer a ThumbnailResized handler here. This view only needs
+    // to clean up on deletion.
+    SubscriptionBuilder::new("recipe-thumbnail-view").handler(handle_deleted())
 }
 
 #[evento::subscription]
@@ -91,6 +58,9 @@ async fn handle_deleted<E: Executor>(
 ) -> anyhow::Result<()> {
     let pool = context.extract::<sqlx::SqlitePool>();
 
+    // No device filter on purpose: this removes every variant for the recipe,
+    // including any transient device='original' row left behind if the process
+    // died mid-resize.
     let statement = Query::delete()
         .from_table(RecipeThumbnail::Table)
         .and_where(Expr::col(RecipeThumbnail::Id).eq(&event.aggregate_id))

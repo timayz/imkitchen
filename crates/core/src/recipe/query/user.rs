@@ -7,6 +7,7 @@ use evento::{
 };
 use image::imageops::FilterType;
 use imkitchen_db::mealplan_recipe::MealPlanRecipe;
+use imkitchen_db::recipe_thumbnail::RecipeThumbnail;
 use imkitchen_db::recipe_user::{RecipeUser, RecipeUserFts};
 use imkitchen_types::recipe::{
     AdvancePrepChanged, BasicInformationChanged, Created, Deleted, DietaryRestriction,
@@ -550,6 +551,19 @@ impl<E: Executor> Snapshot<E> for UserView {
 
         let slug = build_slug(&write_db, &self.id, &self.name).await?;
 
+        // The blur placeholder is invalidated (set to None) by the mobile
+        // ThumbnailResized handler because handlers have no DB access. Recompute
+        // it here once from the authoritative recipe_thumbnail mobile variant,
+        // which the resize subscription has already written. If it is already
+        // Some (loaded via restore from a prior snapshot) keep it as-is.
+        let blur_placeholder = match &self.blur_placeholder {
+            Some(blur) => Some(blur.to_owned()),
+            None if self.thumbnail_version.is_some() => {
+                read_mobile_blur(&write_db, &self.id).await?
+            }
+            None => None,
+        };
+
         let ingredients = bitcode::encode(&self.ingredients.0);
         let instructions = bitcode::encode(&self.instructions.0);
         let difficulty_score: u16 =
@@ -608,7 +622,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                 difficulty_score.into(),
                 self.created_at.into(),
                 self.thumbnail_version.to_owned().into(),
-                self.blur_placeholder.to_owned().into(),
+                blur_placeholder.into(),
             ])?
             .on_conflict(
                 OnConflict::column(RecipeUser::Id)
@@ -797,13 +811,33 @@ async fn handle_thumbnail_resized(
 ) -> anyhow::Result<()> {
     data.thumbnail_version = Some(event.id.to_string());
 
-    // Derive a tiny blurred base64 placeholder (LQIP) from the mobile variant only,
-    // so it is generated once per upload rather than once per device.
+    // The event no longer carries image bytes, and evento handlers have no DB
+    // access, so the blur placeholder can't be computed here. Invalidate it on
+    // the mobile marker; take_snapshot recomputes it once from the authoritative
+    // recipe_thumbnail mobile variant (generated once per upload, not per device).
     if event.data.device == "mobile" {
-        data.blur_placeholder = build_blur_placeholder(&event.data.data);
+        data.blur_placeholder = None;
     }
 
     Ok(())
+}
+
+/// Load the mobile thumbnail variant from the authoritative `recipe_thumbnail`
+/// store and derive its blur placeholder. Returns `None` if the row is missing
+/// or the bytes cannot be decoded.
+async fn read_mobile_blur(pool: &SqlitePool, id: &str) -> anyhow::Result<Option<String>> {
+    let statement = Query::select()
+        .column(RecipeThumbnail::Data)
+        .from(RecipeThumbnail::Table)
+        .and_where(Expr::col(RecipeThumbnail::Id).eq(id))
+        .and_where(Expr::col(RecipeThumbnail::Device).eq("mobile"))
+        .to_owned();
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    let bytes = sqlx::query_scalar_with::<_, Vec<u8>, _>(sqlx::AssertSqlSafe(sql), values)
+        .fetch_optional(pool)
+        .await?;
+
+    Ok(bytes.as_deref().and_then(build_blur_placeholder))
 }
 
 /// Downscale the given WebP thumbnail to a tiny blurred base64 data URL used as a
