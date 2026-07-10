@@ -17,9 +17,10 @@ fn base_options(database_url: &str, busy_timeout: Duration) -> Result<SqliteConn
         SqliteConnectOptions::from_str(database_url)?
             .busy_timeout(busy_timeout)
             .foreign_keys(true)
-            .pragma("wal_autocheckpoint", "1000") // explicit
+            .pragma("wal_autocheckpoint", "1000") // explicit; write pool overrides to 0 (Litestream owns checkpointing)
             .pragma("journal_size_limit", "67108864")
             .pragma("cache_size", "-20000")
+            .pragma("mmap_size", "268435456") // 256 MiB memory-mapped I/O — cuts read syscalls
             .pragma("temp_store", "memory"), // .log_statements(LevelFilter::Debug)
     )
 }
@@ -52,7 +53,14 @@ pub async fn create_read_pool(database_url: &str, max_connections: u32) -> Resul
 pub async fn create_write_pool(database_url: &str) -> Result<SqlitePool> {
     let options = base_options(database_url, Duration::from_millis(5000))?
         .journal_mode(SqliteJournalMode::Wal)
-        .synchronous(SqliteSynchronous::Normal);
+        .synchronous(SqliteSynchronous::Normal)
+        // Disable SQLite's automatic WAL checkpoint at runtime. When Litestream is
+        // replicating, it must be the sole owner of checkpointing — an app-initiated
+        // checkpoint can discard WAL frames Litestream hasn't shipped yet and break the
+        // replication chain. journal_size_limit still bounds -wal growth as a backstop.
+        // (migrate's create_pool keeps autocheckpoint + explicit TRUNCATE — it runs before
+        // the Litestream sidecar starts.)
+        .pragma("wal_autocheckpoint", "0");
 
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
