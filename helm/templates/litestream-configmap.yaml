@@ -17,8 +17,8 @@ data:
           interval: {{ .Values.litestream.snapshotInterval | quote }}
           retention: {{ .Values.litestream.retention | quote }}
         replica:
-          url: {{ .Values.litestream.replicaUrl | quote }}
-          region: {{ .Values.litestream.region | quote }}
+          url: {{ required "litestream.replicaUrl must be set when litestream.enabled is true" .Values.litestream.replicaUrl | quote }}
+          region: {{ required "litestream.region must be set when litestream.enabled is true" .Values.litestream.region | quote }}
           {{- if .Values.litestream.endpoint }}
           endpoint: {{ .Values.litestream.endpoint | quote }}
           {{- end }}
