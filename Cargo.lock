@@ -1325,8 +1325,18 @@ version = "0.20.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc7f46116c46ff9ab3eb1597a45688b6715c6e628b5c133e288e709a29bcb4ee"
 dependencies = [
- "darling_core",
- "darling_macro",
+ "darling_core 0.20.11",
+ "darling_macro 0.20.11",
+]
+
+[[package]]
+name = "darling"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25ae13da2f202d56bd7f91c25fba009e7717a1e4a1cc98a76d844b65ae912e9d"
+dependencies = [
+ "darling_core 0.23.0",
+ "darling_macro 0.23.0",
 ]
 
 [[package]]
@@ -1344,12 +1354,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "darling_core"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9865a50f7c335f53564bb694ef660825eb8610e0a53d3e11bf1b0d3df31e03b0"
+dependencies = [
+ "ident_case",
+ "proc-macro2",
+ "quote",
+ "strsim",
+ "syn 2.0.118",
+]
+
+[[package]]
 name = "darling_macro"
 version = "0.20.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc34b93ccb385b40dc71c6fceac4b2ad23662c7eeb248cf10d529b7e055b6ead"
 dependencies = [
- "darling_core",
+ "darling_core 0.20.11",
+ "quote",
+ "syn 2.0.118",
+]
+
+[[package]]
+name = "darling_macro"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ac3984ec7bd6cfa798e62b4a642426a5be0e68f9401cfc2a01e3fa9ea2fcdb8d"
+dependencies = [
+ "darling_core 0.23.0",
  "quote",
  "syn 2.0.118",
 ]
@@ -1415,9 +1449,9 @@ dependencies = [
 
 [[package]]
 name = "der"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71fd89660b2dc699704064e59e9dba0147b903e85319429e131620d022be411b"
+checksum = "a69dedd701da44b0536442edf09c81a64b0ab97a7a4a5e3d1971f00027cbc63d"
 dependencies = [
  "const-oid",
  "pem-rfc7468",
@@ -1445,7 +1479,7 @@ version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d5bcf7b024d6835cfb3d473887cd966994907effbe9227e8c8219824d06c4e8"
 dependencies = [
- "darling",
+ "darling 0.20.11",
  "proc-macro2",
  "quote",
  "syn 2.0.118",
@@ -2491,9 +2525,9 @@ dependencies = [
 
 [[package]]
 name = "ignore"
-version = "0.4.27"
+version = "0.4.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe112b004901c62c2faa11f4f75e9864e0cc5af8da71c9115d184a3aa888749f"
+checksum = "2adf14691c72bcfc1058740436a35bdd3ae9c07d1a941ef00b749e9ea16aefa7"
 dependencies = [
  "crossbeam-deque",
  "globset",
@@ -2547,7 +2581,7 @@ checksum = "89194689a993ab15268672e99e7b0e19da2da3268ac682e8f02d29d4d1434cd7"
 
 [[package]]
 name = "imkitchen"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "anyhow",
  "async-stripe",
@@ -2578,7 +2612,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-billing"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "anyhow",
  "async-stripe",
@@ -2600,7 +2634,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-core"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "anyhow",
  "argon2",
@@ -2629,7 +2663,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-db"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "async-trait",
  "evento",
@@ -2640,7 +2674,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-identity"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "anyhow",
  "argon2",
@@ -2665,7 +2699,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-notification"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "anyhow",
  "askama",
@@ -2687,7 +2721,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-types"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "bitcode",
  "evento",
@@ -2699,7 +2733,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-admin"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "anyhow",
  "askama",
@@ -2726,7 +2760,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-demo"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "askama",
  "axum",
@@ -2745,7 +2779,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-grocery"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "anyhow",
  "askama",
@@ -2761,7 +2795,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-kitchen"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "askama",
  "axum",
@@ -2775,7 +2809,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-menu"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "askama",
  "axum",
@@ -2787,7 +2821,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-public"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "anyhow",
  "askama",
@@ -2809,7 +2843,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-recipe"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "askama",
  "axum",
@@ -2827,7 +2861,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-settings"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "askama",
  "async-stripe-core",
@@ -2848,7 +2882,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-shared"
-version = "1.5.2"
+version = "1.6.0"
 dependencies = [
  "anyhow",
  "askama",
@@ -3049,9 +3083,9 @@ dependencies = [
 
 [[package]]
 name = "json-escape-simd"
-version = "3.1.0"
+version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a18a0eb3c0a783620d2ae8cdda9590aae18b1608964ee9c7c43162562786424"
+checksum = "c22a2041e3874a055a4eb03ea2395aaccdefa84ce75b31d542d72a741c3c6ad3"
 
 [[package]]
 name = "json5"
@@ -4806,22 +4840,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "proc-macro-error-attr2"
-version = "2.0.0"
+name = "proc-macro-error-attr3"
+version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "96de42df36bb9bba5542fe9f1a054b8cc87e172759a1868aa05c1f3acc89dfc5"
+checksum = "34e4dd828515431dd6c4a030d26f7eaed7dd4778226e9d2bb968d65ca4ec3d4d"
 dependencies = [
  "proc-macro2",
  "quote",
 ]
 
 [[package]]
-name = "proc-macro-error2"
-version = "2.0.1"
+name = "proc-macro-error3"
+version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11ec05c52be0a07b08061f7dd003e7d7092e0472bc731b4af7bb1ef876109802"
+checksum = "5ee475e440453418ff1335189eddf7101ba502cd818ab7ae04209bc83aa925aa"
 dependencies = [
- "proc-macro-error-attr2",
+ "proc-macro-error-attr3",
  "proc-macro2",
  "quote",
  "syn 2.0.118",
@@ -5190,9 +5224,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.12.4"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1292b7759ae1cb9ec195452d1390a074f0cd8541ab7a5a8c31cd6db45d4a6ba"
+checksum = "2a0e75113e14dc5acb068cd0786884f214f1312650a3d36d269f5c4f3cdee8a2"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -5202,9 +5236,9 @@ dependencies = [
 
 [[package]]
 name = "regex-automata"
-version = "0.4.14"
+version = "0.4.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e1dd4122fc1595e8162618945476892eefca7b88c52820e74af6262213cae8f"
+checksum = "1f388202e4b80542a0921078cc23b6333bcf1409c1e3f86404cae4766a6131db"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -5630,7 +5664,7 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0b0f466921cdd3cf4b89d5c3ac2173dba89a873ab395b123a645de181ec7537"
 dependencies = [
- "darling",
+ "darling 0.20.11",
  "heck 0.4.1",
  "proc-macro2",
  "quote",
@@ -7102,13 +7136,12 @@ dependencies = [
 
 [[package]]
 name = "validator_derive"
-version = "0.20.0"
+version = "0.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b7df16e474ef958526d1205f6dda359fdfab79d9aa6d54bafcb92dcd07673dca"
+checksum = "240e4b81c20a1d6d50d1d7265c658dfbd204e8b9ac4d80f3c931f39462196335"
 dependencies = [
- "darling",
- "once_cell",
- "proc-macro-error2",
+ "darling 0.23.0",
+ "proc-macro-error3",
  "proc-macro2",
  "quote",
  "syn 2.0.118",
@@ -7659,9 +7692,9 @@ dependencies = [
 
 [[package]]
 name = "zlib-rs"
-version = "0.6.5"
+version = "0.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5431d5661c32445236631278f27946e444ddafe4684cac70b185272d4f9c52d5"
+checksum = "b142a20ec14a91d5bc708c1dc21b080c550113d8aa77afa29635673a65dd02c5"
 
 [[package]]
 name = "zmij"
