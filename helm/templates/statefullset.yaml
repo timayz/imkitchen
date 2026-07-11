@@ -33,6 +33,13 @@ spec:
         - name: litestream-restore
           image: {{ .Values.litestream.image | quote }}
           imagePullPolicy: IfNotPresent
+          # The litestream image runs as root by default; the pod enforces runAsNonRoot.
+          # Run as uid/gid 10001 (matches fsGroup) so it satisfies the policy and can
+          # read/write the SQLite files the app owns.
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            allowPrivilegeEscalation: false
           command:
             ["litestream", "restore", "-if-db-not-exists", "-if-replica-exists", "-config", "/etc/litestream/litestream.yml", "/var/lib/imkitchen/db.sqlite3"]
           volumeMounts:
@@ -71,6 +78,11 @@ spec:
           image: {{ .Values.litestream.image | quote }}
           imagePullPolicy: IfNotPresent
           restartPolicy: Always
+          # See litestream-restore: run as non-root uid/gid 10001 (matches fsGroup).
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            allowPrivilegeEscalation: false
           command:
             ["litestream", "replicate", "-config", "/etc/litestream/litestream.yml"]
           volumeMounts:
