@@ -188,10 +188,6 @@
     {% if view == "list" %}
     {# ── List row ── #}
     <a id="recipe-{{ recipe.node.id }}" href="{{ "/r/"|demo_href }}{{ recipe.node.slug }}"
-      {% if let (true, true, Some(cursor)) = (loop.last, recipes.page_info.has_next_page, recipes.page_info.end_cursor.to_owned()) %}
-      ts-req="{{ cook_url }}{{ username }}?after={{ cursor.to_string() }}{% if let Some(sort_by) = query.sort_by %}&sort_by={{ sort_by }}{% endif %}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if let Some(search) = query.search %}&search={{ search }}{% endif %}&view=list"
-      ts-req-method="GET" ts-req-selector="children #recipes-list" ts-swap="afterend" ts-trigger="visible once"
-      {% endif %}
       class="min-w-0 bg-paper border border-line-2 rounded-2xl px-3 py-2.5 shadow-sm hover:shadow-md transition flex items-center gap-3">
       <div class="relative w-12 h-12 rounded-xl overflow-hidden bg-linear-to-br {% call type_hero_classes(rt) %}{% endcall %}
         flex items-center justify-center shrink-0">
@@ -218,10 +214,6 @@
     {% else %}
     {# ── Grid card ── #}
     <a id="recipe-{{ recipe.node.id }}" href="{{ "/r/"|demo_href }}{{ recipe.node.slug }}"
-      {% if let (true, true, Some(cursor)) = (loop.last, recipes.page_info.has_next_page, recipes.page_info.end_cursor.to_owned()) %}
-      ts-req="{{ cook_url }}{{ username }}?after={{ cursor.to_string() }}{% if let Some(sort_by) = query.sort_by %}&sort_by={{ sort_by }}{% endif %}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if let Some(search) = query.search %}&search={{ search }}{% endif %}"
-      ts-req-method="GET" ts-req-selector="children #recipes-list" ts-swap="afterend" ts-trigger="visible once"
-      {% endif %}
       class="group bg-paper border border-line-2 rounded-2xl shadow-sm hover:shadow-md transition overflow-hidden flex flex-col">
       <div class="relative h-28 md:h-36 bg-linear-to-br {% call type_hero_classes(rt) %}{% endcall %} flex items-center justify-center overflow-hidden">
         {% if let Some(version) = recipe.node.thumbnail_version %}
@@ -244,8 +236,31 @@
     </a>
     {% endif %}
     {% endfor %}
+
+    {# Infinite-scroll sentinel — kept separate from the recipe cards so that
+       clicking a card only navigates and never fires a load-more request. When
+       it scrolls into view it replaces itself with the next page. #}
+    {% if let (true, Some(cursor)) = (recipes.page_info.has_next_page, recipes.page_info.end_cursor.to_owned()) %}
+    <div class="col-span-full flex justify-center py-4"
+      ts-req="{{ cook_url }}{{ username }}?after={{ cursor.to_string() }}{% if let Some(search) = query.search %}&search={{ search|urlencode }}{% endif %}{% if let Some(sort_by) = query.sort_by %}&sort_by={{ sort_by }}{% endif %}{% if let Some(recipe_type) = query.recipe_type %}&recipe_type={{ recipe_type }}{% endif %}{% if view == "list" %}&view=list{% endif %}"
+      ts-req-method="GET" ts-req-selector="children #recipes-list" ts-swap="replace" ts-trigger="visible once">
+      <div class="animate-spin rounded-full h-5 w-5 border-2 border-primary-500/20 border-t-primary-500"></div>
+    </div>
+    {% endif %}
     {% endif %}
   </div>
 
 </div>
+
+<script>
+  // The search box already searches live on `input`. Its `change` event fires
+  // when it loses focus — e.g. the moment you click a recipe after typing — and
+  // would otherwise bubble to the filter form and re-submit it, swapping the
+  // results out from under your click so the first click never navigates. Stop
+  // that redundant change from reaching the form.
+  (() => {
+    const search = document.querySelector('form input[name="search"]');
+    if (search) search.addEventListener('change', (e) => e.stopPropagation());
+  })();
+</script>
 {% endblock %}

@@ -33,3 +33,5 @@ imkitchen-types = { path = "../types", version = "1.6.1" }
 imkitchen-db = { path = "../db", version = "1.6.1" }
 
 [dev-dependencies]
+tokio.workspace = true
+temp-dir.workspace = true

@@ -1,15 +1,13 @@
 use imkitchen_types::contact::Status;
 use temp_dir::TempDir;
 
-mod helpers;
-
 #[tokio::test]
 async fn test_reopen() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
-    let state = helpers::setup_test_state(path).await?;
+    let state = crate::helpers::setup_test_state(path).await?;
     let cmd = imkitchen_core::contact::Module::new(state);
-    let contact_id = helpers::create_submit(&cmd, "john.doe").await?;
+    let contact_id = crate::helpers::create_submit(&cmd, "john.doe").await?;
 
     let contact = cmd.load(&contact_id).await?.unwrap();
     assert_eq!(contact.status, Status::Unread);

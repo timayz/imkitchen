@@ -4,13 +4,11 @@ use imkitchen_types::recipe::RecipeType;
 use temp_dir::TempDir;
 use time::OffsetDateTime;
 
-mod helpers;
-
 #[tokio::test]
 async fn test_random() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
-    let state = helpers::setup_test_state(path).await?;
+    let state = crate::helpers::setup_test_state(path).await?;
     let cmd = imkitchen_core::mealplan::Module::new(state.clone());
     let recipe_cmd = imkitchen_core::recipe::Module::new(state.clone());
 
@@ -28,7 +26,8 @@ async fn test_random() -> anyhow::Result<()> {
 
     imkitchen_core::mealplan::subscription()
         .data(state.write_db.clone())
-        .no_retry().run_once(&state.executor)
+        .no_retry()
+        .run_once(&state.executor)
         .await?;
 
     cmd.generate(imkitchen_core::mealplan::Generate {
@@ -55,6 +54,7 @@ async fn import_recipe(
     let id = id.into();
     let input = ImportInput {
         name: format!("recipe {id}"),
+        origin: None,
         description: "my description".to_owned(),
         advance_prep: "".to_owned(),
         ingredients: vec![],
@@ -63,6 +63,8 @@ async fn import_recipe(
         cook_time: 25,
         prep_time: 10,
         recipe_type,
+        accepts_accompaniment: false,
+        dietary_restrictions: vec![],
     };
 
     cmd.import(input, user_id, None).await?;
