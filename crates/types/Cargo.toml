@@ -1,6 +1,6 @@
 [package]
 name = "imkitchen-types"
-version = "1.6.1"
+version = "1.6.2"
 edition.workspace = true
 authors.workspace = true
 
