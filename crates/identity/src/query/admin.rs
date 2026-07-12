@@ -161,13 +161,20 @@ impl<E: Executor> crate::Module<E> {
             statement.and_where(Expr::col(UserAdmin::State).eq(status.to_string()));
         }
 
-        if let Some(search) = input.search {
+        if let Some(match_query) = input
+            .search
+            .as_deref()
+            .and_then(imkitchen_db::fts::to_match_query)
+        {
             statement.and_where(
                 Expr::col(UserAdmin::Id).in_subquery(
                     Query::select()
                         .column(UserAdminFts::Id)
                         .from(UserAdminFts::Table)
-                        .and_where(Expr::cust(format!("user_admin_fts MATCH '{search}*'")))
+                        .and_where(Expr::cust_with_values(
+                            "user_admin_fts MATCH ?",
+                            [match_query],
+                        ))
                         .order_by(UserAdminFts::Rank, sea_query::Order::Asc)
                         .limit(20)
                         .take(),
