@@ -85,13 +85,20 @@ impl<E: Executor> crate::contact::Module<E> {
             statement.and_where(Expr::col(ContactAdmin::Status).eq(status.to_string()));
         }
 
-        if let Some(search) = input.search {
+        if let Some(match_query) = input
+            .search
+            .as_deref()
+            .and_then(imkitchen_db::fts::to_match_query)
+        {
             statement.and_where(
                 Expr::col(ContactAdmin::Id).in_subquery(
                     Query::select()
                         .column(ContactAdminFts::Id)
                         .from(ContactAdminFts::Table)
-                        .and_where(Expr::cust(format!("contact_admin_fts MATCH '{search}*'")))
+                        .and_where(Expr::cust_with_values(
+                            "contact_admin_fts MATCH ?",
+                            [match_query],
+                        ))
                         .order_by(ContactAdminFts::Rank, sea_query::Order::Asc)
                         .limit(20)
                         .take(),

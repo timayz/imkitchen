@@ -13,6 +13,7 @@ pub(crate) mod m0010;
 
 pub mod contact_admin;
 pub mod contact_global_stat;
+pub mod fts;
 pub mod mealplan_recipe;
 pub mod mealplan_slot;
 pub mod notification_recipient;

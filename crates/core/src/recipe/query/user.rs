@@ -159,8 +159,11 @@ impl<E: Executor> crate::recipe::Module<E> {
         // When a search term is present we join the FTS table (rather than an
         // `IN (subquery)` filter) so its `rank` is available for `ORDER BY`
         // below — an `IN` clause would discard the relevance ordering.
-        let search = query.search.filter(|s| !s.is_empty());
-        if let Some(ref search) = search {
+        let search = query
+            .search
+            .as_deref()
+            .and_then(imkitchen_db::fts::to_match_query);
+        if let Some(ref match_query) = search {
             statement
                 .join(
                     sea_query::JoinType::InnerJoin,
@@ -170,7 +173,7 @@ impl<E: Executor> crate::recipe::Module<E> {
                 )
                 .and_where(Expr::cust_with_values(
                     "recipe_user_fts MATCH ?",
-                    [format!("{search}*")],
+                    [match_query.clone()],
                 ));
         }
 
