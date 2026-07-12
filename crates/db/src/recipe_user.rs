@@ -657,6 +657,53 @@ pub(crate) mod m0005 {
     }
 }
 
+pub(crate) mod m0010 {
+    use sea_query::{DeleteStatement, Query};
+
+    use super::RecipeUserFts;
+
+    pub struct RebuildFts;
+
+    // SQLite has no TRUNCATE — an unqualified DELETE triggers SQLite's truncate
+    // optimization (sqlite.org/lang_delete.html). On other backends sea-query
+    // will render the equivalent DELETE.
+    fn truncate_fts() -> DeleteStatement {
+        Query::delete().from_table(RecipeUserFts::Table).to_owned()
+    }
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for RebuildFts {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            // `handle_ingredients_changed` previously wrote the ingredient list
+            // into the FTS `name` column instead of `ingredients`, corrupting the
+            // index. Truncate the projection and reset its subscription cursor so
+            // the corrected handlers replay every event and rebuild it.
+            let truncate = truncate_fts().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(sqlx::AssertSqlSafe(truncate))
+                .execute(&mut *connection)
+                .await?;
+
+            // `subscriber` is evento's internal table with no `Iden`, so the reset
+            // is raw SQL — the same way m0002/m0004/m0005/m0007 touch it.
+            sqlx::query("UPDATE subscriber SET cursor = NULL WHERE key = 'recipe-user-fts-query'")
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            _connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            Ok(())
+        }
+    }
+}
+
 pub(crate) mod m0007 {
     pub struct AddBlurPlaceholder;
 
