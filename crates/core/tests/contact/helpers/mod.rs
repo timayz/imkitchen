@@ -4,8 +4,9 @@ use evento::{
     Sqlite,
     migrator::{Migrate, Plan},
 };
+use imkitchen_core::State;
 use imkitchen_core::contact::SubmitFormInput;
-use imkitchen_types::{State, contact::Subject};
+use imkitchen_types::contact::Subject;
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 
 pub async fn setup_test_state(path: PathBuf) -> anyhow::Result<State<Sqlite>> {

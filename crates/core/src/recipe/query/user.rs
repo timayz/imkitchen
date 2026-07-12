@@ -15,7 +15,9 @@ use imkitchen_types::recipe::{
     InstructionsChanged, MadePrivate, MainCourseOptionsChanged, Recipe, RecipeType,
     RecipeTypeChanged, SharedToCommunity, ThumbnailResized,
 };
-use sea_query::{Expr, ExprTrait, Func, OnConflict, Query, SimpleExpr, SqliteQueryBuilder};
+use sea_query::{
+    Alias, Asterisk, Expr, ExprTrait, Func, OnConflict, Query, SimpleExpr, SqliteQueryBuilder,
+};
 use sea_query_sqlx::SqlxBinder;
 use serde::Deserialize;
 use sqlx::{SqlitePool, prelude::FromRow};
@@ -60,6 +62,10 @@ pub struct UserView {
 pub struct UserViewList {
     #[cursor(RecipeUser::Id, 1)]
     #[cursor(by_difficulty, RecipeUser::Id, 1)]
+    // Tiebreaker for relevance pagination. Keyed on `RecipeUserFts::Id` (not
+    // `RecipeUser::Id`) only so both `by_relevance` columns share one enum, as
+    // the cursor derive requires; the outer query resolves it to `sub.id`.
+    #[cursor(by_relevance, RecipeUserFts::Id, 1)]
     pub id: String,
     pub owner_id: String,
     pub owner_name: Option<String>,
@@ -78,6 +84,13 @@ pub struct UserViewList {
     pub created_at: u64,
     pub thumbnail_version: Option<String>,
     pub blur_placeholder: Option<String>,
+    // FTS relevance score, only selected on the search path (see `filter_user`);
+    // `#[sqlx(default)]` leaves it 0.0 for the other sorts, which never select
+    // it. Primary key (order 2) of the `by_relevance` cursor — bm25 is
+    // more-negative for better matches, so ascending order is best-first.
+    #[cursor(by_relevance, RecipeUserFts::Rank, 2)]
+    #[sqlx(default)]
+    pub rank: f64,
 }
 
 pub struct RecipesQuery {
@@ -99,24 +112,28 @@ impl<E: Executor> crate::recipe::Module<E> {
         &self,
         query: RecipesQuery,
     ) -> anyhow::Result<ReadResult<UserViewList>> {
+        // Columns are table-qualified so the query stays unambiguous once the
+        // `recipe_user_fts` table is joined in for relevance-sorted search
+        // (both tables carry `id`/`name`/`description`). Result column labels
+        // are unchanged, so `UserViewList`'s `FromRow` still maps cleanly.
         let mut statement = sea_query::Query::select()
             .columns([
-                RecipeUser::Id,
-                RecipeUser::OwnerId,
-                RecipeUser::OwnerName,
-                RecipeUser::RecipeType,
-                RecipeUser::Name,
-                RecipeUser::Slug,
-                RecipeUser::Description,
-                RecipeUser::PrepTime,
-                RecipeUser::CookTime,
-                RecipeUser::DietaryRestrictions,
-                RecipeUser::AcceptsAccompaniment,
-                RecipeUser::IsShared,
-                RecipeUser::DifficultyScore,
-                RecipeUser::CreatedAt,
-                RecipeUser::ThumbnailVersion,
-                RecipeUser::BlurPlaceholder,
+                (RecipeUser::Table, RecipeUser::Id),
+                (RecipeUser::Table, RecipeUser::OwnerId),
+                (RecipeUser::Table, RecipeUser::OwnerName),
+                (RecipeUser::Table, RecipeUser::RecipeType),
+                (RecipeUser::Table, RecipeUser::Name),
+                (RecipeUser::Table, RecipeUser::Slug),
+                (RecipeUser::Table, RecipeUser::Description),
+                (RecipeUser::Table, RecipeUser::PrepTime),
+                (RecipeUser::Table, RecipeUser::CookTime),
+                (RecipeUser::Table, RecipeUser::DietaryRestrictions),
+                (RecipeUser::Table, RecipeUser::AcceptsAccompaniment),
+                (RecipeUser::Table, RecipeUser::IsShared),
+                (RecipeUser::Table, RecipeUser::DifficultyScore),
+                (RecipeUser::Table, RecipeUser::CreatedAt),
+                (RecipeUser::Table, RecipeUser::ThumbnailVersion),
+                (RecipeUser::Table, RecipeUser::BlurPlaceholder),
             ])
             .from(RecipeUser::Table)
             .to_owned();
@@ -139,25 +156,28 @@ impl<E: Executor> crate::recipe::Module<E> {
             None => {}
         }
 
-        if let Some(search) = query.search.filter(|s| !s.is_empty()) {
-            statement.and_where(
-                Expr::col(RecipeUser::Id).in_subquery(
-                    Query::select()
-                        .column(RecipeUserFts::Id)
-                        .from(RecipeUserFts::Table)
-                        .and_where(Expr::cust_with_values(
-                            "recipe_user_fts MATCH ?",
-                            [format!("{search}*")],
-                        ))
-                        .order_by(RecipeUserFts::Rank, sea_query::Order::Asc)
-                        .limit(20)
-                        .take(),
-                ),
-            );
+        // When a search term is present we join the FTS table (rather than an
+        // `IN (subquery)` filter) so its `rank` is available for `ORDER BY`
+        // below — an `IN` clause would discard the relevance ordering.
+        let search = query.search.filter(|s| !s.is_empty());
+        if let Some(ref search) = search {
+            statement
+                .join(
+                    sea_query::JoinType::InnerJoin,
+                    RecipeUserFts::Table,
+                    Expr::col((RecipeUserFts::Table, RecipeUserFts::Id))
+                        .equals((RecipeUser::Table, RecipeUser::Id)),
+                )
+                .and_where(Expr::cust_with_values(
+                    "recipe_user_fts MATCH ?",
+                    [format!("{search}*")],
+                ));
         }
 
         if let Some(exclude_ids) = query.exclude_ids {
-            statement.and_where(Expr::col(RecipeUser::Id).is_not_in(exclude_ids));
+            // Qualified because `id` also exists on the joined `recipe_user_fts`.
+            statement
+                .and_where(Expr::col((RecipeUser::Table, RecipeUser::Id)).is_not_in(exclude_ids));
         }
 
         if let Some(recipe_type) = query.recipe_type {
@@ -217,7 +237,35 @@ impl<E: Executor> crate::recipe::Module<E> {
             }
         }
 
-        statement.and_where(Expr::col(RecipeUser::Name).not_equals(""));
+        // Qualified because `name` also exists on the joined `recipe_user_fts`.
+        statement.and_where(Expr::col((RecipeUser::Table, RecipeUser::Name)).not_equals(""));
+
+        // A search term overrides `sort_by`: results are ordered by FTS `rank`
+        // so the best text matches come first ("relevance"), with full keyset
+        // pagination. The join + all filters are wrapped in a derived table so
+        // the `Reader`-managed outer query sees a single, unambiguous `id`/`rank`
+        // pair to order and keyset on (both are ambiguous across the joined
+        // `recipe_user`/`recipe_user_fts` tables). The `by_relevance` cursor
+        // keys on `rank` (primary, ascending = best first) then `id`.
+        if search.is_some() {
+            // Expose the FTS score as a concrete `rank` column for the outer query.
+            statement.expr_as(
+                Expr::col((RecipeUserFts::Table, RecipeUserFts::Rank)),
+                Alias::new("rank"),
+            );
+
+            let outer = Query::select()
+                .column(Asterisk)
+                .from_subquery(statement, Alias::new("sub"))
+                .to_owned();
+
+            let result = Reader::new(outer)
+                .args(query.args)
+                .execute::<_, UserViewListByRelevance, _>(&self.read_db)
+                .await?;
+
+            return Ok(result.map(|item| item.0));
+        }
 
         match query.sort_by {
             SortBy::RecentlyAdded => {
