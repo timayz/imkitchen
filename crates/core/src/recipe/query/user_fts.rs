@@ -132,7 +132,7 @@ async fn handle_ingredients_changed<E: Executor>(
             "recipe_user_fts = ?",
             [event.aggregate_id.to_owned()],
         ))
-        .value(RecipeUserFts::Name, ingredients)
+        .value(RecipeUserFts::Ingredients, ingredients)
         .build_sqlx(SqliteQueryBuilder);
 
     sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
