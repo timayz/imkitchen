@@ -13,4 +13,17 @@ pub enum Shopping {
         from_date: u64,
         days: u8,
     },
+    RecipeSetGenerated {
+        recipe_ids: Vec<String>,
+    },
+    RecipeAdded {
+        recipe_id: String,
+        recipe_ids: Vec<String>,
+        ingredients: Vec<Ingredient>,
+    },
+    RecipeRemoved {
+        recipe_id: String,
+        recipe_ids: Vec<String>,
+        ingredients: Vec<Ingredient>,
+    },
 }

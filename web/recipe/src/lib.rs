@@ -36,6 +36,10 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
         .route("/recipes/{id}/save", post(routes::detail::save))
         .route("/recipes/{id}/unsave", post(routes::detail::unsave))
         .route(
+            "/recipes/{id}/add-to-shopping",
+            post(routes::detail::add_to_shopping),
+        )
+        .route(
             "/recipes/{id}/edit",
             get(routes::edit::page).post(routes::edit::action),
         )

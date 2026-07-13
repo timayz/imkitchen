@@ -98,6 +98,26 @@
         <span class="hidden md:inline" data-share-label>{{ "Share"|t }}</span>
       </button>
 
+      {# Add to shopping list — available to any premium viewer (owner or not) #}
+      <button id="add-to-shopping-btn" {% if !demo %}ts-swap-push="#add-to-shopping-btn"{% endif %}
+        ts-req="{% if demo %}/demo/signup{% else %}/recipes/{{ recipe.id }}/add-to-shopping{% endif %}"
+        {% if demo %}ts-req-method="GET" ts-target="body" ts-swap="append"{% else %}ts-req-method="post"{% endif %}
+        class="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl text-sm font-semibold transition
+          {% if in_shopping %}bg-ink text-cream border border-ink{% else %}bg-paper text-ink border border-line-2 hover:bg-cream{% endif %}">
+        {% if in_shopping %}
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+        </svg>
+        <span class="hidden md:inline">{{ "In shopping list"|t }}</span>
+        {% else %}
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+        <span class="hidden md:inline">{{ "Add to shopping list"|t }}</span>
+        {% endif %}
+      </button>
+
       {% if is_owner %}
         {# Edit #}
         <a href="/recipes/{{ recipe.id }}/edit"

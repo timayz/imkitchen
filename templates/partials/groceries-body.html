@@ -1,0 +1,350 @@
+{# ── Groceries body: "Recipes in this list" section + aisle sections. ──
+     Rendered both inline (via {% include %} from groceries.html) and on its
+     own by `remove_recipe_action` so removing a recipe re-renders the recipe
+     cards and recomputed ingredient totals in one twinspark swap. Macros are
+     redefined here (as elsewhere in the codebase) since includes don't inherit
+     the parent's macros. ──────────────────────────────────────────────────── #}
+
+{# ── Map shopping_<Category> → emoji ─────────────────────────────── #}
+{% macro aisle_emoji(name) -%}
+{%- match name.as_str() -%}
+{%- when "shopping_FruitsAndVegetables" -%}🥬
+{%- when "shopping_Butcher" -%}🥩
+{%- when "shopping_Seafood" -%}🐟
+{%- when "shopping_DairyAndEggs" -%}🥛
+{%- when "shopping_Bakery" -%}🥖
+{%- when "shopping_Grocery" -%}🥫
+{%- when "shopping_Frozen" -%}❄️
+{%- when "shopping_Refrigerated" -%}🧊
+{%- when "shopping_SnacksAndConfectionery" -%}🍬
+{%- when _ -%}🛒
+{%- endmatch -%}
+{%- endmacro %}
+
+{# ── Short single-word label for route-strip nodes ───────────────── #}
+{% macro aisle_short(name) -%}
+{%- match name.as_str() -%}
+{%- when "shopping_FruitsAndVegetables" -%}{{ "Produce"|t }}
+{%- when "shopping_Butcher" -%}{{ "Butcher"|t }}
+{%- when "shopping_Seafood" -%}{{ "Seafood"|t }}
+{%- when "shopping_DairyAndEggs" -%}{{ "Dairy"|t }}
+{%- when "shopping_Bakery" -%}{{ "Bakery"|t }}
+{%- when "shopping_Grocery" -%}{{ "Pantry"|t }}
+{%- when "shopping_Frozen" -%}{{ "Frozen"|t }}
+{%- when "shopping_Refrigerated" -%}{{ "Fresh"|t }}
+{%- when "shopping_SnacksAndConfectionery" -%}{{ "Snacks"|t }}
+{%- when _ -%}{{ "Other"|t }}
+{%- endmatch -%}
+{%- endmacro %}
+
+{# Pretty label without the emoji prefix #}
+{% macro aisle_label(name) -%}
+{%- match name.as_str() -%}
+{%- when "shopping_FruitsAndVegetables" -%}{{ "FruitsAndVegetables"|t }}
+{%- when "shopping_Butcher" -%}{{ "Butcher"|t }}
+{%- when "shopping_Seafood" -%}{{ "Seafood"|t }}
+{%- when "shopping_DairyAndEggs" -%}{{ "DairyAndEggs"|t }}
+{%- when "shopping_Bakery" -%}{{ "Bakery"|t }}
+{%- when "shopping_Grocery" -%}{{ "Grocery"|t }}
+{%- when "shopping_Frozen" -%}{{ "Frozen"|t }}
+{%- when "shopping_Refrigerated" -%}{{ "Refrigerated"|t }}
+{%- when "shopping_SnacksAndConfectionery" -%}{{ "SnacksAndConfectionery"|t }}
+{%- when _ -%}{{ "Unknown"|t }}
+{%- endmatch -%}
+{%- endmacro %}
+
+{# Hex color used as the per-aisle accent (inline CSS variable). #}
+{% macro aisle_hex(name) -%}
+{%- match name.as_str() -%}
+{%- when "shopping_FruitsAndVegetables" -%}#2f7d4f
+{%- when "shopping_Butcher" -%}#b33b1f
+{%- when "shopping_Seafood" -%}#2563eb
+{%- when "shopping_DairyAndEggs" -%}#d97706
+{%- when "shopping_Bakery" -%}#ef6c1e
+{%- when "shopping_Grocery" -%}#78716c
+{%- when "shopping_Frozen" -%}#0284c7
+{%- when "shopping_Refrigerated" -%}#3b6fb0
+{%- when "shopping_SnacksAndConfectionery" -%}#c4428d
+{%- when _ -%}#8a7e70
+{%- endmatch -%}
+{%- endmacro %}
+
+{# Soft tint surface (header emoji tile, summary chips). #}
+{% macro aisle_soft(name) -%}
+{%- match name.as_str() -%}
+{%- when "shopping_FruitsAndVegetables" -%}bg-herb-100
+{%- when "shopping_Butcher" -%}bg-red-100
+{%- when "shopping_Seafood" -%}bg-blue-100
+{%- when "shopping_DairyAndEggs" -%}bg-amber-100
+{%- when "shopping_Bakery" -%}bg-meal-main-soft
+{%- when "shopping_Grocery" -%}bg-stone-100
+{%- when "shopping_Frozen" -%}bg-sky-100
+{%- when "shopping_Refrigerated" -%}bg-meal-entree-soft
+{%- when "shopping_SnacksAndConfectionery" -%}bg-meal-dessert-soft
+{%- when _ -%}bg-cream-2
+{%- endmatch -%}
+{%- endmacro %}
+
+{# ── Recipe-card helpers (mirror templates/partials/recipes-similar.html) ── #}
+{% macro recipe_emoji(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}🥗
+{%- when RecipeType::MainCourse -%}🍛
+{%- when RecipeType::Accompaniment -%}🥖
+{%- when RecipeType::Dessert -%}🍰
+{%- when RecipeType::Beverage -%}🥤
+{%- when RecipeType::Condiment -%}🥫
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro recipe_hero_classes(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}from-meal-entree-soft to-blue-100
+{%- when RecipeType::MainCourse -%}from-meal-main-soft to-orange-100
+{%- when RecipeType::Accompaniment -%}from-meal-side-soft to-herb-100
+{%- when RecipeType::Dessert -%}from-meal-dessert-soft to-pink-100
+{%- when RecipeType::Beverage -%}from-cyan-100 to-cyan-200
+{%- when RecipeType::Condiment -%}from-amber-100 to-amber-200
+{%- endmatch -%}
+{%- endmacro %}
+
+{# One aisle card. `hidden` collapses it on mobile (only the active aisle shows;
+   the route strip toggles the rest via JS). #}
+{% macro category_card(aisle, checked, demo, hidden) %}
+<section id="category-{{ aisle.name }}"
+  style="--aisle: {% call aisle_hex(aisle.name) %}{% endcall %}"
+  class="category-section bg-paper rounded-2xl border border-line-2 shadow-sm overflow-hidden{% if hidden %} hidden lg:block{% endif %}">
+
+  {# Aisle header — emoji tile + serif name + progress strip #}
+  <div class="flex items-center gap-3 p-3 md:p-4 border-b border-line-2">
+    <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 {% call aisle_soft(aisle.name) %}{% endcall %}">
+      {% call aisle_emoji(aisle.name) %}{% endcall %}
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="font-serif text-lg leading-none tracking-tight text-ink">
+        {% call aisle_label(aisle.name) %}{% endcall %}
+      </div>
+      <div class="text-[10px] font-mono text-ink-3 mt-1.5 tracking-wide">
+        {{ aisle.checked }} {{ "of"|t }} {{ aisle.total }} {{ "picked up"|t }}
+      </div>
+    </div>
+    <div class="w-8 h-1.5 rounded-full bg-cream-2 overflow-hidden shrink-0">
+      <div class="h-full aisle-fill rounded-full" style="width: {{ aisle.pct }}%"></div>
+    </div>
+  </div>
+
+  {# Items — chunky checkbox row, checked uses herb green #}
+  <div class="divide-y divide-line-2">
+    {% for ingredient in aisle.items %}
+    <label class="group flex items-center gap-3 px-3 md:px-4 py-3 hover:bg-cream/30 cursor-pointer transition has-checked:bg-cream/50">
+      <input{% if checked.contains(&ingredient.key()) %} checked{% endif %} type="checkbox"
+        {% if !demo %}ts-trigger="change" ts-req="/groceries/toggle" ts-json="{{ ingredient.json_key() }}" ts-req-method="post" ts-swap="none"{% endif %}
+        class="peer sr-only" autocomplete="off" />
+      <div class="w-6 h-6 rounded-lg border-[1.5px] border-line bg-cream flex items-center justify-center shrink-0 transition peer-checked:bg-herb-500 peer-checked:border-herb-500">
+        <svg class="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <span class="block text-sm font-semibold text-ink break-words peer-checked:font-medium peer-checked:text-ink-3 peer-checked:line-through">{{ ingredient.name }}</span>
+      </div>
+      <span class="text-xs font-mono text-ink-3 shrink-0">{{ ingredient.unit.format(ingredient.quantity.to_owned()) }}</span>
+    </label>
+    {% endfor %}
+  </div>
+</section>
+{% endmacro %}
+
+{% let demo = ""|is_demo %}
+
+<div id="groceries-body">
+
+  {% if aisles.is_empty() %}
+  {# ── Empty state — illustrated tile + serif title + explainer trio ── #}
+  <div id="empty-state" class="max-w-2xl mx-auto text-center py-10 md:py-16">
+    <div class="w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-herb-100 to-cream-2 flex items-center justify-center text-5xl">
+      🧺
+    </div>
+    <h2 class="font-serif text-2xl md:text-4xl text-ink tracking-tight">{{ "No list yet"|t }}</h2>
+    <p class="text-sm md:text-base text-ink-2 mt-3 max-w-md mx-auto leading-relaxed">
+      {{ "Generate a shopping list from your meal plan — we'll pull every ingredient, merge duplicates, and group it by aisle."|t }}
+    </p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8 text-left">
+      <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-4">
+        <div class="text-2xl">🗓️</div>
+        <div class="text-sm font-semibold text-ink mt-2">{{ "From your plan"|t }}</div>
+        <div class="text-xs text-ink-3 mt-0.5">{{ "Every meal in range"|t }}</div>
+      </div>
+      <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-4">
+        <div class="text-2xl">🧮</div>
+        <div class="text-sm font-semibold text-ink mt-2">{{ "Smart merge"|t }}</div>
+        <div class="text-xs text-ink-3 mt-0.5">{{ "Duplicates combined"|t }}</div>
+      </div>
+      <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-4">
+        <div class="text-2xl">🧭</div>
+        <div class="text-sm font-semibold text-ink mt-2">{{ "Aisle routing"|t }}</div>
+        <div class="text-xs text-ink-3 mt-0.5">{{ "Grouped store-by-store"|t }}</div>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+  {# ── Run progress bar ─────────────────────────────────────────── #}
+  <div class="mb-4">
+    <div class="h-2 bg-cream-2 rounded-full overflow-hidden">
+      <div class="h-full bg-herb-500 rounded-full transition-all duration-300"
+        style="width: {{ progress_pct }}%"></div>
+    </div>
+  </div>
+
+  {# ── Two-pane layout: route+aisles | sticky summary rail ──────── #}
+  <div class="lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-6">
+
+    <div class="min-w-0">
+
+      {# ── Aisle route map — emoji bubbles with shared accent ─── #}
+      <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-3 md:p-4 mb-4">
+        <div class="flex items-baseline justify-between mb-3">
+          <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">
+            {{ "Your route"|t }}
+          </div>
+          <div class="text-[10px] font-mono text-ink-3">
+            {{ aisles.len() }} {{ "aisles"|t }}
+          </div>
+        </div>
+        <div class="flex items-start gap-1 overflow-x-auto -mx-1 px-1 pb-1 lg:overflow-visible">
+          {% for aisle in aisles %}
+          <button type="button" onclick="toggleCategory('{{ aisle.name }}')"
+            class="route-node group flex-1 min-w-[64px] flex flex-col items-center gap-1.5 border-none bg-transparent p-0 cursor-pointer {% if loop.index == 1 %}is-active{% else if aisle.done %}is-done{% endif %}"
+            data-aisle="{{ aisle.name }}" style="--aisle: {% call aisle_hex(aisle.name) %}{% endcall %}">
+            <div class="route-bubble w-11 h-11 md:w-12 md:h-12 rounded-2xl flex items-center justify-center text-xl md:text-2xl transition-all">
+              {% if aisle.done && loop.index > 1 %}
+              <svg class="w-4 h-4 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+              {% else %}
+              {% call aisle_emoji(aisle.name) %}{% endcall %}
+              {% endif %}
+            </div>
+            <div class="route-label text-[9px] md:text-[10px] font-mono font-semibold tracking-wider uppercase text-ink-3">
+              {% call aisle_short(aisle.name) %}{% endcall %}
+            </div>
+            <div class="text-[10px] font-mono text-ink-3">
+              {{ aisle.checked }}/{{ aisle.total }}
+            </div>
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+
+      {# ── Category sections — only first visible on mobile, all on lg ── #}
+      {# Two independent stacks on lg (each aisle card follows the previous with
+         no gap). `split_at` is chosen server-side to balance the two columns by
+         item count, so neither ends much taller than the other. #}
+      <div class="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 lg:items-start">
+        <div class="space-y-3">
+          {% for aisle in aisles %}{% if loop.index0 < split_at %}
+          {% call category_card(aisle, checked, demo, loop.index0 > 0) %}{% endcall %}
+          {% endif %}{% endfor %}
+        </div>
+        <div class="space-y-3">
+          {% for aisle in aisles %}{% if loop.index0 >= split_at %}
+          {% call category_card(aisle, checked, demo, true) %}{% endcall %}
+          {% endif %}{% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {# ── Sticky run summary rail (lg+) ──────────────────────────── #}
+    <aside class="hidden lg:block">
+      <div class="sticky top-4 space-y-3">
+
+        {# Hero summary — tangerine gradient #}
+        <div class="rounded-2xl border border-primary-200 shadow-sm p-5 bg-gradient-to-br from-primary-100 to-cream-2">
+          <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-primary-700">
+            {{ "This run"|t }} · {{ total_items }} {{ "items"|t }}
+          </div>
+          <div class="font-serif text-4xl text-ink tracking-tight leading-none mt-2">
+            {{ progress_pct }}%
+          </div>
+          <div class="text-xs text-ink-2 mt-1">
+            {{ checked_items }} {{ "already in the cart"|t }}
+          </div>
+          <div class="mt-4">
+            <div class="flex justify-between text-[10px] font-mono text-primary-700 mb-1.5 tracking-wide uppercase">
+              <span>{{ "Progress"|t }}</span><span>{{ progress_pct }}%</span>
+            </div>
+            <div class="h-2 bg-paper/70 rounded-full overflow-hidden">
+              <div class="h-full bg-herb-500 rounded-full transition-all duration-300"
+                style="width: {{ progress_pct }}%"></div>
+            </div>
+          </div>
+        </div>
+
+        {# By aisle breakdown #}
+        <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-4">
+          <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-3">
+            {{ "By aisle"|t }}
+          </div>
+          <div class="space-y-1">
+            {% for aisle in aisles %}
+            <a href="#category-{{ aisle.name }}" class="flex items-center gap-2.5 py-1.5 px-1 -mx-1 rounded-lg hover:bg-cream/40 transition">
+              <div class="w-7 h-7 rounded-lg {% call aisle_soft(aisle.name) %}{% endcall %} flex items-center justify-center text-sm shrink-0">
+                {% call aisle_emoji(aisle.name) %}{% endcall %}
+              </div>
+              <div class="flex-1 text-xs font-semibold text-ink">{% call aisle_label(aisle.name) %}{% endcall %}</div>
+              <div class="text-[10px] font-mono {% if aisle.done %}text-herb-600{% else %}text-ink-3{% endif %}">
+                {% if aisle.done %}✓ {{ "done"|t }}{% else %}{{ aisle.checked }}/{{ aisle.total }}{% endif %}
+              </div>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+    </aside>
+  </div>
+  {% endif %}
+
+  {# ── Recipes in this list — placed after the shopping list: the run
+       comes first, and the recipe set can be long (30+ recipes). ── #}
+  {% if !recipes.is_empty() %}
+  <section class="mt-8 pt-6 border-t border-line-2">
+    <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-2">
+      {{ "Recipes in this list"|t }} · {{ recipes.len() }}
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+      {% for r in recipes %}
+      {% let rt = r.recipe_type.0 %}
+      <div id="grocery-recipe-{{ r.id }}"
+        class="flex items-center gap-3 bg-paper rounded-xl border border-line-2 shadow-sm p-2 pr-2.5">
+        <a href="{{ "/r/"|demo_href }}{{ r.slug }}"
+          class="relative w-16 h-12 rounded-lg overflow-hidden bg-linear-to-br {% call recipe_hero_classes(rt) %}{% endcall %} flex items-center justify-center shrink-0">
+          {% if let Some(version) = r.thumbnail_version %}
+          {% if let Some(blur) = r.blur_placeholder %}
+          <div class="absolute inset-0 bg-cover bg-center scale-110 blur-lg" style="background-image:url({{ blur }})"></div>
+          {% endif %}
+          <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+            data-src="/recipes/{{ r.id }}/thumbnail/mobile/image.webp?v={{ version }}" alt="{{ r.name }}"
+            class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 [&.loaded]:opacity-100"
+            ts-trigger="closeby once" ts-action="lazy" />
+          {% else %}
+          <span class="text-2xl">{% call recipe_emoji(rt) %}{% endcall %}</span>
+          {% endif %}
+        </a>
+        <a href="{{ "/r/"|demo_href }}{{ r.slug }}" class="flex-1 min-w-0">
+          <span class="block text-sm font-semibold text-ink leading-snug line-clamp-2 hover:text-primary-500">{{ r.name }}</span>
+        </a>
+        {% if !demo %}
+        <button ts-req="/groceries/recipe/{{ r.id }}/remove" ts-req-method="post"
+          ts-target="#groceries-body" ts-swap="replace"
+          class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-ink-3 hover:bg-red-50 hover:text-red-600 transition shrink-0"
+          title="{{ "Remove from list"|t }}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+</div>

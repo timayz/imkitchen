@@ -1,10 +1,11 @@
 use axum::{
-    extract::{Json, State},
+    extract::{Json, Path, State},
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::Form;
+use imkitchen_core::recipe::query::user::RecipeCard;
 use imkitchen_core::shopping::{Generate, ToggleInput};
-use imkitchen_types::recipe::{Ingredient, IngredientUnitFormat};
+use imkitchen_types::recipe::{Ingredient, IngredientUnitFormat, RecipeType};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 
@@ -24,6 +25,7 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             get(generate_modal).post(generate_action),
         )
         .route("/groceries/generate/status", get(generate_status))
+        .route("/groceries/recipe/{id}/remove", post(remove_recipe_action))
 }
 
 pub struct AisleSection {
@@ -40,8 +42,12 @@ pub struct AisleSection {
 pub struct GroceriesTemplate {
     pub current_path: String,
     pub user: AuthUser,
+    pub recipes: Vec<RecipeCard>,
     pub checked: HashSet<String>,
     pub aisles: Vec<AisleSection>,
+    /// Index into `aisles` where the right desktop column starts (aisles are
+    /// split into two columns balanced by item count).
+    pub split_at: usize,
     pub from_date: u64,
     pub to_date: u64,
     pub total_items: usize,
@@ -54,8 +60,10 @@ impl Default for GroceriesTemplate {
         Self {
             current_path: "groceries".to_owned(),
             user: AuthUser::default(),
+            recipes: vec![],
             checked: HashSet::default(),
             aisles: vec![],
+            split_at: 0,
             from_date: 0,
             to_date: 0,
             total_items: 0,
@@ -65,32 +73,59 @@ impl Default for GroceriesTemplate {
     }
 }
 
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn page(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-) -> impl IntoResponse {
-    let list = imkitchen_web_shared::try_page_response!(app.core.shopping.find(&user.id), template);
-    let ingredients: Vec<(String, Vec<Ingredient>)> = list
-        .as_ref()
-        .map(|r| to_categories(&r.ingredients.0))
-        .unwrap_or_default();
+/// Body fragment (recipes section + aisles) swapped in via twinspark when the
+/// recipe set changes. Mirrors the fields the `partials/groceries-body.html`
+/// include reads from `GroceriesTemplate`.
+#[derive(askama::Template)]
+#[template(path = "partials/groceries-body.html")]
+pub struct GroceriesBodyTemplate {
+    pub recipes: Vec<RecipeCard>,
+    pub checked: HashSet<String>,
+    pub aisles: Vec<AisleSection>,
+    pub split_at: usize,
+    pub total_items: usize,
+    pub checked_items: usize,
+    pub progress_pct: usize,
+}
 
-    let (from_date, to_date) = list
-        .as_ref()
-        .filter(|r| r.from_date > 0 && r.days > 0)
-        .and_then(|r| {
-            let from = u64_to_date(r.from_date)?;
-            let to = from + time::Duration::days(r.days as i64 - 1);
+/// Everything the groceries body needs, derived from the persisted list.
+struct ShoppingView {
+    recipes: Vec<RecipeCard>,
+    checked: HashSet<String>,
+    aisles: Vec<AisleSection>,
+    split_at: usize,
+    from_date: u64,
+    to_date: u64,
+    total_items: usize,
+    checked_items: usize,
+    progress_pct: usize,
+}
+
+async fn build_view(app: &AppState, user_id: &str) -> anyhow::Result<ShoppingView> {
+    // Read straight from the aggregate (immediately consistent) rather than the
+    // `shopping_list` read model, whose subscription lags a command by a beat —
+    // otherwise a re-render right after add/remove shows the pre-change list.
+    let household_size = app
+        .identity
+        .meal_preferences
+        .load(user_id)
+        .await?
+        .household_size;
+    let state = app.core.shopping.state(user_id, household_size).await?;
+
+    let ingredients: Vec<(String, Vec<Ingredient>)> = to_categories(&state.ingredients);
+    let recipes = app.core.recipe.filter_by_ids(state.recipe_ids).await?;
+
+    let (from_date, to_date) = Some((state.from_date, state.days))
+        .filter(|(from, days)| *from > 0 && *days > 0)
+        .and_then(|(from, days)| {
+            let from = u64_to_date(from)?;
+            let to = from + time::Duration::days(days as i64 - 1);
             Some((from.unix_timestamp() as u64, to.unix_timestamp() as u64))
         })
         .unwrap_or_default();
 
-    let checked: HashSet<String> =
-        imkitchen_web_shared::try_page_response!(app.core.shopping.load(&user.id), template)
-            .map(|loaded| loaded.checked)
-            .unwrap_or_default();
+    let checked: HashSet<String> = state.checked;
 
     let total_items: usize = ingredients.iter().map(|(_, items)| items.len()).sum();
     let checked_items = checked.len();
@@ -113,17 +148,102 @@ pub async fn page(
         })
         .collect();
 
+    let split_at = balanced_split(&aisles);
+
+    Ok(ShoppingView {
+        recipes,
+        split_at,
+        checked,
+        aisles,
+        from_date,
+        to_date,
+        total_items,
+        checked_items,
+        progress_pct,
+    })
+}
+
+/// Choose where the right desktop column starts. Aisles keep their route order;
+/// the split is the contiguous point that most evenly divides the total item
+/// count between the two columns. E.g. counts `[2, 54, 6, 4, 39, 2, 1]` split
+/// after index 2 → `[2, 54]` (56) and `[6, 4, 39, 2, 1]` (52). Both columns are
+/// always non-empty (for 2+ aisles).
+fn balanced_split(aisles: &[AisleSection]) -> usize {
+    let n = aisles.len();
+    if n <= 1 {
+        return n;
+    }
+    let total: usize = aisles.iter().map(|a| a.total).sum();
+    let mut left = 0usize;
+    let mut best_split = 1;
+    let mut best_diff = usize::MAX;
+    // Consider splitting after each aisle except the last, so both columns are
+    // non-empty; the split index is `i + 1`.
+    for (i, aisle) in aisles[..n - 1].iter().enumerate() {
+        left += aisle.total;
+        let diff = left.abs_diff(total - left);
+        if diff < best_diff {
+            best_diff = diff;
+            best_split = i + 1;
+        }
+    }
+    best_split
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn page(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+) -> impl IntoResponse {
+    let view = imkitchen_web_shared::try_page_response!(build_view(&app, &user.id), template);
+
     template
         .render(GroceriesTemplate {
             user,
-            checked,
-            aisles,
-            from_date,
-            to_date,
-            total_items,
-            checked_items,
-            progress_pct,
+            recipes: view.recipes,
+            checked: view.checked,
+            aisles: view.aisles,
+            split_at: view.split_at,
+            from_date: view.from_date,
+            to_date: view.to_date,
+            total_items: view.total_items,
+            checked_items: view.checked_items,
+            progress_pct: view.progress_pct,
             ..Default::default()
+        })
+        .into_response()
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn remove_recipe_action(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    let preferences = imkitchen_web_shared::try_response!(anyhow:
+        app.identity.meal_preferences.load(&user.id),
+        template
+    );
+    imkitchen_web_shared::try_response!(
+        app.core
+            .shopping
+            .remove_recipe(&id, preferences.household_size, &user.id),
+        template
+    );
+
+    let view = imkitchen_web_shared::try_response!(anyhow: build_view(&app, &user.id), template);
+
+    template
+        .render(GroceriesBodyTemplate {
+            recipes: view.recipes,
+            checked: view.checked,
+            aisles: view.aisles,
+            split_at: view.split_at,
+            total_items: view.total_items,
+            checked_items: view.checked_items,
+            progress_pct: view.progress_pct,
         })
         .into_response()
 }
@@ -296,4 +416,49 @@ pub async fn generate_status(
             status: TemplateStatus::Checking,
         })
         .into_response()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{AisleSection, balanced_split};
+
+    fn aisle(total: usize) -> AisleSection {
+        AisleSection {
+            name: format!("a{total}"),
+            items: vec![],
+            checked: 0,
+            total,
+            done: false,
+            pct: 0,
+        }
+    }
+
+    fn split(totals: Vec<usize>) -> (usize, usize, usize) {
+        let aisles: Vec<AisleSection> = totals.into_iter().map(aisle).collect();
+        let split_at = balanced_split(&aisles);
+        let left: usize = aisles[..split_at].iter().map(|a| a.total).sum();
+        let right: usize = aisles[split_at..].iter().map(|a| a.total).sum();
+        (split_at, left, right)
+    }
+
+    #[test]
+    fn contiguous_split_balances_item_counts() {
+        // [2, 54, 6, 4, 39, 2, 1] → after index 2: [2,54]=56 and rest=52.
+        let (split_at, left, right) = split(vec![2, 54, 6, 4, 39, 2, 1]);
+        assert_eq!(split_at, 2);
+        assert_eq!((left, right), (56, 52));
+    }
+
+    #[test]
+    fn even_sizes_split_in_the_middle() {
+        let (split_at, left, right) = split(vec![3, 3, 3, 3]);
+        assert_eq!(split_at, 2);
+        assert_eq!((left, right), (6, 6));
+    }
+
+    #[test]
+    fn keeps_both_columns_non_empty() {
+        let (split_at, _, _) = split(vec![10, 1]);
+        assert_eq!(split_at, 1);
+    }
 }
