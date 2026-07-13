@@ -93,6 +93,18 @@ pub struct UserViewList {
     pub rank: f64,
 }
 
+/// Compact recipe view for listing recipes by id (e.g. the shopping list's
+/// "Recipes in this list" section). Selects just what a card needs.
+#[derive(Debug, Default, Clone, FromRow)]
+pub struct RecipeCard {
+    pub id: String,
+    pub name: String,
+    pub slug: String,
+    pub recipe_type: sqlx::types::Text<RecipeType>,
+    pub thumbnail_version: Option<String>,
+    pub blur_placeholder: Option<String>,
+}
+
 pub struct RecipesQuery {
     pub exclude_ids: Option<Vec<String>>,
     pub user_id: Option<String>,
@@ -461,6 +473,35 @@ impl<E: Executor> crate::recipe::Module<E> {
                 .await?
                 .into_iter()
                 .collect(),
+        )
+    }
+
+    /// Fetch compact recipe cards for a batch of ids. Ids without a row are
+    /// silently skipped; the returned order is not guaranteed to match `ids`.
+    pub async fn filter_by_ids(&self, ids: Vec<String>) -> anyhow::Result<Vec<RecipeCard>> {
+        if ids.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let statement = sea_query::Query::select()
+            .columns([
+                RecipeUser::Id,
+                RecipeUser::Name,
+                RecipeUser::Slug,
+                RecipeUser::RecipeType,
+                RecipeUser::ThumbnailVersion,
+                RecipeUser::BlurPlaceholder,
+            ])
+            .from(RecipeUser::Table)
+            .and_where(Expr::col(RecipeUser::Id).is_in(ids))
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(
+            sqlx::query_as_with::<_, RecipeCard, _>(sqlx::AssertSqlSafe(sql), values)
+                .fetch_all(&self.read_db)
+                .await?,
         )
     }
 }

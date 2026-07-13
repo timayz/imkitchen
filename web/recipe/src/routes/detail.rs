@@ -53,6 +53,9 @@ pub struct DetailTemplate<'a> {
     pub stat: UserStatView,
     pub favorite: favorite::Favorite,
     pub owner_description: String,
+    /// Whether this recipe is already in the viewer's shopping list (drives the
+    /// initial state of the "Add to shopping list" button).
+    pub in_shopping: bool,
     /// Pre-serialized schema.org/Recipe JSON-LD for search-engine rich
     /// results. Empty string renders no `<script>` (e.g. in demo mode).
     pub json_ld: String,
@@ -164,6 +167,7 @@ impl<'a> Default for DetailTemplate<'a> {
             favorite: Default::default(),
             username: "john_doe",
             owner_description: String::new(),
+            in_shopping: false,
             json_ld: String::new(),
         }
     }
@@ -233,6 +237,16 @@ pub async fn page(
         template
     );
 
+    // Whether this recipe is already in the viewer's shopping list. Skipped for
+    // anonymous/demo visitors, who can't have a personal list.
+    let in_shopping = if is_anonymous {
+        false
+    } else {
+        imkitchen_web_shared::try_page_response!(app.core.shopping.load(&user.id), template)
+            .map(|s| s.recipes.contains(&recipe.id))
+            .unwrap_or(false)
+    };
+
     let username = user.username();
     // Structured data for search engines — only on the canonical public page
     // (signed-in or guest), not the demo tour.
@@ -246,6 +260,7 @@ pub async fn page(
             favorite,
             username: username.as_str(),
             owner_description: owner_profile.description,
+            in_shopping,
             json_ld,
             ..Default::default()
         })
@@ -510,6 +525,49 @@ pub async fn unsave(
     (
         [("ts-swap", "skip")],
         template.render(SaveButtonTemplate { id, saved: false }),
+    )
+        .into_response()
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/recipes-detail-add-to-shopping-button.html")]
+pub struct AddToShoppingButtonTemplate {
+    pub id: String,
+    pub added: bool,
+}
+
+/// Add the recipe to the viewer's shopping list. Any viewable recipe (owned or
+/// shared) can be added; ingredient scaling uses the viewer's household size.
+pub async fn add_to_shopping(
+    template: Template,
+    RequirePremium(user): RequirePremium,
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    let recipe =
+        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
+
+    if recipe.owner_id != user.id && !recipe.is_shared {
+        imkitchen_web_shared::try_response!(sync:
+            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
+        ), template);
+    }
+
+    let preferences = imkitchen_web_shared::try_response!(anyhow:
+        app.identity.meal_preferences.load(&user.id),
+        template
+    );
+
+    imkitchen_web_shared::try_response!(
+        app.core
+            .shopping
+            .add_recipe(&id, preferences.household_size, &user.id),
+        template
+    );
+
+    (
+        [("ts-swap", "skip")],
+        template.render(AddToShoppingButtonTemplate { id, added: true }),
     )
         .into_response()
 }
