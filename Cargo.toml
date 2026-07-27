@@ -24,7 +24,7 @@ sqlx = { version = "0.9", default-features = false, features = ["migrate", "json
 sqlx_migrator = { version = "0.19", features = ["sqlite"] }
 evento = { version = "2.0.0-alpha.25", features = ["sqlite", "rw"] }
 argon2 = { version = "0.5", features = ["std"] }
-jsonwebtoken = { version = "10.4", features = ["aws_lc_rs"] }
+jsonwebtoken = { version = "11.0", features = ["aws_lc_rs"] }
 lettre = { version = "0.11", features = ["rustls-tls", "builder"] }
 async-stripe = { version = "1.0.0-rc.6", features = ["rustls-aws-lc-rs", "uuid"] }
 async-stripe-core = { version = "1.0.0-rc.6", features = ["customer", "payment_intent", "setup_intent"] }
