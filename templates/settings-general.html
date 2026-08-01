@@ -36,6 +36,41 @@
 
 <form method="post" action="/settings/general" ts-req="" ts-swap="skip" class="space-y-5 md:space-y-6" autocomplete="off">
 
+  {# ── Courses ───────────────────────────────────────────────── #}
+  <section>
+    <div class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-2 px-1">
+      {{ "Courses"|t }}
+    </div>
+    <div class="bg-paper rounded-2xl border border-line-2 shadow-sm overflow-hidden">
+      <div class="md:grid md:grid-cols-2">
+        <label class="group flex items-center justify-between gap-3 px-4 md:px-5 py-3.5 border-b border-line-2 md:odd:border-r md:odd:border-line-2 cursor-not-allowed opacity-60"
+          title="{{ "The main course is always included"|t }}">
+          <span class="text-sm font-semibold text-ink">{{ "MainCourse"|t }}</span>
+          <span class="relative inline-flex shrink-0">
+            <input type="checkbox" checked disabled class="peer sr-only" />
+            <span class="w-11 h-6 rounded-full bg-line peer-checked:bg-herb-500 transition-colors"></span>
+            <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></span>
+          </span>
+        </label>
+        {% for recipe_type in RecipeType::OPTIONAL_VARIANTS %}
+        {% let checked = recipe_type.exists_in(recipe_types) %}
+        <label class="group flex items-center justify-between gap-3 px-4 md:px-5 py-3.5 border-b border-line-2 last:border-b-0 md:[&:nth-last-child(2):nth-child(odd)]:border-b-0 md:odd:border-r md:odd:border-line-2 cursor-pointer hover:bg-cream/50 transition">
+          <span class="text-sm font-semibold text-ink">{{ recipe_type.as_ref()|t }}</span>
+          <span class="relative inline-flex shrink-0">
+            <input type="checkbox" name="recipe_types" value="{{ recipe_type }}"{% if checked %} checked{% endif %}
+              class="peer sr-only" />
+            <span class="w-11 h-6 rounded-full bg-line peer-checked:bg-herb-500 transition-colors"></span>
+            <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></span>
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+      <p class="text-[12px] text-ink-3 px-4 md:px-5 py-3 border-t border-line-2">
+        {{ "Only the courses you enable are added when a meal plan is generated. The main course is always included."|t }}
+      </p>
+    </div>
+  </section>
+
   {# ── Dietary restrictions ──────────────────────────────────── #}
   <section>
     <div class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-2 px-1">

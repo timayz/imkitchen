@@ -29,6 +29,9 @@ impl From<&Recipe> for SlotRecipe {
 pub struct Randomize {
     pub cuisine_variety_weight: f32,
     pub dietary_restrictions: Vec<imkitchen_types::recipe::DietaryRestriction>,
+    /// Optional courses the user enabled. `MainCourse` is always generated and
+    /// is ignored if it appears here.
+    pub recipe_types: Vec<RecipeType>,
 }
 
 pub struct Generate {
@@ -41,7 +44,9 @@ pub struct Generate {
 
 impl<E: Executor> super::Module<E> {
     pub async fn generate(&self, input: Generate) -> crate::Result<()> {
-        let main_course_recipes = match input.randomize.as_ref() {
+        let randomize = input.randomize.as_ref();
+
+        let main_course_recipes = match randomize {
             Some(opts) => {
                 self.random(
                     &input.user_id,
@@ -85,6 +90,31 @@ impl<E: Executor> super::Module<E> {
             .requested_by(&input.user_id)
             .to_owned();
 
+        // One query per enabled course for the whole plan instead of one per
+        // course per day — a 31-day month used to issue 1 + 3 * 31 = 94 queries.
+        // Disabled courses cost nothing.
+        let appetizers = self
+            .optional_pool(&input.user_id, RecipeType::Appetizer, randomize)
+            .await?;
+        let accompaniments = self
+            .optional_pool(&input.user_id, RecipeType::Accompaniment, randomize)
+            .await?;
+        let desserts = self
+            .optional_pool(&input.user_id, RecipeType::Dessert, randomize)
+            .await?;
+        let beverages = self
+            .optional_pool(&input.user_id, RecipeType::Beverage, randomize)
+            .await?;
+        let condiments = self
+            .optional_pool(&input.user_id, RecipeType::Condiment, randomize)
+            .await?;
+
+        let mut appetizers = appetizers.iter().cycle();
+        let mut accompaniments = accompaniments.iter().cycle();
+        let mut desserts = desserts.iter().cycle();
+        let mut beverages = beverages.iter().cycle();
+        let mut condiments = condiments.iter().cycle();
+
         let mut slots = vec![];
 
         while let Some(recipe) = main_course_recipes.by_ref().next() {
@@ -93,78 +123,20 @@ impl<E: Executor> super::Module<E> {
 
             let date = crate::mealplan::date_to_u64(day);
 
-            let appetizer_recipes = match input.randomize.as_ref() {
-                Some(opts) => {
-                    self.random(
-                        &input.user_id,
-                        RecipeType::Appetizer,
-                        1.0,
-                        opts.dietary_restrictions.to_vec(),
-                    )
-                    .await?
-                }
-                _ => {
-                    // self.first_week_recipes(&input.user_id, RecipeType::Appetizer)
-                    //     .await?
-                    vec![]
-                }
-            };
-
-            let mut appetizer_recipes = appetizer_recipes.iter();
-
-            let accompaniment_recipes = match input.randomize.as_ref() {
-                Some(opts) => {
-                    self.random(
-                        &input.user_id,
-                        RecipeType::Accompaniment,
-                        1.0,
-                        opts.dietary_restrictions.to_vec(),
-                    )
-                    .await?
-                }
-                _ => {
-                    // self.first_week_recipes(&input.user_id, RecipeType::Accompaniment)
-                    //     .await?
-                    vec![]
-                }
-            };
-
-            let mut accompaniment_recipes = accompaniment_recipes.iter();
-
-            let dessert_recipes = match input.randomize.as_ref() {
-                Some(opts) => {
-                    self.random(
-                        &input.user_id,
-                        RecipeType::Dessert,
-                        1.0,
-                        opts.dietary_restrictions.to_vec(),
-                    )
-                    .await?
-                }
-                _ => {
-                    // self.first_week_recipes(&input.user_id, RecipeType::Dessert)
-                    //     .await?
-                    vec![]
-                }
-            };
-            let mut dessert_recipes = dessert_recipes.iter();
-
-            let accompaniment = if recipe.accepts_accompaniment && input.randomize.is_some() {
-                accompaniment_recipes.next().map(|r| r.into())
-            } else {
-                None
-            };
-
             slots.push(Slot {
                 day: day.unix_timestamp() as u64,
                 date,
                 household_size: input.household_size,
-                appetizer: appetizer_recipes.next().map(|r| r.into()),
+                appetizer: appetizers.next().map(|r| r.into()),
                 main_course: recipe.into(),
-                dessert: dessert_recipes.next().map(|r| r.into()),
-                accompaniment,
-                beverage: None,
-                condiment: None,
+                dessert: desserts.next().map(|r| r.into()),
+                accompaniment: if recipe.accepts_accompaniment {
+                    accompaniments.next().map(|r| r.into())
+                } else {
+                    None
+                },
+                beverage: beverages.next().map(|r| r.into()),
+                condiment: condiments.next().map(|r| r.into()),
             });
         }
 
@@ -213,6 +185,32 @@ impl<E: Executor> super::Module<E> {
         recipes.shuffle(&mut rng);
 
         Ok(recipes)
+    }
+
+    /// Recipe pool for one optional course, or an empty pool when the course is
+    /// disabled in the user's preferences or when generating without
+    /// randomization. A disabled course issues no query at all.
+    async fn optional_pool(
+        &self,
+        user_id: &str,
+        recipe_type: RecipeType,
+        randomize: Option<&Randomize>,
+    ) -> crate::Result<Vec<Recipe>> {
+        let Some(opts) = randomize else {
+            return Ok(vec![]);
+        };
+
+        if !opts.recipe_types.contains(&recipe_type) {
+            return Ok(vec![]);
+        }
+
+        self.random(
+            user_id,
+            recipe_type,
+            1.0,
+            opts.dietary_restrictions.to_vec(),
+        )
+        .await
     }
 
     async fn random(

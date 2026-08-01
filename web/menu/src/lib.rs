@@ -258,6 +258,7 @@ pub async fn generate_action(
     let randomize = Some(Randomize {
         cuisine_variety_weight: preferences.cuisine_variety_weight,
         dietary_restrictions: preferences.dietary_restrictions.to_vec(),
+        recipe_types: preferences.recipe_types.to_vec(),
     });
 
     let bounds = imkitchen_web_shared::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
