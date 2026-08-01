@@ -45,7 +45,7 @@ impl<E: Executor> super::Module<E> {
             imkitchen_core::user!("Account suspended");
         }
 
-        let access_id = Ulid::new().to_string();
+        let access_id = Ulid::generate().to_string();
 
         user.write()?
             .event(&LoggedIn {
