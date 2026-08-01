@@ -78,7 +78,7 @@ persistence:
 # a restore init container rebuilds the DB from S3 if the local file is missing.
 litestream:
   enabled: false
-  image: "litestream/litestream:0.5.14"
+  image: "litestream/litestream:0.5.15"
   # S3 replica URL — deployment-specific, MUST be set by the consumer (see the imkitchen
   # HelmRelease values). Use a dedicated prefix; never share Longhorn's backup prefix.
   replicaUrl: ""
