@@ -191,6 +191,33 @@ pub enum DietaryRestriction {
     NutFree,
 }
 
+impl RecipeType {
+    /// Courses a user can toggle on/off for meal plan generation. `MainCourse`
+    /// is deliberately absent: it is always generated. Ordered for display in
+    /// settings rather than following declaration order.
+    pub const OPTIONAL_VARIANTS: &'static [RecipeType] = &[
+        RecipeType::Appetizer,
+        RecipeType::Accompaniment,
+        RecipeType::Dessert,
+        RecipeType::Beverage,
+        RecipeType::Condiment,
+    ];
+
+    /// Courses generated for a user who never saved a selection. Matches the
+    /// behaviour from before this preference existed.
+    pub fn default_meal_plan_types() -> Vec<RecipeType> {
+        vec![
+            RecipeType::Appetizer,
+            RecipeType::Accompaniment,
+            RecipeType::Dessert,
+        ]
+    }
+
+    pub fn exists_in<'a>(&self, iterator: impl IntoIterator<Item = &'a RecipeType>) -> bool {
+        iterator.into_iter().any(|d| d == self)
+    }
+}
+
 impl DietaryRestriction {
     pub fn exists_in<'a>(
         &self,
