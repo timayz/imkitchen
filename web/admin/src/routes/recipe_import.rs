@@ -60,7 +60,7 @@ pub async fn action(
     let data = imkitchen_web_shared::try_response!(anyhow: field.bytes(), template);
     let bytes = data.to_vec();
 
-    let job_id = ulid::Ulid::new().to_string();
+    let job_id = ulid::Ulid::generate().to_string();
     {
         let mut jobs = app.import_jobs.lock().unwrap_or_else(|e| e.into_inner());
         jobs.insert(job_id.clone(), AdminImportProgress::default());
