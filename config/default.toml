@@ -26,6 +26,15 @@ monthly_price = 499
 annual_rate = 20
 tax = true
 
+# Google Analytics / Tag Manager. Remove or comment out this section to
+# disable it entirely. When present, the tag loads with Consent Mode v2
+# defaults set to "denied"; consent is granted only while the user's
+# ad_consent cookie is present. Never emitted in demo mode. The id decides
+# what loads: a GA4 measurement id ("G-XXXXXXXXXX") loads gtag.js directly,
+# a Tag Manager container id ("GTM-XXXXXXXX") loads gtm.js.
+# [analytics]
+# google_tag_id = "G-XXXXXXXXXX"
+
 [monitoring]
 log_level = "debug,sqlx=info,tower_http=info"
 log_json = false

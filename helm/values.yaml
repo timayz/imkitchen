@@ -62,6 +62,12 @@ config:
     annual_rate: 20
     tax: true
 
+  # Google Analytics / Tag Manager — omit this section to disable analytics.
+  # The id decides what loads: "G-XXXXXXXXXX" loads gtag.js, "GTM-XXXXXXXX"
+  # loads the Tag Manager container.
+  # analytics:
+  #   google_tag_id: "G-XXXXXXXXXX"
+
 persistence:
   size: 15Gi
   # StorageClass for the SQLite data volume. Longhorn by default; set to a local-disk
