@@ -62,9 +62,9 @@ config:
     annual_rate: 20
     tax: true
 
-  # Google Analytics (GA4) — omit this section to disable analytics.
+  # Google Tag Manager — omit this section to disable analytics.
   # analytics:
-  #   google_measurement_id: "G-XXXXXXXXXX"
+  #   google_tag_manager_id: "GTM-XXXXXXXX"
 
 persistence:
   size: 15Gi

@@ -39,10 +39,12 @@
   <!-- DNS prefetch for external origins -->
   {% block dns_prefetch %}{% endblock %}
 
-  {% let ga_id = ""|ga_measurement_id %}
-  {% if !ga_id.is_empty() %}
-  <!-- Google Analytics (GA4) — Consent Mode v2, default denied. Consent
-       grant/revoke redirects reload the page, so this re-reads the cookie. -->
+  {% let gtm_id = ""|gtm_container_id %}
+  {% if !gtm_id.is_empty() %}
+  <!-- Google Tag Manager — Consent Mode v2, default denied. Consent
+       grant/revoke redirects reload the page, so this re-reads the cookie.
+       No <noscript> iframe on purpose: without JS no consent default can be
+       set, so the ns.html pixel would fire outside the consent gate. -->
   <link rel="preconnect" href="https://www.googletagmanager.com">
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -61,10 +63,9 @@
         'ad_personalization': 'granted'
       });
     }
-    gtag('js', new Date());
-    gtag('config', '{{ ga_id }}');
+    dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
   </script>
-  <script async src={{ "https://www.googletagmanager.com/gtag/js?id=" ~ ga_id }}></script>
+  <script async src={{ "https://www.googletagmanager.com/gtm.js?id=" ~ gtm_id }}></script>
   {% endif %}
 
   <!-- Google Fonts: Fraunces (serif headings) + Inter (body) -->

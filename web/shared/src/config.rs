@@ -15,10 +15,10 @@ pub struct Config {
     pub monitoring: MonitoringConfig,
 }
 
-/// Google Analytics (GA4). Section absent = analytics disabled entirely.
+/// Google Tag Manager. Section absent = analytics disabled entirely.
 #[derive(Debug, Deserialize, Clone)]
 pub struct AnalyticsConfig {
-    pub google_measurement_id: String, // e.g. "G-XXXXXXXXXX"
+    pub google_tag_manager_id: String, // e.g. "GTM-XXXXXXXX"
 }
 
 #[derive(Debug, Deserialize, Clone)]
