@@ -3,7 +3,7 @@
 {% block title %}{{ "Kitchen"|t }} - imkitchen{% endblock %}
 
 {% block content %}
-{% if !user.has_full_access() %}
+{% if !user.is_premium() %}
 <div ts-trigger="load" ts-req="/settings/billing/check" ts-req-method="POST" ts-swap="skip"></div>
 {% endif %}
 
