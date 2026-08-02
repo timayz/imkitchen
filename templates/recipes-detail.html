@@ -98,7 +98,7 @@
         <span class="hidden md:inline" data-share-label>{{ "Share"|t }}</span>
       </button>
 
-      {# Add to shopping list — available to any premium viewer (owner or not) #}
+      {# Add to shopping list — available to any full-access viewer (owner or not) #}
       <button id="add-to-shopping-btn" {% if !demo %}ts-swap-push="#add-to-shopping-btn"{% endif %}
         ts-req="{% if demo %}/demo/signup{% else %}/recipes/{{ recipe.id }}/add-to-shopping{% endif %}"
         {% if demo %}ts-req-method="GET" ts-target="body" ts-swap="append"{% else %}ts-req-method="post"{% endif %}

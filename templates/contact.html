@@ -193,7 +193,7 @@
             {% if let Some(premium) = config.premium %}
             {{ "Premium ("|t }}${{ *premium.monthly_price|amount }}{{ "/mo or"|t }} ${{ premium.annual_price()|amount }}{{ "/yr) unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features."|t }}
             {% else %}
-            {{ "Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features."|t }}
+            {{ "Both Premium and the free ad-supported option unlock creating and editing your own recipes, personalized meal plans, step-by-step kitchen tools and bulk import from JSON. Premium additionally removes ads and adds priority support and early access to new features."|t }}
             {% endif %}
           {% endif %}
         </p>

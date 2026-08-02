@@ -420,7 +420,7 @@
           <span class="text-2xl">✨</span>
           <h3 class="font-bold font-serif text-base text-amber-900">{{ "Unlock the Full Experience"|t }}</h3>
         </div>
-        <p class="text-amber-800 text-sm mb-3">{{ "You're viewing in read-only mode. Upgrade to Premium to:"|t }}</p>
+        <p class="text-amber-800 text-sm mb-3">{{ "You're viewing in read-only mode. Go Premium or accept ads to:"|t }}</p>
         <div class="text-sm space-y-1 mb-4">
           <div class="flex items-center gap-2 text-amber-700"><span class="text-primary-500">✓</span><span>{{ "Create and edit your own recipes"|t }}</span></div>
           <div class="flex items-center gap-2 text-amber-700"><span class="text-primary-500">✓</span><span>{{ "Generate personalized meal plans"|t }}</span></div>
@@ -430,6 +430,12 @@
           class="block w-full text-center px-6 py-2.5 bg-linear-to-r from-amber-500 to-orange-500 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-orange-600 transition shadow-md">
           {{ "Upgrade to Premium"|t }}
         </a>
+        <form method="post" action="/ads/consent" class="mt-2">
+          <button type="submit"
+            class="block w-full text-center px-6 py-2 text-amber-800 font-semibold text-sm hover:text-amber-900 underline underline-offset-2 transition">
+            {{ "or continue free with ads"|t }}
+          </button>
+        </form>
       </div>
       {% endif %}
     </aside>

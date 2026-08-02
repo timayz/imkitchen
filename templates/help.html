@@ -210,7 +210,7 @@
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Choosing between Free and Premium"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
-          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Free is read-only — browse the catalogue and view your existing plans. Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features."|t }}</p>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Free is read-only — browse the catalogue and view your existing plans. Accepting ad cookies unlocks every feature for free, with ads. Premium unlocks the same features with no ads, plus priority support and early access to new features."|t }}</p>
         </details>
       </div>
     </div>
@@ -292,7 +292,7 @@
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Can free tier users save recipes?"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
-          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Saving and editing recipes requires Premium. Free accounts can browse community recipes in read-only mode."|t }}</p>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Saving and editing recipes requires full access — go Premium or accept ad cookies. Free accounts can browse community recipes in read-only mode."|t }}</p>
         </details>
         <details class="group border-t border-line-2 py-3.5">
           <summary class="flex items-center gap-2.5 cursor-pointer list-none">
@@ -381,7 +381,7 @@
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Can free tier users share recipes?"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
-          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "No — creating, editing and sharing recipes are Premium features. Free accounts can browse and review."|t }}</p>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "No — creating, editing and sharing recipes need full access: go Premium or use the free ad-supported option. Free accounts can browse and review."|t }}</p>
         </details>
       </div>
     </div>
@@ -407,7 +407,7 @@
               {% if let Some(premium) = config.premium %}
               {{ "Premium ("|t }}${{ *premium.monthly_price|amount }}{{ "/mo or"|t }} ${{ premium.annual_price()|amount }}{{ "/yr) unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features."|t }}
               {% else %}
-              {{ "Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features."|t }}
+              {{ "Both Premium and the free ad-supported option unlock creating and editing your own recipes, personalized meal plans, step-by-step kitchen tools and bulk import from JSON. Premium additionally removes ads and adds priority support and early access to new features."|t }}
               {% endif %}
             {% endif %}
           </p>
@@ -431,7 +431,7 @@
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "What happens to my data when I downgrade?"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
-          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Recipes, plans and grocery lists are preserved. Your account simply becomes read-only — upgrade again to restore write access."|t }}</p>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Recipes, plans and grocery lists are preserved. Your account simply becomes read-only — subscribe again or accept ad cookies to restore write access."|t }}</p>
         </details>
       </div>
     </div>

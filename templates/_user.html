@@ -195,6 +195,12 @@
           {{ "Go Premium"|t }}
         </div>
       </a>
+      <form method="post" action="/ads/consent" class="hidden xl:block mb-3">
+        <button type="submit"
+          class="block w-full text-center text-[11.5px] text-ink-3 font-medium hover:text-ink underline underline-offset-2 transition">
+          {{ "or continue free with ads"|t }}
+        </button>
+      </form>
       {% else if user.show_ads() && !demo %}
       <div class="hidden xl:block mb-3">
         {% call ads::slot("sidebar") %}{% endcall %}
