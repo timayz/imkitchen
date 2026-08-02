@@ -83,10 +83,12 @@
           <div class="font-mono text-[10px] text-ink-3 uppercase tracking-widest pl-3 mb-2.5">{{ "On this page"|t }}</div>
           <nav class="grid gap-0.5 text-sm">
             {% for s in [("agreement","1","The agreement"),("account","2","Your account"),("content","3","Your content"),("license","4","License to imkitchen"),("conduct","5","Acceptable use"),("premium","6","Premium & billing"),("refunds","7","Refunds"),("ip","8","Our intellectual property"),("thirdparty","9","Third-party services"),("disclaimers","10","Disclaimers"),("liability","11","Limits of liability"),("indemnity","12","Indemnity"),("termination","13","Termination"),("disputes","14","Disputes"),("changes","15","Changes to these terms"),("contact","16","Contact")] %}
+            {% if s.0 != "premium" || ""|premium_enabled %}
             <a href="#{{ s.0 }}" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-ink-2 hover:text-ink hover:bg-paper border-l-2 border-transparent transition">
               <span class="font-mono text-[10px] text-ink-3 min-w-[18px]">{{ s.1 }}</span>
               <span class="flex-1">{{ s.2|t }}</span>
             </a>
+            {% endif %}
             {% endfor %}
           </nav>
 
@@ -176,6 +178,7 @@
         </section>
 
         {# § 6 — Premium & billing #}
+        {% if ""|premium_enabled %}
         <section id="premium" class="mb-9">
           <div class="flex items-baseline gap-3 mb-2.5">
             <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§6</span>
@@ -205,6 +208,7 @@
             <li class="flex gap-2.5 text-[14.5px]"><span class="w-1.5 h-1.5 mt-2.5 rounded-full bg-primary-500 shrink-0"></span><span><strong class="text-ink">{{ "Taxes."|t }}</strong> {{ "Prices exclude applicable taxes unless stated. We collect VAT/GST where required."|t }}</span></li>
           </ul>
         </section>
+        {% endif %}
 
         {# § 7 — Refunds #}
         <section id="refunds" class="mb-9">

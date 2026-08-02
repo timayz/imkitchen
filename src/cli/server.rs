@@ -162,9 +162,15 @@ pub async fn serve(
         .request_strategy(stripe::RequestStrategy::ExponentialBackoff(4))
         .build()?;
 
-    let mut sched_billing =
-        imkitchen_billing::scheduler(&executor, &read_pool, &write_pool, &stripe).await?;
-    sched_billing.start().await?;
+    // Subscription renewals only make sense when monetization is configured.
+    let mut sched_billing = if config.premium.is_some() {
+        let sched =
+            imkitchen_billing::scheduler(&executor, &read_pool, &write_pool, &stripe).await?;
+        sched.start().await?;
+        Some(sched)
+    } else {
+        None
+    };
 
     let state = imkitchen_core::State {
         executor: executor.clone(),
@@ -295,7 +301,9 @@ pub async fn serve(
         }
     }
 
-    sched_billing.shutdown().await?;
+    if let Some(sched_billing) = sched_billing.as_mut() {
+        sched_billing.shutdown().await?;
+    }
 
     tracing::info!("All projections shut down successfully");
 

@@ -17,6 +17,10 @@ issuer = "imkitchen.localhost"
 secret = "TOKEN-NOT-SECURE-MUST-BE-CHANGE"
 expiration_days = 14
 
+# Monetization (premium subscriptions + ad-supported tier).
+# Remove or comment out this whole section to disable it: every user then
+# gets full access, and all premium/ads UI (pricing, upgrade CTAs, billing
+# plans, ad slots) is hidden.
 [premium]
 monthly_price = 499
 annual_rate = 20

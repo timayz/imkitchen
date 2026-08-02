@@ -21,6 +21,12 @@ pub async fn consent(
     State(app): State<AppState>,
     headers: HeaderMap,
 ) -> impl IntoResponse {
+    // No monetization configured — everyone already has full access,
+    // so there is nothing to consent to.
+    if app.config.premium.is_none() {
+        return Redirect::to(back_url(&headers)).into_response();
+    }
+
     if let Some(user) = &user {
         imkitchen_web_shared::try_response!(app.identity.grant_ad_consent(&user.id), template);
     }
@@ -36,6 +42,10 @@ pub async fn revoke(
     template: Template,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
+    if app.config.premium.is_none() {
+        return Redirect::to("/").into_response();
+    }
+
     imkitchen_web_shared::try_response!(app.identity.revoke_ad_consent(&user.id), template);
 
     let jar = jar.remove(auth::ad_consent_cookie());

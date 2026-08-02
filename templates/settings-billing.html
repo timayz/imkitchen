@@ -21,6 +21,20 @@
 
 {% block settings_content %}
 
+{% if !(""|premium_enabled) %}
+{# Monetization disabled on this instance — nothing to bill. #}
+<section>
+  <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-5 md:p-6">
+    <div class="flex items-center gap-2 mb-2">
+      <span class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Billing"|t }}</span>
+    </div>
+    <p class="text-sm text-ink-2 leading-relaxed">
+      {{ "This server includes every feature for all users — there is nothing to subscribe to."|t }}
+    </p>
+  </div>
+</section>
+{% else %}
+
 {% if user.is_premium() %}
 
 {# ── Current plan (Premium hero) ─────────────────────────────── #}
@@ -377,5 +391,7 @@
     });
   </script>
   {% endif %}
+{% endif %}
+
 {% endif %}
 {% endblock %}

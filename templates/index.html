@@ -19,7 +19,9 @@
 
         <div class="hidden md:flex items-center gap-7 ml-8">
           <a href="#features" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Features"|t }}</a>
+          {% if ""|premium_enabled %}
           <a href="#pricing" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Pricing"|t }}</a>
+          {% endif %}
           <a href="/help" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Help"|t }}</a>
           <a href="/contact" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Contact"|t }}</a>
         </div>
@@ -46,7 +48,9 @@
       <div id="mobile-menu" class="hidden md:hidden pb-4">
         <div class="flex flex-col gap-1 pt-2">
           <a href="#features" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Features"|t }}</a>
+          {% if ""|premium_enabled %}
           <a href="#pricing" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Pricing"|t }}</a>
+          {% endif %}
           <a href="/help" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Help"|t }}</a>
           <a href="/contact" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Contact"|t }}</a>
           <a href="/login" class="mt-2 px-3 py-2.5 rounded-xl text-ink border border-line hover:bg-cream-2 transition text-sm font-semibold text-center">{{ "Log in"|t }}</a>
@@ -318,6 +322,7 @@
   </section>
 
   {# ── Pricing ─────────────────────────────────────────────────── #}
+  {% if ""|premium_enabled %}
   <section id="pricing" class="bg-cream py-16 md:py-24">
     <div class="container mx-auto px-5 md:px-12 max-w-5xl">
       <div class="text-center mb-10 md:mb-12">
@@ -413,6 +418,7 @@
       </div>
     </div>
   </section>
+  {% endif %}
 
   {# ── Testimonials ────────────────────────────────────────────── #}
   <section class="bg-paper py-14 md:py-20">
@@ -450,7 +456,11 @@
         {{ "Tonight's dinner is"|t }}<br>{{ "already decided."|t }}
       </h2>
       <p class="text-lg text-white/90 max-w-xl mx-auto mt-4 leading-relaxed">
+        {% if ""|premium_enabled %}
         {{ "Browse the catalogue for free. Accept ads or go Premium when you're ready to cook."|t }}
+        {% else %}
+        {{ "Free to use. Every feature included."|t }}
+        {% endif %}
       </p>
       <a href="/register" class="inline-block mt-7 px-7 py-4 bg-ink text-cream font-semibold text-lg rounded-xl hover:bg-ink-2 transition shadow-md">
         {{ "Get started — free"|t }}

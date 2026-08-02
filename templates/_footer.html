@@ -35,7 +35,9 @@
         <h3 class="font-mono text-[10px] uppercase tracking-widest text-cream/50 mb-3.5">{{ "Product"|t }}</h3>
         <ul class="grid gap-2.5 text-sm">
           <li><a href="/#features" class="text-cream/75 hover:text-cream transition">{{ "Features"|t }}</a></li>
+          {% if ""|premium_enabled %}
           <li><a href="/#pricing" class="text-cream/75 hover:text-cream transition">{{ "Pricing"|t }}</a></li>
+          {% endif %}
           <li><a href="/register" class="text-cream/75 hover:text-cream transition">{{ "Sign up free"|t }}</a></li>
         </ul>
       </div>

@@ -79,7 +79,7 @@
         {% call section_label(settings_path.as_str()) %}{% endcall %}
       </h1>
     </div>
-    {% if user.is_premium() %}
+    {% if user.is_premium() && ""|premium_enabled %}
     <div class="hidden md:inline-flex items-center gap-2 px-3 py-1.5 bg-paper border border-line-2 rounded-full shadow-sm">
       <svg class="w-3.5 h-3.5 text-primary-500" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg>
       <span class="text-xs font-semibold text-primary-800">{{ "Premium"|t }}</span>
@@ -96,6 +96,7 @@
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 flex-wrap">
           <div class="text-base md:text-lg font-semibold text-ink truncate">{{ user.username() }}</div>
+          {% if ""|premium_enabled %}
           {% if user.is_premium() %}
           <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-100 text-primary-800 text-[11px] font-semibold rounded-full">
             <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg>
@@ -103,6 +104,7 @@
           </span>
           {% else %}
           <span class="px-2 py-0.5 bg-cream-2 text-ink-2 text-[11px] font-semibold rounded-full">{{ "Free"|t }}</span>
+          {% endif %}
           {% endif %}
         </div>
         <div class="text-[12px] md:text-sm text-ink-3 mt-0.5 truncate">{{ user.email }}</div>
@@ -119,7 +121,9 @@
       <div class="grid gap-1">
         {% call nav_item(settings_path.as_str(),"general") %}{% endcall %}
         {% call nav_item(settings_path.as_str(),"account") %}{% endcall %}
+        {% if ""|premium_enabled %}
         {% call nav_item(settings_path.as_str(),"billing") %}{% endcall %}
+        {% endif %}
         {% block sidebar_bottom %}{% endblock %}
       </div>
     </nav>
@@ -129,7 +133,9 @@
       <div class="flex gap-2 min-w-max">
         {% call mobile_nav_item(settings_path.as_str(),"general") %}{% endcall %}
         {% call mobile_nav_item(settings_path.as_str(),"account") %}{% endcall %}
+        {% if ""|premium_enabled %}
         {% call mobile_nav_item(settings_path.as_str(),"billing") %}{% endcall %}
+        {% endif %}
       </div>
     </div>
 

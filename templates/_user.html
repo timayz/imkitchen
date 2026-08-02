@@ -217,7 +217,7 @@
           <div class="text-[13px] font-semibold text-ink leading-none truncate">{{ user.username() }}</div>
           <div class="text-[11px] text-ink-3 mt-1 truncate">{{ user.email }}</div>
         </div>
-        {% if user.is_premium() %}
+        {% if user.is_premium() && ""|premium_enabled %}
         <span
           class="hidden xl:inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 text-primary-800 shrink-0">
           <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
