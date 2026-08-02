@@ -9,7 +9,7 @@ use serde::Deserialize;
 
 use imkitchen_web_shared::{
     AppState,
-    auth::{AuthUser, RequirePremium},
+    auth::{AuthUser, RequireFullAccess},
     template::{SERVER_ERROR_MESSAGE, Template, filters},
 };
 
@@ -74,7 +74,7 @@ pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
 pub async fn action(
     template: Template,
     State(app): State<AppState>,
-    RequirePremium(user): RequirePremium,
+    RequireFullAccess(user): RequireFullAccess,
     Json(recipes): Json<Vec<ImportJson>>,
 ) -> impl IntoResponse {
     let mut id = None;

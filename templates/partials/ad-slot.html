@@ -1,0 +1,14 @@
+{# Provider-agnostic ad slot. Rendered only for ad-consented, non-premium
+   users (see show_ads() guards in _user.html). A future ad-network script
+   must target [data-ad-slot] and may only ever be emitted inside those same
+   guards — that is the consent gate. #}
+{% macro slot(name) %}
+<div data-ad-slot="{{ name }}"
+  class="bg-cream-2 border border-dashed border-line rounded-2xl p-4 text-center">
+  <div class="font-mono text-[10px] text-ink-3 uppercase tracking-widest mb-1.5">{{ "Ad"|t }}</div>
+  <p class="text-[12.5px] text-ink-2 leading-snug">
+    {{ "Ads keep imkitchen free."|t }}
+    <a href="/upgrade" class="font-semibold text-herb-700 hover:underline">{{ "Go Premium to remove them."|t }}</a>
+  </p>
+</div>
+{% endmacro %}

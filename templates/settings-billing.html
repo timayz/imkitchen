@@ -129,14 +129,57 @@
   </div>
   <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-5 md:p-6">
     <div class="flex items-center gap-2 mb-2">
-      <span class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Free"|t }}</span>
+      <span class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3">
+        {% if user.has_ad_consent() %}{{ "Free · ad-supported"|t }}{% else %}{{ "Free"|t }}{% endif %}
+      </span>
       <span class="px-2 py-0.5 bg-herb-100 text-herb-700 text-[11px] font-semibold rounded-full">{{ "Active"|t }}</span>
     </div>
     <div class="flex items-baseline gap-2">
       <span class="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-none">$0</span>
       <span class="text-sm text-ink-3">{{ "/ month"|t }}</span>
     </div>
+    {% if user.has_ad_consent() %}
+    <p class="text-[12px] text-ink-3 mt-2">{{ "Full access to all features, supported by ads"|t }}</p>
+    {% else %}
     <p class="text-[12px] text-ink-3 mt-2">{{ "Read-only access to recipes, menus & kitchen tools"|t }}</p>
+    {% endif %}
+  </div>
+</section>
+
+{# ── Ad-supported access ─────────────────────────────────────── #}
+<section>
+  <div class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-2 px-1">
+    {{ "Ad-supported access"|t }}
+  </div>
+  <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-5 md:p-6">
+    {% if user.has_ad_consent() %}
+    <div class="flex items-center gap-2 mb-2">
+      <span class="px-2 py-0.5 bg-herb-100 text-herb-700 text-[11px] font-semibold rounded-full">{{ "Active"|t }}</span>
+      <span class="text-[12px] text-ink-3">{{ "since"|t }} {{ user.ad_consent_at|day_month_year }}</span>
+    </div>
+    <p class="text-sm text-ink-2 leading-relaxed mb-4">
+      {{ "You've accepted ad cookies: every feature is unlocked and ads help keep imkitchen running."|t }}
+    </p>
+    <form method="post" action="/ads/consent/revoke">
+      <button type="submit"
+        class="inline-flex items-center justify-center px-4 h-10 bg-cream-2 text-ink font-semibold rounded-xl text-sm hover:bg-cream transition">
+        {{ "Revoke ad consent"|t }}
+      </button>
+    </form>
+    <p class="text-[12px] text-ink-3 mt-2">
+      {{ "Revoking removes the consent cookie and locks creation, planning and cooking features again."|t }}
+    </p>
+    {% else %}
+    <p class="text-sm text-ink-2 leading-relaxed mb-4">
+      {{ "Prefer not to pay? Accept ad cookies to unlock every feature for free, supported by ads."|t }}
+    </p>
+    <form method="post" action="/ads/consent">
+      <button type="submit"
+        class="inline-flex items-center justify-center px-4 h-10 bg-paper border border-line text-ink font-semibold rounded-xl text-sm hover:bg-cream shadow-sm transition">
+        {{ "Accept ads & unlock everything"|t }}
+      </button>
+    </form>
+    {% endif %}
   </div>
 </section>
 

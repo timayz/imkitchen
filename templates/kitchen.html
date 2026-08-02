@@ -4,7 +4,7 @@
 
 {% block content %}
 {% let demo = ""|is_demo %}
-{% if !user.is_premium() %}
+{% if !user.has_full_access() %}
 <div ts-trigger="load" ts-req="/settings/billing/check" ts-req-method="POST" ts-swap="skip"></div>
 {% endif %}
 
@@ -80,7 +80,7 @@
   </header>
   {% endif %}
 
-  {% let has_aside = !user.is_premium() || prep_remiders.is_some() %}
+  {% let has_aside = !user.has_full_access() || prep_remiders.is_some() %}
   <div class="{% if has_aside %}grid lg:grid-cols-3 gap-6{% endif %}">
     <!-- Main column: course switcher + hero + also today -->
     <div class="{% if has_aside %}lg:col-span-2 {% endif %}min-w-0">
@@ -132,7 +132,7 @@
     {% if has_aside %}
     <!-- Side column: premium upsell + prep reminders -->
     <aside class="space-y-6 min-w-0">
-      {% if !user.is_premium() %}
+      {% if !user.has_full_access() %}
       <div class="bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
         <div class="flex flex-col gap-4">
           <div class="flex-1">
@@ -170,7 +170,7 @@
       </div>
       {% endif %}
 
-      {% if let (Some(remiders), true) = (prep_remiders.as_ref(), user.is_premium()) %}
+      {% if let (Some(remiders), true) = (prep_remiders.as_ref(), user.has_full_access()) %}
       <div class="bg-paper rounded-xl shadow-md p-6">
         <h3 class="font-bold font-serif text-lg mb-4">{{ "Tomorrow's Prep Reminder"|t }}</h3>
         {% for recipe in remiders %}

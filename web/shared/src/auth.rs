@@ -69,6 +69,27 @@ pub fn auth_cookie<'a>() -> Cookie<'a> {
     Cookie::from(AUTH_COOKIE_NAME)
 }
 
+pub const AD_CONSENT_COOKIE_NAME: &str = "ad_consent";
+
+/// First-party cookie mirroring the user's ad consent. Not HttpOnly so a
+/// future ad script can read it client-side; the value is the grant unix
+/// timestamp. 12 months keeps it inside the CNIL 13-month consent cap.
+pub fn build_ad_consent_cookie<'a>() -> Cookie<'a> {
+    let now = OffsetDateTime::now_utc();
+    let expires = Expiration::from(now + time::Duration::days(365));
+
+    Cookie::build((AD_CONSENT_COOKIE_NAME, now.unix_timestamp().to_string()))
+        .path("/")
+        .http_only(false)
+        .same_site(SameSite::Lax)
+        .expires(expires)
+        .build()
+}
+
+pub fn ad_consent_cookie<'a>() -> Cookie<'a> {
+    Cookie::build(AD_CONSENT_COOKIE_NAME).path("/").build()
+}
+
 #[derive(Clone, Default)]
 pub struct AuthToken(Claims);
 
@@ -227,9 +248,9 @@ impl FromRequestParts<crate::AppState> for Option<AuthUser> {
     }
 }
 
-pub struct RequirePremium(pub imkitchen_identity::login::Login);
+pub struct RequireFullAccess(pub imkitchen_identity::login::Login);
 
-impl Deref for RequirePremium {
+impl Deref for RequireFullAccess {
     type Target = imkitchen_identity::login::Login;
 
     fn deref(&self) -> &Self::Target {
@@ -237,7 +258,7 @@ impl Deref for RequirePremium {
     }
 }
 
-impl FromRequestParts<crate::AppState> for RequirePremium {
+impl FromRequestParts<crate::AppState> for RequireFullAccess {
     type Rejection = Response;
 
     async fn from_request_parts(
@@ -248,8 +269,8 @@ impl FromRequestParts<crate::AppState> for RequirePremium {
             .await
             .map_err(|err| err.into_response())?;
 
-        if user.is_premium() {
-            return Ok(RequirePremium(user));
+        if user.has_full_access() {
+            return Ok(RequireFullAccess(user));
         }
 
         let template = Template::from_request_parts(parts, state)

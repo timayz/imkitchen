@@ -10,7 +10,7 @@ use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 
 use imkitchen_web_shared::{
-    auth::{AuthUser, RequirePremium},
+    auth::{AuthUser, RequireFullAccess},
     state::AppState,
     template::{Status as TemplateStatus, Template, filters},
 };
@@ -344,7 +344,7 @@ pub struct GenerateAction {
 pub async fn generate_action(
     template: Template,
     State(app): State<AppState>,
-    RequirePremium(user): RequirePremium,
+    RequireFullAccess(user): RequireFullAccess,
     Form(input): Form<GenerateAction>,
 ) -> impl IntoResponse {
     let preferences = imkitchen_web_shared::try_response!(anyhow:

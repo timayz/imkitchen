@@ -7,8 +7,8 @@ use sqlx::{SqlitePool, prelude::FromRow};
 
 use crate::types::password::ResetCompleted;
 use crate::types::user::{
-    Activated, EmailChanged, LoggedIn, Logout, MadeAdmin, Registered, Role, RoleChanged, State,
-    Suspended, User, UsernameChanged,
+    Activated, AdConsentGranted, AdConsentRevoked, EmailChanged, LoggedIn, Logout, MadeAdmin,
+    Registered, Role, RoleChanged, State, Suspended, User, UsernameChanged,
 };
 use imkitchen_billing::types::subscription::{
     LifePremiumToggled, StripePaymentIntentSucceeded, Subscription,
@@ -39,6 +39,7 @@ pub struct Login {
     pub username: Option<String>,
     pub email: String,
     pub subscription_expire_at: u64,
+    pub ad_consent_at: u64,
     pub tz: String,
 }
 
@@ -50,6 +51,7 @@ pub struct LoginView {
     pub username: Option<String>,
     pub email: String,
     pub subscription_expire_at: u64,
+    pub ad_consent_at: u64,
     pub logins: evento::sql_types::Bitcode<Vec<Login>>,
 }
 
@@ -68,6 +70,20 @@ impl Login {
         };
 
         self.subscription_expire_at > now
+    }
+
+    pub fn has_ad_consent(&self) -> bool {
+        self.ad_consent_at > 0
+    }
+
+    pub fn has_full_access(&self) -> bool {
+        self.is_premium() || self.has_ad_consent()
+    }
+
+    // Demo, admin and self-hosted (premium config unset) logins are faked as
+    // premium upstream, so they never see ads even with a stale consent.
+    pub fn show_ads(&self) -> bool {
+        self.has_ad_consent() && !self.is_premium()
     }
 
     pub fn username(&self) -> String {
@@ -97,6 +113,9 @@ pub fn create_projection<E: Executor>() -> Projection<E, LoginView> {
         .handler(handle_email_changed())
         .handler(handle_life_premium_toggled())
         .handler(handle_payment_intent_succeeded())
+        .handler(handle_ad_consent_granted())
+        .handler(handle_ad_consent_revoked())
+        .revision(1)
 }
 
 impl<E: Executor> Snapshot<E> for LoginView {
@@ -111,6 +130,7 @@ impl<E: Executor> Snapshot<E> for LoginView {
                 UserLogin::State,
                 UserLogin::Role,
                 UserLogin::SubscriptionExpireAt,
+                UserLogin::AdConsentAt,
                 UserLogin::Logins,
             ])
             .from(UserLogin::Table)
@@ -142,6 +162,7 @@ impl<E: Executor> Snapshot<E> for LoginView {
                 UserLogin::State,
                 UserLogin::Role,
                 UserLogin::SubscriptionExpireAt,
+                UserLogin::AdConsentAt,
                 UserLogin::Logins,
             ])
             .values([
@@ -152,6 +173,7 @@ impl<E: Executor> Snapshot<E> for LoginView {
                 self.state.to_string().into(),
                 self.role.to_string().into(),
                 self.subscription_expire_at.into(),
+                self.ad_consent_at.into(),
                 logins.into(),
             ])?
             .on_conflict(
@@ -163,6 +185,7 @@ impl<E: Executor> Snapshot<E> for LoginView {
                         UserLogin::State,
                         UserLogin::Role,
                         UserLogin::SubscriptionExpireAt,
+                        UserLogin::AdConsentAt,
                         UserLogin::Logins,
                     ])
                     .to_owned(),
@@ -224,6 +247,7 @@ async fn handle_logged_in(event: Event<LoggedIn>, data: &mut LoginView) -> anyho
         role: data.role.0.to_owned(),
         state: data.state.0.to_owned(),
         subscription_expire_at: data.subscription_expire_at,
+        ad_consent_at: data.ad_consent_at,
         username: data.username.to_owned(),
         email: data.email.to_owned(),
         user_agent: event.data.user_agent,
@@ -316,6 +340,32 @@ async fn handle_payment_intent_succeeded(
     data.subscription_expire_at = event.data.expire_at;
     for login in data.logins.iter_mut() {
         login.subscription_expire_at = event.data.expire_at;
+    }
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_ad_consent_granted(
+    event: Event<AdConsentGranted>,
+    data: &mut LoginView,
+) -> anyhow::Result<()> {
+    data.ad_consent_at = event.timestamp;
+    for login in data.logins.iter_mut() {
+        login.ad_consent_at = event.timestamp;
+    }
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_ad_consent_revoked(
+    _event: Event<AdConsentRevoked>,
+    data: &mut LoginView,
+) -> anyhow::Result<()> {
+    data.ad_consent_at = 0;
+    for login in data.logins.iter_mut() {
+        login.ad_consent_at = 0;
     }
 
     Ok(())

@@ -69,4 +69,6 @@ pub enum User {
     },
     Suspended,
     Activated,
+    AdConsentGranted,
+    AdConsentRevoked,
 }

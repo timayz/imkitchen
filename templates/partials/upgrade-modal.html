@@ -1,4 +1,4 @@
-<!-- Upgrade Modal - shown to non-premium users -->
+<!-- Upgrade Modal - shown to users without full access (no subscription, no ad consent) -->
 <div id="upgrade-modal" ts-swap-push="body" ts-swap="append"
   class="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
   <div class="bg-paper rounded-xl shadow-md max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -13,7 +13,7 @@
       <div class="text-center pr-8">
         <div class="text-5xl mb-3">🚀</div>
         <h3 class="text-2xl font-bold mb-2">{{ "Unlock Your Full Kitchen Potential"|t }}</h3>
-        <p class="text-primary-100">{{ "You're in read-only mode. Upgrade to create, plan, and cook."|t }}</p>
+        <p class="text-primary-100">{{ "You're in read-only mode. Two ways to unlock everything: go Premium, or continue free with ads."|t }}</p>
       </div>
     </div>
 
@@ -89,12 +89,18 @@
       </div>
 
       <!-- Pricing -->
+      {% if let Ok(config) = "config"|value::<crate::config::Config> %}
+        {% if let Some(premium) = config.premium %}
       <div class="bg-linear-to-br from-primary-500 to-primary-600 text-white rounded-xl p-6 mb-6">
         <div class="text-center">
-          <div class="text-4xl font-bold mb-1">$4.99<span class="text-lg font-normal">{{ "/month"|t }}</span></div>
-          <div class="text-primary-100 text-sm mb-4">{{ "or $47.90/year (save 20%)"|t }}</div>
+          <div class="text-4xl font-bold mb-1">${{ *premium.monthly_price|amount }}<span class="text-lg font-normal">{{ "/month"|t }}</span></div>
+          <div class="text-primary-100 text-sm mb-4">
+            {{ "or"|t }} ${{ premium.annual_price()|amount }}{{ "/year"|t }} · {{ "save"|t }} {{ premium.annual_rate }}%
+          </div>
         </div>
       </div>
+        {% endif %}
+      {% endif %}
     </div>
 
     <!-- Footer Actions -->
@@ -102,14 +108,22 @@
       <div class="flex flex-col gap-3">
         <a href="/upgrade"
           class="block text-center px-6 py-3 bg-linear-to-r from-primary-500 to-primary-500 text-white font-bold rounded-xl hover:from-primary-600 hover:to-primary-600 transition shadow-md">
-          {{ "Upgrade to Premium Now"|t }}
+          {{ "Subscribe — no ads"|t }}
         </a>
+        {# Plain form POST on purpose: the 303 redirect reloads the page so all
+           feature gating is re-evaluated at once (no twinspark partial swap). #}
+        <form method="post" action="/ads/consent">
+          <button type="submit"
+            class="w-full px-6 py-3 bg-cream-2 text-ink font-semibold rounded-xl border border-line hover:bg-cream transition">
+            {{ "Continue free with ads"|t }}
+          </button>
+        </form>
         <button ts-trigger="click" ts-action="remove #upgrade-modal"
           class="px-6 py-2 text-ink-2 font-semibold hover:text-ink transition">
           {{ "Maybe Later"|t }}
         </button>
       </div>
-      <p class="text-center text-xs text-ink-3 mt-4">{{ "Cancel anytime • No commitment"|t }}</p>
+      <p class="text-center text-xs text-ink-3 mt-4">{{ "Cancel anytime • No commitment"|t }} · {{ "Accepting ads sets a consent cookie you can revoke in settings"|t }}</p>
     </div>
   </div>
 </div>

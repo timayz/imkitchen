@@ -3,12 +3,14 @@ pub use imkitchen_web_shared::config;
 pub mod routes;
 
 pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
-    use axum::routing::get;
+    use axum::routing::{get, post};
     axum::Router::new()
         .route(
             "/upgrade",
             get(routes::upgrade::page).post(routes::upgrade::action),
         )
+        .route("/ads/consent", post(routes::ads::consent))
+        .route("/ads/consent/revoke", post(routes::ads::revoke))
         .route(
             "/upgrade/order-summary",
             get(routes::upgrade::order_summary),
