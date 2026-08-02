@@ -28,15 +28,15 @@
             {{ "Privacy"|t }} <span class="italic text-primary-500">{{ "policy"|t }}</span>
           </h1>
           <p class="text-base text-ink-2 leading-relaxed max-w-2xl">
-            {{ "The straightforward version: we store your recipes, meal plans and shopping lists so the app works. We don't sell your data. We don't run ads. The long version is below."|t }}
+            {{ "The straightforward version: we store your recipes, meal plans and shopping lists so the app works. We don't sell your data. Ads appear only if you explicitly opt in to our free ad-supported tier. The long version is below."|t }}
           </p>
         </div>
 
         {# Last updated card #}
         <div class="md:min-w-[220px] bg-paper rounded-2xl border border-line-2 p-4">
           <div class="font-mono text-[10px] text-ink-3 uppercase tracking-widest">{{ "Last updated"|t }}</div>
-          <div class="font-serif text-xl text-ink tracking-tight mt-0.5">{{ "May 1, 2026"|t }}</div>
-          <div class="text-xs text-ink-3 mt-0.5">{{ "Effective May 1, 2026"|t }}</div>
+          <div class="font-serif text-xl text-ink tracking-tight mt-0.5">{{ "August 1, 2026"|t }}</div>
+          <div class="text-xs text-ink-3 mt-0.5">{{ "Effective August 1, 2026"|t }}</div>
         </div>
       </div>
     </div>
@@ -114,7 +114,7 @@
               <svg class="w-3.5 h-3.5 text-herb-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
             </div>
             <div class="flex-1 text-[13.5px] leading-relaxed">
-              <strong class="text-ink">{{ "What we do not do:"|t }}</strong> {{ "sell your data, share it with advertisers, profile you for ad targeting, or train public AI models on your content. Ever."|t }}
+              <strong class="text-ink">{{ "What we do not do:"|t }}</strong> {{ "sell your data, share your recipes or identity with advertisers, or train public AI models on your content. Ever. Ads on the ad-supported tier are shown only after your explicit consent, which you can revoke at any time in Settings → Billing."|t }}
             </div>
           </div>
         </section>
@@ -202,7 +202,8 @@
             <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§7</span>
             <h2 class="font-serif text-2xl text-ink tracking-tight m-0 leading-tight">{{ "Cookies & tracking"|t }}</h2>
           </div>
-          <p>{{ "We use first-party cookies to keep you logged in. We use"|t }} <strong class="text-ink">{{ "no third-party advertising cookies, pixels, or SDKs"|t }}</strong>. {{ "Our analytics provider is self-hosted and stores no cross-site identifiers."|t }}</p>
+          <p class="mb-3">{{ "We use first-party cookies to keep you logged in. Our analytics provider is self-hosted and stores no cross-site identifiers."|t }}</p>
+          <p>{{ "If you opt in to the free ad-supported tier, we set one additional first-party cookie,"|t }} <strong class="text-ink">ad_consent</strong>{{ ", which records when you accepted ads. It lives for 12 months and you can revoke it at any time in Settings → Billing. Ad placements are currently first-party (house) only; no third-party advertising script ever loads without that consent."|t }}</p>
         </section>
 
         {# § 8 — Security #}

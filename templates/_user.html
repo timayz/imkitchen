@@ -1,5 +1,6 @@
 {% extends "_base.html" %}
 {%- import "_footer.html" as scope -%}
+{%- import "partials/ad-slot.html" as ads -%}
 
 {% block body %}
 {% let demo = ""|is_demo %}
@@ -177,7 +178,7 @@
 
     {# Sidebar footer — upgrade card (free, expanded) + profile #}
     <div class="border-t border-line-2 pt-3.5 mt-2">
-      {% if !user.is_premium() && !demo %}
+      {% if !user.has_full_access() && !demo %}
       <a href="/upgrade"
         class="hidden xl:block bg-linear-to-br from-herb-500 to-herb-700 rounded-2xl p-3 text-white mb-3 shadow-sm hover:shadow-md transition">
         <div class="flex items-center gap-2 mb-1">
@@ -194,6 +195,16 @@
           {{ "Go Premium"|t }}
         </div>
       </a>
+      <form method="post" action="/ads/consent" class="hidden xl:block mb-3">
+        <button type="submit"
+          class="block w-full text-center text-[11.5px] text-ink-3 font-medium hover:text-ink underline underline-offset-2 transition">
+          {{ "or continue free with ads"|t }}
+        </button>
+      </form>
+      {% else if user.show_ads() && !demo %}
+      <div class="hidden xl:block mb-3">
+        {% call ads::slot("sidebar") %}{% endcall %}
+      </div>
       {% endif %}
       <a href="{% if demo %}/register{% else %}/settings/account{% endif %}"
         class="flex items-center gap-2.5 px-0 xl:px-1 py-1 rounded-xl hover:bg-cream-2 transition justify-center xl:justify-start"
@@ -206,7 +217,7 @@
           <div class="text-[13px] font-semibold text-ink leading-none truncate">{{ user.username() }}</div>
           <div class="text-[11px] text-ink-3 mt-1 truncate">{{ user.email }}</div>
         </div>
-        {% if user.is_premium() %}
+        {% if user.is_premium() && ""|premium_enabled %}
         <span
           class="hidden xl:inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 text-primary-800 shrink-0">
           <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
@@ -285,6 +296,11 @@
     {% endif %}
     {% block hero %}{% endblock %}
     {% block content %}{% endblock %}
+    {% if user.show_ads() && !demo %}
+    <div class="px-5 md:px-8 pb-6 max-w-3xl mx-auto">
+      {% call ads::slot("content-bottom") %}{% endcall %}
+    </div>
+    {% endif %}
     {% call scope::small_footer() %}{% endcall %}
   </div>
 

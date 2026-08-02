@@ -15,7 +15,7 @@ use serde_json::json;
 
 use imkitchen_web_shared::{
     AppState,
-    auth::{AuthUser, RequireChef, RequirePremium},
+    auth::{AuthUser, RequireChef, RequireFullAccess},
     template::{NotFoundTemplate, Status, Template, filters},
 };
 
@@ -435,7 +435,7 @@ pub async fn make_private_action(
 pub async fn delete_action(
     template: Template,
     State(app): State<AppState>,
-    RequirePremium(user): RequirePremium,
+    RequireFullAccess(user): RequireFullAccess,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
     imkitchen_web_shared::try_response!(app.core.recipe.delete(&id, &user.id), template);
@@ -486,7 +486,7 @@ pub struct SaveButtonTemplate {
 
 pub async fn save(
     template: Template,
-    RequirePremium(user): RequirePremium,
+    RequireFullAccess(user): RequireFullAccess,
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
@@ -516,7 +516,7 @@ pub async fn save(
 
 pub async fn unsave(
     template: Template,
-    RequirePremium(user): RequirePremium,
+    RequireFullAccess(user): RequireFullAccess,
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
@@ -540,7 +540,7 @@ pub struct AddToShoppingButtonTemplate {
 /// shared) can be added; ingredient scaling uses the viewer's household size.
 pub async fn add_to_shopping(
     template: Template,
-    RequirePremium(user): RequirePremium,
+    RequireFullAccess(user): RequireFullAccess,
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {

@@ -1,6 +1,6 @@
 use crate::types::user::{
-    self, Activated, EmailChanged, LoggedIn, Logout, MadeAdmin, Registered, Role, RoleChanged,
-    State, Suspended, UsernameChanged,
+    self, Activated, AdConsentGranted, AdConsentRevoked, EmailChanged, LoggedIn, Logout, MadeAdmin,
+    Registered, Role, RoleChanged, State, Suspended, UsernameChanged,
 };
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, ProjectionAggregate, metadata::Event};
@@ -9,6 +9,7 @@ use std::ops::Deref;
 use crate::repository::{self};
 
 mod activate;
+mod ad_consent;
 mod change_email;
 mod change_role;
 mod login;
@@ -102,6 +103,7 @@ pub struct User {
     pub id: String,
     pub role: Role,
     pub state: State,
+    pub ad_consent: bool,
 }
 
 pub fn create_projection<E: Executor>() -> Projection<E, User> {
@@ -111,11 +113,14 @@ pub fn create_projection<E: Executor>() -> Projection<E, User> {
         .handler(handle_susended())
         .handler(handle_made_admin())
         .handler(handle_role_changed())
+        .handler(handle_ad_consent_granted())
+        .handler(handle_ad_consent_revoked())
         .skip::<LoggedIn>()
         .skip::<Logout>()
         .skip::<UsernameChanged>()
         .skip::<EmailChanged>()
         .strict()
+        .revision(1)
 }
 
 impl ProjectionAggregate for User {
@@ -143,6 +148,26 @@ async fn handle_made_admin(_event: Event<MadeAdmin>, data: &mut User) -> anyhow:
 #[evento::handler]
 async fn handle_role_changed(event: Event<RoleChanged>, data: &mut User) -> anyhow::Result<()> {
     data.role = event.data.role.to_owned();
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_ad_consent_granted(
+    _event: Event<AdConsentGranted>,
+    data: &mut User,
+) -> anyhow::Result<()> {
+    data.ad_consent = true;
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_ad_consent_revoked(
+    _event: Event<AdConsentRevoked>,
+    data: &mut User,
+) -> anyhow::Result<()> {
+    data.ad_consent = false;
 
     Ok(())
 }

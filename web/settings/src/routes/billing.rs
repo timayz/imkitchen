@@ -180,6 +180,7 @@ pub async fn check(
     template: Template,
     State(app): State<AppState>,
     user: AuthUser,
+    jar: axum_extra::extract::CookieJar,
 ) -> impl IntoResponse {
     let subscription = imkitchen_web_shared::try_response!(anyhow: app.billing.subscription.load(&user.id), template);
 
@@ -195,6 +196,8 @@ pub async fn check(
         return "<div></div>".into_response();
     };
 
+    let succeeded = intent.status == stripe_shared::PaymentIntentStatus::Succeeded;
+
     if let Err(e) = app
         .billing
         .subscription
@@ -202,6 +205,14 @@ pub async fn check(
         .await
     {
         tracing::error!("{e}");
+    }
+
+    // Premium supersedes ad-supported access — drop the client-side consent
+    // mirror so nothing reading the cookie sees a stale opt-in. The
+    // event-sourced consent stays recorded and resurfaces if premium lapses.
+    if succeeded {
+        let jar = jar.remove(imkitchen_web_shared::auth::ad_consent_cookie());
+        return (jar, "<div></div>").into_response();
     }
 
     "<div></div>".into_response()

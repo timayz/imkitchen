@@ -19,7 +19,6 @@
 
         <div class="hidden md:flex items-center gap-7 ml-8">
           <a href="#features" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Features"|t }}</a>
-          <a href="#pricing" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Pricing"|t }}</a>
           <a href="/help" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Help"|t }}</a>
           <a href="/contact" class="text-sm font-medium text-ink-2 hover:text-ink transition">{{ "Contact"|t }}</a>
         </div>
@@ -46,7 +45,6 @@
       <div id="mobile-menu" class="hidden md:hidden pb-4">
         <div class="flex flex-col gap-1 pt-2">
           <a href="#features" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Features"|t }}</a>
-          <a href="#pricing" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Pricing"|t }}</a>
           <a href="/help" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Help"|t }}</a>
           <a href="/contact" class="px-3 py-2.5 rounded-xl text-ink-2 hover:bg-cream-2 transition text-sm font-medium">{{ "Contact"|t }}</a>
           <a href="/login" class="mt-2 px-3 py-2.5 rounded-xl text-ink border border-line hover:bg-cream-2 transition text-sm font-semibold text-center">{{ "Log in"|t }}</a>
@@ -85,20 +83,6 @@
               <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4l14 8-14 8V4z"/></svg>
               {{ "See it in action"|t }}
             </a>
-          </div>
-          <div class="flex flex-wrap gap-5 mt-8 text-sm text-ink-3">
-            <span class="flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "No credit card"|t }}
-            </span>
-            <span class="flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "Free tier included"|t }}
-            </span>
-            <span class="flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "Cancel anytime"|t }}
-            </span>
           </div>
         </div>
 
@@ -317,95 +301,6 @@
     </div>
   </section>
 
-  {# ── Pricing ─────────────────────────────────────────────────── #}
-  <section id="pricing" class="bg-cream py-16 md:py-24">
-    <div class="container mx-auto px-5 md:px-12 max-w-5xl">
-      <div class="text-center mb-10 md:mb-12">
-        <div class="font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-3.5">{{ "Pricing"|t }}</div>
-        <h2 class="font-serif text-3xl md:text-5xl text-ink leading-[1.05] tracking-tight">
-          {{ "Simple."|t }} <span class="italic">{{ "Transparent."|t }}</span>
-        </h2>
-      </div>
-
-      <div class="grid md:grid-cols-2 gap-4 max-w-3xl mx-auto">
-        {# Free tier #}
-        <div class="bg-paper rounded-3xl p-7 border border-line-2">
-          <div class="font-mono text-[11px] text-ink-3 uppercase tracking-widest">{{ "Free"|t }}</div>
-          <div class="flex items-baseline gap-1.5 mt-1.5 mb-4">
-            <span class="font-serif text-5xl text-ink tracking-tighter">$0</span>
-            <span class="text-sm text-ink-3">{{ "/ month"|t }}</span>
-          </div>
-          <a href="/register" class="block text-center w-full px-4 py-3 bg-cream-2 text-ink font-semibold rounded-xl border border-line hover:bg-cream transition">
-            {{ "Start free"|t }}
-          </a>
-          <ul class="grid gap-2.5 mt-5">
-            <li class="flex items-center gap-2 text-sm text-ink-2">
-              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "Browse community recipes"|t }}
-            </li>
-            <li class="flex items-center gap-2 text-sm text-ink-2">
-              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "Preview meal plans"|t }}
-            </li>
-            <li class="flex items-center gap-2 text-sm text-ink-2">
-              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "Read-only kitchen tools"|t }}
-            </li>
-            <li class="flex items-center gap-2 text-sm text-ink-2">
-              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "Upgrade anytime"|t }}
-            </li>
-          </ul>
-        </div>
-
-        {# Premium tier #}
-        <div class="rounded-3xl p-7 relative overflow-hidden text-white shadow-md" style="background: linear-gradient(160deg, #2c8551, #1f6d42);">
-          {% if let Ok(config) = "config"|value::<crate::config::Config> %}
-            {% if let Some(premium) = config.premium %}
-          <div class="absolute top-3.5 right-3.5 bg-[#ffd27a] text-primary-800 px-2.5 py-1 rounded-full text-[11px] font-bold tracking-wide">
-            {{ "Save"|t }} {{ premium.annual_rate }}%
-          </div>
-          <div class="font-mono text-[11px] text-white/85 uppercase tracking-widest">{{ "Premium"|t }}</div>
-          <div class="flex items-baseline gap-1.5 mt-1.5 mb-4">
-            <span class="font-serif text-5xl tracking-tighter">${{ *premium.monthly_price|amount }}</span>
-            <span class="text-sm text-white/85">{{ "/ month"|t }}</span>
-          </div>
-            {% endif %}
-          {% endif %}
-          <a href="/register" class="block text-center w-full px-4 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition shadow-sm">
-            {{ "Go Premium"|t }}
-          </a>
-          <ul class="grid gap-2.5 mt-5">
-            <li class="flex items-center gap-2 text-sm">
-              <svg class="w-3.5 h-3.5 text-[#ffd27a] shrink-0" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "Create and edit your own recipes"|t }}
-            </li>
-            <li class="flex items-center gap-2 text-sm">
-              <svg class="w-3.5 h-3.5 text-[#ffd27a] shrink-0" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "Generate personalized meal plans"|t }}
-            </li>
-            <li class="flex items-center gap-2 text-sm">
-              <svg class="w-3.5 h-3.5 text-[#ffd27a] shrink-0" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "Step-by-step kitchen tools"|t }}
-            </li>
-            <li class="flex items-center gap-2 text-sm">
-              <svg class="w-3.5 h-3.5 text-[#ffd27a] shrink-0" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "Bulk import from JSON"|t }}
-            </li>
-            <li class="flex items-center gap-2 text-sm">
-              <svg class="w-3.5 h-3.5 text-[#ffd27a] shrink-0" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "Priority support"|t }}
-            </li>
-            <li class="flex items-center gap-2 text-sm">
-              <svg class="w-3.5 h-3.5 text-[#ffd27a] shrink-0" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "Early access to new features"|t }}
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </section>
-
   {# ── Testimonials ────────────────────────────────────────────── #}
   <section class="bg-paper py-14 md:py-20">
     <div class="container mx-auto px-5 md:px-12 max-w-6xl">
@@ -442,7 +337,7 @@
         {{ "Tonight's dinner is"|t }}<br>{{ "already decided."|t }}
       </h2>
       <p class="text-lg text-white/90 max-w-xl mx-auto mt-4 leading-relaxed">
-        {{ "Browse the catalogue for free. Go Premium when you're ready to cook."|t }}
+        {{ "Browse the catalogue for free. Unlock everything when you're ready to cook."|t }}
       </p>
       <a href="/register" class="inline-block mt-7 px-7 py-4 bg-ink text-cream font-semibold text-lg rounded-xl hover:bg-ink-2 transition shadow-md">
         {{ "Get started — free"|t }}

@@ -7,7 +7,7 @@ use time::OffsetDateTime;
 
 use imkitchen_web_shared::{
     AppState,
-    auth::{AuthUser, RequirePremium},
+    auth::{AuthUser, RequireFullAccess},
     template::{Status as TemplateStatus, Template, filters},
 };
 
@@ -247,7 +247,7 @@ pub async fn page(
 pub async fn generate_action(
     template: Template,
     State(app): State<AppState>,
-    RequirePremium(user): RequirePremium,
+    RequireFullAccess(user): RequireFullAccess,
     Path((date,)): Path<(String,)>,
 ) -> impl IntoResponse {
     let preferences = imkitchen_web_shared::try_response!(anyhow:

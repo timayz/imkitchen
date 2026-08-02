@@ -10,7 +10,7 @@ use imkitchen_types::{mealplan::DaySlotRecipe, recipe::RecipeType};
 pub use imkitchen_web_shared::config;
 
 use imkitchen_web_shared::AppState;
-use imkitchen_web_shared::auth::{AuthToken, AuthUser, RequirePremium};
+use imkitchen_web_shared::auth::{AuthToken, AuthUser, RequireFullAccess};
 use imkitchen_web_shared::template::{NotFoundTemplate, Template, filters};
 
 #[derive(askama::Template)]
@@ -560,7 +560,7 @@ pub struct CookingScreenTemplate {
 #[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
 pub async fn update_slot_step_action(
     template: Template,
-    RequirePremium(user): RequirePremium,
+    RequireFullAccess(user): RequireFullAccess,
     State(app): State<AppState>,
     Path((date, recipe_id, direction)): Path<(String, String, String)>,
 ) -> impl IntoResponse {
@@ -763,7 +763,7 @@ pub struct KitchenDishTemplate {
 #[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
 pub async fn select_dish(
     template: Template,
-    RequirePremium(user): RequirePremium,
+    RequireFullAccess(user): RequireFullAccess,
     State(app): State<AppState>,
     Path((date, recipe_id)): Path<(String, String)>,
 ) -> impl IntoResponse {
@@ -893,7 +893,7 @@ pub async fn select_dish(
 #[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
 pub async fn cook_page(
     template: Template,
-    RequirePremium(user): RequirePremium,
+    RequireFullAccess(user): RequireFullAccess,
     State(app): State<AppState>,
     Path((date, recipe_id)): Path<(String, String)>,
 ) -> impl IntoResponse {

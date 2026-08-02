@@ -319,6 +319,17 @@ pub mod filters {
             .unwrap_or(false))
     }
 
+    /// True when monetization is configured (`[premium]` present in config):
+    /// premium subscriptions and the ad-supported tier exist. False on
+    /// instances where everyone gets full access and all premium/ads UI is
+    /// hidden. The piped value is ignored — call as `{% if ""|premium_enabled %}`.
+    #[askama::filter_fn]
+    pub fn premium_enabled(_value: &str, values: &dyn askama::Values) -> askama::Result<bool> {
+        Ok(askama::get_value::<bool>(values, "premium_enabled")
+            .copied()
+            .unwrap_or(true))
+    }
+
     /// Prefixes an internal path with `/demo` when rendering in demo mode so
     /// navigation stays inside the demo, otherwise returns it untouched.
     /// Call as `{{ "/menu"|demo_href }}`.
@@ -367,6 +378,7 @@ impl Template {
         );
         values.insert("config", Box::new(self.config.clone()));
         values.insert("is_demo", Box::new(self.is_demo));
+        values.insert("premium_enabled", Box::new(self.config.premium.is_some()));
 
         #[cfg(debug_assertions)]
         {

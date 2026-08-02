@@ -95,9 +95,6 @@ impl Config {
             .set_default("jwt.issuer", "imkitchen.localhost")?
             .set_default("jwt.secret", "TOKEN-NOT-SECURE-MUST-BE-CHANGE")?
             .set_default("jwt.expiration_days", 14)?
-            .set_default("premium.monthly_price", 499)?
-            .set_default("premium.annual_rate", 20)?
-            .set_default("premium.tax", true)?
             .set_default(
                 "monitoring.log_level",
                 "debug,sqlx=info,tower_http=info,stripe=debug,reqwest=debug,hyper_util=info",

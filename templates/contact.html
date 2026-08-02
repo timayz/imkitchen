@@ -180,6 +180,7 @@
         <p class="px-5 pb-5 text-sm text-ink-2 leading-relaxed">{{ "Yes — upload a JSON export, up to 20 recipes per batch. The importer reports successes, duplicates, and failures so you can fix and retry."|t }}</p>
       </details>
 
+      {% if ""|premium_enabled %}
       <details class="group bg-paper rounded-2xl border border-line-2 overflow-hidden">
         <summary class="flex items-center gap-2.5 px-5 py-4 cursor-pointer list-none">
           <span class="flex-1 text-sm md:text-base font-semibold text-ink leading-snug">{{ "What's the difference between Free and Premium?"|t }}</span>
@@ -193,7 +194,7 @@
             {% if let Some(premium) = config.premium %}
             {{ "Premium ("|t }}${{ *premium.monthly_price|amount }}{{ "/mo or"|t }} ${{ premium.annual_price()|amount }}{{ "/yr) unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features."|t }}
             {% else %}
-            {{ "Premium unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features."|t }}
+            {{ "Both Premium and the free ad-supported option unlock creating and editing your own recipes, personalized meal plans, step-by-step kitchen tools and bulk import from JSON. Premium additionally removes ads and adds priority support and early access to new features."|t }}
             {% endif %}
           {% endif %}
         </p>
@@ -208,6 +209,7 @@
         </summary>
         <p class="px-5 pb-5 text-sm text-ink-2 leading-relaxed">{{ "Settings → Billing → Cancel. Your plan stays active until the end of the billing period, and your recipes are kept forever."|t }}</p>
       </details>
+      {% endif %}
     </div>
 
     <div class="text-center text-sm text-ink-3 mt-6">
