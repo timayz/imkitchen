@@ -39,12 +39,14 @@
   <!-- DNS prefetch for external origins -->
   {% block dns_prefetch %}{% endblock %}
 
-  {% let gtm_id = ""|gtm_container_id %}
-  {% if !gtm_id.is_empty() %}
-  <!-- Google Tag Manager — Consent Mode v2, default denied. Consent
-       grant/revoke redirects reload the page, so this re-reads the cookie.
-       No <noscript> iframe on purpose: without JS no consent default can be
-       set, so the ns.html pixel would fire outside the consent gate. -->
+  {% let google_tag_id = ""|google_tag_id %}
+  {% if !google_tag_id.is_empty() %}
+  <!-- Google Analytics / Tag Manager — Consent Mode v2, default denied.
+       Consent grant/revoke redirects reload the page, so this re-reads the
+       cookie. A G- id loads gtag.js directly; a GTM- id loads the Tag
+       Manager container. No <noscript> iframe on purpose: without JS no
+       consent default can be set, so the ns.html pixel would fire outside
+       the consent gate. -->
   <link rel="preconnect" href="https://www.googletagmanager.com">
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -63,9 +65,18 @@
         'ad_personalization': 'granted'
       });
     }
+    {% if google_tag_id.starts_with("GTM-") %}
     dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+    {% else %}
+    gtag('js', new Date());
+    gtag('config', '{{ google_tag_id }}');
+    {% endif %}
   </script>
-  <script async src={{ "https://www.googletagmanager.com/gtm.js?id=" ~ gtm_id }}></script>
+  {% if google_tag_id.starts_with("GTM-") %}
+  <script async src={{ "https://www.googletagmanager.com/gtm.js?id=" ~ google_tag_id }}></script>
+  {% else %}
+  <script async src={{ "https://www.googletagmanager.com/gtag/js?id=" ~ google_tag_id }}></script>
+  {% endif %}
   {% endif %}
 
   <!-- Google Fonts: Fraunces (serif headings) + Inter (body) -->

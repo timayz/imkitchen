@@ -330,12 +330,12 @@ pub mod filters {
             .unwrap_or(true))
     }
 
-    /// Google Tag Manager container id for this render, or "" when analytics
-    /// is not configured or the page is demo mode.
-    /// Call as `{% let gtm_id = ""|gtm_container_id %}`.
+    /// Google tag id (G-… or GTM-…) for this render, or "" when analytics is
+    /// not configured or the page is demo mode.
+    /// Call as `{% let google_tag_id = ""|google_tag_id %}`.
     #[askama::filter_fn]
-    pub fn gtm_container_id(_value: &str, values: &dyn askama::Values) -> askama::Result<String> {
-        Ok(askama::get_value::<String>(values, "gtm_container_id")
+    pub fn google_tag_id(_value: &str, values: &dyn askama::Values) -> askama::Result<String> {
+        Ok(askama::get_value::<String>(values, "google_tag_id")
             .cloned()
             .unwrap_or_default())
     }
@@ -403,16 +403,16 @@ impl Template {
             Box::new(self.config.analytics.is_some()),
         );
         // Empty string = no analytics for this render. Demo pages never report.
-        let gtm_id = if self.is_demo {
+        let google_tag_id = if self.is_demo {
             String::new()
         } else {
             self.config
                 .analytics
                 .as_ref()
-                .map(|a| a.google_tag_manager_id.clone())
+                .map(|a| a.google_tag_id.clone())
                 .unwrap_or_default()
         };
-        values.insert("gtm_container_id", Box::new(gtm_id));
+        values.insert("google_tag_id", Box::new(google_tag_id));
 
         #[cfg(debug_assertions)]
         {

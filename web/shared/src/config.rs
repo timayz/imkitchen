@@ -15,10 +15,13 @@ pub struct Config {
     pub monitoring: MonitoringConfig,
 }
 
-/// Google Tag Manager. Section absent = analytics disabled entirely.
+/// Google Analytics / Tag Manager. Section absent = analytics disabled
+/// entirely. The id decides what loads: "G-XXXXXXXXXX" (a GA4 measurement
+/// id) loads gtag.js directly, "GTM-XXXXXXXX" loads the Tag Manager
+/// container and GA4 is configured inside it.
 #[derive(Debug, Deserialize, Clone)]
 pub struct AnalyticsConfig {
-    pub google_tag_manager_id: String, // e.g. "GTM-XXXXXXXX"
+    pub google_tag_id: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]

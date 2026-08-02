@@ -62,9 +62,11 @@ config:
     annual_rate: 20
     tax: true
 
-  # Google Tag Manager — omit this section to disable analytics.
+  # Google Analytics / Tag Manager — omit this section to disable analytics.
+  # The id decides what loads: "G-XXXXXXXXXX" loads gtag.js, "GTM-XXXXXXXX"
+  # loads the Tag Manager container.
   # analytics:
-  #   google_tag_manager_id: "GTM-XXXXXXXX"
+  #   google_tag_id: "G-XXXXXXXXXX"
 
 persistence:
   size: 15Gi
