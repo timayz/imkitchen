@@ -91,11 +91,11 @@
             </span>
             <span class="flex items-center gap-1.5">
               <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "Free tier included"|t }}
+              {% if ""|premium_enabled %}{{ "Every feature free — with ads"|t }}{% else %}{{ "Every feature included"|t }}{% endif %}
             </span>
             <span class="flex items-center gap-1.5">
               <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "Cancel anytime"|t }}
+              {% if ""|premium_enabled %}{{ "Go ad-free anytime"|t }}{% else %}{{ "No ads, ever"|t }}{% endif %}
             </span>
           </div>
         </div>
