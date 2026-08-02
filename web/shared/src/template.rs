@@ -378,10 +378,7 @@ impl Template {
         );
         values.insert("config", Box::new(self.config.clone()));
         values.insert("is_demo", Box::new(self.is_demo));
-        values.insert(
-            "premium_enabled",
-            Box::new(self.config.premium.is_some()),
-        );
+        values.insert("premium_enabled", Box::new(self.config.premium.is_some()));
 
         #[cfg(debug_assertions)]
         {
