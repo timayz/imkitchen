@@ -330,6 +330,25 @@ pub mod filters {
             .unwrap_or(true))
     }
 
+    /// GA4 measurement id for this render, or "" when analytics is not
+    /// configured, the page is demo mode, or this is a dev (debug) build.
+    /// Call as `{% let ga_id = ""|ga_measurement_id %}`.
+    #[askama::filter_fn]
+    pub fn ga_measurement_id(_value: &str, values: &dyn askama::Values) -> askama::Result<String> {
+        Ok(askama::get_value::<String>(values, "ga_measurement_id")
+            .cloned()
+            .unwrap_or_default())
+    }
+
+    /// True when `[analytics]` is present in config, regardless of demo/dev.
+    /// Drives privacy-policy copy. Call as `{% if ""|analytics_enabled %}`.
+    #[askama::filter_fn]
+    pub fn analytics_enabled(_value: &str, values: &dyn askama::Values) -> askama::Result<bool> {
+        Ok(askama::get_value::<bool>(values, "analytics_enabled")
+            .copied()
+            .unwrap_or(false))
+    }
+
     /// Prefixes an internal path with `/demo` when rendering in demo mode so
     /// navigation stays inside the demo, otherwise returns it untouched.
     /// Call as `{{ "/menu"|demo_href }}`.
@@ -379,6 +398,21 @@ impl Template {
         values.insert("config", Box::new(self.config.clone()));
         values.insert("is_demo", Box::new(self.is_demo));
         values.insert("premium_enabled", Box::new(self.config.premium.is_some()));
+        values.insert(
+            "analytics_enabled",
+            Box::new(self.config.analytics.is_some()),
+        );
+        // Empty string = no GA for this render. Demo pages and dev builds never report.
+        let ga_id = if self.is_demo || cfg!(debug_assertions) {
+            String::new()
+        } else {
+            self.config
+                .analytics
+                .as_ref()
+                .map(|a| a.google_measurement_id.clone())
+                .unwrap_or_default()
+        };
+        values.insert("ga_measurement_id", Box::new(ga_id));
 
         #[cfg(debug_assertions)]
         {

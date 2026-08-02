@@ -39,6 +39,34 @@
   <!-- DNS prefetch for external origins -->
   {% block dns_prefetch %}{% endblock %}
 
+  {% let ga_id = ""|ga_measurement_id %}
+  {% if !ga_id.is_empty() %}
+  <!-- Google Analytics (GA4) — Consent Mode v2, default denied. Consent
+       grant/revoke redirects reload the page, so this re-reads the cookie. -->
+  <link rel="preconnect" href="https://www.googletagmanager.com">
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('consent', 'default', {
+      'analytics_storage': 'denied',
+      'ad_storage': 'denied',
+      'ad_user_data': 'denied',
+      'ad_personalization': 'denied'
+    });
+    if (document.cookie.split('; ').some(function (c) { return c.indexOf('ad_consent=') === 0; })) {
+      gtag('consent', 'update', {
+        'analytics_storage': 'granted',
+        'ad_storage': 'granted',
+        'ad_user_data': 'granted',
+        'ad_personalization': 'granted'
+      });
+    }
+    gtag('js', new Date());
+    gtag('config', '{{ ga_id }}');
+  </script>
+  <script async src={{ "https://www.googletagmanager.com/gtag/js?id=" ~ ga_id }}></script>
+  {% endif %}
+
   <!-- Google Fonts: Fraunces (serif headings) + Inter (body) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

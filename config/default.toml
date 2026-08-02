@@ -26,6 +26,13 @@ monthly_price = 499
 annual_rate = 20
 tax = true
 
+# Google Analytics (GA4). Remove or comment out this section to disable it
+# entirely. When present, gtag.js loads with Consent Mode v2 defaults set to
+# "denied"; consent is granted only while the user's ad_consent cookie is
+# present. Never emitted in demo mode or dev (debug) builds.
+# [analytics]
+# google_measurement_id = "G-XXXXXXXXXX"
+
 [monitoring]
 log_level = "debug,sqlx=info,tower_http=info"
 log_json = false

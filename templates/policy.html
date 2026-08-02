@@ -202,7 +202,11 @@
             <span class="font-mono text-[12px] text-primary-800 bg-primary-100 px-2 py-0.5 rounded-md tracking-wide">§7</span>
             <h2 class="font-serif text-2xl text-ink tracking-tight m-0 leading-tight">{{ "Cookies & tracking"|t }}</h2>
           </div>
+          {% if ""|analytics_enabled %}
+          <p class="mb-3">{{ "We use first-party cookies to keep you logged in. For usage statistics we use Google Analytics in consent mode: it loads with all storage denied and sets no analytics or advertising cookies unless you opt in to the ad-supported tier."|t }}</p>
+          {% else %}
           <p class="mb-3">{{ "We use first-party cookies to keep you logged in. Our analytics provider is self-hosted and stores no cross-site identifiers."|t }}</p>
+          {% endif %}
           <p>{{ "If you opt in to the free ad-supported tier, we set one additional first-party cookie,"|t }} <strong class="text-ink">ad_consent</strong>{{ ", which records when you accepted ads. It lives for 12 months and you can revoke it at any time in Settings → Billing. Ad placements are currently first-party (house) only; no third-party advertising script ever loads without that consent."|t }}</p>
         </section>
 

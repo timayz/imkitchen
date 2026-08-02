@@ -11,7 +11,14 @@ pub struct Config {
     pub email: EmailConfig,
     pub stripe: StripeConfig,
     pub premium: Option<PremiumConfig>,
+    pub analytics: Option<AnalyticsConfig>,
     pub monitoring: MonitoringConfig,
+}
+
+/// Google Analytics (GA4). Section absent = analytics disabled entirely.
+#[derive(Debug, Deserialize, Clone)]
+pub struct AnalyticsConfig {
+    pub google_measurement_id: String, // e.g. "G-XXXXXXXXXX"
 }
 
 #[derive(Debug, Deserialize, Clone)]
