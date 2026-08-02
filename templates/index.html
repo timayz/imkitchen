@@ -84,20 +84,6 @@
               {{ "See it in action"|t }}
             </a>
           </div>
-          <div class="flex flex-wrap gap-5 mt-8 text-sm text-ink-3">
-            <span class="flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {{ "No credit card"|t }}
-            </span>
-            <span class="flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {% if ""|premium_enabled %}{{ "Every feature free — with ads"|t }}{% else %}{{ "Every feature included"|t }}{% endif %}
-            </span>
-            <span class="flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5 text-herb-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M20 6L9 17l-5-5"/></svg>
-              {% if ""|premium_enabled %}{{ "Go ad-free anytime"|t }}{% else %}{{ "No ads, ever"|t }}{% endif %}
-            </span>
-          </div>
         </div>
 
         {# Phone mockup column #}
@@ -351,11 +337,7 @@
         {{ "Tonight's dinner is"|t }}<br>{{ "already decided."|t }}
       </h2>
       <p class="text-lg text-white/90 max-w-xl mx-auto mt-4 leading-relaxed">
-        {% if ""|premium_enabled %}
-        {{ "Browse the catalogue for free. Accept ads or go Premium when you're ready to cook."|t }}
-        {% else %}
-        {{ "Free to use. Every feature included."|t }}
-        {% endif %}
+        {{ "Browse the catalogue for free. Unlock everything when you're ready to cook."|t }}
       </p>
       <a href="/register" class="inline-block mt-7 px-7 py-4 bg-ink text-cream font-semibold text-lg rounded-xl hover:bg-ink-2 transition shadow-md">
         {{ "Get started — free"|t }}
