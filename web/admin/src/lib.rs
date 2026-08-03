@@ -20,6 +20,7 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
         .route("/admin/users/{id}", post(routes::users::update_user))
         .route("/admin/invoices", get(routes::invoices::page))
         .route("/admin/invoices/{id}", get(routes::invoices::detail))
+        .route("/admin/audience", get(routes::audience::page))
         .route("/admin/contact", get(routes::contact::page))
         .route(
             "/admin/contact/{id}/mark-read-and-reply",

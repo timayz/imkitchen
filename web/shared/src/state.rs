@@ -12,6 +12,9 @@ pub struct AppState {
     pub identity: imkitchen_identity::Module<Evento>,
     pub billing: imkitchen_billing::Billing<Evento>,
     pub core: imkitchen_core::Core<Evento>,
+    /// Present only when the `[audience]` config section is set; runs on its
+    /// own evento instance/database.
+    pub audience: Option<imkitchen_audience::Module<Evento>>,
     pub import_jobs: AdminImportJobs,
 }
 

@@ -1,3 +1,4 @@
+pub mod audience;
 pub mod contact;
 pub mod invoices;
 pub mod recipe_import;

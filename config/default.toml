@@ -35,6 +35,13 @@ tax = true
 # [analytics]
 # google_tag_id = "G-XXXXXXXXXX"
 
+# First-party audience measurement (landing-page visits: device, browser,
+# country, time). Uses a dedicated SQLite database, separate from [database],
+# so beacon writes never touch the main application database. Omit this
+# section to disable the feature entirely.
+# [audience]
+# database_url = "sqlite:audience.db"
+
 [monitoring]
 log_level = "debug,sqlx=info,tower_http=info"
 log_json = false

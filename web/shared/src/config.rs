@@ -12,7 +12,16 @@ pub struct Config {
     pub stripe: StripeConfig,
     pub premium: Option<PremiumConfig>,
     pub analytics: Option<AnalyticsConfig>,
+    pub audience: Option<AudienceConfig>,
     pub monitoring: MonitoringConfig,
+}
+
+/// First-party audience measurement. Section absent = feature disabled: no
+/// beacon markup, no second database. The database is dedicated so beacon
+/// writes never contend with the main application database.
+#[derive(Debug, Deserialize, Clone)]
+pub struct AudienceConfig {
+    pub database_url: String,
 }
 
 /// Google Analytics / Tag Manager. Section absent = analytics disabled

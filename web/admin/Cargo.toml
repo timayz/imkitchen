@@ -21,6 +21,7 @@ imkitchen-core = { path = "../../crates/core", version = "1.7.0" }
 imkitchen-types = { path = "../../crates/types", version = "1.7.0" }
 imkitchen-identity = { path = "../../crates/identity", version = "1.7.0" }
 imkitchen-web-shared = { path = "../shared", version = "1.7.0" }
+imkitchen-audience = { path = "../../crates/audience", version = "1.7.0" }
 
 [dev-dependencies]
 tokio = { workspace = true }
