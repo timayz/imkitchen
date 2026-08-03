@@ -68,6 +68,11 @@ config:
   # analytics:
   #   google_tag_id: "G-XXXXXXXXXX"
 
+  # First-party audience measurement — omit this section to disable. Dedicated
+  # SQLite database (not Litestream-replicated), kept on the same data volume.
+  # audience:
+  #   database_url: "sqlite:/data/audience.db"
+
 persistence:
   size: 15Gi
   # StorageClass for the SQLite data volume. Longhorn by default; set to a local-disk

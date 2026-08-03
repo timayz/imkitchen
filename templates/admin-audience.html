@@ -1,0 +1,98 @@
+{% extends "_admin.html" %}
+{% block title %}Admin - Audience - imkitchen{% endblock %}
+
+{% macro breakdown_card(title, rows) %}
+<div class="bg-paper rounded-xl shadow-md p-6">
+  <h2 class="text-lg font-semibold mb-4">{{ title }}</h2>
+  {% if rows.is_empty() %}
+  <p class="text-ink-3 text-sm">No visits recorded yet.</p>
+  {% else %}
+  <table class="w-full text-sm">
+    <tbody>
+      {% for row in rows %}
+      <tr class="border-b border-line last:border-0">
+        <td class="py-2">{{ row.label }}</td>
+        <td class="py-2 text-right font-semibold">{{ row.total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
+{% endmacro %}
+
+{% block content %}
+<!-- Main Content -->
+<div class="container mx-auto px-4 py-8">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-2xl md:text-3xl font-bold font-serif mb-2">Audience</h1>
+    <p class="text-ink-2">Landing-page visits over the last 30 days</p>
+  </div>
+
+  {% if !enabled %}
+  <div class="bg-paper rounded-xl shadow-md p-8 text-center">
+    <h2 class="text-xl font-semibold mb-2">Audience measurement is disabled</h2>
+    <p class="text-ink-2">
+      Add an <code class="bg-cream px-1 rounded">[audience]</code> section with a
+      <code class="bg-cream px-1 rounded">database_url</code> to the server configuration to start
+      collecting landing-page visits.
+    </p>
+  </div>
+  {% else %}
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-3 gap-4 md:gap-6 mb-8">
+    <div class="bg-paper rounded-xl shadow-md p-4 md:p-6">
+      <div class="text-ink-2 text-xs md:text-sm mb-1">Today</div>
+      <div class="text-2xl md:text-3xl font-bold text-blue-600">{{ today }}</div>
+      <div class="text-xs md:text-sm text-ink-3 mt-2">Visits</div>
+    </div>
+    <div class="bg-paper rounded-xl shadow-md p-4 md:p-6">
+      <div class="text-ink-2 text-xs md:text-sm mb-1">Last 7 days</div>
+      <div class="text-2xl md:text-3xl font-bold">{{ last7 }}</div>
+      <div class="text-xs md:text-sm text-ink-3 mt-2">Visits</div>
+    </div>
+    <div class="bg-paper rounded-xl shadow-md p-4 md:p-6">
+      <div class="text-ink-2 text-xs md:text-sm mb-1">Last 30 days</div>
+      <div class="text-2xl md:text-3xl font-bold text-primary-500">{{ last30 }}</div>
+      <div class="text-xs md:text-sm text-ink-3 mt-2">Visits</div>
+    </div>
+  </div>
+
+  <!-- Breakdowns -->
+  <div class="grid md:grid-cols-2 gap-4 md:gap-6 mb-8">
+    {% call breakdown_card("Pages", paths) %}{% endcall %}
+    {% call breakdown_card("Devices", devices) %}{% endcall %}
+    {% call breakdown_card("Browsers", browsers) %}{% endcall %}
+    {% call breakdown_card("Countries", countries) %}{% endcall %}
+  </div>
+
+  <!-- Per-day table -->
+  <div class="bg-paper rounded-xl shadow-md p-6">
+    <h2 class="text-lg font-semibold mb-4">Visits per day</h2>
+    {% if per_day.is_empty() %}
+    <p class="text-ink-3 text-sm">No visits recorded yet.</p>
+    {% else %}
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-ink-2 border-b border-line">
+          <th class="py-2 font-semibold">Day</th>
+          <th class="py-2 font-semibold text-right">Visits</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in per_day %}
+        <tr class="border-b border-line last:border-0">
+          <td class="py-2">{{ row.day }}</td>
+          <td class="py-2 text-right font-semibold">{{ row.total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+
+  {% endif %}
+</div>
+{% endblock %}

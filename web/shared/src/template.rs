@@ -349,6 +349,16 @@ pub mod filters {
             .unwrap_or(false))
     }
 
+    /// True when `[audience]` is present in config and the page is not demo
+    /// mode. Drives the landing-page visit beacon and the admin nav link.
+    /// Call as `{% if ""|audience_enabled %}`.
+    #[askama::filter_fn]
+    pub fn audience_enabled(_value: &str, values: &dyn askama::Values) -> askama::Result<bool> {
+        Ok(askama::get_value::<bool>(values, "audience_enabled")
+            .copied()
+            .unwrap_or(false))
+    }
+
     /// Prefixes an internal path with `/demo` when rendering in demo mode so
     /// navigation stays inside the demo, otherwise returns it untouched.
     /// Call as `{{ "/menu"|demo_href }}`.
@@ -401,6 +411,10 @@ impl Template {
         values.insert(
             "analytics_enabled",
             Box::new(self.config.analytics.is_some()),
+        );
+        values.insert(
+            "audience_enabled",
+            Box::new(self.config.audience.is_some() && !self.is_demo),
         );
         // Empty string = no analytics for this render. Demo pages never report.
         let google_tag_id = if self.is_demo {

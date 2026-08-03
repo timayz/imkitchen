@@ -172,6 +172,47 @@ pub async fn serve(
         None
     };
 
+    // Audience measurement runs on its own evento instance/SQLite database so
+    // beacon writes never contend with the main database's single write
+    // connection. This DB is not Litestream-replicated, so it must NOT use
+    // create_write_pool (its wal_autocheckpoint=0 would grow the WAL forever);
+    // create_pool keeps SQLite's default checkpointing.
+    let audience = match config.audience.as_ref() {
+        Some(audience_config) => {
+            crate::cli::migrate::migrate_audience(&audience_config.database_url).await?;
+
+            let audience_write = imkitchen::create_pool(&audience_config.database_url, 1).await?;
+            let audience_read =
+                imkitchen::create_read_pool(&audience_config.database_url, 2).await?;
+
+            let rw: evento::sql::RwSqlite = (
+                evento::Sqlite::from(audience_read.clone()),
+                evento::Sqlite::from(audience_write.clone()),
+            )
+                .into();
+
+            let mut audience_executor = evento::Evento::new(rw);
+            if let Some(region) = config.server.region.as_deref() {
+                audience_executor = audience_executor.default_routing_key(region);
+            }
+
+            let sub_audience_daily_stat = imkitchen_audience::daily_stat::subscription()
+                .data(audience_write.clone())
+                .all()
+                .start(&audience_executor)
+                .await?;
+
+            let module = imkitchen_audience::Module::new(imkitchen_audience::State {
+                executor: audience_executor,
+                read_db: audience_read,
+                write_db: audience_write,
+            });
+
+            Some((module, sub_audience_daily_stat))
+        }
+        None => None,
+    };
+
     let state = imkitchen_core::State {
         executor: executor.clone(),
         read_db: read_pool.clone(),
@@ -184,6 +225,7 @@ pub async fn serve(
         identity: imkitchen_identity::Module::new(state.clone()),
         billing: imkitchen_billing::Billing::new(state.clone()),
         core: imkitchen_core::Core::new(state.clone()),
+        audience: audience.as_ref().map(|(module, _)| module.clone()),
         import_jobs: Default::default(),
         inner: state,
     };
@@ -310,6 +352,13 @@ pub async fn serve(
     tracing::info!("Closing database pools...");
     read_pool.close().await;
     write_pool.close().await;
+    if let Some((module, sub_audience_daily_stat)) = audience {
+        if let Err(e) = sub_audience_daily_stat.shutdown().await {
+            tracing::error!("{e}");
+        }
+        module.read_db.close().await;
+        module.write_db.close().await;
+    }
     tracing::info!("Database pools closed");
 
     tracing::info!("Graceful shutdown complete");

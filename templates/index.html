@@ -345,6 +345,12 @@
     </div>
   </section>
 
+  {# First-party audience beacon: twinspark fires it after load, so the page
+     render never waits on it. The response is an empty ts-swap:skip no-op. #}
+  {% if ""|audience_enabled %}
+  <div ts-trigger="load" ts-req="/audience/visit" ts-req-method="post"></div>
+  {% endif %}
+
   </main>
 
   {# Footer #}

@@ -24,6 +24,7 @@ imkitchen-core = { path = "../../crates/core", version = "1.7.0" }
 imkitchen-identity = { path = "../../crates/identity", version = "1.7.0" }
 imkitchen-billing = { path = "../../crates/billing", version = "1.7.0" }
 imkitchen-notification = { path = "../../crates/notification", version = "1.7.0" }
+imkitchen-audience = { path = "../../crates/audience", version = "1.7.0" }
 evento = { workspace = true }
 config = { workspace = true }
 async-stripe = { workspace = true }

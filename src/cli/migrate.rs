@@ -2,6 +2,29 @@ use anyhow::Result;
 use evento::migrator::{Migrate, Plan};
 use sqlx::migrate::MigrateDatabase;
 
+/// Migrates the dedicated audience database (evento schema + rollup table).
+/// Also called from `serve` startup: the audience DB is operational telemetry,
+/// so it migrates automatically rather than requiring a manual step.
+pub async fn migrate_audience(database_url: &str) -> Result<()> {
+    tracing::info!("Running audience database migrations...");
+
+    if !sqlx::Sqlite::database_exists(database_url).await? {
+        tracing::info!("Audience database does not exist, creating: {database_url}");
+        sqlx::Sqlite::create_database(database_url).await?;
+    }
+
+    let pool = imkitchen::create_pool(database_url, 1).await?;
+    let mut conn = pool.acquire().await?;
+
+    imkitchen_audience::migrator::<sqlx::Sqlite>()?
+        .run(&mut conn, &Plan::apply_all())
+        .await?;
+    drop(conn);
+    pool.close().await;
+
+    Ok(())
+}
+
 pub async fn migrate(config: imkitchen_web_shared::config::Config) -> Result<()> {
     tracing::info!("Running database migrations...");
 
@@ -44,6 +67,10 @@ pub async fn migrate(config: imkitchen_web_shared::config::Config) -> Result<()>
     }
     drop(conn);
 
+    if let Some(audience) = config.audience.as_ref() {
+        migrate_audience(&audience.database_url).await?;
+    }
+
     tracing::info!("Migrations completed successfully");
 
     Ok(())
@@ -58,6 +85,13 @@ pub async fn reset(config: imkitchen_web_shared::config::Config) -> Result<()> {
         tracing::info!("Database dropped successfully");
     } else {
         tracing::info!("Database does not exist, nothing to drop");
+    }
+
+    if let Some(audience) = config.audience.as_ref()
+        && sqlx::Sqlite::database_exists(&audience.database_url).await?
+    {
+        tracing::warn!("Dropping audience database: {}", audience.database_url);
+        sqlx::Sqlite::drop_database(&audience.database_url).await?;
     }
 
     migrate(config).await?;

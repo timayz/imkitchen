@@ -1,0 +1,21 @@
+[package]
+name = "imkitchen-audience"
+version = "1.7.0"
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+evento.workspace = true
+bitcode.workspace = true
+anyhow.workspace = true
+sqlx.workspace = true
+sqlx_migrator.workspace = true
+sea-query.workspace = true
+sea-query-sqlx.workspace = true
+async-trait.workspace = true
+time.workspace = true
+woothee.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true
+temp-dir.workspace = true
