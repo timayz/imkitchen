@@ -31,10 +31,10 @@ dev:
 	cargo watch -x "run -- --config config/dev.local.toml serve"
 
 reset:
-	cargo run reset
+	cargo run -- --config config/dev.local.toml reset
 
 migrate:
-	cargo run migrate
+	cargo run -- --config config/dev.local.toml migrate
 
 clean:
 	cargo clean -p imkitchen
