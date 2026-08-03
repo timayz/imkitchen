@@ -6,6 +6,8 @@ pub struct RecordVisitInput {
     pub path: String,
     pub user_agent: String,
     pub timezone: String,
+    /// The landing page's `document.referrer`, when the browser exposes one.
+    pub referrer: Option<String>,
 }
 
 impl<E: Executor + Clone> crate::Module<E> {
@@ -30,6 +32,7 @@ impl<E: Executor + Clone> crate::Module<E> {
                 os: truncate(ua.os, 50),
                 country,
                 timezone: truncate(input.timezone, 64),
+                referrer: normalize_referrer(input.referrer.as_deref()),
             })
             .commit(&self.executor)
             .await?;
@@ -50,6 +53,24 @@ fn normalize_path(path: &str) -> String {
     .to_owned()
 }
 
+/// Reduces a raw referrer URL to its lowercased host without a `www.` prefix
+/// ("https://www.Google.com/search?q=x" -> "google.com"). Anything absent or
+/// unparseable becomes "direct".
+fn normalize_referrer(referrer: Option<&str>) -> String {
+    let host = referrer
+        .filter(|value| !value.trim().is_empty())
+        .and_then(|value| url::Url::parse(value).ok())
+        .and_then(|url| url.host_str().map(str::to_lowercase));
+
+    match host {
+        Some(host) => {
+            let host = host.strip_prefix("www.").unwrap_or(&host);
+            truncate(host.to_owned(), 100)
+        }
+        None => "direct".to_owned(),
+    }
+}
+
 fn truncate(value: String, max: usize) -> String {
     if value.len() <= max {
         value
@@ -61,6 +82,18 @@ fn truncate(value: String, max: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn normalizes_referrers() {
+        assert_eq!(
+            normalize_referrer(Some("https://www.Google.com/search?q=x")),
+            "google.com"
+        );
+        assert_eq!(normalize_referrer(Some("https://t.co/abc")), "t.co");
+        assert_eq!(normalize_referrer(Some("not a url")), "direct");
+        assert_eq!(normalize_referrer(Some("")), "direct");
+        assert_eq!(normalize_referrer(None), "direct");
+    }
 
     #[test]
     fn normalizes_paths() {

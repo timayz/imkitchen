@@ -21,6 +21,7 @@ pub struct AudienceTemplate {
     pub devices: Vec<BreakdownRow>,
     pub browsers: Vec<BreakdownRow>,
     pub countries: Vec<BreakdownRow>,
+    pub referrers: Vec<BreakdownRow>,
 }
 
 impl Default for AudienceTemplate {
@@ -36,6 +37,7 @@ impl Default for AudienceTemplate {
             devices: Vec::new(),
             browsers: Vec::new(),
             countries: Vec::new(),
+            referrers: Vec::new(),
         }
     }
 }
@@ -81,6 +83,10 @@ pub async fn page(
         audience.breakdown(BreakdownDim::Country, &from_30, 10),
         template
     );
+    let referrers = imkitchen_web_shared::try_page_response!(
+        audience.breakdown(BreakdownDim::Referrer, &from_30, 10),
+        template
+    );
 
     template.render(AudienceTemplate {
         enabled: true,
@@ -92,6 +98,7 @@ pub async fn page(
         devices,
         browsers,
         countries,
+        referrers,
         ..Default::default()
     })
 }

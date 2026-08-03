@@ -13,5 +13,7 @@ pub enum PageVisit {
         /// ISO 3166-1 alpha-2, "ZZ" when the timezone is unknown.
         country: String,
         timezone: String,
+        /// Referrer host (e.g. "google.com"), "direct" when there is none.
+        referrer: String,
     },
 }

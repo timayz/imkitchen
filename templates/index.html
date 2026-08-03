@@ -346,9 +346,16 @@
   </section>
 
   {# First-party audience beacon: twinspark fires it after load, so the page
-     render never waits on it. The response is an empty ts-swap:skip no-op. #}
+     render never waits on it. The response is an empty ts-swap:skip no-op.
+     The inline script runs during parsing, before the deferred twinspark.js
+     activates, so ts-data carries document.referrer (the traffic source —
+     the request's own Referer header would only be this page's URL). #}
   {% if ""|audience_enabled %}
-  <div ts-trigger="load" ts-req="/audience/visit" ts-req-method="post"></div>
+  <div id="audience-beacon" ts-trigger="load" ts-req="/audience/visit" ts-req-method="post"></div>
+  <script>
+    document.getElementById("audience-beacon")
+      .setAttribute("ts-data", JSON.stringify({ referrer: document.referrer }));
+  </script>
   {% endif %}
 
   </main>

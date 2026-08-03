@@ -8,6 +8,7 @@ pub enum AudienceDailyStat {
     Device,
     Browser,
     Country,
+    Referrer,
     Total,
     CreatedAt,
 }
@@ -53,6 +54,12 @@ pub(crate) mod m0001 {
                 ColumnDef::new(AudienceDailyStat::Country)
                     .string()
                     .string_len(2)
+                    .not_null(),
+            )
+            .col(
+                ColumnDef::new(AudienceDailyStat::Referrer)
+                    .string()
+                    .string_len(100)
                     .not_null(),
             )
             .col(
@@ -112,6 +119,7 @@ pub(crate) mod m0001 {
             .col(AudienceDailyStat::Device)
             .col(AudienceDailyStat::Browser)
             .col(AudienceDailyStat::Country)
+            .col(AudienceDailyStat::Referrer)
             .to_owned()
     }
 

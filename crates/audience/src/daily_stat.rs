@@ -29,6 +29,7 @@ pub enum BreakdownDim {
     Device,
     Browser,
     Country,
+    Referrer,
 }
 
 impl BreakdownDim {
@@ -38,6 +39,7 @@ impl BreakdownDim {
             Self::Device => AudienceDailyStat::Device,
             Self::Browser => AudienceDailyStat::Browser,
             Self::Country => AudienceDailyStat::Country,
+            Self::Referrer => AudienceDailyStat::Referrer,
         }
     }
 }
@@ -134,6 +136,7 @@ async fn handle_page_visited<E: Executor>(
             AudienceDailyStat::Device,
             AudienceDailyStat::Browser,
             AudienceDailyStat::Country,
+            AudienceDailyStat::Referrer,
             AudienceDailyStat::Total,
             AudienceDailyStat::CreatedAt,
         ])
@@ -143,6 +146,7 @@ async fn handle_page_visited<E: Executor>(
             event.data.device.to_owned().into(),
             event.data.browser.to_owned().into(),
             event.data.country.to_owned().into(),
+            event.data.referrer.to_owned().into(),
             1.into(),
             event.timestamp.into(),
         ])?
@@ -153,6 +157,7 @@ async fn handle_page_visited<E: Executor>(
                 AudienceDailyStat::Device,
                 AudienceDailyStat::Browser,
                 AudienceDailyStat::Country,
+                AudienceDailyStat::Referrer,
             ])
             .value(
                 AudienceDailyStat::Total,

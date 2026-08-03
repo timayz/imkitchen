@@ -44,6 +44,14 @@ fn visit(path: &str, user_agent: &str, timezone: &str) -> RecordVisitInput {
         path: path.to_owned(),
         user_agent: user_agent.to_owned(),
         timezone: timezone.to_owned(),
+        referrer: None,
+    }
+}
+
+fn visit_from(referrer: &str, path: &str, user_agent: &str, timezone: &str) -> RecordVisitInput {
+    RecordVisitInput {
+        referrer: Some(referrer.to_owned()),
+        ..visit(path, user_agent, timezone)
     }
 }
 
@@ -83,10 +91,20 @@ async fn test_daily_stat_rollup() -> anyhow::Result<()> {
 
     // Two identical-dimension visits plus one from another country/device.
     module
-        .record_visit(visit("/?utm_source=x", CHROME_UA, "Europe/Paris"))
+        .record_visit(visit_from(
+            "https://www.google.com/search?q=imkitchen",
+            "/?utm_source=x",
+            CHROME_UA,
+            "Europe/Paris",
+        ))
         .await?;
     module
-        .record_visit(visit("/", CHROME_UA, "Europe/Paris"))
+        .record_visit(visit_from(
+            "https://google.com/",
+            "/",
+            CHROME_UA,
+            "Europe/Paris",
+        ))
         .await?;
     module
         .record_visit(visit("/about", IPHONE_UA, "America/New_York"))
@@ -121,6 +139,18 @@ async fn test_daily_stat_rollup() -> anyhow::Result<()> {
         .await?;
     assert_eq!((paths[0].label.as_str(), paths[0].total), ("/", 2));
     assert_eq!((paths[1].label.as_str(), paths[1].total), ("/about", 1));
+
+    let referrers = module
+        .breakdown(BreakdownDim::Referrer, "0000-00-00", 10)
+        .await?;
+    assert_eq!(
+        (referrers[0].label.as_str(), referrers[0].total),
+        ("google.com", 2)
+    );
+    assert_eq!(
+        (referrers[1].label.as_str(), referrers[1].total),
+        ("direct", 1)
+    );
 
     // Idempotent rollup: draining again must not double-count.
     run_daily_stat_subscription(&module).await?;

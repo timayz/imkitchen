@@ -18,6 +18,7 @@ sea-query.workspace = true
 sea-query-sqlx.workspace = true
 async-trait.workspace = true
 time.workspace = true
+url.workspace = true
 woothee.workspace = true
 
 [dev-dependencies]
