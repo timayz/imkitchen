@@ -83,10 +83,8 @@ pub async fn page(
         audience.breakdown(BreakdownDim::Country, &from_30, 10),
         template
     );
-    let referrers = imkitchen_web_shared::try_page_response!(
-        audience.breakdown(BreakdownDim::Referrer, &from_30, 10),
-        template
-    );
+    let referrers =
+        imkitchen_web_shared::try_page_response!(audience.recent_referrers(&from_30, 10), template);
 
     template.render(AudienceTemplate {
         enabled: true,

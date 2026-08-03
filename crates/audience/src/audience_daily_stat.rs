@@ -11,6 +11,7 @@ pub enum AudienceDailyStat {
     Referrer,
     Total,
     CreatedAt,
+    UpdatedAt,
 }
 
 pub(crate) mod m0001 {
@@ -70,6 +71,11 @@ pub(crate) mod m0001 {
             )
             .col(
                 ColumnDef::new(AudienceDailyStat::CreatedAt)
+                    .big_integer()
+                    .not_null(),
+            )
+            .col(
+                ColumnDef::new(AudienceDailyStat::UpdatedAt)
                     .big_integer()
                     .not_null(),
             )

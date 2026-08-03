@@ -89,6 +89,35 @@ impl<E: Executor> crate::Module<E> {
             .await?)
     }
 
+    /// The last `limit` referrers seen (most recent first) with their visit
+    /// totals for `day >= from_day`.
+    pub async fn recent_referrers(
+        &self,
+        from_day: &str,
+        limit: u64,
+    ) -> anyhow::Result<Vec<BreakdownRow>> {
+        let statement = Query::select()
+            .expr_as(Expr::col(AudienceDailyStat::Referrer), Alias::new("label"))
+            .expr_as(
+                Func::sum(Expr::col(AudienceDailyStat::Total)),
+                Alias::new("total"),
+            )
+            .from(AudienceDailyStat::Table)
+            .and_where(Expr::col(AudienceDailyStat::Day).gte(from_day))
+            .group_by_col(AudienceDailyStat::Referrer)
+            .order_by_expr(
+                Expr::from(Func::max(Expr::col(AudienceDailyStat::UpdatedAt))),
+                Order::Desc,
+            )
+            .limit(limit)
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+        Ok(sqlx::query_as_with(sqlx::AssertSqlSafe(sql), values)
+            .fetch_all(&self.read_db)
+            .await?)
+    }
+
     /// Top values of one dimension for `day >= from_day`, highest first.
     pub async fn breakdown(
         &self,
@@ -139,6 +168,7 @@ async fn handle_page_visited<E: Executor>(
             AudienceDailyStat::Referrer,
             AudienceDailyStat::Total,
             AudienceDailyStat::CreatedAt,
+            AudienceDailyStat::UpdatedAt,
         ])
         .values([
             day.into(),
@@ -148,6 +178,7 @@ async fn handle_page_visited<E: Executor>(
             event.data.country.to_owned().into(),
             event.data.referrer.to_owned().into(),
             1.into(),
+            event.timestamp.into(),
             event.timestamp.into(),
         ])?
         .on_conflict(
@@ -163,6 +194,7 @@ async fn handle_page_visited<E: Executor>(
                 AudienceDailyStat::Total,
                 Expr::col(AudienceDailyStat::Total).add(1),
             )
+            .value(AudienceDailyStat::UpdatedAt, Expr::val(event.timestamp))
             .to_owned(),
         )
         .to_owned();

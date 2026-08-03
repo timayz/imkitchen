@@ -152,6 +152,20 @@ async fn test_daily_stat_rollup() -> anyhow::Result<()> {
         ("direct", 1)
     );
 
+    // All events share the same commit second, so force distinct last-seen
+    // times to make the recency ordering observable.
+    sqlx::query(
+        "update audience_daily_stat set updated_at = updated_at + 60 where referrer = 'direct'",
+    )
+    .execute(&module.write_db)
+    .await?;
+    let recent = module.recent_referrers("0000-00-00", 10).await?;
+    assert_eq!((recent[0].label.as_str(), recent[0].total), ("direct", 1));
+    assert_eq!(
+        (recent[1].label.as_str(), recent[1].total),
+        ("google.com", 2)
+    );
+
     // Idempotent rollup: draining again must not double-count.
     run_daily_stat_subscription(&module).await?;
     assert_eq!(module.total_since("0000-00-00").await?, 3);
