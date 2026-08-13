@@ -40,7 +40,9 @@
   {% block dns_prefetch %}{% endblock %}
 
   {% let google_tag_id = ""|google_tag_id %}
-  {% if !google_tag_id.is_empty() %}
+  {# Never loaded in the iOS App Store shell: keeps the app free of
+     tracking so no App Tracking Transparency prompt is required. #}
+  {% if !google_tag_id.is_empty() && !(""|ios_app) %}
   <!-- Google Analytics / Tag Manager — Consent Mode v2, default denied.
        Consent grant/revoke redirects reload the page, so this re-reads the
        cookie. A G- id loads gtag.js directly; a GTM- id loads the Tag

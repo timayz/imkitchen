@@ -1,6 +1,13 @@
-use axum::{http::header, response::IntoResponse};
+use axum::{
+    extract::State,
+    http::{StatusCode, header},
+    response::IntoResponse,
+};
 
-use imkitchen_web_shared::template::{Template, filters};
+use imkitchen_web_shared::{
+    AppState,
+    template::{Template, filters},
+};
 
 #[derive(askama::Template)]
 #[template(path = "manifest.json")]
@@ -42,6 +49,35 @@ pub async fn service_worker(template: Template) -> impl IntoResponse {
         ],
         template.render(ServiceWorkerTemplate),
     )
+}
+
+/// Digital asset links proving the Android TWA (Play Store app) may open
+/// imkitchen URLs without browser chrome. 404 until `[android]` is configured.
+pub async fn assetlinks(State(app): State<AppState>) -> impl IntoResponse {
+    let Some(ref android) = app.config.android else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+
+    let statements = serde_json::json!([{
+        "relation": ["delegate_permission/common.handle_all_urls"],
+        "target": {
+            "namespace": "android_app",
+            "package_name": android.package_name,
+            "sha256_cert_fingerprints": android.sha256_cert_fingerprints,
+        }
+    }]);
+
+    (
+        [
+            (
+                header::CONTENT_TYPE.as_str(),
+                "application/json; charset=utf-8",
+            ),
+            (header::CACHE_CONTROL.as_str(), "public, max-age=3600"),
+        ],
+        statements.to_string(),
+    )
+        .into_response()
 }
 
 #[derive(askama::Template)]

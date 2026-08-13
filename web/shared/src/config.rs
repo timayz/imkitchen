@@ -13,7 +13,18 @@ pub struct Config {
     pub premium: Option<PremiumConfig>,
     pub analytics: Option<AnalyticsConfig>,
     pub audience: Option<AudienceConfig>,
+    pub android: Option<AndroidConfig>,
     pub monitoring: MonitoringConfig,
+}
+
+/// Android TWA (Play Store) digital asset links. Section absent =
+/// /.well-known/assetlinks.json returns 404. Fingerprints are the SHA-256
+/// certificate fingerprints of both the Play App Signing key and the local
+/// upload key, from Play Console → App signing and `keytool -list -v`.
+#[derive(Debug, Deserialize, Clone)]
+pub struct AndroidConfig {
+    pub package_name: String,
+    pub sha256_cert_fingerprints: Vec<String>,
 }
 
 /// First-party audience measurement. Section absent = feature disabled: no

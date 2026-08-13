@@ -1,0 +1,3 @@
+"offline.title" = "Vous êtes hors ligne";
+"offline.message" = "imkitchen a besoin d'une connexion internet pour le premier chargement. Vérifiez votre connexion et réessayez.";
+"offline.retry" = "Réessayer";

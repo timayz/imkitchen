@@ -1,0 +1,3 @@
+"offline.title" = "You're offline";
+"offline.message" = "imkitchen needs an internet connection for the first load. Check your connection and try again.";
+"offline.retry" = "Try again";
