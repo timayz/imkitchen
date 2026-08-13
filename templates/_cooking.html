@@ -5,5 +5,31 @@
   {% block content %}{% endblock %}
 
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 space-y-2 max-w-md"></div>
+
+  <script>
+    // Keep the screen awake while cooking. Standard Wake Lock API where
+    // available (Chrome, Android TWA); the iOS App Store shell has no Wake
+    // Lock API and instead exposes a native "keepAwake" handler (see
+    // ios/imkitchen/WebViewController.swift).
+    (function () {
+      var native = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.keepAwake;
+      var lock = null;
+      function acquire() {
+        if (native) { native.postMessage(true); return; }
+        if (navigator.wakeLock) {
+          navigator.wakeLock.request('screen').then(function (l) { lock = l; }).catch(function () { });
+        }
+      }
+      function release() {
+        if (native) { native.postMessage(false); return; }
+        if (lock) { lock.release(); lock = null; }
+      }
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') { acquire(); }
+      });
+      window.addEventListener('pagehide', release);
+      acquire();
+    })();
+  </script>
 </body>
 {% endblock %}

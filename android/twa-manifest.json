@@ -1,0 +1,55 @@
+{
+  "packageId": "app.imkitchen",
+  "host": "imkitchen.app",
+  "name": "imkitchen",
+  "launcherName": "imkitchen",
+  "display": "standalone",
+  "themeColor": "#ef6c1e",
+  "themeColorDark": "#ef6c1e",
+  "navigationColor": "#ef6c1e",
+  "navigationColorDark": "#ef6c1e",
+  "navigationDividerColor": "#ef6c1e",
+  "navigationDividerColorDark": "#ef6c1e",
+  "backgroundColor": "#ffffff",
+  "enableNotifications": false,
+  "startUrl": "/",
+  "iconUrl": "https://imkitchen.app/static/icons/icon-512.png",
+  "maskableIconUrl": "https://imkitchen.app/static/icons/icon-512-maskable.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./upload.keystore",
+    "alias": "upload"
+  },
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [
+    {
+      "name": "Meal plan",
+      "shortName": "Meal plan",
+      "url": "https://imkitchen.app/menu",
+      "chosenIconUrl": "https://imkitchen.app/static/icons/icon-192.png"
+    },
+    {
+      "name": "Groceries",
+      "shortName": "Groceries",
+      "url": "https://imkitchen.app/groceries",
+      "chosenIconUrl": "https://imkitchen.app/static/icons/icon-192.png"
+    }
+  ],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://imkitchen.app/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://imkitchen.app/",
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": []
+}

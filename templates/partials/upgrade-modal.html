@@ -13,7 +13,11 @@
       <div class="text-center pr-8">
         <div class="text-5xl mb-3">🚀</div>
         <h3 class="text-2xl font-bold mb-2">{{ "Unlock Your Full Kitchen Potential"|t }}</h3>
+        {% if ""|ios_app %}
+        <p class="text-primary-100">{{ "You're in read-only mode. Continue free with ads to unlock everything."|t }}</p>
+        {% else %}
         <p class="text-primary-100">{{ "You're in read-only mode. Two ways to unlock everything: go Premium, or continue free with ads."|t }}</p>
+        {% endif %}
       </div>
     </div>
 
@@ -88,7 +92,8 @@
         </div>
       </div>
 
-      <!-- Pricing -->
+      <!-- Pricing — never in the iOS shell (App Store Guideline 3.1.1) -->
+      {% if !(""|ios_app) %}
       {% if let Ok(config) = "config"|value::<crate::config::Config> %}
         {% if let Some(premium) = config.premium %}
       <div class="bg-linear-to-br from-primary-500 to-primary-600 text-white rounded-xl p-6 mb-6">
@@ -101,15 +106,18 @@
       </div>
         {% endif %}
       {% endif %}
+      {% endif %}
     </div>
 
     <!-- Footer Actions -->
     <div class="border-t bg-cream p-6 rounded-b-xl">
       <div class="flex flex-col gap-3">
+        {% if !(""|ios_app) %}
         <a href="/upgrade"
           class="block text-center px-6 py-3 bg-linear-to-r from-primary-500 to-primary-500 text-white font-bold rounded-xl hover:from-primary-600 hover:to-primary-600 transition shadow-md">
           {{ "Subscribe — no ads"|t }}
         </a>
+        {% endif %}
         {# Plain form POST on purpose: the 303 redirect reloads the page so all
            feature gating is re-evaluated at once (no twinspark partial swap). #}
         <form method="post" action="/ads/consent">
@@ -123,7 +131,7 @@
           {{ "Maybe Later"|t }}
         </button>
       </div>
-      <p class="text-center text-xs text-ink-3 mt-4">{{ "Cancel anytime • No commitment"|t }} · {{ "Accepting ads sets a consent cookie you can revoke in settings"|t }}</p>
+      <p class="text-center text-xs text-ink-3 mt-4">{% if !(""|ios_app) %}{{ "Cancel anytime • No commitment"|t }} · {% endif %}{{ "Accepting ads sets a consent cookie you can revoke in settings"|t }}</p>
     </div>
   </div>
 </div>

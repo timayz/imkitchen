@@ -1,7 +1,7 @@
 use axum::{
     RequestPartsExt,
     extract::FromRequestParts,
-    http::{StatusCode, request::Parts},
+    http::{StatusCode, header, request::Parts},
     response::{Html, IntoResponse, Response},
 };
 use std::{collections::HashMap, convert::Infallible};
@@ -319,6 +319,18 @@ pub mod filters {
             .unwrap_or(false))
     }
 
+    /// True when the request comes from the iOS App Store shell (its WKWebView
+    /// sends a User-Agent ending in "imkitchen-ios"). Drives hiding of all
+    /// upgrade/billing UI and ads/analytics — Apple forbids external payment
+    /// flows for digital goods in-app (Guideline 3.1.1). The piped value is
+    /// ignored — call as `{% if ""|ios_app %}`.
+    #[askama::filter_fn]
+    pub fn ios_app(_value: &str, values: &dyn askama::Values) -> askama::Result<bool> {
+        Ok(askama::get_value::<bool>(values, "is_ios_app")
+            .copied()
+            .unwrap_or(false))
+    }
+
     /// True when monetization is configured (`[premium]` present in config):
     /// premium subscriptions and the ad-supported tier exist. False on
     /// instances where everyone gets full access and all premium/ads UI is
@@ -381,6 +393,7 @@ pub struct Template {
     pub preferred_language_iso: String,
     pub timezone: String,
     pub is_demo: bool,
+    pub is_ios_app: bool,
     config: crate::config::Config,
 }
 
@@ -407,6 +420,7 @@ impl Template {
         );
         values.insert("config", Box::new(self.config.clone()));
         values.insert("is_demo", Box::new(self.is_demo));
+        values.insert("is_ios_app", Box::new(self.is_ios_app));
         values.insert("premium_enabled", Box::new(self.config.premium.is_some()));
         values.insert(
             "analytics_enabled",
@@ -490,13 +504,48 @@ impl FromRequestParts<crate::AppState> for Template {
             .map(String::from)
             .unwrap_or_else(|| "UTC".to_string());
 
+        // The iOS shell appends a stable, version-less token to its WKWebView
+        // User-Agent. Session validation exact-matches the UA string, so the
+        // token must never vary across app releases.
+        let is_ios_app = parts
+            .headers
+            .get(header::USER_AGENT)
+            .and_then(|v| v.to_str().ok())
+            .map(|ua| ua.contains("imkitchen-ios"))
+            .unwrap_or(false);
+
         Ok(Template {
             preferred_language,
             preferred_language_iso,
             timezone,
             is_demo: false,
+            is_ios_app,
             config: state.config.clone(),
         })
+    }
+}
+
+/// Rejects requests from the iOS App Store shell by rendering the 404 page.
+/// Add as a handler argument on upgrade/billing routes: hiding the links is
+/// not enough, direct navigation must fail too (App Store Guideline 3.1.1).
+pub struct DenyIosApp;
+
+impl FromRequestParts<crate::AppState> for DenyIosApp {
+    type Rejection = Response;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &crate::AppState,
+    ) -> Result<Self, Self::Rejection> {
+        let template = Template::from_request_parts(parts, state)
+            .await
+            .expect("Infallible");
+
+        if template.is_ios_app {
+            return Err(template.render(NotFoundTemplate));
+        }
+
+        Ok(DenyIosApp)
     }
 }
 

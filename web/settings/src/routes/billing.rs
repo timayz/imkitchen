@@ -15,6 +15,7 @@ use stripe_payment::payment_method::DetachPaymentMethod;
 
 use imkitchen_web_shared::AppState;
 use imkitchen_web_shared::auth::AuthUser;
+use imkitchen_web_shared::template::DenyIosApp;
 use imkitchen_web_shared::template::Template;
 use imkitchen_web_shared::template::filters;
 
@@ -38,6 +39,7 @@ pub struct BillingTemplate {
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
+    _: DenyIosApp,
     template: Template,
     user: AuthUser,
     Query(query): Query<PageQuery>,
@@ -79,6 +81,7 @@ pub struct PaymentMethodTemplate {
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn payment_method(
+    _: DenyIosApp,
     template: Template,
     State(app): State<AppState>,
     user: AuthUser,
@@ -135,7 +138,11 @@ pub async fn payment_method(
 pub struct PaymentMethodModalTemplate {}
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn update_payment_modal(template: Template, user: AuthUser) -> impl IntoResponse {
+pub async fn update_payment_modal(
+    _: DenyIosApp,
+    template: Template,
+    user: AuthUser,
+) -> impl IntoResponse {
     template
         .render(PaymentMethodModalTemplate {})
         .into_response()
@@ -143,6 +150,7 @@ pub async fn update_payment_modal(template: Template, user: AuthUser) -> impl In
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn update_payment(
+    _: DenyIosApp,
     template: Template,
     State(app): State<AppState>,
     user: AuthUser,
@@ -177,6 +185,7 @@ pub async fn update_payment(
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn check(
+    _: DenyIosApp,
     template: Template,
     State(app): State<AppState>,
     user: AuthUser,
@@ -226,6 +235,7 @@ struct CancelModalTemplate {
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn cancel_modal(
+    _: DenyIosApp,
     template: Template,
     State(app): State<AppState>,
     user: AuthUser,
@@ -243,6 +253,7 @@ struct CancelTemplate {
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn cancel(
+    _: DenyIosApp,
     template: Template,
     State(app): State<AppState>,
     user: AuthUser,

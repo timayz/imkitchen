@@ -1,0 +1,10 @@
+# Config for the Playwright e2e server (see playwright.config.ts). Only
+# overrides what the tests need on top of the built-in defaults.
+
+# Digital asset links must be served for assetlinks.spec.ts. The fingerprint
+# is a dummy value — tests assert shape, not Play Console identity.
+[android]
+package_name = "app.imkitchen"
+sha256_cert_fingerprints = [
+  "00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF",
+]

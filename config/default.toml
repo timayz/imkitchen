@@ -42,6 +42,14 @@ tax = true
 # [audience]
 # database_url = "sqlite:audience.db"
 
+# Android TWA (Play Store) digital asset links, served at
+# /.well-known/assetlinks.json. Omit this section to serve 404 instead.
+# Fingerprints are SHA-256 certificate fingerprints: the Play App Signing key
+# (Play Console) and the local upload key (keytool -list -v -keystore …).
+# [android]
+# package_name = "app.imkitchen"
+# sha256_cert_fingerprints = ["AA:BB:…"]
+
 [monitoring]
 log_level = "debug,sqlx=info,tower_http=info"
 log_json = false

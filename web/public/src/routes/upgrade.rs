@@ -17,7 +17,7 @@ use imkitchen_web_shared::{
     AppState,
     auth::AuthUser,
     config::PremiumConfig,
-    template::{self, Template, filters},
+    template::{self, DenyIosApp, Template, filters},
 };
 
 #[derive(askama::Template)]
@@ -37,7 +37,7 @@ impl Default for UpgradeTemplate {
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
+pub async fn page(_: DenyIosApp, template: Template, user: AuthUser) -> impl IntoResponse {
     if user.is_premium() {
         return Redirect::to("/settings/billing").into_response();
     }
@@ -60,6 +60,7 @@ pub struct ActionInput {
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn action(
+    _: DenyIosApp,
     template: Template,
     user: AuthUser,
     app: State<AppState>,
@@ -163,6 +164,7 @@ pub struct OrderSummary {
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn order_summary(
+    _: DenyIosApp,
     template: Template,
     user: AuthUser,
     State(app): State<AppState>,

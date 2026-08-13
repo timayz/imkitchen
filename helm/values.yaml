@@ -73,6 +73,14 @@ config:
   # audience:
   #   database_url: "sqlite:/data/audience.db"
 
+  # Android TWA (Play Store) digital asset links, served at
+  # /.well-known/assetlinks.json — omit to serve 404. Fingerprints: the Play
+  # App Signing key certificate SHA-256 (Play Console → Test and release →
+  # Setup → App signing) plus the local upload key (keytool -list -v).
+  android:
+    package_name: "app.imkitchen"
+    sha256_cert_fingerprints: []
+
 persistence:
   size: 15Gi
   # StorageClass for the SQLite data volume. Longhorn by default; set to a local-disk

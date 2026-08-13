@@ -37,3 +37,20 @@ tests/fixtures/.auth/*.json
 
 # Docker
 .docker/traefik/certs/
+
+# Android TWA (Bubblewrap) — keystores and build outputs stay local
+android/.gradle/
+android/build/
+android/app/build/
+android/*.keystore
+android/local.properties
+android/store_id.txt
+android/*.aab
+android/*.apk
+android/*.idsig
+
+# iOS shell — Xcode build artifacts
+ios/build/
+ios/DerivedData/
+ios/imkitchen.xcodeproj/
+ios/imkitchen/Info.plist

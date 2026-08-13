@@ -30,7 +30,7 @@ export default defineConfig({
   /* Shared settings for all the projects below */
   use: {
     /* Base URL to use in actions like `await page.goto('/')` */
-    baseURL: 'http://localhost:8080',
+    baseURL: 'http://localhost:3000',
 
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
@@ -77,7 +77,7 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'cargo run serve',
+    command: 'cargo run -- serve --config tests/e2e/imkitchen.toml',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

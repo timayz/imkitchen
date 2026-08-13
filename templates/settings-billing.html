@@ -197,7 +197,9 @@
   </div>
 </section>
 
-{# ── Premium upgrade CTA ─────────────────────────────────────── #}
+{# ── Premium upgrade CTA — never in the iOS shell (route is 404 there,
+     gated anyway for safety) ──────────────────────────────────── #}
+{% if !(""|ios_app) %}
 {% if let Ok(config) = "config"|value::<crate::config::Config> %}
   {% if let Some(premium) = config.premium %}
 <section>
@@ -244,6 +246,7 @@
   </div>
 </section>
   {% endif %}
+{% endif %}
 {% endif %}
 
 {% endif %}
