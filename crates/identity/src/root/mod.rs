@@ -9,7 +9,6 @@ use std::ops::Deref;
 use crate::repository::{self};
 
 mod activate;
-mod ad_consent;
 mod change_email;
 mod change_role;
 mod login;
@@ -152,6 +151,9 @@ async fn handle_role_changed(event: Event<RoleChanged>, data: &mut User) -> anyh
     Ok(())
 }
 
+// AdConsentGranted/AdConsentRevoked are retired: no command emits them anymore
+// (the free tier is ad-supported by default), but the projection is strict and
+// existing user streams contain them, so the handlers must stay replayable.
 #[evento::handler]
 async fn handle_ad_consent_granted(
     _event: Event<AdConsentGranted>,

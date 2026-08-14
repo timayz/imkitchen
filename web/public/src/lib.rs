@@ -10,8 +10,7 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             get(routes::upgrade::page).post(routes::upgrade::action),
         )
         .route("/audience/visit", post(routes::audience::visit))
-        .route("/ads/consent", post(routes::ads::consent))
-        .route("/ads/consent/revoke", post(routes::ads::revoke))
+        .route("/upgrade/modal", get(routes::upgrade::modal))
         .route(
             "/upgrade/order-summary",
             get(routes::upgrade::order_summary),

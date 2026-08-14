@@ -207,9 +207,8 @@ pub async fn check(
         tracing::error!("{e}");
     }
 
-    // Premium supersedes ad-supported access — drop the client-side consent
-    // mirror so nothing reading the cookie sees a stale opt-in. The
-    // event-sourced consent stays recorded and resurfaces if premium lapses.
+    // Purge the legacy cookie from the retired opt-in ad-consent flow; nothing
+    // sets or reads it anymore.
     if succeeded {
         let jar = jar.remove(imkitchen_web_shared::auth::ad_consent_cookie());
         return (jar, "<div></div>").into_response();

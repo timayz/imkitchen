@@ -1,5 +1,4 @@
 pub mod about;
-pub mod ads;
 pub mod assets;
 pub mod audience;
 pub mod contact;

@@ -41,12 +41,11 @@
 
   {% let google_tag_id = ""|google_tag_id %}
   {% if !google_tag_id.is_empty() %}
-  <!-- Google Analytics / Tag Manager — Consent Mode v2, default denied.
-       Consent grant/revoke redirects reload the page, so this re-reads the
-       cookie. A G- id loads gtag.js directly; a GTM- id loads the Tag
-       Manager container. No <noscript> iframe on purpose: without JS no
-       consent default can be set, so the ns.html pixel would fire outside
-       the consent gate. -->
+  <!-- Google Analytics / Tag Manager — Consent Mode v2, permanently denied:
+       analytics runs cookieless and any ads stay non-personalized. A G- id
+       loads gtag.js directly; a GTM- id loads the Tag Manager container.
+       No <noscript> iframe on purpose: without JS no consent default can be
+       set, so the ns.html pixel would fire outside the consent gate. -->
   <link rel="preconnect" href="https://www.googletagmanager.com">
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -57,14 +56,6 @@
       'ad_user_data': 'denied',
       'ad_personalization': 'denied'
     });
-    if (document.cookie.split('; ').some(function (c) { return c.indexOf('ad_consent=') === 0; })) {
-      gtag('consent', 'update', {
-        'analytics_storage': 'granted',
-        'ad_storage': 'granted',
-        'ad_user_data': 'granted',
-        'ad_personalization': 'granted'
-      });
-    }
     {% if google_tag_id.starts_with("GTM-") %}
     dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
     {% else %}

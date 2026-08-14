@@ -12,7 +12,7 @@ use strum::VariantArray;
 
 use imkitchen_web_shared::{
     AppState,
-    auth::{AuthUser, RequireChef, RequireFullAccess},
+    auth::{AuthUser, RequireChef},
     template::{Template, filters},
 };
 
@@ -147,7 +147,7 @@ pub async fn page(
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn create(
     template: Template,
-    RequireFullAccess(user): RequireFullAccess,
+    AuthUser(user): AuthUser,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
     let id = match imkitchen_web_shared::try_response!(anyhow: app.core.recipe.find_user_draft(&user.id), template)

@@ -72,18 +72,11 @@ impl Login {
         self.subscription_expire_at > now
     }
 
-    pub fn has_ad_consent(&self) -> bool {
-        self.ad_consent_at > 0
-    }
-
-    pub fn has_full_access(&self) -> bool {
-        self.is_premium() || self.has_ad_consent()
-    }
-
+    // The free tier is ad-supported by default; only premium removes ads.
     // Demo, admin and self-hosted (premium config unset) logins are faked as
-    // premium upstream, so they never see ads even with a stale consent.
+    // premium upstream, so they never see ads.
     pub fn show_ads(&self) -> bool {
-        self.has_ad_consent() && !self.is_premium()
+        !self.is_premium()
     }
 
     pub fn username(&self) -> String {
@@ -345,6 +338,10 @@ async fn handle_payment_intent_succeeded(
     Ok(())
 }
 
+// AdConsentGranted/AdConsentRevoked are retired: no command emits them anymore
+// (the free tier is ad-supported by default), but existing user streams contain
+// them, so the handlers must stay replayable. ad_consent_at is kept on the
+// structs to avoid a snapshot revision bump; nothing reads it anymore.
 #[evento::handler]
 async fn handle_ad_consent_granted(
     event: Event<AdConsentGranted>,

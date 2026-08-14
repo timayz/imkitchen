@@ -189,12 +189,12 @@
           </span>
         </summary>
         <p class="px-5 pb-5 text-sm text-ink-2 leading-relaxed">
-          {{ "Free is read-only."|t }}
+          {{ "Free includes every feature, supported by ads."|t }}
           {% if let Ok(config) = "config"|value::<crate::config::Config> %}
             {% if let Some(premium) = config.premium %}
-            {{ "Premium ("|t }}${{ *premium.monthly_price|amount }}{{ "/mo or"|t }} ${{ premium.annual_price()|amount }}{{ "/yr) unlocks creating and editing your own recipes, generating personalized meal plans, step-by-step kitchen tools, bulk import from JSON, priority support, and early access to new features."|t }}
+            {{ "Premium ("|t }}${{ *premium.monthly_price|amount }}{{ "/mo or"|t }} ${{ premium.annual_price()|amount }}{{ "/yr) removes all ads, and adds priority support and early access to new features."|t }}
             {% else %}
-            {{ "Both Premium and the free ad-supported option unlock creating and editing your own recipes, personalized meal plans, step-by-step kitchen tools and bulk import from JSON. Premium additionally removes ads and adds priority support and early access to new features."|t }}
+            {{ "Premium removes all ads, and adds priority support and early access to new features."|t }}
             {% endif %}
           {% endif %}
         </p>
