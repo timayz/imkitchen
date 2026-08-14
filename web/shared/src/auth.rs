@@ -23,7 +23,7 @@ use time::OffsetDateTime;
 
 use crate::{
     config::JwtConfig,
-    template::{ForbiddenTemplate, Template, UpgradeModalTemplate},
+    template::{ForbiddenTemplate, Template},
 };
 
 const AUTH_COOKIE_NAME: &str = "auth_token";
@@ -69,22 +69,9 @@ pub fn auth_cookie<'a>() -> Cookie<'a> {
     Cookie::from(AUTH_COOKIE_NAME)
 }
 
+/// Cookie name of the retired opt-in ad-consent flow. Nothing sets or reads it
+/// anymore; only the removal helper below remains so stale cookies get purged.
 pub const AD_CONSENT_COOKIE_NAME: &str = "ad_consent";
-
-/// First-party cookie mirroring the user's ad consent. Not HttpOnly so a
-/// future ad script can read it client-side; the value is the grant unix
-/// timestamp. 12 months keeps it inside the CNIL 13-month consent cap.
-pub fn build_ad_consent_cookie<'a>() -> Cookie<'a> {
-    let now = OffsetDateTime::now_utc();
-    let expires = Expiration::from(now + time::Duration::days(365));
-
-    Cookie::build((AD_CONSENT_COOKIE_NAME, now.unix_timestamp().to_string()))
-        .path("/")
-        .http_only(false)
-        .same_site(SameSite::Lax)
-        .expires(expires)
-        .build()
-}
 
 pub fn ad_consent_cookie<'a>() -> Cookie<'a> {
     Cookie::build(AD_CONSENT_COOKIE_NAME).path("/").build()
@@ -150,7 +137,7 @@ impl FromRequestParts<crate::AppState> for Option<AuthToken> {
 }
 
 #[derive(Clone, Default)]
-pub struct AuthUser(imkitchen_identity::login::Login);
+pub struct AuthUser(pub imkitchen_identity::login::Login);
 
 impl AuthUser {
     /// Wraps a `Login` into an `AuthUser` without going through the request
@@ -245,39 +232,6 @@ impl FromRequestParts<crate::AppState> for Option<AuthUser> {
         state: &crate::AppState,
     ) -> Result<Self, Self::Rejection> {
         Ok(AuthUser::from_request_parts(parts, state).await.ok())
-    }
-}
-
-pub struct RequireFullAccess(pub imkitchen_identity::login::Login);
-
-impl Deref for RequireFullAccess {
-    type Target = imkitchen_identity::login::Login;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl FromRequestParts<crate::AppState> for RequireFullAccess {
-    type Rejection = Response;
-
-    async fn from_request_parts(
-        parts: &mut Parts,
-        state: &crate::AppState,
-    ) -> Result<Self, Self::Rejection> {
-        let AuthUser(user) = AuthUser::from_request_parts(parts, state)
-            .await
-            .map_err(|err| err.into_response())?;
-
-        if user.has_full_access() {
-            return Ok(RequireFullAccess(user));
-        }
-
-        let template = Template::from_request_parts(parts, state)
-            .await
-            .expect("Infallible");
-
-        Err(([("ts-swap", "skip")], template.render(UpgradeModalTemplate)).into_response())
     }
 }
 

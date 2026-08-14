@@ -176,11 +176,12 @@
     {# Spacer #}
     <div class="flex-1"></div>
 
-    {# Sidebar footer — upgrade card (free, expanded) + profile #}
+    {# Sidebar footer — Get Premium CTA (free) + profile #}
     <div class="border-t border-line-2 pt-3.5 mt-2">
-      {% if !user.has_full_access() && !demo %}
-      <a href="/upgrade"
-        class="hidden xl:block bg-linear-to-br from-herb-500 to-herb-700 rounded-2xl p-3 text-white mb-3 shadow-sm hover:shadow-md transition">
+      {% if !user.is_premium() && !demo %}
+      {# Expanded card on xl — opens the upgrade modal #}
+      <button type="button" ts-trigger="click" ts-req="/upgrade/modal" ts-target="body" ts-swap="append"
+        class="hidden xl:block w-full text-left bg-linear-to-br from-herb-500 to-herb-700 rounded-2xl p-3 text-white mb-3 shadow-sm hover:shadow-md transition cursor-pointer">
         <div class="flex items-center gap-2 mb-1">
           <svg class="w-3 h-3" fill="none" stroke="#ffd27a" stroke-width="1.7" viewBox="0 0 24 24"
             stroke-linecap="round" stroke-linejoin="round">
@@ -189,22 +190,21 @@
           <div class="text-[11px] font-mono uppercase tracking-widest opacity-90">{{ "Free tier"|t }}</div>
         </div>
         <div class="text-[12.5px] leading-snug mb-2.5">
-          {{ "Unlock unlimited plans, sides & bulk import."|t }}
+          {{ "Become Premium — remove all ads."|t }}
         </div>
         <div class="bg-paper text-herb-700 rounded-xl px-2.5 py-1.5 font-semibold text-[12px] text-center">
-          {{ "Go Premium"|t }}
+          {{ "Get Premium"|t }}
         </div>
-      </a>
-      <form method="post" action="/ads/consent" class="hidden xl:block mb-3">
-        <button type="submit"
-          class="block w-full text-center text-[11.5px] text-ink-3 font-medium hover:text-ink underline underline-offset-2 transition">
-          {{ "or continue free with ads"|t }}
-        </button>
-      </form>
-      {% else if user.show_ads() && !demo %}
-      <div class="hidden xl:block mb-3">
-        {% call ads::slot("sidebar") %}{% endcall %}
-      </div>
+      </button>
+      {# Icon-only CTA on the md icon rail #}
+      <button type="button" ts-trigger="click" ts-req="/upgrade/modal" ts-target="body" ts-swap="append"
+        title="{{ "Get Premium"|t }}"
+        class="xl:hidden w-full flex items-center justify-center py-2 mb-2 rounded-xl text-herb-700 hover:bg-cream-2 transition cursor-pointer">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z" />
+        </svg>
+      </button>
       {% endif %}
       <a href="{% if demo %}/register{% else %}/settings/account{% endif %}"
         class="flex items-center gap-2.5 px-0 xl:px-1 py-1 rounded-xl hover:bg-cream-2 transition justify-center xl:justify-start"
@@ -283,6 +283,16 @@
         </svg>
         <span class="text-xs mt-1">{{ "Settings"|t }}</span>
       </a>
+      {% if !user.is_premium() && !demo %}
+      <button type="button" ts-trigger="click" ts-req="/upgrade/modal" ts-target="body" ts-swap="append"
+        class="flex flex-col items-center py-2 px-3 text-herb-700">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z" />
+        </svg>
+        <span class="text-xs mt-1">{{ "Premium"|t }}</span>
+      </button>
+      {% endif %}
     </div>
   </nav>
 

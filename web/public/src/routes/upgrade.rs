@@ -50,6 +50,25 @@ pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
         .into_response()
 }
 
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn modal(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+) -> impl IntoResponse {
+    if app.config.premium.is_none() || user.is_premium() {
+        return Redirect::to("/").into_response();
+    }
+
+    // ts-swap="skip" so twinspark appends the modal instead of replacing the
+    // element that triggered it.
+    (
+        [("ts-swap", "skip")],
+        template.render(template::UpgradeModalTemplate),
+    )
+        .into_response()
+}
+
 #[derive(Deserialize, Debug)]
 pub struct ActionInput {
     pub plan: String,
