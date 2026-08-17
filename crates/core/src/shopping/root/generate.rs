@@ -33,6 +33,7 @@ impl<E: Executor> super::Module<E> {
                 ingredients: Default::default(),
                 recipes: Default::default(),
                 cursor: Default::default(),
+                aggregate_version: Default::default(),
                 from_date: 0,
                 days: 0,
                 generated_at: 0,

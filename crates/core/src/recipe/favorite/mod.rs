@@ -35,6 +35,7 @@ impl<E: Executor> Module<E> {
                     id: evento::hash_ids(vec![id, user_id]),
                     saved: false,
                     cursor: Default::default(),
+                    aggregate_version: Default::default(),
                 })
             })
     }
@@ -51,6 +52,10 @@ pub fn create_projection<E: Executor>() -> Projection<E, Favorite> {
         .handler(handle_saved())
         .handler(handle_unsaved())
         .strict()
+        // Bumped from the implicit 0 → 1 when evento's `#[projection]` macro
+        // grew the `aggregate_version` field: invalidates old snapshots so they
+        // rebuild from events rather than failing to bitcode-decode.
+        .revision(1)
 }
 
 impl ProjectionAggregate for Favorite {

@@ -67,6 +67,7 @@ impl<E: Executor> crate::contact::Module<E> {
             .columns([
                 ContactAdmin::Id,
                 ContactAdmin::Cursor,
+                ContactAdmin::AggregateVersion,
                 ContactAdmin::Email,
                 ContactAdmin::Status,
                 ContactAdmin::Subject,
@@ -148,6 +149,7 @@ pub(crate) async fn find(
         .columns([
             ContactAdmin::Id,
             ContactAdmin::Cursor,
+            ContactAdmin::AggregateVersion,
             ContactAdmin::Email,
             ContactAdmin::Status,
             ContactAdmin::Subject,
@@ -193,6 +195,7 @@ impl<E: Executor> Snapshot<E> for AdminView {
             .columns([
                 ContactAdmin::Id,
                 ContactAdmin::Cursor,
+                ContactAdmin::AggregateVersion,
                 ContactAdmin::Email,
                 ContactAdmin::Status,
                 ContactAdmin::Subject,
@@ -203,6 +206,7 @@ impl<E: Executor> Snapshot<E> for AdminView {
             .values([
                 self.id.to_owned().into(),
                 self.cursor.to_owned().into(),
+                self.aggregate_version.into(),
                 self.email.to_owned().into(),
                 self.status.to_string().into(),
                 self.subject.to_string().into(),
@@ -214,6 +218,7 @@ impl<E: Executor> Snapshot<E> for AdminView {
                 OnConflict::column(ContactAdmin::Id)
                     .update_columns([
                         ContactAdmin::Cursor,
+                        ContactAdmin::AggregateVersion,
                         ContactAdmin::Email,
                         ContactAdmin::Status,
                         ContactAdmin::Subject,

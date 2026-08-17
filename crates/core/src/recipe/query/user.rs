@@ -511,6 +511,7 @@ async fn find_user(pool: &SqlitePool, id: impl Into<String>) -> anyhow::Result<O
         .columns([
             RecipeUser::Id,
             RecipeUser::Cursor,
+            RecipeUser::AggregateVersion,
             RecipeUser::OwnerId,
             RecipeUser::OwnerName,
             RecipeUser::RecipeType,
@@ -671,6 +672,7 @@ impl<E: Executor> Snapshot<E> for UserView {
             .columns([
                 RecipeUser::Id,
                 RecipeUser::Cursor,
+                RecipeUser::AggregateVersion,
                 RecipeUser::OwnerId,
                 RecipeUser::OwnerName,
                 RecipeUser::RecipeType,
@@ -695,6 +697,7 @@ impl<E: Executor> Snapshot<E> for UserView {
             .values([
                 self.id.to_owned().into(),
                 self.cursor.to_owned().into(),
+                self.aggregate_version.into(),
                 self.owner_id.to_owned().into(),
                 self.owner_name.to_owned().into(),
                 self.recipe_type.to_string().into(),
@@ -720,6 +723,7 @@ impl<E: Executor> Snapshot<E> for UserView {
                 OnConflict::column(RecipeUser::Id)
                     .update_columns([
                         RecipeUser::Cursor,
+                        RecipeUser::AggregateVersion,
                         RecipeUser::OwnerId,
                         RecipeUser::OwnerName,
                         RecipeUser::RecipeType,

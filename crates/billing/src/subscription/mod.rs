@@ -38,6 +38,7 @@ impl<E: Executor> Module<E> {
                     address: None,
                     expire_at: 0,
                     cursor: Default::default(),
+                    aggregate_version: Default::default(),
                     customer_id: None,
                     payment_method_id: None,
                     payment_intent_id: None,
@@ -74,6 +75,10 @@ fn create_projection<E: Executor>() -> Projection<E, Subscription> {
         .handler(handle_stripe_setup_intent_created())
         .handler(handle_stripe_setup_intent_succeeded())
         .strict()
+        // Bumped from the implicit 0 → 1 when evento's `#[projection]` macro
+        // grew the `aggregate_version` field: invalidates old snapshots so they
+        // rebuild from events rather than failing to bitcode-decode.
+        .revision(1)
 }
 
 impl evento::ProjectionAggregate for Subscription {

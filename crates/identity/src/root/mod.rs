@@ -119,7 +119,10 @@ pub fn create_projection<E: Executor>() -> Projection<E, User> {
         .skip::<UsernameChanged>()
         .skip::<EmailChanged>()
         .strict()
-        .revision(1)
+        // Bumped 1 → 2 when evento's `#[projection]` macro grew the
+        // `aggregate_version` field: invalidates old snapshots so they rebuild
+        // from events rather than failing to bitcode-decode into the new shape.
+        .revision(2)
 }
 
 impl ProjectionAggregate for User {

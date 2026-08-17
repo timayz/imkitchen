@@ -60,6 +60,10 @@ pub fn create_projection<E: Executor>() -> Projection<E, MealPlan> {
         .handler(handle_generated())
         .skip::<SlotRecipeStatusChanged>()
         .strict()
+        // Bumped from the implicit 0 → 1 when evento's `#[projection]` macro
+        // grew the `aggregate_version` field: invalidates old snapshots so they
+        // rebuild from events rather than failing to bitcode-decode.
+        .revision(1)
 }
 
 #[evento::handler]

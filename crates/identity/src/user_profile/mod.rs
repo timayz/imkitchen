@@ -30,6 +30,7 @@ impl<E: Executor> Module<E> {
                     id,
                     description: String::new(),
                     cursor: Default::default(),
+                    aggregate_version: Default::default(),
                 })
             })
     }
@@ -45,6 +46,10 @@ fn create_projection<E: Executor>() -> Projection<E, UserProfile> {
     Projection::new::<user_profile::UserProfile>()
         .handler(handle_changed())
         .strict()
+        // Bumped from the implicit 0 → 1 when evento's `#[projection]` macro
+        // grew the `aggregate_version` field: invalidates old snapshots so they
+        // rebuild from events rather than failing to bitcode-decode.
+        .revision(1)
 }
 
 impl evento::ProjectionAggregate for UserProfile {
