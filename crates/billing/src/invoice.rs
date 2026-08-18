@@ -29,12 +29,16 @@ async fn handler_payment_intent_succeeded<E: Executor>(
     let result = context
         .executor
         .read(
-            Some(vec![EventFilter::by_event(
-                Created::aggregate_type(),
-                Created::event_name(),
-            )]),
+            Some(
+                [EventFilter::by_event(
+                    Created::aggregate_type(),
+                    Created::event_name(),
+                )]
+                .into(),
+            ),
             None,
             Args::backward(1, None),
+            None,
         )
         .await?;
 

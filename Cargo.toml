@@ -130,4 +130,4 @@ opt-level = 3
 # Temporary: test against evento PR #224 (fix/correctness-audit) before it merges.
 # Remove once the next alpha is published and bump the workspace dep instead.
 [patch.crates-io]
-evento = { git = "https://github.com/timayz/evento", branch = "fix/correctness-audit" }
+evento = { git = "https://github.com/timayz/evento", branch = "feat/macro-dx-improvements" }
