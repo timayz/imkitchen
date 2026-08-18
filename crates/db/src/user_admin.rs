@@ -5,6 +5,7 @@ pub enum UserAdmin {
     Table,
     Id,
     Cursor,
+    AggregateVersion,
     Email,
     FullName,
     Username,
@@ -356,6 +357,62 @@ WHERE user_admin_fts = new.id; END;
             )
             .execute(connection)
             .await?;
+
+            Ok(())
+        }
+    }
+}
+
+pub(crate) mod m0013 {
+    use sea_query::{ColumnDef, Table, TableAlterStatement};
+
+    use super::UserAdmin;
+
+    pub struct AddAggregateVersion;
+
+    fn add_aggregate_version_column() -> TableAlterStatement {
+        Table::alter()
+            .table(UserAdmin::Table)
+            .add_column(
+                ColumnDef::new(UserAdmin::AggregateVersion)
+                    .integer()
+                    .not_null()
+                    .default(0),
+            )
+            .to_owned()
+    }
+
+    fn drop_aggregate_version_column() -> TableAlterStatement {
+        Table::alter()
+            .table(UserAdmin::Table)
+            .drop_column(UserAdmin::AggregateVersion)
+            .to_owned()
+    }
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for AddAggregateVersion {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let add_column =
+                add_aggregate_version_column().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(sqlx::AssertSqlSafe(add_column))
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let drop_column =
+                drop_aggregate_version_column().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(sqlx::AssertSqlSafe(drop_column))
+                .execute(connection)
+                .await?;
 
             Ok(())
         }

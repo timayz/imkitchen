@@ -24,7 +24,10 @@ async fn setup_test_module(path: PathBuf) -> anyhow::Result<Module<Sqlite>> {
         .await?;
 
     Ok(Module::new(State {
-        executor: pool.clone().into(),
+        // Low stability margin keeps subscription drains fast in tests
+        // (single-process sqlite; margin only needs to exceed one INSERT commit).
+        executor: evento::Sqlite::from(pool.clone())
+            .stable_margin(std::time::Duration::from_millis(100)),
         read_db: pool.clone(),
         write_db: pool,
     }))

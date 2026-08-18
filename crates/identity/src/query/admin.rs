@@ -139,6 +139,7 @@ impl<E: Executor> crate::Module<E> {
             .columns([
                 UserAdmin::Id,
                 UserAdmin::Cursor,
+                UserAdmin::AggregateVersion,
                 UserAdmin::Email,
                 UserAdmin::FullName,
                 UserAdmin::Username,
@@ -242,6 +243,7 @@ impl<E: Executor> Snapshot<E> for AdminView {
             .columns([
                 UserAdmin::Id,
                 UserAdmin::Cursor,
+                UserAdmin::AggregateVersion,
                 UserAdmin::Email,
                 UserAdmin::FullName,
                 UserAdmin::Username,
@@ -276,6 +278,7 @@ impl<E: Executor> Snapshot<E> for AdminView {
             .columns([
                 UserAdmin::Id,
                 UserAdmin::Cursor,
+                UserAdmin::AggregateVersion,
                 UserAdmin::Email,
                 UserAdmin::FullName,
                 UserAdmin::Username,
@@ -290,6 +293,7 @@ impl<E: Executor> Snapshot<E> for AdminView {
             .values([
                 self.id.to_owned().into(),
                 self.cursor.to_owned().into(),
+                self.aggregate_version.into(),
                 self.email.to_owned().into(),
                 self.full_name.to_owned().into(),
                 self.username.to_owned().into(),
@@ -305,6 +309,7 @@ impl<E: Executor> Snapshot<E> for AdminView {
                 OnConflict::column(UserAdmin::Id)
                     .update_columns([
                         UserAdmin::Cursor,
+                        UserAdmin::AggregateVersion,
                         UserAdmin::Email,
                         UserAdmin::FullName,
                         UserAdmin::Username,

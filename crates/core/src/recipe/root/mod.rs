@@ -70,6 +70,7 @@ impl<E: Executor> Module<E> {
             .unwrap_or_else(|| RecipeShareState {
                 id: user_id,
                 cursor: Default::default(),
+                aggregate_version: Default::default(),
             }))
     }
 }
@@ -98,6 +99,10 @@ pub fn create_share_projection<E: Executor>() -> Projection<E, RecipeShareState>
         .handler(handle_all_shared_to_community())
         .handler(handle_all_made_private())
         .strict()
+        // Bumped from the implicit 0 → 1 when evento's `#[projection]` macro
+        // grew the `aggregate_version` field: invalidates old snapshots so they
+        // rebuild from events rather than failing to bitcode-decode.
+        .revision(1)
 }
 
 impl ProjectionAggregate for RecipeShareState {
@@ -126,7 +131,10 @@ async fn handle_all_made_private(
 
 pub fn create_projection<E: Executor>() -> Projection<E, Recipe> {
     Projection::new::<recipe::Recipe>()
-        .revision(2)
+        // 2 → 3: evento's `#[projection]` macro grew the `aggregate_version`
+        // field: invalidates old snapshots so they rebuild from events rather
+        // than failing to bitcode-decode into the new shape.
+        .revision(3)
         .tombstone::<Deleted>()
         .handler(handle_created())
         .handler(handle_imported())

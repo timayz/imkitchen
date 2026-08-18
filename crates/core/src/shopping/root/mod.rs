@@ -64,7 +64,9 @@ pub fn create_projection<E: Executor>() -> Projection<E, Shopping> {
         // Bumped from the implicit 0 → 1 when the `recipes` field was added to
         // `Shopping`: invalidates old snapshots so they rebuild from events
         // rather than failing to bitcode-decode into the new struct shape.
-        .revision(1)
+        // 1 → 2: evento's `#[projection]` macro grew the `aggregate_version`
+        // field, changing the bitcode layout again.
+        .revision(2)
         .handler(handle_checked())
         .handler(handle_generated())
         .handler(handle_unchecked())

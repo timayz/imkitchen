@@ -69,12 +69,16 @@ impl<E: Executor> super::Module<E> {
         let last_event = self
             .executor
             .read(
-                Some(vec![EventFilter::by_id(
-                    MealPlan::aggregate_type(),
-                    &input.user_id,
-                )]),
+                Some(
+                    [EventFilter::by_id(
+                        MealPlan::aggregate_type(),
+                        &input.user_id,
+                    )]
+                    .into(),
+                ),
                 None,
                 Args::backward(1, None),
+                None,
             )
             .await?;
 

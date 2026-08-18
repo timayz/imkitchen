@@ -28,9 +28,13 @@ pub async fn serve(
     let read_pool_size = config.database.max_connections;
     let read_pool = imkitchen::create_read_pool(&config.database.url, read_pool_size).await?;
 
+    // 100ms stability margin (default 1s): single-host sqlite, so the margin
+    // only needs to exceed the worst-case duration of one event INSERT commit.
+    // Subscription end-to-end latency grows by roughly this margin.
+    let stable_margin = std::time::Duration::from_millis(100);
     let rw: evento::sql::RwSqlite = (
-        evento::Sqlite::from(read_pool.clone()),
-        evento::Sqlite::from(write_pool.clone()),
+        evento::Sqlite::from(read_pool.clone()).stable_margin(stable_margin),
+        evento::Sqlite::from(write_pool.clone()).stable_margin(stable_margin),
     )
         .into();
 
@@ -186,8 +190,8 @@ pub async fn serve(
                 imkitchen::create_read_pool(&audience_config.database_url, 2).await?;
 
             let rw: evento::sql::RwSqlite = (
-                evento::Sqlite::from(audience_read.clone()),
-                evento::Sqlite::from(audience_write.clone()),
+                evento::Sqlite::from(audience_read.clone()).stable_margin(stable_margin),
+                evento::Sqlite::from(audience_write.clone()).stable_margin(stable_margin),
             )
                 .into();
 

@@ -18,7 +18,10 @@ async fn setup_test_state(path: std::path::PathBuf) -> anyhow::Result<State<Sqli
         .await?;
 
     Ok(State {
-        executor: pool.clone().into(),
+        // Low stability margin keeps subscription drains fast in tests
+        // (single-process sqlite; margin only needs to exceed one INSERT commit).
+        executor: evento::Sqlite::from(pool.clone())
+            .stable_margin(std::time::Duration::from_millis(100)),
         read_db: pool.clone(),
         write_db: pool,
     })
@@ -86,9 +89,10 @@ async fn resize_pipeline_writes_variants_and_blur_without_event_bytes() -> anyho
             .await?;
     }
 
+    let stable_margin = std::time::Duration::from_millis(100);
     let rw: evento::sql::RwSqlite = (
-        evento::Sqlite::from(pool.clone()),
-        evento::Sqlite::from(pool.clone()),
+        evento::Sqlite::from(pool.clone()).stable_margin(stable_margin),
+        evento::Sqlite::from(pool.clone()).stable_margin(stable_margin),
     )
         .into();
     let executor = evento::Evento::new(rw);

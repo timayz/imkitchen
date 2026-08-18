@@ -63,6 +63,7 @@ async fn find(pool: &SqlitePool, id: &str) -> anyhow::Result<Option<Recipient>> 
         .columns([
             NotificationRecipient::Id,
             NotificationRecipient::Cursor,
+            NotificationRecipient::AggregateVersion,
             NotificationRecipient::Email,
             NotificationRecipient::Lang,
             NotificationRecipient::Timezone,
@@ -96,6 +97,7 @@ impl<E: Executor> Snapshot<E> for Recipient {
             .columns([
                 NotificationRecipient::Id,
                 NotificationRecipient::Cursor,
+                NotificationRecipient::AggregateVersion,
                 NotificationRecipient::Email,
                 NotificationRecipient::Lang,
                 NotificationRecipient::Timezone,
@@ -103,6 +105,7 @@ impl<E: Executor> Snapshot<E> for Recipient {
             .values([
                 self.id.to_owned().into(),
                 self.cursor.to_owned().into(),
+                self.aggregate_version.into(),
                 self.email.to_owned().into(),
                 self.lang.to_owned().into(),
                 self.timezone.to_owned().into(),
@@ -111,6 +114,7 @@ impl<E: Executor> Snapshot<E> for Recipient {
                 OnConflict::column(NotificationRecipient::Id)
                     .update_columns([
                         NotificationRecipient::Cursor,
+                        NotificationRecipient::AggregateVersion,
                         NotificationRecipient::Email,
                         NotificationRecipient::Lang,
                         NotificationRecipient::Timezone,

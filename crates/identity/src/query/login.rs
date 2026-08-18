@@ -118,6 +118,7 @@ impl<E: Executor> Snapshot<E> for LoginView {
             .columns([
                 UserLogin::Id,
                 UserLogin::Cursor,
+                UserLogin::AggregateVersion,
                 UserLogin::Username,
                 UserLogin::Email,
                 UserLogin::State,
@@ -150,6 +151,7 @@ impl<E: Executor> Snapshot<E> for LoginView {
             .columns([
                 UserLogin::Id,
                 UserLogin::Cursor,
+                UserLogin::AggregateVersion,
                 UserLogin::Username,
                 UserLogin::Email,
                 UserLogin::State,
@@ -161,6 +163,7 @@ impl<E: Executor> Snapshot<E> for LoginView {
             .values([
                 self.id.to_owned().into(),
                 self.cursor.to_owned().into(),
+                self.aggregate_version.into(),
                 self.username.to_owned().into(),
                 self.email.to_owned().into(),
                 self.state.to_string().into(),
@@ -173,6 +176,7 @@ impl<E: Executor> Snapshot<E> for LoginView {
                 OnConflict::column(UserLogin::Id)
                     .update_columns([
                         UserLogin::Cursor,
+                        UserLogin::AggregateVersion,
                         UserLogin::Username,
                         UserLogin::Email,
                         UserLogin::State,

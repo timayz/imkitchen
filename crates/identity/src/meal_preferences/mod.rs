@@ -35,6 +35,7 @@ impl<E: Executor> Module<E> {
                     cuisine_variety_weight: 1.0,
                     recipe_types: RecipeType::default_meal_plan_types(),
                     cursor: Default::default(),
+                    aggregate_version: Default::default(),
                 })
             })
     }
@@ -54,7 +55,9 @@ fn create_projection<E: Executor>() -> Projection<E, MealPreferences> {
         // Bumped from the implicit 0 → 1 when the `recipe_types` field was added
         // to `MealPreferences`: invalidates old snapshots so they rebuild from
         // events rather than failing to bitcode-decode into the new struct shape.
-        .revision(1)
+        // 1 → 2: evento's `#[projection]` macro grew the `aggregate_version`
+        // field, changing the bitcode layout again.
+        .revision(2)
         .handler(handle_updated())
         .handler(handle_recipe_types_changed())
         .strict()

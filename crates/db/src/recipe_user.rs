@@ -5,6 +5,7 @@ pub enum RecipeUser {
     Table,
     Id,
     Cursor,
+    AggregateVersion,
     OwnerId,
     OwnerName,
     RecipeType,
@@ -737,6 +738,62 @@ pub(crate) mod m0007 {
                 .execute(connection)
                 .await
                 .ok();
+
+            Ok(())
+        }
+    }
+}
+
+pub(crate) mod m0013 {
+    use sea_query::{ColumnDef, Table, TableAlterStatement};
+
+    use super::RecipeUser;
+
+    pub struct AddAggregateVersion;
+
+    fn add_aggregate_version_column() -> TableAlterStatement {
+        Table::alter()
+            .table(RecipeUser::Table)
+            .add_column(
+                ColumnDef::new(RecipeUser::AggregateVersion)
+                    .integer()
+                    .not_null()
+                    .default(0),
+            )
+            .to_owned()
+    }
+
+    fn drop_aggregate_version_column() -> TableAlterStatement {
+        Table::alter()
+            .table(RecipeUser::Table)
+            .drop_column(RecipeUser::AggregateVersion)
+            .to_owned()
+    }
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for AddAggregateVersion {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let add_column =
+                add_aggregate_version_column().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(sqlx::AssertSqlSafe(add_column))
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let drop_column =
+                drop_aggregate_version_column().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(sqlx::AssertSqlSafe(drop_column))
+                .execute(connection)
+                .await?;
 
             Ok(())
         }
