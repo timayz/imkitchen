@@ -1737,8 +1737,9 @@ dependencies = [
 
 [[package]]
 name = "evento"
-version = "2.0.0-alpha.27"
-source = "git+https://github.com/timayz/evento?branch=feat%2Fmacro-dx-improvements#28a00f9069e907b8d83ffbe49adb26b39926cc76"
+version = "2.0.0-alpha.28"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eebd1a84e817582d04a46b45d39c624bd89182dd8ca1ea37c0f76e5daa7708c5"
 dependencies = [
  "evento-core",
  "evento-sql",
@@ -1748,8 +1749,9 @@ dependencies = [
 
 [[package]]
 name = "evento-core"
-version = "2.0.0-alpha.27"
-source = "git+https://github.com/timayz/evento?branch=feat%2Fmacro-dx-improvements#28a00f9069e907b8d83ffbe49adb26b39926cc76"
+version = "2.0.0-alpha.28"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58d702469e8494464d6fd3db49d736fad6235d12ef6e41cfeb2104f6a1adf095"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1768,8 +1770,9 @@ dependencies = [
 
 [[package]]
 name = "evento-macro"
-version = "2.0.0-alpha.27"
-source = "git+https://github.com/timayz/evento?branch=feat%2Fmacro-dx-improvements#28a00f9069e907b8d83ffbe49adb26b39926cc76"
+version = "2.0.0-alpha.28"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "89be83b967a95bec775cfd0b0965ffb49f57ed3070c9f07a265e909a261b4eef"
 dependencies = [
  "convert_case 0.11.0",
  "quote",
@@ -1778,8 +1781,9 @@ dependencies = [
 
 [[package]]
 name = "evento-sql"
-version = "2.0.0-alpha.27"
-source = "git+https://github.com/timayz/evento?branch=feat%2Fmacro-dx-improvements#28a00f9069e907b8d83ffbe49adb26b39926cc76"
+version = "2.0.0-alpha.28"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c9941fd8ef90d4f57002e1ccd50feb46a01680fddd095186e5813a278544334"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1794,8 +1798,9 @@ dependencies = [
 
 [[package]]
 name = "evento-sql-migrator"
-version = "2.0.0-alpha.27"
-source = "git+https://github.com/timayz/evento?branch=feat%2Fmacro-dx-improvements#28a00f9069e907b8d83ffbe49adb26b39926cc76"
+version = "2.0.0-alpha.28"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "535a211f19931fa81e04cbcccc53fa21b62f5ef05af2ef658d1ff703a5e0cf0e"
 dependencies = [
  "async-trait",
  "evento-sql",
@@ -6521,7 +6526,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",

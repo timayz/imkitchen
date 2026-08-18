@@ -22,7 +22,7 @@ askama = "0.16"
 world-tax = "0.5"
 sqlx = { version = "0.9", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.19", features = ["sqlite"] }
-evento = { version = "2.0.0-alpha.25", features = ["sqlite", "rw"] }
+evento = { version = "2.0.0-alpha.28", features = ["sqlite", "rw"] }
 argon2 = { version = "0.5", features = ["std"] }
 jsonwebtoken = { version = "11.0", features = ["aws_lc_rs"] }
 lettre = { version = "0.11", features = ["rustls-tls", "builder"] }
@@ -126,8 +126,3 @@ opt-level = 1
 
 [profile.dev.package.'*']
 opt-level = 3
-
-# Temporary: test against evento PR #224 (fix/correctness-audit) before it merges.
-# Remove once the next alpha is published and bump the workspace dep instead.
-[patch.crates-io]
-evento = { git = "https://github.com/timayz/evento", branch = "feat/macro-dx-improvements" }
