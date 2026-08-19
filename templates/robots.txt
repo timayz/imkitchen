@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /static/
 
-Sitemap: https://imkitchen.app/sitemap.xml
+{% if let Ok(config) = "config"|value::<crate::config::Config> %}Sitemap: {{ config.server.url }}/sitemap.xml{% else %}Sitemap: https://imkitchen.app/sitemap.xml{% endif %}

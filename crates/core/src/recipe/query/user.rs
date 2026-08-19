@@ -390,6 +390,56 @@ impl<E: Executor> crate::recipe::Module<E> {
         )
     }
 
+    /// All shared, non-draft recipe slugs, newest first (for the sitemap).
+    /// Capped below the 50k-URL sitemap file limit; if the cap is ever
+    /// approached, split /sitemap.xml into a sitemap index with paged files.
+    pub async fn list_shared_slugs(&self) -> anyhow::Result<Vec<String>> {
+        let statement = sea_query::Query::select()
+            .columns([RecipeUser::Slug])
+            .from(RecipeUser::Table)
+            .and_where(Expr::col(RecipeUser::IsShared).eq(true))
+            .and_where(Expr::col(RecipeUser::Name).not_equals(""))
+            .order_by(RecipeUser::CreatedAt, sea_query::Order::Desc)
+            .limit(45000)
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(
+            sqlx::query_as_with::<_, (String,), _>(sqlx::AssertSqlSafe(sql), values)
+                .fetch_all(&self.read_db)
+                .await?
+                .into_iter()
+                .map(|(slug,)| slug)
+                .collect(),
+        )
+    }
+
+    /// Distinct usernames of cooks with at least one shared, non-draft recipe
+    /// (for the sitemap).
+    pub async fn list_shared_cook_names(&self) -> anyhow::Result<Vec<String>> {
+        let statement = sea_query::Query::select()
+            .columns([RecipeUser::OwnerName])
+            .distinct()
+            .from(RecipeUser::Table)
+            .and_where(Expr::col(RecipeUser::IsShared).eq(true))
+            .and_where(Expr::col(RecipeUser::OwnerName).is_not_null())
+            .and_where(Expr::col(RecipeUser::Name).not_equals(""))
+            .order_by(RecipeUser::OwnerName, sea_query::Order::Asc)
+            .to_owned();
+
+        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+
+        Ok(
+            sqlx::query_as_with::<_, (String,), _>(sqlx::AssertSqlSafe(sql), values)
+                .fetch_all(&self.read_db)
+                .await?
+                .into_iter()
+                .map(|(name,)| name)
+                .collect(),
+        )
+    }
+
     pub async fn find_user_draft(
         &self,
         user_id: impl Into<String>,

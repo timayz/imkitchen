@@ -4,5 +4,7 @@ mod delete;
 mod helpers;
 #[path = "recipe/relevance.rs"]
 mod relevance;
+#[path = "recipe/sitemap.rs"]
+mod sitemap;
 #[path = "recipe/update.rs"]
 mod update;

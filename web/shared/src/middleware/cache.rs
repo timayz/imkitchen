@@ -17,8 +17,6 @@ pub async fn cache_control_middleware(req: Request<Body>, next: Next) -> Respons
         || path.starts_with("/images/")
         || path.starts_with("/fonts/")
         || path == "/manifest.json"
-        || path == "/robots.txt"
-        || path == "/sitemap.xml"
         || path == "/favicon.ico"
         || path.ends_with(".png")
         || path.ends_with(".jpg")
@@ -38,18 +36,21 @@ pub async fn cache_control_middleware(req: Request<Body>, next: Next) -> Respons
 
     let headers = response.headers_mut();
 
-    if is_static_file {
-        headers.insert(
-            header::CACHE_CONTROL,
-            "public, max-age=31536000, immutable".parse().unwrap(),
-        );
-    } else {
-        headers.insert(
-            header::CACHE_CONTROL,
-            "no-cache, must-revalidate, max-age=0".parse().unwrap(),
-        );
-        headers.insert(header::PRAGMA, "no-cache".parse().unwrap());
-        headers.insert(header::EXPIRES, "0".parse().unwrap());
+    // Handlers that set their own Cache-Control (sitemap, robots, sw.js) win.
+    if !headers.contains_key(header::CACHE_CONTROL) {
+        if is_static_file {
+            headers.insert(
+                header::CACHE_CONTROL,
+                "public, max-age=31536000, immutable".parse().unwrap(),
+            );
+        } else {
+            headers.insert(
+                header::CACHE_CONTROL,
+                "no-cache, must-revalidate, max-age=0".parse().unwrap(),
+            );
+            headers.insert(header::PRAGMA, "no-cache".parse().unwrap());
+            headers.insert(header::EXPIRES, "0".parse().unwrap());
+        }
     }
 
     response
