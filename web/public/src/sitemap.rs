@@ -38,8 +38,7 @@ pub async fn rebuild(app: &AppState) -> anyhow::Result<()> {
 }
 
 fn build_payload(identity: Bytes) -> anyhow::Result<SitemapPayload> {
-    let mut encoder =
-        flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::new(6));
+    let mut encoder = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::new(6));
     encoder.write_all(&identity)?;
     let gzip = Bytes::from(encoder.finish()?);
 

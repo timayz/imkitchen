@@ -72,7 +72,11 @@ pub async fn sitemap(State(app): State<AppState>, headers: HeaderMap) -> impl In
     let payload = app.sitemap.load();
     if payload.identity.is_empty() {
         // Only reachable if the startup build failed; the rebuild task retries.
-        return (StatusCode::SERVICE_UNAVAILABLE, [(header::RETRY_AFTER.as_str(), "30")], "")
+        return (
+            StatusCode::SERVICE_UNAVAILABLE,
+            [(header::RETRY_AFTER.as_str(), "30")],
+            "",
+        )
             .into_response();
     }
 
@@ -93,7 +97,10 @@ pub async fn sitemap(State(app): State<AppState>, headers: HeaderMap) -> impl In
 
     let mut response = (
         [
-            (header::CONTENT_TYPE.as_str(), "application/xml; charset=utf-8"),
+            (
+                header::CONTENT_TYPE.as_str(),
+                "application/xml; charset=utf-8",
+            ),
             (header::CACHE_CONTROL.as_str(), "public, max-age=86400"),
             (header::VARY.as_str(), "accept-encoding"),
         ],
