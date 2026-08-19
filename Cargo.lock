@@ -2886,6 +2886,8 @@ dependencies = [
  "async-stripe-types",
  "axum",
  "axum-extra",
+ "brotli",
+ "flate2",
  "imkitchen-audience",
  "imkitchen-billing",
  "imkitchen-core",

@@ -14,6 +14,8 @@ strum = { workspace = true }
 sqlx = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
+flate2 = { workspace = true }
+brotli = { workspace = true }
 world-tax = { workspace = true }
 async-stripe-core = { workspace = true }
 async-stripe-types = { workspace = true }
