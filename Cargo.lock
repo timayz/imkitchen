@@ -2615,7 +2615,7 @@ checksum = "89194689a993ab15268672e99e7b0e19da2da3268ac682e8f02d29d4d1434cd7"
 
 [[package]]
 name = "imkitchen"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "anyhow",
  "async-stripe",
@@ -2647,7 +2647,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-audience"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2666,7 +2666,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-billing"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "anyhow",
  "async-stripe",
@@ -2688,7 +2688,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-core"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "anyhow",
  "argon2",
@@ -2719,7 +2719,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-db"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "async-trait",
  "evento",
@@ -2730,7 +2730,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-identity"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "anyhow",
  "argon2",
@@ -2755,7 +2755,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-notification"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "anyhow",
  "askama",
@@ -2777,7 +2777,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-types"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "bitcode",
  "evento",
@@ -2789,7 +2789,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-admin"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "anyhow",
  "askama",
@@ -2817,7 +2817,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-demo"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "askama",
  "axum",
@@ -2836,7 +2836,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-grocery"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "anyhow",
  "askama",
@@ -2852,7 +2852,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-kitchen"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "askama",
  "axum",
@@ -2866,7 +2866,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-menu"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "askama",
  "axum",
@@ -2878,7 +2878,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-public"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "anyhow",
  "askama",
@@ -2903,7 +2903,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-recipe"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "askama",
  "axum",
@@ -2921,7 +2921,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-settings"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "askama",
  "async-stripe-core",
@@ -2942,7 +2942,7 @@ dependencies = [
 
 [[package]]
 name = "imkitchen-web-shared"
-version = "1.9.2"
+version = "1.9.3"
 dependencies = [
  "anyhow",
  "askama",
