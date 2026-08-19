@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use axum::{extract::State, http::header, response::IntoResponse};
 
 use imkitchen_web_shared::{
@@ -69,29 +71,49 @@ pub struct SitemapTemplate {
     pub cook_names: Vec<String>,
 }
 
+/// How long a rendered sitemap is served from memory before the read model is
+/// queried again. Staleness is fine: clients already cache it for a day.
+const SITEMAP_TTL: Duration = Duration::from_secs(3600);
+
+const SITEMAP_HEADERS: [(&str, &str); 2] = [
+    ("content-type", "application/xml; charset=utf-8"),
+    ("cache-control", "public, max-age=86400"),
+];
+
 pub async fn sitemap(template: Template, State(app): State<AppState>) -> impl IntoResponse {
-    let recipe_slugs =
-        imkitchen_web_shared::try_page_response!(app.core.recipe.list_shared_slugs(), template);
-    let cook_names = imkitchen_web_shared::try_page_response!(
-        app.core.recipe.list_shared_cook_names(),
+    if let Some((rendered_at, xml)) = app
+        .sitemap_cache
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .as_ref()
+        && rendered_at.elapsed() < SITEMAP_TTL
+    {
+        return (SITEMAP_HEADERS, xml.clone()).into_response();
+    }
+
+    let (recipe_slugs, cook_names) = imkitchen_web_shared::try_page_response!(
+        sync: tokio::try_join!(
+            app.core.recipe.list_shared_slugs(),
+            app.core.recipe.list_shared_cook_names()
+        ),
         template
     );
 
-    (
-        [
-            (
-                header::CONTENT_TYPE.as_str(),
-                "application/xml; charset=utf-8",
-            ),
-            (header::CACHE_CONTROL.as_str(), "public, max-age=86400"),
-        ],
-        template.render(SitemapTemplate {
+    // Rendered without the request-bound `Template` extractor so the resulting
+    // string is request-independent and safe to cache.
+    let xml = imkitchen_web_shared::try_page_response!(
+        sync: askama::Template::render(&SitemapTemplate {
             base_url: app.config.server.url.trim_end_matches('/').to_owned(),
             recipe_slugs,
             cook_names,
         }),
-    )
-        .into_response()
+        template
+    );
+
+    *app.sitemap_cache.lock().unwrap_or_else(|e| e.into_inner()) =
+        Some((Instant::now(), xml.clone()));
+
+    (SITEMAP_HEADERS, xml).into_response()
 }
 
 #[cfg(test)]
