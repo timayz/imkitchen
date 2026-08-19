@@ -799,3 +799,52 @@ pub(crate) mod m0013 {
         }
     }
 }
+
+pub(crate) mod m0014 {
+    pub struct AddSitemapIndexes;
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for AddSitemapIndexes {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            // Covering index for the sitemap slug query: equality on is_shared,
+            // ORDER BY created_at DESC served by a backward index scan, slug and
+            // name (draft filter) read from the index. Not a partial index: the
+            // query binds is_shared as a parameter, which SQLite cannot match
+            // against a partial index's WHERE clause.
+            sqlx::query(
+                "CREATE INDEX IF NOT EXISTS idx_recipe_user_sitemap_slugs \
+                 ON recipe_user (is_shared, created_at, slug, name)",
+            )
+            .execute(&mut *connection)
+            .await?;
+
+            // Covering index for the sitemap cook query: DISTINCT/ORDER BY
+            // owner_name served in index order.
+            sqlx::query(
+                "CREATE INDEX IF NOT EXISTS idx_recipe_user_sitemap_cooks \
+                 ON recipe_user (is_shared, owner_name, name)",
+            )
+            .execute(connection)
+            .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            sqlx::query("DROP INDEX IF EXISTS idx_recipe_user_sitemap_slugs")
+                .execute(&mut *connection)
+                .await?;
+            sqlx::query("DROP INDEX IF EXISTS idx_recipe_user_sitemap_cooks")
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+    }
+}

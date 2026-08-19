@@ -16,6 +16,7 @@ pub struct AppState {
     /// own evento instance/database.
     pub audience: Option<imkitchen_audience::Module<Evento>>,
     pub import_jobs: AdminImportJobs,
+    pub sitemap_cache: SitemapCache,
 }
 
 impl Deref for AppState {
@@ -52,3 +53,8 @@ pub struct AdminImportProgress {
 
 /// In-memory registry of running/completed import jobs, keyed by job id.
 pub type AdminImportJobs = Arc<Mutex<HashMap<String, AdminImportProgress>>>;
+
+/// Fully-rendered sitemap XML plus the instant it was rendered. TTL-only
+/// invalidation: the sitemap tolerates staleness (clients already cache it
+/// for a day via Cache-Control).
+pub type SitemapCache = Arc<Mutex<Option<(std::time::Instant, String)>>>;

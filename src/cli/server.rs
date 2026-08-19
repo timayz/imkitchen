@@ -231,6 +231,7 @@ pub async fn serve(
         core: imkitchen_core::Core::new(state.clone()),
         audience: audience.as_ref().map(|(module, _)| module.clone()),
         import_jobs: Default::default(),
+        sitemap_cache: Default::default(),
         inner: state,
     };
 

@@ -416,7 +416,9 @@ impl<E: Executor> crate::recipe::Module<E> {
     }
 
     /// Distinct usernames of cooks with at least one shared, non-draft recipe
-    /// (for the sitemap).
+    /// (for the sitemap). Capped so slugs + cooks + static entries stay below
+    /// the 50k-URL sitemap file limit; if the cap is ever approached, split
+    /// /sitemap.xml into a sitemap index with paged files.
     pub async fn list_shared_cook_names(&self) -> anyhow::Result<Vec<String>> {
         let statement = sea_query::Query::select()
             .columns([RecipeUser::OwnerName])
@@ -426,6 +428,7 @@ impl<E: Executor> crate::recipe::Module<E> {
             .and_where(Expr::col(RecipeUser::OwnerName).is_not_null())
             .and_where(Expr::col(RecipeUser::Name).not_equals(""))
             .order_by(RecipeUser::OwnerName, sea_query::Order::Asc)
+            .limit(4900)
             .to_owned();
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
