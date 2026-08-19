@@ -16,7 +16,7 @@ pub struct AppState {
     /// own evento instance/database.
     pub audience: Option<imkitchen_audience::Module<Evento>>,
     pub import_jobs: AdminImportJobs,
-    pub sitemap_cache: SitemapCache,
+    pub sitemap: SitemapStore,
 }
 
 impl Deref for AppState {
@@ -54,7 +54,28 @@ pub struct AdminImportProgress {
 /// In-memory registry of running/completed import jobs, keyed by job id.
 pub type AdminImportJobs = Arc<Mutex<HashMap<String, AdminImportProgress>>>;
 
-/// Fully-rendered sitemap XML plus the instant it was rendered. TTL-only
-/// invalidation: the sitemap tolerates staleness (clients already cache it
-/// for a day via Cache-Control).
-pub type SitemapCache = Arc<Mutex<Option<(std::time::Instant, String)>>>;
+/// One fully-built sitemap in the encodings we serve, so requests never
+/// compress. Swapped in whole by the background rebuild task; all fields are
+/// empty only before the first successful build.
+#[derive(Default)]
+pub struct SitemapPayload {
+    pub identity: axum::body::Bytes,
+    pub gzip: axum::body::Bytes,
+    pub brotli: axum::body::Bytes,
+}
+
+/// Always-warm pre-rendered sitemap. Readers clone an `Arc` under a momentary
+/// read lock; the rebuild task replaces the whole payload. In-memory only, so
+/// this assumes a single server process (as does the evento setup).
+#[derive(Clone, Default)]
+pub struct SitemapStore(Arc<std::sync::RwLock<Arc<SitemapPayload>>>);
+
+impl SitemapStore {
+    pub fn load(&self) -> Arc<SitemapPayload> {
+        self.0.read().unwrap_or_else(|e| e.into_inner()).clone()
+    }
+
+    pub fn store(&self, payload: SitemapPayload) {
+        *self.0.write().unwrap_or_else(|e| e.into_inner()) = Arc::new(payload);
+    }
+}

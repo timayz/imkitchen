@@ -6,6 +6,8 @@ pub mod middleware;
 pub mod state;
 pub mod template;
 
-pub use state::{AdminImportError, AdminImportJobs, AdminImportProgress, AppState};
+pub use state::{
+    AdminImportError, AdminImportJobs, AdminImportProgress, AppState, SitemapPayload, SitemapStore,
+};
 
 rust_i18n::i18n!("../../locales", fallback = "en");

@@ -231,9 +231,16 @@ pub async fn serve(
         core: imkitchen_core::Core::new(state.clone()),
         audience: audience.as_ref().map(|(module, _)| module.clone()),
         import_jobs: Default::default(),
-        sitemap_cache: Default::default(),
+        sitemap: Default::default(),
         inner: state,
     };
+
+    // Warm build so the first /sitemap.xml request after a deploy is served
+    // from memory; fail-soft (503 until the rebuild loop succeeds).
+    if let Err(err) = imkitchen_web_public::sitemap::rebuild(&app_state).await {
+        tracing::error!(?err, "initial sitemap build failed");
+    }
+    let sitemap_task = imkitchen_web_public::sitemap::spawn(app_state.clone());
 
     // The ZIP upload endpoint needs a much larger body than the global 1MB cap, so it is
     // built separately and merged *after* the global limit layer with its own limit.
@@ -353,6 +360,9 @@ pub async fn serve(
     }
 
     tracing::info!("All projections shut down successfully");
+
+    // Stop the rebuild loop before closing the pools it queries.
+    sitemap_task.abort();
 
     tracing::info!("Closing database pools...");
     read_pool.close().await;
