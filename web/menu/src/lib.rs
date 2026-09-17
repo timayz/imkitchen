@@ -11,6 +11,8 @@ use imkitchen_web_shared::{
     template::{Status as TemplateStatus, Template, filters},
 };
 
+pub mod tc;
+
 pub struct MenuSlot {
     pub day: u8,
     pub slot: Option<SlotRow>,
@@ -243,17 +245,30 @@ pub async fn page(
         .into_response()
 }
 
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn generate_action(
-    template: Template,
-    State(app): State<AppState>,
-    AuthUser(user): AuthUser,
-    Path((date,)): Path<(String,)>,
-) -> impl IntoResponse {
-    let preferences = imkitchen_web_shared::try_response!(anyhow:
-        app.identity.meal_preferences.load(&user.id),
-        template
-    );
+/// First day a generation for `date` targets, in the user's timezone: never
+/// before today. Both the command and the catch-up check must agree on it,
+/// otherwise the check keeps finding a stale slot from before today (whose
+/// `generated_at` never updates) and never matches the aggregate's.
+fn generation_target(date: &str, tz: &str) -> imkitchen_core::Result<(OffsetDateTime, u8)> {
+    let bounds = imkitchen_core::mealplan::month_bounds_from_date(date, tz)?;
+    let now_bounds = imkitchen_core::mealplan::month_bounds_from_now(tz)?;
+
+    Ok(if now_bounds.date > bounds.date {
+        (now_bounds.date, now_bounds.last.day())
+    } else {
+        (bounds.date, bounds.last.day())
+    })
+}
+
+/// Issues the meal plan generation command for the month of `date`.
+/// Framework-agnostic: shared by the axum handler and the topcoat procedure.
+pub async fn request_generation(
+    app: &AppState,
+    user_id: &str,
+    tz: &str,
+    date: &str,
+) -> imkitchen_core::Result<()> {
+    let preferences = app.identity.meal_preferences.load(user_id).await?;
 
     let randomize = Some(Randomize {
         cuisine_variety_weight: preferences.cuisine_variety_weight,
@@ -261,13 +276,7 @@ pub async fn generate_action(
         recipe_types: preferences.recipe_types.to_vec(),
     });
 
-    let bounds = imkitchen_web_shared::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
-    let now_bounds = imkitchen_web_shared::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_now(&user.tz), template);
-    let (target_local, last_day) = if now_bounds.date > bounds.date {
-        (now_bounds.date, now_bounds.last.day())
-    } else {
-        (bounds.date, bounds.last.day())
-    };
+    let (target_local, last_day) = generation_target(date, tz)?;
     // Use user-tz noon as start so date_to_u64(from_unix_timestamp(start)) yields
     // the user-tz date — from_unix_timestamp always returns UTC, so encoding start
     // at user-tz midnight gives the wrong UTC day for any non-UTC user (e.g. in
@@ -278,14 +287,53 @@ pub async fn generate_action(
     let start = start_noon.unix_timestamp();
     let days = last_day - target_local.date().day() + 1;
 
-    imkitchen_web_shared::try_response!(
-        app.core.mealplan.generate(Generate {
+    app.core
+        .mealplan
+        .generate(Generate {
             start: start as u64,
             days,
-            user_id: user.id.to_owned(),
+            user_id: user_id.to_owned(),
             randomize,
             household_size: preferences.household_size,
-        }),
+        })
+        .await
+}
+
+/// Whether the slot read model has caught up with the last generation command.
+pub async fn generation_caught_up(
+    app: &AppState,
+    user_id: &str,
+    tz: &str,
+    date: &str,
+) -> imkitchen_core::Result<bool> {
+    let (start, _) = generation_target(date, tz)?;
+
+    let s_generated_at = app
+        .core
+        .mealplan
+        .next_slot_from(start, user_id)
+        .await?
+        .map(|m| m.generated_at);
+
+    let c_generated_at = app
+        .core
+        .mealplan
+        .load(user_id)
+        .await?
+        .map(|m| m.generated_at);
+
+    Ok(s_generated_at == c_generated_at)
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn generate_action(
+    template: Template,
+    State(app): State<AppState>,
+    AuthUser(user): AuthUser,
+    Path((date,)): Path<(String,)>,
+) -> impl IntoResponse {
+    imkitchen_web_shared::try_response!(
+        request_generation(&app, &user.id, &user.tz, &date),
         template
     );
 
@@ -304,36 +352,16 @@ pub async fn generate_status(
     user: AuthUser,
     Path((date,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let bounds = imkitchen_web_shared::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
-    let now_bounds = imkitchen_web_shared::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_now(&user.tz), template);
-
-    // Polling must look at the same start day that generate_action used, otherwise
-    // we'll keep finding a stale slot from before today (whose generated_at never
-    // updates) and never match the aggregate's new generated_at.
-    let start = if now_bounds.date > bounds.date {
-        now_bounds.date
-    } else {
-        bounds.date
-    };
-
-    let s_generated_at = imkitchen_web_shared::try_response!(anyhow:
-        app.core.mealplan.next_slot_from(start, &user.id),
+    let caught_up = imkitchen_web_shared::try_response!(
+        generation_caught_up(&app, &user.id, &user.tz, &date),
         template,
         Some(GenerateButtonTemplate {
             date,
             status: TemplateStatus::Idle
         })
-    )
-    .map(|m| m.generated_at);
+    );
 
-    let c_generated_at =
-        imkitchen_web_shared::try_response!(anyhow: app.core.mealplan.load(&user.id),
-            template,
-            Some(GenerateButtonTemplate{date, status: TemplateStatus::Idle})
-        )
-        .map(|m| m.generated_at);
-
-    if s_generated_at == c_generated_at {
+    if caught_up {
         return Redirect::to(&format!("/menu/{date}")).into_response();
     }
 

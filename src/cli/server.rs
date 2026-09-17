@@ -1,16 +1,11 @@
 use anyhow::Result;
 use axum::extract::DefaultBodyLimit;
-use axum::response::IntoResponse;
 use axum::routing::get;
 use imkitchen_notification::EmailService;
 use imkitchen_web_shared::AppState;
-use imkitchen_web_shared::template::{NotFoundTemplate, Template};
+use topcoat::router::tower::TowerService;
 use tower_http::compression::CompressionLayer;
 use tower_http::trace::TraceLayer;
-
-async fn fallback(template: Template) -> impl IntoResponse {
-    template.render(NotFoundTemplate)
-}
 
 pub async fn serve(
     config: imkitchen_web_shared::config::Config,
@@ -242,6 +237,15 @@ pub async fn serve(
     }
     let sitemap_task = imkitchen_web_public::sitemap::spawn(app_state.clone());
 
+    // topcoat routes (migrating crate by crate). Mounted as the axum fallback
+    // below, *after* the minify and compression layers: the topcoat browser
+    // runtime hydrates from HTML comment markers that minify-html strips, and
+    // topcoat compresses its own responses.
+    let tc_router = imkitchen_web_shared::tc::router::builder(app_state.clone());
+    let tc_router = imkitchen_web_public::tc::tc_routes(tc_router);
+    let tc_router = imkitchen_web_menu::tc::tc_routes(tc_router);
+    let tc_router = imkitchen_web_recipe::tc::tc_routes(tc_router).build();
+
     // The ZIP upload endpoint needs a much larger body than the global 1MB cap, so it is
     // built separately and merged *after* the global limit layer with its own limit.
     let admin_upload = imkitchen_web_admin::upload_routes()
@@ -267,7 +271,6 @@ pub async fn serve(
         .merge(imkitchen_web_public::routes())
         .merge(imkitchen_web_admin::routes())
         .merge(imkitchen_web_demo::routes())
-        .fallback(fallback)
         .nest_service(
             "/static",
             imkitchen_web_shared::assets::AssetsService::new(),
@@ -283,6 +286,7 @@ pub async fn serve(
             imkitchen_web_shared::middleware::minify_html_middleware,
         ))
         .layer(CompressionLayer::new().br(true).gzip(true))
+        .fallback_service(TowerService::new(tc_router))
         .layer(TraceLayer::new_for_http());
 
     let addr = format!("{}:{}", host, port);

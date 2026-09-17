@@ -6,6 +6,8 @@ edition.workspace = true
 [dependencies]
 axum = { workspace = true }
 askama = { workspace = true }
+topcoat = { workspace = true }
+tokio = { workspace = true }
 tracing = { workspace = true }
 time = { workspace = true }
 imkitchen-core = { path = "../../crates/core", version = "1.9.4" }

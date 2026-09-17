@@ -2,6 +2,7 @@ pub use imkitchen_web_shared::config;
 
 pub mod routes;
 pub mod sitemap;
+pub mod tc;
 
 pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
     use axum::routing::{get, post};
