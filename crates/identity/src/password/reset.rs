@@ -1,8 +1,5 @@
 use crate::types::password::ResetCompleted;
-use argon2::{
-    Argon2, PasswordHasher,
-    password_hash::{SaltString, rand_core::OsRng},
-};
+use argon2::{Argon2, PasswordHasher};
 use evento::{Executor, ProjectionAggregate};
 use time::OffsetDateTime;
 use validator::Validate;
@@ -33,11 +30,8 @@ impl<E: Executor> super::Module<E> {
             imkitchen_core::user!("has already been reset");
         }
 
-        let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
-        let password_hash = argon2
-            .hash_password(input.password.as_bytes(), &salt)?
-            .to_string();
+        let password_hash = argon2.hash_password(input.password.as_bytes())?.to_string();
 
         repository::update(
             &self.write_db,

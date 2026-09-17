@@ -1,8 +1,5 @@
 use crate::types::user::Registered;
-use argon2::{
-    Argon2, PasswordHasher,
-    password_hash::{SaltString, rand_core::OsRng},
-};
+use argon2::{Argon2, PasswordHasher};
 use evento::Executor;
 use validator::Validate;
 
@@ -22,11 +19,8 @@ impl<E: Executor> super::Module<E> {
     pub async fn register(&self, input: RegisterInput) -> imkitchen_core::Result<String> {
         input.validate()?;
 
-        let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
-        let password_hash = argon2
-            .hash_password(input.password.as_bytes(), &salt)?
-            .to_string();
+        let password_hash = argon2.hash_password(input.password.as_bytes())?.to_string();
 
         if repository::find(
             &self.read_db,

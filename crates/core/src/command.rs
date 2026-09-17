@@ -42,6 +42,12 @@ impl From<argon2::password_hash::Error> for Error {
     }
 }
 
+impl From<argon2::password_hash::phc::Error> for Error {
+    fn from(value: argon2::password_hash::phc::Error) -> Self {
+        Self::Server(value.into())
+    }
+}
+
 impl From<std::time::SystemTimeError> for Error {
     fn from(value: std::time::SystemTimeError) -> Self {
         Self::Server(value.into())
