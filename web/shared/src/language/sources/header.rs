@@ -25,7 +25,7 @@ impl UserLanguageSource for AcceptLanguageSource {
     }
 }
 
-fn parse_quality_values(values: &str) -> Vec<(&str, f32)> {
+pub fn parse_quality_values(values: &str) -> Vec<(&str, f32)> {
     let values = values.split(',');
     let mut quality_values = Vec::new();
 
