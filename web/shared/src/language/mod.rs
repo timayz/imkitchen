@@ -6,3 +6,4 @@ mod sources;
 pub use config::*;
 pub use lang::*;
 pub use source::*;
+pub use sources::parse_quality_values;

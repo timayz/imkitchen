@@ -19,6 +19,9 @@ tower-http = { version = "0.7", features = ["fs", "trace", "limit", "compression
 rust-i18n = "4.2"
 time-tz = "3.0.0-rc.5.0.0"
 askama = "0.16"
+# Pinned exactly: topcoat ships breaking minors roughly monthly. Upgrade only
+# between crate migrations, re-running the spike go/no-go checks.
+topcoat = { version = "=0.8.1", default-features = false, features = ["router", "view", "runtime", "asset", "cookie", "compression", "tower", "multipart", "serve"] }
 world-tax = "0.5"
 sqlx = { version = "0.9", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.19", features = ["sqlite"] }
@@ -84,6 +87,7 @@ ignored = []
 [dependencies]
 tokio = { workspace = true }
 axum = { workspace = true }
+topcoat = { workspace = true }
 sqlx = { workspace = true }
 evento = { workspace = true }
 anyhow = { workspace = true }

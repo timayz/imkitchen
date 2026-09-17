@@ -4,6 +4,7 @@ pub mod config;
 pub mod language;
 pub mod middleware;
 pub mod state;
+pub mod tc;
 pub mod template;
 
 pub use state::{

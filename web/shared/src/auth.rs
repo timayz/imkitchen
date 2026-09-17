@@ -38,13 +38,18 @@ pub struct Claims {
     pub acc: String,
 }
 
-pub fn build_cookie<'a>(config: JwtConfig, sub: String, acc: String) -> anyhow::Result<Cookie<'a>> {
+/// Signs the `auth_token` JWT and returns it with its expiry. Framework-agnostic
+/// so both stacks issue the same token; see [`build_cookie`] for the axum cookie.
+pub fn encode_token(
+    config: &JwtConfig,
+    sub: String,
+    acc: String,
+) -> anyhow::Result<(String, OffsetDateTime)> {
     let now = OffsetDateTime::now_utc();
-    let expire_days = time::Duration::days(config.expiration_days.into());
-    let auth_expires = Expiration::from(now + expire_days);
+    let expires_at = now + time::Duration::days(config.expiration_days.into());
     let claims = Claims {
         aud: config.audience.to_owned(),
-        exp: (now + expire_days).unix_timestamp().try_into()?,
+        exp: expires_at.unix_timestamp().try_into()?,
         iat: now.unix_timestamp().try_into()?,
         iss: config.issuer.to_owned(),
         sub,
@@ -57,11 +62,17 @@ pub fn build_cookie<'a>(config: JwtConfig, sub: String, acc: String) -> anyhow::
         &EncodingKey::from_secret(config.secret.as_bytes()),
     )?;
 
+    Ok((auth_token, expires_at))
+}
+
+pub fn build_cookie<'a>(config: JwtConfig, sub: String, acc: String) -> anyhow::Result<Cookie<'a>> {
+    let (auth_token, expires_at) = encode_token(&config, sub, acc)?;
+
     Ok(Cookie::build((AUTH_COOKIE_NAME, auth_token))
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
-        .expires(auth_expires)
+        .expires(Expiration::from(expires_at))
         .build())
 }
 
@@ -76,6 +87,61 @@ pub const AD_CONSENT_COOKIE_NAME: &str = "ad_consent";
 pub fn ad_consent_cookie<'a>() -> Cookie<'a> {
     Cookie::build(AD_CONSENT_COOKIE_NAME).path("/").build()
 }
+
+/// Decodes and validates the `auth_token` JWT. Framework-agnostic so the axum
+/// extractors and the topcoat `cx` functions share one implementation.
+pub fn decode_claims(config: &JwtConfig, token: &str) -> Option<Claims> {
+    let mut validation = Validation::new(Algorithm::HS256);
+    validation.set_issuer(std::slice::from_ref(&config.issuer));
+    validation.set_audience(std::slice::from_ref(&config.audience));
+
+    decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(config.secret.as_bytes()),
+        &validation,
+    )
+    .ok()
+    .map(|data| data.claims)
+}
+
+/// Resolves the login a set of claims points at: the access must exist for the
+/// exact `User-Agent` it was created with, and the account must not be
+/// suspended. Framework-agnostic, see [`decode_claims`].
+pub async fn resolve_login(
+    state: &crate::AppState,
+    claims: &Claims,
+    user_agent: &str,
+) -> Option<imkitchen_identity::login::Login> {
+    let user = match state.identity.find_login(&claims.sub).await {
+        Ok(user) => user?,
+        Err(e) => {
+            tracing::error!("{e}");
+            return None;
+        }
+    };
+
+    let mut login = user
+        .logins
+        .iter()
+        .find(|l| l.id == claims.acc && l.user_agent == user_agent)?
+        .clone();
+
+    login.id = user.id;
+
+    if login.state == State::Suspended {
+        return None;
+    }
+
+    if state.config.premium.is_none() || login.is_admin() {
+        login.subscription_expire_at = (SystemTime::now() + time::Duration::weeks(10 * 52))
+            .duration_since(UNIX_EPOCH)
+            .map_or(0, |d| d.as_secs());
+    }
+
+    Some(login)
+}
+
+pub const AUTH_COOKIE: &str = AUTH_COOKIE_NAME;
 
 #[derive(Clone, Default)]
 pub struct AuthToken(Claims);
@@ -108,20 +174,11 @@ impl FromRequestParts<crate::AppState> for AuthToken {
             .map(|cookie| cookie.value())
             .ok_or(Redirect::to("/login"))?;
 
-        let mut validation = Validation::new(Algorithm::HS256);
-        validation.set_issuer(std::slice::from_ref(&state.config.jwt.issuer));
-        validation.set_audience(std::slice::from_ref(&state.config.jwt.audience));
+        let claims = decode_claims(&state.config.jwt, token).ok_or(Redirect::to("/login"))?;
 
-        let token_data = decode::<Claims>(
-            &token,
-            &DecodingKey::from_secret(state.config.jwt.secret.as_bytes()),
-            &validation,
-        )
-        .map_err(|_| Redirect::to("/login"))?;
+        parts.extensions.insert(claims.clone());
 
-        parts.extensions.insert(token_data.claims.clone());
-
-        Ok(AuthToken(token_data.claims))
+        Ok(AuthToken(claims))
     }
 }
 
@@ -188,35 +245,9 @@ impl FromRequestParts<crate::AppState> for AuthUser {
 
         let claims = AuthToken::from_request_parts(parts, state).await?;
 
-        let Some(user) = state.identity.find_login(&claims.sub).await.map_err(|e| {
-            tracing::error!("{e}");
-            Redirect::to("/login")
-        })?
-        else {
-            return Err(Redirect::to("/login"));
-        };
-
-        let Some(login) = user
-            .logins
-            .iter()
-            .find(|l| l.id == claims.acc && l.user_agent == user_agent.to_string())
-        else {
-            return Err(Redirect::to("/login"));
-        };
-
-        let mut login = login.clone();
-
-        login.id = user.id;
-
-        if login.state == State::Suspended {
-            return Err(Redirect::to("/login"));
-        }
-
-        if state.config.premium.is_none() || login.is_admin() {
-            login.subscription_expire_at = (SystemTime::now() + time::Duration::weeks(10 * 52))
-                .duration_since(UNIX_EPOCH)
-                .map_or(0, |d| d.as_secs());
-        }
+        let login = resolve_login(state, &claims, &user_agent.to_string())
+            .await
+            .ok_or(Redirect::to("/login"))?;
 
         parts.extensions.insert(login.clone());
 
