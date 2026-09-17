@@ -23,7 +23,7 @@ world-tax = "0.5"
 sqlx = { version = "0.9", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.19", features = ["sqlite"] }
 evento = { version = "2.0.0-alpha.28", features = ["sqlite", "rw"] }
-argon2 = { version = "0.6", features = ["std"] }
+argon2 = "0.6"
 jsonwebtoken = { version = "11.0", features = ["aws_lc_rs"] }
 lettre = { version = "0.11", features = ["rustls-tls", "builder"] }
 async-stripe = { version = "1.0.0-rc.6", features = ["rustls-aws-lc-rs", "uuid"] }
