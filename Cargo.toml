@@ -22,7 +22,8 @@ askama = "0.16"
 world-tax = "0.5"
 sqlx = { version = "0.9", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.19", features = ["sqlite"] }
-evento = { version = "2.0.0-alpha.28", features = ["sqlite", "rw"] }
+evento = { version = "2.0.0-alpha.29", features = ["sqlite", "rw"] }
+evento-lock = "2.0.0-alpha.29"
 argon2 = "0.6"
 jsonwebtoken = { version = "11.0", features = ["aws_lc_rs"] }
 lettre = { version = "0.11", features = ["rustls-tls", "builder"] }
@@ -108,6 +109,9 @@ imkitchen-web-settings = { path = "web/settings", version = "1.9.4" }
 imkitchen-web-public = { path = "web/public", version = "1.9.4" }
 imkitchen-web-admin = { path = "web/admin", version = "1.9.4" }
 imkitchen-web-demo = { path = "web/demo", version = "1.9.4" }
+
+[dev-dependencies]
+evento-lock = { workspace = true }
 
 [[bin]]
 name = "imkitchen"

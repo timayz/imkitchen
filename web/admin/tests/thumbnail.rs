@@ -105,12 +105,12 @@ async fn resize_pipeline_writes_variants_and_blur_without_event_bytes() -> anyho
     let _sub_query = imkitchen_core::recipe::query::user::create_projection()
         .data((pool.clone(), pool.clone()))
         .subscription("recipe-query")
-        .all()
+        .any_routing_key()
         .start(&executor)
         .await?;
     let _sub_thumbnail = imkitchen_core::recipe::query::thumbnail::subscription()
         .data(pool.clone())
-        .all()
+        .any_routing_key()
         .start(&executor)
         .await?;
 

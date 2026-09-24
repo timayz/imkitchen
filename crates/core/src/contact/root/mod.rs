@@ -33,7 +33,7 @@ impl<E: Executor> Module<E> {
     }
 }
 
-#[evento::projection(Encode, Decode)]
+#[evento::projection(name = "imkitchen-core/contact/Contact", Encode, Decode)]
 pub struct Contact {
     pub id: String,
     pub status: Status,

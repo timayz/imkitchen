@@ -36,7 +36,11 @@ impl<E: Executor> Module<E> {
     }
 }
 
-#[evento::projection(bitcode::Encode, bitcode::Decode)]
+#[evento::projection(
+    name = "imkitchen-identity/user_profile/UserProfile",
+    bitcode::Encode,
+    bitcode::Decode
+)]
 pub struct UserProfile {
     pub id: String,
     pub description: String,

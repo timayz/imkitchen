@@ -41,7 +41,7 @@ impl<E: Executor> Module<E> {
     }
 }
 
-#[evento::projection(Encode, Decode)]
+#[evento::projection(name = "imkitchen-core/recipe/favorite/Favorite", Encode, Decode)]
 pub struct Favorite {
     pub id: String,
     pub saved: bool,

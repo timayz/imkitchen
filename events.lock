@@ -1,0 +1,88 @@
+# Shapes persisted by evento. Generated: `EVENTO_LOCK=update cargo test`.
+# `event` and `type` lines are frozen — add a new variant instead of editing
+# one. A `view` line may change when its projection's `.revision(n)` grows.
+
+event imkitchen-audience/PageVisit::Visited { path: String, device: String, browser: String, os: String, country: String, timezone: String, referrer: String }
+event imkitchen-billing/Invoice::Created { key: String, number: u64, payment_method_id: String, from: InvoiceAddress, to: InvoiceAddress, paid_at: u64, expire_at: u64, details: PaymentDetails }
+event imkitchen-billing/Subscription::Cancelled unit
+event imkitchen-billing/Subscription::LifePremiumToggled { expire_at: u64 }
+event imkitchen-billing/Subscription::StripeCustomerCreated { id: String }
+event imkitchen-billing/Subscription::StripePaymentIntentCreated { id: String, email: String, details: PaymentDetails }
+event imkitchen-billing/Subscription::StripePaymentIntentSucceeded { id: String, payment_method_id: String, name: String, email: String, address: Address, paid_at: u64, expire_at: u64, details: PaymentDetails }
+event imkitchen-billing/Subscription::StripeSetupIntentCreated { id: String }
+event imkitchen-billing/Subscription::StripeSetupIntentSucceeded { id: String, payment_method_id: String, name: Option<String>, address: Option<Address> }
+event imkitchen-identity/Password::ResetCompleted unit
+event imkitchen-identity/Password::ResetRequested { user_id: String, email: String, lang: String, host: String }
+event imkitchen-identity/User::Activated unit
+event imkitchen-identity/User::AdConsentGranted unit
+event imkitchen-identity/User::AdConsentRevoked unit
+event imkitchen-identity/User::EmailChanged { value: String }
+event imkitchen-identity/User::LoggedIn { access_id: String, lang: String, timezone: String, user_agent: String }
+event imkitchen-identity/User::Logout { access_id: String }
+event imkitchen-identity/User::MadeAdmin unit
+event imkitchen-identity/User::Registered { email: String, lang: String, timezone: String }
+event imkitchen-identity/User::RoleChanged { role: Role }
+event imkitchen-identity/User::Suspended unit
+event imkitchen-identity/User::UsernameChanged { value: String }
+event imkitchen-types/Contact::FormSubmitted { name: String, email: String, subject: Subject, message: String, to: String }
+event imkitchen-types/Contact::MarkedReadAndReply unit
+event imkitchen-types/Contact::Reopened unit
+event imkitchen-types/Contact::Resolved unit
+event imkitchen-types/Favorite::Saved { recipe_id: String, recipe_owner: String }
+event imkitchen-types/Favorite::Unsaved { recipe_id: String }
+event imkitchen-types/MealPlan::DaysGenerated { start: u64, slots: Vec<Slot>, household_size: u16 }
+event imkitchen-types/MealPlan::SlotRecipeStatusChanged { date: u64, recipe_id: String, status: DaySlotStatus }
+event imkitchen-types/MealPreferences::Changed { household_size: u16, dietary_restrictions: Vec<DietaryRestriction>, cuisine_variety_weight: f32 }
+event imkitchen-types/MealPreferences::RecipeTypesChanged { recipe_types: Vec<RecipeType> }
+event imkitchen-types/Recipe::AdvancePrepChanged { advance_prep: String }
+event imkitchen-types/Recipe::BasicInformationChanged { name: String, origin: Option<String>, description: String, household_size: u16, prep_time: u16, cook_time: u16 }
+event imkitchen-types/Recipe::Created { name: String, owner_name: Option<String> }
+event imkitchen-types/Recipe::CuisineTypeChanged { cuisine_type: CuisineType }
+event imkitchen-types/Recipe::Deleted unit
+event imkitchen-types/Recipe::DietaryRestrictionsChanged { dietary_restrictions: Vec<DietaryRestriction> }
+event imkitchen-types/Recipe::Imported { name: String, owner_name: Option<String>, origin: Option<String>, description: String, recipe_type: RecipeType, cuisine_type: CuisineType, household_size: u16, prep_time: u16, cook_time: u16, ingredients: Vec<Ingredient>, instructions: Vec<Instruction>, advance_prep: String, dietary_restrictions: Vec<DietaryRestriction>, accepts_accompaniment: bool }
+event imkitchen-types/Recipe::IngredientsChanged { ingredients: Vec<Ingredient> }
+event imkitchen-types/Recipe::InstructionsChanged { instructions: Vec<Instruction> }
+event imkitchen-types/Recipe::MadePrivate unit
+event imkitchen-types/Recipe::MainCourseOptionsChanged { accepts_accompaniment: bool }
+event imkitchen-types/Recipe::RecipeTypeChanged { recipe_type: RecipeType }
+event imkitchen-types/Recipe::SharedToCommunity { owner_name: String }
+event imkitchen-types/Recipe::ThumbnailResized { device: String }
+event imkitchen-types/Recipe::ThumbnailUploaded unit
+event imkitchen-types/RecipeShare::AllMadePrivate unit
+event imkitchen-types/RecipeShare::AllSharedToCommunity { owner_name: String }
+event imkitchen-types/Shopping::Checked { ingredient: String }
+event imkitchen-types/Shopping::Generated { ingredients: Vec<Ingredient>, from_date: u64, days: u8 }
+event imkitchen-types/Shopping::RecipeAdded { recipe_id: String, recipe_ids: Vec<String>, ingredients: Vec<Ingredient> }
+event imkitchen-types/Shopping::RecipeRemoved { recipe_id: String, recipe_ids: Vec<String>, ingredients: Vec<Ingredient> }
+event imkitchen-types/Shopping::RecipeSetGenerated { recipe_ids: Vec<String> }
+event imkitchen-types/Shopping::Unchecked { ingredient: String }
+event imkitchen-types/UserProfile::Changed { description: String }
+
+type imkitchen_billing::types::invoice::InvoiceAddress { name: String, email: String, address: Address }
+type imkitchen_billing::types::subscription::Address { city: Option<String>, country: Option<String>, line1: Option<String>, line2: Option<String>, postal_code: Option<String>, state: Option<String> }
+type imkitchen_billing::types::subscription::PaymentDetails { plan: String, price: u32, tax: u32, tax_rate: Option<f64>, is_vat: bool }
+type imkitchen_identity::types::user::Role enum { User, Chef, Admin }
+type imkitchen_types::contact::Subject enum { GeneralInquiry, TechnicalSupport, BillingQuestion, FeatureRequest, BugReport, PartnershipOpportunity, Other }
+type imkitchen_types::mealplan::DaySlotStatus enum { Idle, Cooking (u8), Completed }
+type imkitchen_types::mealplan::Slot { day: u64, date: u64, household_size: u16, appetizer: Option<SlotRecipe>, main_course: SlotRecipe, accompaniment: Option<SlotRecipe>, dessert: Option<SlotRecipe>, beverage: Option<SlotRecipe>, condiment: Option<SlotRecipe> }
+type imkitchen_types::mealplan::SlotRecipe { id: String, name: String }
+type imkitchen_types::recipe::CuisineType enum { American, Caribbean, Chinese, Italian, French, Indian, Japanese, Mediterranean, Mexican, Thai }
+type imkitchen_types::recipe::DietaryRestriction enum { Vegetarian, Vegan, GlutenFree, DairyFree, NutFree }
+type imkitchen_types::recipe::Ingredient { name: String, quantity: u32, unit: Option<IngredientUnit>, category: Option<IngredientCategory> }
+type imkitchen_types::recipe::IngredientCategory enum { Frozen, Refrigerated, Grocery, FruitsAndVegetables, Butcher, Seafood, DairyAndEggs, Bakery, SnacksAndConfectionery }
+type imkitchen_types::recipe::IngredientUnit enum { G, ML }
+type imkitchen_types::recipe::Instruction { description: String, time_next: u16 }
+type imkitchen_types::recipe::RecipeType enum { Appetizer, MainCourse, Dessert, Accompaniment, Beverage, Condiment }
+
+view imkitchen-billing/subscription/Subscription rev=1 { id: String, name: Option<String>, email: Option<String>, customer_id: Option<String>, payment_method_id: Option<String>, payment_intent_id: Option<String>, setup_intent_id: Option<String>, payment_details: Option<PaymentDetails>, address: Option<Address>, expire_at: u64, is_active: bool, cursor: String, aggregate_version: u16 }
+view imkitchen-core/contact/Contact rev=1 { id: String, status: Status, cursor: String, aggregate_version: u16 } with Status enum { Unread, Read, Resolved }; Status enum { Idle, Processing, Failed }
+view imkitchen-core/mealplan/MealPlan rev=1 { user_id: String, generated_at: u64, cursor: String, aggregate_version: u16 }
+view imkitchen-core/recipe/Recipe rev=3 { id: String, owner_id: String, recipe_type: RecipeType, basic_information_hash: Vec<u8>, ingredients_hash: Vec<u8>, instructions_hash: Vec<u8>, dietary_restrictions_hash: Vec<u8>, advance_prep_hash: Vec<u8>, accepts_accompaniment: bool, is_shared: bool, cursor: String, aggregate_version: u16 }
+view imkitchen-core/recipe/RecipeShareState rev=1 { id: String, cursor: String, aggregate_version: u16 }
+view imkitchen-core/recipe/favorite/Favorite rev=1 { id: String, saved: bool, cursor: String, aggregate_version: u16 }
+view imkitchen-core/shopping/Shopping rev=2 { user_id: String, checked: HashSet<String>, ingredients: HashSet<String>, recipes: HashSet<String>, from_date: u64, days: u8, generated_at: u64, cursor: String, aggregate_version: u16 }
+view imkitchen-identity/User rev=2 { id: String, role: Role, state: State, ad_consent: bool, cursor: String, aggregate_version: u16 } with State enum { Active, Suspended }
+view imkitchen-identity/meal_preferences/MealPreferences rev=2 { id: String, household_size: u16, dietary_restrictions: Vec<DietaryRestriction>, cuisine_variety_weight: f32, recipe_types: Vec<RecipeType>, cursor: String, aggregate_version: u16 }
+view imkitchen-identity/password/Password rev=1 { id: String, user_id: String, completed: bool, expire_at: u64, cursor: String, aggregate_version: u16 }
+view imkitchen-identity/user_profile/UserProfile rev=1 { id: String, description: String, cursor: String, aggregate_version: u16 }

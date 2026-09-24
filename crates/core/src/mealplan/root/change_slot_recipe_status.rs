@@ -1,6 +1,4 @@
 use evento::Executor;
-use evento::cursor::Args;
-use evento::{Aggregate, EventFilter};
 use imkitchen_types::mealplan::{DaySlotStatus, MealPlan, SlotRecipeStatusChanged};
 
 pub struct ChangeSlotRecipeStatus {
@@ -15,23 +13,13 @@ impl<E: Executor> super::Module<E> {
         &self,
         input: ChangeSlotRecipeStatus,
     ) -> crate::Result<()> {
-        let last_event = self
-            .executor
-            .read(
-                Some(
-                    [EventFilter::by_id(
-                        MealPlan::aggregate_type(),
-                        &input.user_id,
-                    )]
-                    .into(),
-                ),
-                None,
-                Args::backward(1, None),
-                None,
-            )
+        let last_event = evento::read::<MealPlan>(&input.user_id)
+            .backward()
+            .limit(1)
+            .execute(&self.executor)
             .await?;
 
-        let Some(version) = last_event.edges.first().map(|e| e.node.version) else {
+        let Some(version) = last_event.first().map(|e| e.version) else {
             crate::not_found!("mealplan not found");
         };
 

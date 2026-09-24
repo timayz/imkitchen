@@ -44,6 +44,7 @@ where
     evento::sql_migrator::M0004: sqlx_migrator::Migration<DB>,
     evento::sql_migrator::M0005: sqlx_migrator::Migration<DB>,
     evento::sql_migrator::M0006: sqlx_migrator::Migration<DB>,
+    evento::sql_migrator::M0007: sqlx_migrator::Migration<DB>,
     m0001::Migration: sqlx_migrator::Migration<DB>,
 {
     let mut migrator = evento::sql_migrator::new::<DB>()?;
