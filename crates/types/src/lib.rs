@@ -5,4 +5,5 @@ pub mod mealplan;
 pub mod recipe;
 pub mod recipe_share;
 pub mod shopping;
+pub mod user_agent;
 pub mod user_profile;

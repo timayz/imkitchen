@@ -2989,6 +2989,7 @@ dependencies = [
  "imkitchen-core",
  "imkitchen-identity",
  "imkitchen-notification",
+ "imkitchen-types",
  "jsonwebtoken",
  "lightningcss",
  "mime_guess",
