@@ -45,6 +45,10 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
         .route("/sw.js", get(routes::assets::service_worker))
         .route("/manifest.json", get(routes::assets::manifest))
         .route("/robots.txt", get(routes::assets::robots))
+        .route(
+            "/.well-known/assetlinks.json",
+            get(routes::assets::assetlinks),
+        )
         .route("/sitemap.xml", get(routes::assets::sitemap))
 }
 

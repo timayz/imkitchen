@@ -1,5 +1,6 @@
 {
   "name": "{{ "imkitchen - Intelligent Meal Planning"|t }}",
+  "id": "/",
   "short_name": "imkitchen",
   "description": "{{ "Automated meal planning and cooking optimization"|t }}",
   "start_url": "/",
@@ -10,6 +11,15 @@
   "scope": "/",
   "categories": ["lifestyle", "food"],
   "prefer_related_applications": false,
+{%- if let Some(package_name) = play_package_name %}
+  "related_applications": [
+    {
+      "platform": "play",
+      "id": "{{ package_name }}",
+      "url": "https://play.google.com/store/apps/details?id={{ package_name }}"
+    }
+  ],
+{%- endif %}
   "icons": [
     {
       "src": "/static/icons/icon-192.png",
@@ -66,7 +76,7 @@
       "label": "{{ "Recipe instructions"|t }}"
     },
     {
-      "src": "/static/{{ "screenshots/meal-calendar-mobile" }}.png",
+      "src": "/static/{{ "screenshots/meal-calendar-mobile"|t }}.png",
       "sizes": "750x1334",
       "type": "image/png",
       "platform": "narrow",

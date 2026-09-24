@@ -11,9 +11,11 @@ use imkitchen_web_shared::{
 
 #[derive(askama::Template)]
 #[template(path = "manifest.json")]
-pub struct ManifestTemplate;
+pub struct ManifestTemplate {
+    pub play_package_name: Option<String>,
+}
 
-pub async fn manifest(template: Template) -> impl IntoResponse {
+pub async fn manifest(template: Template, State(app): State<AppState>) -> impl IntoResponse {
     (
         [
             (
@@ -25,7 +27,13 @@ pub async fn manifest(template: Template) -> impl IntoResponse {
                 "no-cache, no-store, must-revalidate",
             ),
         ],
-        template.render(ManifestTemplate),
+        template.render(ManifestTemplate {
+            play_package_name: app
+                .config
+                .native_app
+                .as_ref()
+                .map(|native| native.package_name.to_owned()),
+        }),
     )
 }
 
@@ -49,6 +57,46 @@ pub async fn service_worker(template: Template) -> impl IntoResponse {
         ],
         template.render(ServiceWorkerTemplate),
     )
+}
+
+#[derive(askama::Template)]
+#[template(path = "assetlinks.json")]
+pub struct AssetLinksTemplate {
+    pub package_name: String,
+    pub fingerprints: Vec<String>,
+}
+
+/// Digital Asset Links statement, proving this site and the Android app
+/// belong to the same owner. Without it the TWA falls back to showing a
+/// browser URL bar.
+///
+/// Must stay unauthenticated, served over HTTPS at exactly this path, and
+/// never redirected — Google's verifier follows none of that.
+///
+/// Driven by config rather than baked into the template because the app
+/// signing fingerprint only exists *after* the first upload to Play, so
+/// adding it has to be a redeploy rather than an image rebuild. Cached
+/// briefly for the same reason; setting Cache-Control here also stops
+/// `cache_control_middleware` stamping its no-store default.
+pub async fn assetlinks(template: Template, State(app): State<AppState>) -> impl IntoResponse {
+    let Some(native) = app.config.native_app.as_ref() else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+
+    (
+        [
+            (
+                header::CONTENT_TYPE.as_str(),
+                "application/json; charset=utf-8",
+            ),
+            (header::CACHE_CONTROL.as_str(), "public, max-age=300"),
+        ],
+        template.render(AssetLinksTemplate {
+            package_name: native.package_name.to_owned(),
+            fingerprints: native.sha256_cert_fingerprints.to_owned(),
+        }),
+    )
+        .into_response()
 }
 
 #[derive(askama::Template)]

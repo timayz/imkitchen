@@ -18,6 +18,16 @@ database:
 
 hostname: "imkitchen.app"
 
+# Dedicated hostname for the Android app shell (TWA). Empty = no app host: the
+# certificate and HTTPRoute stay single-hostname and nothing changes.
+#
+# The app needs its own host because a TWA runs inside Chrome and shares its
+# cookie jar, so a persisted "this is the app" marker on the main domain would
+# also hide billing when the same person opens the website in their browser.
+# A separate host makes the Host header an unambiguous per-request signal and
+# gives the app its own cookie jar. Must match config.native_app.host.
+appHostname: ""
+
 # Time allowed for the pod to shut down gracefully on a rolling update. Must be long
 # enough to drain HTTP, stop all evento projections, and checkpoint/close the SQLite WAL
 # so the next pod's migrate init container opens a clean database.
@@ -72,6 +82,20 @@ config:
   # SQLite database (not Litestream-replicated), kept on the same data volume.
   # audience:
   #   database_url: "sqlite:/data/audience.db"
+
+  # Android app shell — omit this section to disable: /.well-known/assetlinks.json
+  # 404s and nothing about the web app changes. `host` must match appHostname.
+  #
+  # Both signing fingerprints belong in the list. Play App Signing re-signs the
+  # bundle, so a locally installed build presents the upload key and the Play
+  # build presents the app signing key; listing only one leaves the store build
+  # showing a URL bar. The app signing fingerprint only exists after the first
+  # upload — adding it later is a redeploy, not an image rebuild.
+  # native_app:
+  #   host: "app.imkitchen.app"
+  #   package_name: "app.imkitchen.android"
+  #   sha256_cert_fingerprints:
+  #     - "AA:BB:..."
 
 persistence:
   size: 15Gi
