@@ -7,6 +7,7 @@ use imkitchen_billing::invoice_user::InvoiceUserView;
 use imkitchen_web_shared::{
     AppState,
     auth::AuthUser,
+    native::DenyNativeApp,
     template::{NotFoundTemplate, Template, filters},
 };
 
@@ -22,6 +23,7 @@ pub struct DetailTemplate {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
     template: Template,
+    _: DenyNativeApp,
     user: AuthUser,
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,

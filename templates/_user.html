@@ -178,7 +178,7 @@
 
     {# Sidebar footer — Get Premium CTA (free) + profile #}
     <div class="border-t border-line-2 pt-3.5 mt-2">
-      {% if !user.is_premium() && !demo %}
+      {% if !user.is_premium() && !demo && ""|purchase_enabled %}
       {# Expanded card on xl — opens the upgrade modal #}
       <button type="button" ts-trigger="click" ts-req="/upgrade/modal" ts-target="body" ts-swap="append"
         class="hidden xl:block w-full text-left bg-linear-to-br from-herb-500 to-herb-700 rounded-2xl p-3 text-white mb-3 shadow-sm hover:shadow-md transition cursor-pointer">
@@ -283,7 +283,7 @@
         </svg>
         <span class="text-xs mt-1">{{ "Settings"|t }}</span>
       </a>
-      {% if !user.is_premium() && !demo %}
+      {% if !user.is_premium() && !demo && ""|purchase_enabled %}
       <button type="button" ts-trigger="click" ts-req="/upgrade/modal" ts-target="body" ts-swap="append"
         class="flex flex-col items-center py-2 px-3 text-herb-700">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"
@@ -306,7 +306,7 @@
     {% endif %}
     {% block hero %}{% endblock %}
     {% block content %}{% endblock %}
-    {% if user.show_ads() && !demo %}
+    {% if user.show_ads() && !demo && ""|purchase_enabled %}
     <div class="px-5 md:px-8 pb-6 max-w-3xl mx-auto">
       {% call ads::slot("content-bottom") %}{% endcall %}
     </div>

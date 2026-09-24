@@ -17,6 +17,7 @@ use imkitchen_web_shared::{
     AppState,
     auth::AuthUser,
     config::PremiumConfig,
+    native::DenyNativeApp,
     template::{self, Template, filters},
 };
 
@@ -37,7 +38,7 @@ impl Default for UpgradeTemplate {
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
+pub async fn page(template: Template, _: DenyNativeApp, user: AuthUser) -> impl IntoResponse {
     if user.is_premium() {
         return Redirect::to("/settings/billing").into_response();
     }
@@ -53,6 +54,7 @@ pub async fn page(template: Template, user: AuthUser) -> impl IntoResponse {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn modal(
     template: Template,
+    _: DenyNativeApp,
     user: AuthUser,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
@@ -80,6 +82,7 @@ pub struct ActionInput {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn action(
     template: Template,
+    _: DenyNativeApp,
     user: AuthUser,
     app: State<AppState>,
     Form(input): Form<ActionInput>,
@@ -183,6 +186,7 @@ pub struct OrderSummary {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn order_summary(
     template: Template,
+    _: DenyNativeApp,
     user: AuthUser,
     State(app): State<AppState>,
     Form(input): Form<OrderSummary>,
