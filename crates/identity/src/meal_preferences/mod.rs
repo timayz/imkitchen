@@ -41,7 +41,11 @@ impl<E: Executor> Module<E> {
     }
 }
 
-#[evento::projection(Encode, Decode)]
+#[evento::projection(
+    name = "imkitchen-identity/meal_preferences/MealPreferences",
+    Encode,
+    Decode
+)]
 pub struct MealPreferences {
     pub id: String,
     pub household_size: u16,

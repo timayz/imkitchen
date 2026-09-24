@@ -97,7 +97,7 @@ pub struct Account {
     pub state: State,
 }
 
-#[evento::projection(Encode, Decode)]
+#[evento::projection(name = "imkitchen-identity/User", Encode, Decode)]
 pub struct User {
     pub id: String,
     pub role: Role,

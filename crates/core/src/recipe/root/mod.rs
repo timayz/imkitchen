@@ -75,7 +75,7 @@ impl<E: Executor> Module<E> {
     }
 }
 
-#[evento::projection(Encode, Decode)]
+#[evento::projection(name = "imkitchen-core/recipe/Recipe", Encode, Decode)]
 pub struct Recipe {
     pub id: String,
     pub owner_id: String,
@@ -89,7 +89,7 @@ pub struct Recipe {
     pub is_shared: bool,
 }
 
-#[evento::projection(Encode, Decode)]
+#[evento::projection(name = "imkitchen-core/recipe/RecipeShareState", Encode, Decode)]
 pub struct RecipeShareState {
     pub id: String,
 }

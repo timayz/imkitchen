@@ -42,7 +42,7 @@ impl<E: Executor> Module<E> {
     }
 }
 
-#[evento::projection(Encode, Decode)]
+#[evento::projection(name = "imkitchen-core/shopping/Shopping", Encode, Decode)]
 pub struct Shopping {
     pub user_id: String,
     pub checked: HashSet<String>,

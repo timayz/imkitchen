@@ -64,7 +64,7 @@ pub async fn serve(
     let sub_user_query = imkitchen_identity::admin::create_projection()
         .data((read_pool.clone(), write_pool.clone()))
         .subscription("user-query")
-        .all()
+        .any_routing_key()
         .start(&executor)
         .await?;
 
@@ -75,7 +75,7 @@ pub async fn serve(
 
     let sub_user_global_stat = imkitchen_identity::global_stat::subscription()
         .data(write_pool.clone())
-        .all()
+        .any_routing_key()
         .start(&executor)
         .await?;
 
@@ -88,13 +88,13 @@ pub async fn serve(
     let sub_contact_query = imkitchen_core::contact::admin::create_projection()
         .data((read_pool.clone(), write_pool.clone()))
         .subscription("contact-query")
-        .all()
+        .any_routing_key()
         .start(&executor)
         .await?;
 
     let sub_contact_global_stat = imkitchen_core::contact::global_stat::subscription()
         .data(write_pool.clone())
-        .all()
+        .any_routing_key()
         .start(&executor)
         .await?;
 
@@ -106,37 +106,37 @@ pub async fn serve(
     let sub_recipe_query = imkitchen_core::recipe::query::user::create_projection()
         .data((read_pool.clone(), write_pool.clone()))
         .subscription("recipe-query")
-        .all()
+        .any_routing_key()
         .start(&executor)
         .await?;
 
     let sub_recipe_saga_share = imkitchen_core::recipe::saga::subscription()
         .data((read_pool.clone(), write_pool.clone()))
-        .all()
+        .any_routing_key()
         .start(&executor)
         .await?;
 
     let sub_recipe_saga_embeddable = imkitchen_core::recipe::saga::embeddable::subscription()
         .data((read_pool.clone(), write_pool.clone()))
-        .all()
+        .any_routing_key()
         .start(&executor)
         .await?;
 
     let sub_recipe_user_fts = imkitchen_core::recipe::query::user_fts::subscription()
         .data(write_pool.clone())
-        .all()
+        .any_routing_key()
         .start(&executor)
         .await?;
 
     let sub_recipe_thumbnail = imkitchen_core::recipe::query::thumbnail::subscription()
         .data(write_pool.clone())
-        .all()
+        .any_routing_key()
         .start(&executor)
         .await?;
 
     let sub_recipe_user_stat = imkitchen_core::recipe::query::user_stat::subscription()
         .data(write_pool.clone())
-        .all()
+        .any_routing_key()
         .start(&executor)
         .await?;
 
@@ -147,7 +147,7 @@ pub async fn serve(
 
     let sub_mealplan_slot = imkitchen_core::mealplan::slot::subscription()
         .data(write_pool.clone())
-        .all()
+        .any_routing_key()
         .start(&executor)
         .await?;
 
@@ -158,7 +158,7 @@ pub async fn serve(
 
     let sub_shopping_list = imkitchen_core::shopping::list::subscription()
         .data(write_pool.clone())
-        .all()
+        .any_routing_key()
         .start(&executor)
         .await?;
 
@@ -202,7 +202,7 @@ pub async fn serve(
 
             let sub_audience_daily_stat = imkitchen_audience::daily_stat::subscription()
                 .data(audience_write.clone())
-                .all()
+                .any_routing_key()
                 .start(&audience_executor)
                 .await?;
 

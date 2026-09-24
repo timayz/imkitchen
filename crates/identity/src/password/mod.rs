@@ -28,7 +28,7 @@ impl<E: Executor> Module<E> {
     }
 }
 
-#[evento::projection(Encode, Decode)]
+#[evento::projection(name = "imkitchen-identity/password/Password", Encode, Decode)]
 pub struct Password {
     pub id: String,
     pub user_id: String,

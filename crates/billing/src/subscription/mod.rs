@@ -50,7 +50,7 @@ impl<E: Executor> Module<E> {
     }
 }
 
-#[evento::projection(Encode, Decode)]
+#[evento::projection(name = "imkitchen-billing/subscription/Subscription", Encode, Decode)]
 pub struct Subscription {
     pub id: String,
     pub name: Option<String>,

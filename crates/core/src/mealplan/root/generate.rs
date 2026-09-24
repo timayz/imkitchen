@@ -1,6 +1,4 @@
 use evento::Executor;
-use evento::cursor::Args;
-use evento::{Aggregate, EventFilter};
 use imkitchen_db::mealplan_recipe::MealPlanRecipe;
 use imkitchen_types::mealplan::{DaysGenerated, MealPlan, Slot, SlotRecipe};
 use imkitchen_types::recipe::{DietaryRestriction, RecipeType};
@@ -66,27 +64,13 @@ impl<E: Executor> super::Module<E> {
             crate::user!("No main course found");
         }
 
-        let last_event = self
-            .executor
-            .read(
-                Some(
-                    [EventFilter::by_id(
-                        MealPlan::aggregate_type(),
-                        &input.user_id,
-                    )]
-                    .into(),
-                ),
-                None,
-                Args::backward(1, None),
-                None,
-            )
+        let last_event = evento::read::<MealPlan>(&input.user_id)
+            .backward()
+            .limit(1)
+            .execute(&self.executor)
             .await?;
 
-        let version = last_event
-            .edges
-            .first()
-            .map(|e| e.node.version)
-            .unwrap_or_default();
+        let version = last_event.first().map(|e| e.version).unwrap_or_default();
 
         let mut main_course_recipes = main_course_recipes.iter().cycle().take(input.days as usize);
         let mut builder = evento::append(&input.user_id)
