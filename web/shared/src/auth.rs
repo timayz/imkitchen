@@ -200,7 +200,15 @@ impl FromRequestParts<crate::AppState> for AuthUser {
         // Match on the normalized key rather than the raw User-Agent: browsers
         // bump their major version every few weeks, and an exact match ended the
         // session on every browser update. See `stable_ua_key`.
-        let ua_key = stable_ua_key(&user_agent.to_string());
+        //
+        // The native marker has to be re-applied from the host before hashing,
+        // because login stored it that way and the app's request carries plain
+        // Chrome's User-Agent.
+        let is_native = crate::native::is_native_host(&state.config, &parts.headers);
+        let ua_key = stable_ua_key(&crate::native::session_ua(
+            &user_agent.to_string(),
+            is_native,
+        ));
 
         let Some(login) = user
             .logins
