@@ -130,7 +130,7 @@
         </div>
       </a>
 
-      {% if ""|premium_enabled %}
+      {% if ""|purchase_enabled %}
       <a href="#account-billing" class="bg-paper rounded-2xl p-5 border border-line-2 hover:shadow-md transition flex flex-col gap-2.5">
         <div class="w-11 h-11 rounded-xl bg-meal-entree-soft flex items-center justify-center">
           <svg class="w-5 h-5 text-meal-entree-ink" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7l4 4 5-7 5 7 4-4-2 12H5z"/></svg>
@@ -207,7 +207,7 @@
           </summary>
           <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Five sections: Kitchen (today's meal), Menu (this week's plan), Recipes (your library), Groceries (shopping list), Settings."|t }}</p>
         </details>
-        {% if ""|premium_enabled %}
+        {% if ""|purchase_enabled %}
         <details class="group border-t border-line-2 py-3.5">
           <summary class="flex items-center gap-2.5 cursor-pointer list-none">
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Choosing between Free and Premium"|t }}</span>
@@ -291,7 +291,7 @@
           </summary>
           <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Recipes → Import. Drag-drop JSON files (max 10 MB, up to 20 per batch). The importer validates each entry and reports successes, duplicates, and failures."|t }}</p>
         </details>
-        {% if ""|premium_enabled %}
+        {% if ""|purchase_enabled %}
         <details class="group border-t border-line-2 py-3.5">
           <summary class="flex items-center gap-2.5 cursor-pointer list-none">
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Can free tier users save recipes?"|t }}</span>
@@ -382,7 +382,7 @@
           </summary>
           <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Yes. Both free and Premium users can rate and review. Low-rated recipes are demoted in community search."|t }}</p>
         </details>
-        {% if ""|premium_enabled %}
+        {% if ""|purchase_enabled %}
         <details class="group border-t border-line-2 py-3.5">
           <summary class="flex items-center gap-2.5 cursor-pointer list-none">
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Can free tier users share recipes?"|t }}</span>
@@ -395,7 +395,7 @@
     </div>
 
     {# ── Account & Billing ── #}
-    {% if ""|premium_enabled %}
+    {% if ""|purchase_enabled %}
     <div id="account-billing" class="bg-paper rounded-2xl border border-line-2 mb-3.5">
       <div class="flex items-center gap-2.5 px-5 pt-5 pb-2.5">
         <div class="w-8 h-8 rounded-xl bg-meal-entree-soft flex items-center justify-center">

@@ -319,6 +319,27 @@ pub mod filters {
             .unwrap_or(false))
     }
 
+    /// True when rendering for the native app shell. The piped value is
+    /// ignored — call as `{% if ""|is_native_app %}`. Defaults to false: a
+    /// missing value must never make the website look like the app.
+    #[askama::filter_fn]
+    pub fn is_native_app(_value: &str, values: &dyn askama::Values) -> askama::Result<bool> {
+        Ok(askama::get_value::<bool>(values, "is_native_app")
+            .copied()
+            .unwrap_or(false))
+    }
+
+    /// True when this render may show a price, a checkout, or anything that
+    /// steers toward one. False inside the native app even though premium
+    /// features still exist there. The piped value is ignored — call as
+    /// `{% if ""|purchase_enabled %}`.
+    #[askama::filter_fn]
+    pub fn purchase_enabled(_value: &str, values: &dyn askama::Values) -> askama::Result<bool> {
+        Ok(askama::get_value::<bool>(values, "purchase_enabled")
+            .copied()
+            .unwrap_or(true))
+    }
+
     /// True when monetization is configured (`[premium]` present in config):
     /// premium subscriptions and the ad-supported tier exist. False on
     /// instances where everyone gets full access and all premium/ads UI is
@@ -381,6 +402,7 @@ pub struct Template {
     pub preferred_language_iso: String,
     pub timezone: String,
     pub is_demo: bool,
+    pub is_native_app: bool,
     config: crate::config::Config,
 }
 
@@ -407,6 +429,15 @@ impl Template {
         );
         values.insert("config", Box::new(self.config.clone()));
         values.insert("is_demo", Box::new(self.is_demo));
+        values.insert("is_native_app", Box::new(self.is_native_app));
+        // Play requires digital purchases to go through Play Billing, so the
+        // app may *have* premium features but may never sell them or point at
+        // where to buy. Kept separate from `premium_enabled`, which still only
+        // means "monetization is configured".
+        values.insert(
+            "purchase_enabled",
+            Box::new(self.config.premium.is_some() && !self.is_native_app),
+        );
         values.insert("premium_enabled", Box::new(self.config.premium.is_some()));
         values.insert(
             "analytics_enabled",
@@ -490,11 +521,14 @@ impl FromRequestParts<crate::AppState> for Template {
             .map(String::from)
             .unwrap_or_else(|| "UTC".to_string());
 
+        let is_native_app = crate::native::is_native_host(&state.config, &parts.headers);
+
         Ok(Template {
             preferred_language,
             preferred_language_iso,
             timezone,
             is_demo: false,
+            is_native_app,
             config: state.config.clone(),
         })
     }

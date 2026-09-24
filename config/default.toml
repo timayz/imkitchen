@@ -42,6 +42,24 @@ tax = true
 # [audience]
 # database_url = "sqlite:audience.db"
 
+# The native app shell (Android TWA). Remove or comment out this whole
+# section to disable it: /.well-known/assetlinks.json 404s, `is_native_app` is
+# always false, and nothing about the web app changes.
+#
+# `host` is a dedicated hostname so the app is identifiable per request. A TWA
+# runs inside Chrome and shares its cookie jar, so a persisted "this is the
+# app" marker would also hide billing when the same person opens the website in
+# their browser; a separate host makes that impossible rather than merely
+# unlikely.
+#
+# Both signing fingerprints belong in the list: Play App Signing re-signs the
+# bundle, so a locally installed build and the Play build present different
+# certificates. Listing only one leaves the store build showing a URL bar.
+# [native_app]
+# host = "app.imkitchen.app"
+# package_name = "app.imkitchen.android"
+# sha256_cert_fingerprints = []
+
 [monitoring]
 log_level = "debug,sqlx=info,tower_http=info"
 log_json = false

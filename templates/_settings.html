@@ -121,7 +121,7 @@
       <div class="grid gap-1">
         {% call nav_item(settings_path.as_str(),"general") %}{% endcall %}
         {% call nav_item(settings_path.as_str(),"account") %}{% endcall %}
-        {% if ""|premium_enabled %}
+        {% if ""|purchase_enabled %}
         {% call nav_item(settings_path.as_str(),"billing") %}{% endcall %}
         {% endif %}
         {% block sidebar_bottom %}{% endblock %}
@@ -133,7 +133,7 @@
       <div class="flex gap-2 min-w-max">
         {% call mobile_nav_item(settings_path.as_str(),"general") %}{% endcall %}
         {% call mobile_nav_item(settings_path.as_str(),"account") %}{% endcall %}
-        {% if ""|premium_enabled %}
+        {% if ""|purchase_enabled %}
         {% call mobile_nav_item(settings_path.as_str(),"billing") %}{% endcall %}
         {% endif %}
       </div>

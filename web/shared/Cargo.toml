@@ -22,6 +22,7 @@ oxc = { workspace = true }
 lightningcss = { workspace = true }
 imkitchen-core = { path = "../../crates/core", version = "1.9.4" }
 imkitchen-identity = { path = "../../crates/identity", version = "1.9.4" }
+imkitchen-types = { path = "../../crates/types", version = "1.9.4" }
 imkitchen-billing = { path = "../../crates/billing", version = "1.9.4" }
 imkitchen-notification = { path = "../../crates/notification", version = "1.9.4" }
 imkitchen-audience = { path = "../../crates/audience", version = "1.9.4" }

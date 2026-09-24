@@ -13,7 +13,32 @@ pub struct Config {
     pub premium: Option<PremiumConfig>,
     pub analytics: Option<AnalyticsConfig>,
     pub audience: Option<AudienceConfig>,
+    pub native_app: Option<NativeAppConfig>,
     pub monitoring: MonitoringConfig,
+}
+
+/// The native app shell (Android TWA, and later the iOS WKWebView shell).
+/// Section absent = no native app: `/.well-known/assetlinks.json` 404s,
+/// `is_native_app` is always false, and nothing about the web app changes.
+///
+/// `host` is the dedicated hostname the shell loads. A TWA is rendered by
+/// Chrome and shares its cookie jar and User-Agent, so there is no custom UA
+/// token to detect and any persisted marker would leak into the user's own
+/// browser and hide billing on the website too. Serving the shell from its
+/// own host makes the `Host` header an unambiguous per-request signal and
+/// gives the app its own cookie jar for free.
+///
+/// `sha256_cert_fingerprints` is a list because Play App Signing re-signs the
+/// bundle with a key Google holds: a locally installed build carries the
+/// upload key's fingerprint and the Play build carries the app signing key's.
+/// Both must be listed or the store build shows a URL bar. It lives in config
+/// rather than in the template so adding the second fingerprint after the
+/// first upload is a redeploy, not an image rebuild.
+#[derive(Debug, Deserialize, Clone)]
+pub struct NativeAppConfig {
+    pub host: String,
+    pub package_name: String,
+    pub sha256_cert_fingerprints: Vec<String>,
 }
 
 /// First-party audience measurement. Section absent = feature disabled: no

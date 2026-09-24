@@ -46,7 +46,10 @@
         </ul>
       </div>
 
-      {# Get the app — store badges hidden until native apps ship #}
+      {# Get the app — store badges stay hidden until the listing is live.
+         The whole block is pointless inside the app itself: you are already
+         in it, and a store badge or "install this" button is just noise. #}
+      {% if !(""|is_native_app) %}
       <div class="col-span-2 md:col-span-1">
         <h3 class="font-mono text-[10px] uppercase tracking-widest text-cream/50 mb-3.5">{{ "Get the app"|t }}</h3>
         <div class="grid gap-2">
@@ -79,6 +82,7 @@
           </button>
         </div>
       </div>
+      {% endif %}
     </div>
 
     {# Newsletter row — hidden until subscription is implemented #}

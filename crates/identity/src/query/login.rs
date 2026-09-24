@@ -1,6 +1,7 @@
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, Snapshot, metadata::Event};
 use imkitchen_db::user_login::UserLogin;
+use imkitchen_types::user_agent::stable_ua_key;
 use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
@@ -237,8 +238,12 @@ async fn handle_email_changed(
 #[evento::handler]
 async fn handle_logged_in(event: Event<LoggedIn>, data: &mut LoginView) -> anyhow::Result<()> {
     data.id = event.aggregate_id.to_owned();
+    // Dedup per device on the normalized key, not the raw string: browsers bump
+    // their version every few weeks, and an exact match appended a new entry per
+    // release instead of replacing the old one. See `stable_ua_key`.
+    let ua_key = stable_ua_key(&event.data.user_agent);
     data.logins
-        .retain(|r| r.user_agent != event.data.user_agent);
+        .retain(|r| stable_ua_key(&r.user_agent) != ua_key);
     data.logins.push(Login {
         id: event.data.access_id,
         role: data.role.0.to_owned(),

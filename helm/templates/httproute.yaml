@@ -10,6 +10,9 @@ spec:
   # Hostnames matching HTTP header.
   hostnames:
     - {{ .Values.hostname | quote }}
+    {{- with .Values.appHostname }}
+    - {{ . | quote }}
+    {{- end }}
   # List of rules and filters applied.
   rules:
     - matches:

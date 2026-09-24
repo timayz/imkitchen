@@ -1,5 +1,12 @@
+{%- if ""|is_native_app -%}
+{# The app host serves the same pages as the website. Keep it out of the index
+   so it never competes with imkitchen.app for the same content. #}
+User-agent: *
+Disallow: /
+{%- else -%}
 User-agent: *
 Allow: /
 Disallow: /static/
 
 {% if let Ok(config) = "config"|value::<crate::config::Config> %}Sitemap: {{ config.server.url }}/sitemap.xml{% else %}Sitemap: https://imkitchen.app/sitemap.xml{% endif %}
+{%- endif -%}

@@ -15,6 +15,7 @@ use stripe_payment::payment_method::DetachPaymentMethod;
 
 use imkitchen_web_shared::AppState;
 use imkitchen_web_shared::auth::AuthUser;
+use imkitchen_web_shared::native::DenyNativeApp;
 use imkitchen_web_shared::template::Template;
 use imkitchen_web_shared::template::filters;
 
@@ -39,6 +40,7 @@ pub struct BillingTemplate {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
     template: Template,
+    _: DenyNativeApp,
     user: AuthUser,
     Query(query): Query<PageQuery>,
     State(app): State<AppState>,
@@ -80,6 +82,7 @@ pub struct PaymentMethodTemplate {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn payment_method(
     template: Template,
+    _: DenyNativeApp,
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
@@ -135,7 +138,11 @@ pub async fn payment_method(
 pub struct PaymentMethodModalTemplate {}
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn update_payment_modal(template: Template, user: AuthUser) -> impl IntoResponse {
+pub async fn update_payment_modal(
+    template: Template,
+    _: DenyNativeApp,
+    user: AuthUser,
+) -> impl IntoResponse {
     template
         .render(PaymentMethodModalTemplate {})
         .into_response()
@@ -144,6 +151,7 @@ pub async fn update_payment_modal(template: Template, user: AuthUser) -> impl In
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn update_payment(
     template: Template,
+    _: DenyNativeApp,
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
@@ -178,6 +186,7 @@ pub async fn update_payment(
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn check(
     template: Template,
+    _: DenyNativeApp,
     State(app): State<AppState>,
     user: AuthUser,
     jar: axum_extra::extract::CookieJar,
@@ -226,6 +235,7 @@ struct CancelModalTemplate {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn cancel_modal(
     template: Template,
+    _: DenyNativeApp,
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
@@ -243,6 +253,7 @@ struct CancelTemplate {
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn cancel(
     template: Template,
+    _: DenyNativeApp,
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {

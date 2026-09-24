@@ -9,6 +9,7 @@ use serde::Deserialize;
 
 use imkitchen_web_shared::AppState;
 use imkitchen_web_shared::auth::{self, AuthToken, AuthUser, build_cookie};
+use imkitchen_web_shared::native::{is_native_host, session_ua};
 use imkitchen_web_shared::template::{SERVER_ERROR_MESSAGE, Template};
 use imkitchen_web_shared::template::{ToastErrorTemplate, filters};
 
@@ -36,16 +37,22 @@ pub async fn action(
     template: Template,
     State(app): State<AppState>,
     jar: CookieJar,
+    headers: axum::http::HeaderMap,
     TypedHeader(user_agent): TypedHeader<UserAgent>,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
+    // The app shares Chrome's User-Agent, so the marker that tells an app
+    // session apart from a browser session on the same device has to be added
+    // here, server-side, from the host it was served on.
+    let is_native = is_native_host(&app.config, &headers);
+
     let (user_id, access_id) = imkitchen_web_shared::try_response!(
         app.identity.login(LoginInput {
             email: input.email,
             password: input.password,
             lang: template.preferred_language_iso.to_owned(),
             timezone: template.timezone.to_owned(),
-            user_agent: user_agent.to_string(),
+            user_agent: session_ua(&user_agent.to_string(), is_native),
         },),
         template
     );

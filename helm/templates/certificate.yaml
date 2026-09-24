@@ -6,6 +6,9 @@ metadata:
 spec:
   dnsNames:
     - {{ .Values.hostname | quote }}
+    {{- with .Values.appHostname }}
+    - {{ . | quote }}
+    {{- end }}
   secretName: imkitchen-tls
   issuerRef:
     kind: ClusterIssuer

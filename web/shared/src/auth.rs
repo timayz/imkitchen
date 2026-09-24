@@ -17,6 +17,7 @@ use axum_extra::{
     headers::UserAgent,
 };
 use imkitchen_identity::types::user::State;
+use imkitchen_types::user_agent::stable_ua_key;
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
@@ -196,10 +197,23 @@ impl FromRequestParts<crate::AppState> for AuthUser {
             return Err(Redirect::to("/login"));
         };
 
+        // Match on the normalized key rather than the raw User-Agent: browsers
+        // bump their major version every few weeks, and an exact match ended the
+        // session on every browser update. See `stable_ua_key`.
+        //
+        // The native marker has to be re-applied from the host before hashing,
+        // because login stored it that way and the app's request carries plain
+        // Chrome's User-Agent.
+        let is_native = crate::native::is_native_host(&state.config, &parts.headers);
+        let ua_key = stable_ua_key(&crate::native::session_ua(
+            &user_agent.to_string(),
+            is_native,
+        ));
+
         let Some(login) = user
             .logins
             .iter()
-            .find(|l| l.id == claims.acc && l.user_agent == user_agent.to_string())
+            .find(|l| l.id == claims.acc && stable_ua_key(&l.user_agent) == ua_key)
         else {
             return Err(Redirect::to("/login"));
         };

@@ -37,3 +37,11 @@ tests/fixtures/.auth/*.json
 
 # Docker
 .docker/traefik/certs/
+
+# Android TWA shell — only the config and runbook are tracked; everything
+# Bubblewrap generates is derived. Keystores must never be committed.
+android/*
+!android/twa-manifest.json
+!android/README.md
+*.keystore
+*.jks
