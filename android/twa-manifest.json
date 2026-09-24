@@ -1,0 +1,41 @@
+{
+  "packageId": "app.imkitchen.android",
+  "host": "app.imkitchen.app",
+  "name": "imkitchen",
+  "launcherName": "imkitchen",
+  "display": "standalone",
+  "themeColor": "#ef6c1e",
+  "themeColorDark": "#ef6c1e",
+  "navigationColor": "#ef6c1e",
+  "navigationColorDark": "#ef6c1e",
+  "navigationDividerColor": "#ef6c1e",
+  "navigationDividerColorDark": "#ef6c1e",
+  "backgroundColor": "#ffffff",
+  "enableNotifications": false,
+  "startUrl": "/?utm_source=twa",
+  "iconUrl": "https://app.imkitchen.app/static/icons/icon-512.png",
+  "maskableIconUrl": "https://app.imkitchen.app/static/icons/icon-512-maskable.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "imkitchen"
+  },
+  "appVersionName": "1",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://app.imkitchen.app/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://app.imkitchen.app/",
+  "minSdkVersion": 23,
+  "targetSdkVersion": 36,
+  "orientation": "portrait",
+  "additionalTrustedOrigins": []
+}
