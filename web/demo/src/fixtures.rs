@@ -397,18 +397,22 @@ pub fn find_recipe(id: &str) -> Option<UserView> {
 // ── The demo list ────────────────────────────────────────────────────────
 
 /// `(recipe id, cooking status)` — the recipes in the demo user's list, in
-/// list order. One is already cooked and one is mid-way so every state shows.
+/// meal order (starter, main, side, dessert, drink). One is already cooked
+/// and one is mid-way so every state shows.
 const LIST: &[(&str, RecipeStatus)] = &[
+    // Meal 1
     ("tomato-bruschetta", RecipeStatus::Completed),
     ("arroz-con-pollo", RecipeStatus::Cooking(1)),
-    ("coq-au-vin", RecipeStatus::Idle),
-    ("thai-green-curry", RecipeStatus::Idle),
-    ("caesar-salad", RecipeStatus::Idle),
     ("garlic-butter-rice", RecipeStatus::Idle),
-    ("roasted-vegetables", RecipeStatus::Idle),
     ("creme-brulee", RecipeStatus::Idle),
-    ("chocolate-mousse", RecipeStatus::Idle),
     ("mint-lemonade", RecipeStatus::Idle),
+    // Meal 2
+    ("caesar-salad", RecipeStatus::Idle),
+    ("coq-au-vin", RecipeStatus::Idle),
+    ("roasted-vegetables", RecipeStatus::Idle),
+    ("chocolate-mousse", RecipeStatus::Idle),
+    // Meal 3
+    ("thai-green-curry", RecipeStatus::Idle),
     ("chimichurri", RecipeStatus::Idle),
 ];
 
@@ -418,21 +422,10 @@ fn list_recipes() -> Vec<(UserView, RecipeStatus)> {
         .collect()
 }
 
-fn course_rank(rt: &RecipeType) -> u8 {
-    match rt {
-        RecipeType::Appetizer => 0,
-        RecipeType::MainCourse => 1,
-        RecipeType::Accompaniment => 2,
-        RecipeType::Dessert => 3,
-        RecipeType::Beverage => 4,
-        RecipeType::Condiment => 5,
-    }
-}
-
 // ── Kitchen page ─────────────────────────────────────────────────────────
 
 pub fn kitchen() -> KitchenTemplate {
-    let mut entries: Vec<ListEntry> = list_recipes()
+    let entries: Vec<ListEntry> = list_recipes()
         .iter()
         .map(|(r, status)| ListEntry {
             id: r.id.clone(),
@@ -445,7 +438,6 @@ pub fn kitchen() -> KitchenTemplate {
             cook_time: r.cook_time,
         })
         .collect();
-    entries.sort_by_key(|e| course_rank(&e.recipe_type));
 
     let total_count = entries.len();
     let completed_count = entries.iter().filter(|e| e.is_completed()).count();

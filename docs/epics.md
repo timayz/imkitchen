@@ -400,10 +400,10 @@ So that my list covers appetizers, desserts, drinks and condiments as well as ma
 
 **Acceptance Criteria:**
 1. Optional course types are appetizer, accompaniment, dessert, beverage and condiment, each enabled or disabled in preferences
-2. For each enabled type, generation adds up to ceil(N/2) recipes of that type, where N is the requested main-course count
+2. Each generated meal pairs its main course with one recipe of every enabled type, drawn from that type's pool without reuse; once a pool is exhausted later meals simply lack that course
 3. Disabled types are skipped entirely (no query, no recipes)
 4. Optional recipes are subject to the same dietary filtering and the same no-duplicate rule as mains
-5. Optional recipes are appended after the mains in the stored list order
+5. The stored list keeps meal order: starter, main, side, dessert, drink, sauce, then the next meal
 6. Tests verify per-type caps, disabled types and uniqueness across types
 
 **Prerequisites:** Story 3.4
@@ -418,9 +418,9 @@ So that side dishes show up with curry or pasta and not with a one-pot meal.
 
 **Acceptance Criteria:**
 1. Main courses carry an accepts_accompaniment flag (Story 2.1)
-2. Accompaniments are picked only if the accompaniment course type is enabled AND at least one picked main course accepts an accompaniment
-3. When picked, up to ceil(N/2) accompaniments are added like any other optional type
-4. No accompaniment is added when no picked main accepts one, even if the type is enabled
+2. An accompaniment is paired with a main only if the accompaniment course type is enabled AND that main accepts an accompaniment
+3. The side directly follows its main in the stored list order
+4. Mains that do not accept an accompaniment get none, even if the type is enabled
 5. Tests verify the pairing gate with and without accepting mains
 
 **Prerequisites:** Story 3.5

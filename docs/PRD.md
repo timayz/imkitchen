@@ -59,9 +59,9 @@ imkitchen solves this with a single per-user **recipe list**. Users either gener
 **Recipe List**
 
 - FR017: Each user shall have exactly one recipe list, which may be generated, filled by hand, or both
-- FR018: Generation shall be triggered from the Kitchen page through a modal asking for a recipe count between 1 and 30 (default 7)
+- FR018: Generation shall be triggered from the Kitchen page through a modal asking for a meal count between 1 and 30 (default 7)
 - FR019: Generation shall pick up to N main courses at random from the user's candidate pool (own recipes plus saved community recipes), filtered by dietary restrictions and weighted by the cuisine variety preference
-- FR020: For each optional course type enabled in preferences, generation shall add up to ceil(N/2) recipes of that type; accompaniments shall only be added when a picked main course accepts one
+- FR020: Each picked main course shall form a meal paired with one recipe of every optional course type enabled in preferences, drawn without reuse; an accompaniment shall only be paired with a main that accepts one; the list shall be stored in meal order (starter, main, side, dessert, drink, sauce)
 - FR021: A recipe shall never appear twice in the list
 - FR022: Generation shall be non-deterministic, producing a different selection each time to enable preference-based regeneration
 - FR023: Generation shall replace the entire existing list, clear checked groceries, and reset cooking progress; regeneration shall require confirmation
@@ -314,10 +314,10 @@ The freemium model is demonstrated at two touchpoints:
 
 All six recipe types are color-coded consistently across screens:
 
-- **Appetizer** - optional course, up to ceil(N/2) per generation when enabled
+- **Appetizer** - optional course, one per meal when enabled
 - **Main Course** - the backbone of every generated list, with accompaniment pairing when `accepts_accompaniment=true`
 - **Accompaniment** - added only when a picked main course accepts one
-- **Dessert**, **Beverage**, **Condiment** - optional courses, each up to ceil(N/2) per generation when enabled
+- **Dessert**, **Beverage**, **Condiment** - optional courses, one per meal when enabled
 
 ### User Flow Demonstrations
 

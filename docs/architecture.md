@@ -493,10 +493,10 @@ There is no separate validation database. Uniqueness checks (email, username) ru
 
 ### Generation
 
-1. `POST /kitchen/generate` with `count` (1..=30 mains) from the generate modal.
+1. `POST /kitchen/generate` with `count` (1..=30 meals) from the generate modal.
 2. The handler loads `MealPreferences` (household size, dietary restrictions, cuisine variety weight, enabled optional recipe types) and calls `shopping.generate(GenerateList { count, household_size, randomize })`.
 3. `pick::random` selects up to 35 random `MainCourse` rows from `meal_plan_recipe` matching every dietary restriction, shuffles them and truncates to `ceil(len * cuisine_variety_weight)`; `generate` then truncates to `count`. Without `randomize` a plain `sample_recipes` (up to 7) is used. No mains at all is a user error.
-4. For each enabled optional type, in the order appetizer, accompaniment, dessert, beverage, condiment, `optional_pool` picks random recipes of that type and `generate` keeps up to `ceil(count / 2)`. Accompaniments are skipped unless a picked main accepts one. Ids are deduplicated; a flat list never repeats a recipe.
+4. `optional_pool` fetches one random pool per enabled optional type (appetizer, accompaniment, dessert, beverage, condiment). Each main then becomes a meal: `generate` takes the next unused recipe from every pool and writes the ids in meal order (starter, main, side, dessert, drink, sauce); an accompaniment is only taken for a main whose `accepts_accompaniment` is set. Once a pool is exhausted later meals go without that course. Ids are deduplicated; a flat list never repeats a recipe.
 5. `merge::merge_ingredients` loads each recipe's `(household_size, ingredients)` from `shopping_recipe`, scales quantities with `scale_quantity` (serving target = `max(recipe size, household size)`, so quantities never scale below the authored size, rounding up) and sums duplicates by `Ingredient::key()`.
 6. One `ListGenerated { recipe_ids, ingredients }` event is committed; checks and statuses reset.
 7. The handler redirects to `/`; twinspark swaps the fresh kitchen page into `<body>`. No polling, because the page reads the aggregate.

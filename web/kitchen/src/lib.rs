@@ -76,10 +76,10 @@ impl ListEntry {
 pub struct KitchenTemplate {
     pub current_path: String,
     pub user: AuthUser,
-    /// Every recipe in the list, courses first (starter → main → side →
-    /// dessert → drink → sauce), then list order.
+    /// Every recipe in the list, in list order (generated meals read starter →
+    /// main → side → dessert → drink → sauce).
     pub entries: Vec<ListEntry>,
-    /// The recipe to cook next: the first one not yet cooked.
+    /// The recipe to cook next: the first one in the list not yet cooked.
     pub focused: Option<UserView>,
     pub focused_status: RecipeStatus,
     pub completed_count: usize,
@@ -195,19 +195,8 @@ fn group_ingredients_by_aisle(
     aisles
 }
 
-/// Course order on the kitchen page: eat a starter before the main, etc.
-fn course_rank(recipe_type: &RecipeType) -> u8 {
-    match recipe_type {
-        RecipeType::Appetizer => 0,
-        RecipeType::MainCourse => 1,
-        RecipeType::Accompaniment => 2,
-        RecipeType::Dessert => 3,
-        RecipeType::Beverage => 4,
-        RecipeType::Condiment => 5,
-    }
-}
-
-/// The list as kitchen entries: courses first, then list order. Ids whose
+/// The list as kitchen entries, in list order: generated meals come as
+/// starter, main, side, dessert, drink, sauce; manual adds follow. Ids whose
 /// recipe no longer exists are skipped.
 pub fn list_entries(state: &ShoppingState, cards: Vec<RecipeCard>) -> Vec<ListEntry> {
     let position = |id: &str| state.recipe_ids.iter().position(|x| x == id);
@@ -230,7 +219,7 @@ pub fn list_entries(state: &ShoppingState, cards: Vec<RecipeCard>) -> Vec<ListEn
             ))
         })
         .collect();
-    entries.sort_by_key(|(pos, e)| (course_rank(&e.recipe_type), *pos));
+    entries.sort_by_key(|(pos, _)| *pos);
     entries.into_iter().map(|(_, e)| e).collect()
 }
 

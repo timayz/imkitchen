@@ -11,8 +11,17 @@ use temp_dir::TempDir;
 async fn seed(
     state: &imkitchen_core::State<Sqlite>,
 ) -> anyhow::Result<HashMap<String, RecipeType>> {
+    Ok(seed_with_accepting(state).await?.0)
+}
+
+/// Like [`seed`], also returning the ids of the two mains that accept an
+/// accompaniment.
+async fn seed_with_accepting(
+    state: &imkitchen_core::State<Sqlite>,
+) -> anyhow::Result<(HashMap<String, RecipeType>, Vec<String>)> {
     let recipe_cmd = imkitchen_core::recipe::Module::new(state.clone());
     let mut types = HashMap::new();
+    let mut accepting = vec![];
 
     for i in 0..10 {
         let id = helpers::import_typed_recipe(
@@ -26,6 +35,9 @@ async fn seed(
             "john",
         )
         .await?;
+        if i < 2 {
+            accepting.push(id.clone());
+        }
         types.insert(id, RecipeType::MainCourse);
     }
     for (recipe_type, n) in [
@@ -63,7 +75,7 @@ async fn seed(
     helpers::run_shopping_subscription(state).await?;
     helpers::run_pool_subscription(state).await?;
 
-    Ok(types)
+    Ok((types, accepting))
 }
 
 fn count(ids: &[String], types: &HashMap<String, RecipeType>, recipe_type: RecipeType) -> usize {
@@ -97,7 +109,7 @@ async fn test_generate_picks_mains_and_enabled_courses() -> anyhow::Result<()> {
 
     let loaded = shopping.load("john").await?.expect("shopping aggregate");
     assert_eq!(count(&loaded.recipes, &types, RecipeType::MainCourse), 7);
-    // ceil(7 / 2) = 4, capped by the 3 available.
+    // Every meal gets one of each enabled course until that pool runs out.
     assert_eq!(count(&loaded.recipes, &types, RecipeType::Appetizer), 3);
     assert_eq!(count(&loaded.recipes, &types, RecipeType::Dessert), 3);
     assert_eq!(count(&loaded.recipes, &types, RecipeType::Accompaniment), 0);
@@ -108,12 +120,15 @@ async fn test_generate_picks_mains_and_enabled_courses() -> anyhow::Result<()> {
     assert_eq!(loaded.ingredients.len(), 13);
     assert!(loaded.generated_at > 0);
 
-    // Mains come first, in list order.
-    assert!(
-        loaded.recipes[..7]
-            .iter()
-            .all(|id| types[id] == RecipeType::MainCourse)
-    );
+    // Meal order: the first three meals are starter, main, dessert; the
+    // remaining four are mains on their own.
+    let kinds: Vec<&RecipeType> = loaded.recipes.iter().map(|id| &types[id]).collect();
+    for meal in 0..3 {
+        assert_eq!(kinds[meal * 3], &RecipeType::Appetizer, "meal {meal}");
+        assert_eq!(kinds[meal * 3 + 1], &RecipeType::MainCourse, "meal {meal}");
+        assert_eq!(kinds[meal * 3 + 2], &RecipeType::Dessert, "meal {meal}");
+    }
+    assert!(kinds[9..].iter().all(|k| *k == &RecipeType::MainCourse));
 
     Ok(())
 }
@@ -192,7 +207,7 @@ async fn test_generate_accompaniments_only_when_a_main_accepts_one() -> anyhow::
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
     let shopping = imkitchen_core::shopping::Module::new(state.clone());
-    let types = seed(&state).await?;
+    let (types, accepting) = seed_with_accepting(&state).await?;
 
     // With all ten mains picked, the two accepting ones are in: sides appear.
     shopping
@@ -213,6 +228,18 @@ async fn test_generate_accompaniments_only_when_a_main_accepts_one() -> anyhow::
     let loaded = shopping.load("john").await?.expect("shopping aggregate");
     assert_eq!(count(&loaded.recipes, &types, RecipeType::MainCourse), 10);
     assert_eq!(count(&loaded.recipes, &types, RecipeType::Accompaniment), 2);
+    // Each side directly follows the main it was paired with, and that main
+    // accepts accompaniments.
+    for (i, id) in loaded.recipes.iter().enumerate() {
+        if types[id] == RecipeType::Accompaniment {
+            let main = &loaded.recipes[i - 1];
+            assert_eq!(types[main], RecipeType::MainCourse);
+            assert!(
+                accepting.contains(main),
+                "side paired with a non-accepting main"
+            );
+        }
+    }
 
     Ok(())
 }

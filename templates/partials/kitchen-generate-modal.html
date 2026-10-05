@@ -1,6 +1,6 @@
 {# ── Generate recipes — confirm sheet
    Bottom sheet on mobile, centered dialog on md+. The user picks how many
-   main courses to draw via chips / stepper / range; the form posts `count`
+   meals to compose via chips / stepper / range; the form posts `count`
    and the server redirects to the refreshed list. ───────────────────── #}
 <div id="modal-generate"
   class="fixed inset-0 bg-ink/45 backdrop-blur-sm z-60 flex items-end md:items-center justify-center md:p-4"
@@ -34,12 +34,12 @@
     {# Body — scrollable #}
     <div class="flex-1 overflow-y-auto px-5 md:px-7 py-4 md:py-5">
       <p class="text-sm text-ink-2 leading-relaxed mb-5">
-        {{ "We pick main courses from your recipes and favourites, plus starters, sides and desserts according to your preferences."|t }}
+        {{ "Each meal pairs a main course from your recipes and favourites with a starter, side and dessert according to your preferences."|t }}
       </p>
 
       <input type="hidden" name="count" id="gen-count" value="7" />
 
-      <div class="text-xs font-semibold text-ink-2 mb-2.5">{{ "How many main courses?"|t }}</div>
+      <div class="text-xs font-semibold text-ink-2 mb-2.5">{{ "How many meals?"|t }}</div>
 
       {# Preset chips #}
       <div class="grid grid-cols-4 gap-2 mb-3" id="gen-presets">
@@ -55,8 +55,8 @@
         <div class="flex-1 text-center">
           <div id="gen-num" class="font-serif text-3xl text-ink leading-none tracking-tight">7</div>
           <div id="gen-label"
-            data-one="{{ "main course"|t }}" data-many="{{ "main courses"|t }}"
-            class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 mt-1">{{ "main courses"|t }}</div>
+            data-one="{{ "meal"|t }}" data-many="{{ "meals"|t }}"
+            class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 mt-1">{{ "meals"|t }}</div>
         </div>
         <button type="button" id="gen-plus" class="w-10 h-10 rounded-xl border border-line bg-paper text-ink text-xl font-semibold flex items-center justify-center hover:bg-cream transition">+</button>
       </div>

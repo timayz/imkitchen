@@ -2130,5 +2130,11 @@
   "Pick how many main courses you want and imkitchen assembles a list from your recipes and favourites — respecting your diet and pairing sides and desserts. Add or remove any recipe, and a fresh generation takes about two seconds.": "Choisissez le nombre de plats principaux et imkitchen compose une liste à partir de vos recettes et favoris — en respectant votre régime et en associant accompagnements et desserts. Ajoutez ou retirez n'importe quelle recette ; une nouvelle génération prend environ deux secondes.",
   "Shopping list by aisle": "Liste de courses par rayon",
   "imkitchen - Cook more. Plan less.": "imkitchen - Cuisinez plus. Planifiez moins.",
-  "If specified, this note is shown in the Kitchen's \"Prep ahead\" rail while the recipe is in a list, so nothing is forgotten the day before.": "Si renseignée, cette note apparaît dans le volet « À préparer à l'avance » de la Cuisine tant que la recette est dans une liste, pour ne rien oublier la veille."
+  "If specified, this note is shown in the Kitchen's \"Prep ahead\" rail while the recipe is in a list, so nothing is forgotten the day before.": "Si renseignée, cette note apparaît dans le volet « À préparer à l'avance » de la Cuisine tant que la recette est dans une liste, pour ne rien oublier la veille.",
+  "Each meal pairs a main course from your recipes and favourites with a starter, side and dessert according to your preferences.": "Chaque repas associe un plat principal de vos recettes et favoris à une entrée, un accompagnement et un dessert selon vos préférences.",
+  "How many meals?": "Combien de repas ?",
+  "meal": "repas",
+  "Each meal pairs a main course with a starter, side and dessert according to your preferences.": "Chaque repas associe un plat principal à une entrée, un accompagnement et un dessert selon vos préférences.",
+  "Pick how many meals. The algorithm balances cuisines, respects your diet, and auto-pairs sides.": "Choisissez le nombre de repas. L'algorithme équilibre les cuisines, respecte votre régime et associe les accompagnements.",
+  "Six categories: appetizer, main course, dessert, accompaniment, beverage and condiment. Each generated meal pairs a main course with one of each optional type enabled in your preferences.": "Six catégories : entrée, plat principal, dessert, accompagnement, boisson et condiment. Chaque repas généré associe un plat principal à une recette de chaque type optionnel activé dans vos préférences."
 }
