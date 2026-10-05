@@ -32,7 +32,7 @@
       {% endif %}
     </div>
 
-    <a href="{{ "/menu"|demo_href }}"
+    <a href="{% if demo %}/demo/kitchen{% else %}/{% endif %}"
       class="inline-flex items-center gap-1.5 px-3 h-9 bg-paper border border-line text-ink font-semibold rounded-xl text-xs hover:bg-cream-2 transition shrink-0">
       {{ "Edit recipes"|t }}
     </a>

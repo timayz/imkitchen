@@ -1,15 +1,11 @@
-//! The user's recipe list (generate, add, remove) and, on its own page, the
-//! aisle-grouped groceries it needs.
+//! The aisle-grouped groceries needed by every recipe in the user's list.
 
 use axum::{
-    extract::{Json, Path, State},
+    extract::{Json, State},
     response::{IntoResponse, Redirect},
 };
-use axum_extra::extract::Form;
-use imkitchen_core::recipe::query::user::RecipeCard;
-use imkitchen_core::shopping::{GenerateList, Randomize, ToggleInput};
-use imkitchen_types::recipe::{Ingredient, IngredientUnitFormat, RecipeType};
-use imkitchen_types::shopping::RecipeStatus;
+use imkitchen_core::shopping::ToggleInput;
+use imkitchen_types::recipe::{Ingredient, IngredientUnitFormat};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 
@@ -22,19 +18,12 @@ use imkitchen_web_shared::{
 pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
     use axum::routing::{get, post};
     axum::Router::new()
-        .route("/menu", get(page))
-        .route("/menu/generate", get(generate_modal).post(generate_action))
-        .route("/menu/recipe/{id}/remove", post(remove_recipe_action))
-        // Calendar-era `/menu/{date}` bookmarks.
-        .route("/menu/{legacy}", get(legacy_menu_redirect))
-        .route("/groceries", get(groceries_page))
+        .route("/groceries", get(page))
         .route("/groceries/toggle", post(toggle_action))
-}
-
-/// A recipe in the list together with its cooking status.
-pub struct ListRecipe {
-    pub card: RecipeCard,
-    pub status: RecipeStatus,
+        // The list itself lives on the kitchen page; `/menu` is kept for old
+        // bookmarks (and the calendar-era `/menu/{date}`).
+        .route("/menu", get(legacy_menu_redirect))
+        .route("/menu/{legacy}", get(legacy_menu_redirect))
 }
 
 pub struct AisleSection {
@@ -44,26 +33,6 @@ pub struct AisleSection {
     pub total: usize,
     pub done: bool,
     pub pct: usize,
-}
-
-#[derive(askama::Template)]
-#[template(path = "menu.html")]
-pub struct MenuTemplate {
-    pub current_path: String,
-    pub user: AuthUser,
-    pub recipes: Vec<ListRecipe>,
-    pub cooked_count: usize,
-}
-
-impl Default for MenuTemplate {
-    fn default() -> Self {
-        Self {
-            current_path: "menu".to_owned(),
-            user: AuthUser::default(),
-            recipes: vec![],
-            cooked_count: 0,
-        }
-    }
 }
 
 #[derive(askama::Template)]
@@ -98,22 +67,8 @@ impl Default for GroceriesTemplate {
     }
 }
 
-/// Recipes-tab fragment swapped in via twinspark when a recipe is removed.
-#[derive(askama::Template)]
-#[template(path = "partials/menu-recipes.html")]
-pub struct MenuRecipesTemplate {
-    pub recipes: Vec<ListRecipe>,
-    pub cooked_count: usize,
-}
-
-#[derive(askama::Template)]
-#[template(path = "partials/menu-generate-modal.html")]
-pub struct GenerateModalTemplate;
-
-/// Everything both pages need, derived from the persisted list.
-pub struct ListView {
-    pub recipes: Vec<ListRecipe>,
-    pub cooked_count: usize,
+/// Aisle sections, counts and the column split for an ingredient list.
+pub struct GroceryView {
     pub checked: HashSet<String>,
     pub aisles: Vec<AisleSection>,
     pub split_at: usize,
@@ -122,40 +77,7 @@ pub struct ListView {
     pub progress_pct: usize,
 }
 
-async fn build_view(app: &AppState, user_id: &str) -> anyhow::Result<ListView> {
-    // Read straight from the aggregate (immediately consistent) so a re-render
-    // right after add/remove/generate never shows the pre-change list.
-    let household_size = app
-        .identity
-        .meal_preferences
-        .load(user_id)
-        .await?
-        .household_size;
-    let state = app.core.shopping.state(user_id, household_size).await?;
-
-    let cards = app
-        .core
-        .recipe
-        .filter_by_ids(state.recipe_ids.clone())
-        .await?;
-    let recipes: Vec<ListRecipe> = order_by_list(&state.recipe_ids, cards)
-        .into_iter()
-        .map(|card| ListRecipe {
-            status: state.status(&card.id),
-            card,
-        })
-        .collect();
-    let cooked_count = recipes.iter().filter(|r| r.status.is_completed()).count();
-
-    Ok(ListView {
-        recipes,
-        cooked_count,
-        ..grocery_view(&state.ingredients, state.checked)
-    })
-}
-
-/// Aisle sections, counts and the column split for an ingredient list.
-pub fn grocery_view(ingredients: &[Ingredient], checked: HashSet<String>) -> ListView {
+pub fn grocery_view(ingredients: &[Ingredient], checked: HashSet<String>) -> GroceryView {
     let categories: Vec<(String, Vec<Ingredient>)> = to_categories(ingredients);
 
     let total_items: usize = categories.iter().map(|(_, items)| items.len()).sum();
@@ -186,9 +108,7 @@ pub fn grocery_view(ingredients: &[Ingredient], checked: HashSet<String>) -> Lis
 
     let split_at = balanced_split(&aisles);
 
-    ListView {
-        recipes: vec![],
-        cooked_count: 0,
+    GroceryView {
         checked,
         aisles,
         split_at,
@@ -196,14 +116,6 @@ pub fn grocery_view(ingredients: &[Ingredient], checked: HashSet<String>) -> Lis
         checked_items,
         progress_pct,
     }
-}
-
-/// `filter_by_ids` returns rows in no particular order; put them back in list
-/// order (ids without a row are skipped).
-fn order_by_list(ids: &[String], cards: Vec<RecipeCard>) -> Vec<RecipeCard> {
-    let mut by_id: HashMap<String, RecipeCard> =
-        cards.into_iter().map(|c| (c.id.clone(), c)).collect();
-    ids.iter().filter_map(|id| by_id.remove(id)).collect()
 }
 
 /// Choose where the right desktop column starts. Aisles keep their route order;
@@ -268,28 +180,23 @@ pub async fn page(
     user: AuthUser,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let view = imkitchen_web_shared::try_page_response!(build_view(&app, &user.id), template);
-    template
-        .render(MenuTemplate {
-            user,
-            recipes: view.recipes,
-            cooked_count: view.cooked_count,
-            ..Default::default()
-        })
-        .into_response()
-}
+    // Read straight from the aggregate (immediately consistent) so a render
+    // right after a change never shows the previous list.
+    let household_size = imkitchen_web_shared::try_page_response!(
+        app.identity.meal_preferences.load(&user.id),
+        template
+    )
+    .household_size;
+    let state = imkitchen_web_shared::try_page_response!(
+        app.core.shopping.state(&user.id, household_size),
+        template
+    );
+    let view = grocery_view(&state.ingredients, state.checked);
 
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn groceries_page(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-) -> impl IntoResponse {
-    let view = imkitchen_web_shared::try_page_response!(build_view(&app, &user.id), template);
     template
         .render(GroceriesTemplate {
             user,
-            recipe_count: view.recipes.len(),
+            recipe_count: state.recipe_ids.len(),
             checked: view.checked,
             aisles: view.aisles,
             split_at: view.split_at,
@@ -302,35 +209,7 @@ pub async fn groceries_page(
 }
 
 async fn legacy_menu_redirect() -> impl IntoResponse {
-    Redirect::permanent("/menu")
-}
-
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn remove_recipe_action(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-    Path((id,)): Path<(String,)>,
-) -> impl IntoResponse {
-    let preferences = imkitchen_web_shared::try_response!(anyhow:
-        app.identity.meal_preferences.load(&user.id),
-        template
-    );
-    imkitchen_web_shared::try_response!(
-        app.core
-            .shopping
-            .remove_recipe(&id, preferences.household_size, &user.id),
-        template
-    );
-
-    let view = imkitchen_web_shared::try_response!(anyhow: build_view(&app, &user.id), template);
-
-    template
-        .render(MenuRecipesTemplate {
-            recipes: view.recipes,
-            cooked_count: view.cooked_count,
-        })
-        .into_response()
+    Redirect::permanent("/")
 }
 
 #[derive(Deserialize, Default, Clone)]
@@ -353,49 +232,6 @@ pub async fn toggle_action(
     );
 
     "<div></div>".into_response()
-}
-
-pub async fn generate_modal(template: Template, _user: AuthUser) -> impl IntoResponse {
-    template.render(GenerateModalTemplate)
-}
-
-#[derive(Deserialize, Debug)]
-pub struct GenerateForm {
-    pub count: u8,
-}
-
-/// Replace the list with freshly picked recipes, then send the browser back
-/// to the menu. The list is read back from the aggregate, so the redirected
-/// page is already up to date — no polling needed.
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn generate_action(
-    template: Template,
-    State(app): State<AppState>,
-    AuthUser(user): AuthUser,
-    Form(input): Form<GenerateForm>,
-) -> impl IntoResponse {
-    let preferences = imkitchen_web_shared::try_response!(anyhow:
-        app.identity.meal_preferences.load(&user.id),
-        template
-    );
-
-    imkitchen_web_shared::try_response!(
-        app.core.shopping.generate(
-            GenerateList {
-                count: input.count,
-                household_size: preferences.household_size,
-                randomize: Some(Randomize {
-                    cuisine_variety_weight: preferences.cuisine_variety_weight,
-                    dietary_restrictions: preferences.dietary_restrictions.to_vec(),
-                    recipe_types: preferences.recipe_types.to_vec(),
-                }),
-            },
-            &user.id
-        ),
-        template
-    );
-
-    Redirect::to("/menu").into_response()
 }
 
 #[cfg(test)]

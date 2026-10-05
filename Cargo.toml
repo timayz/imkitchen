@@ -101,7 +101,7 @@ imkitchen-audience = { path = "crates/audience", version = "1.9.4" }
 imkitchen-notification = { path = "crates/notification", version = "1.9.4" }
 imkitchen-web-shared = { path = "web/shared", version = "1.9.4" }
 imkitchen-web-kitchen = { path = "web/kitchen", version = "1.9.4" }
-imkitchen-web-menu = { path = "web/menu", version = "1.9.4" }
+imkitchen-web-grocery = { path = "web/grocery", version = "1.9.4" }
 imkitchen-web-recipe = { path = "web/recipe", version = "1.9.4" }
 imkitchen-web-settings = { path = "web/settings", version = "1.9.4" }
 imkitchen-web-public = { path = "web/public", version = "1.9.4" }

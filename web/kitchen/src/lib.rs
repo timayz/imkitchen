@@ -1,13 +1,16 @@
-//! The kitchen: what to cook next from the user's recipe list, and the
-//! step-by-step cooking screens.
+//! The kitchen: the user's recipe list (generate, add, remove), what to cook
+//! next from it, and the step-by-step cooking screens.
 
 use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Redirect};
-use axum_extra::extract::CookieJar;
+use axum_extra::extract::{CookieJar, Form};
 use imkitchen_core::recipe::query::user::{RecipeCard, UserView};
-use imkitchen_core::shopping::{ChangeRecipeStatus, PoolRecipe, ShoppingState};
+use imkitchen_core::shopping::{
+    ChangeRecipeStatus, GenerateList, PoolRecipe, Randomize, ShoppingState,
+};
 use imkitchen_types::recipe::{IngredientUnitFormat, Instruction, RecipeType};
 use imkitchen_types::shopping::RecipeStatus;
+use serde::Deserialize;
 
 pub use imkitchen_web_shared::config;
 
@@ -724,6 +727,76 @@ pub async fn cook_page(
         .into_response()
 }
 
+#[derive(askama::Template)]
+#[template(path = "partials/kitchen-generate-modal.html")]
+pub struct GenerateModalTemplate;
+
+pub async fn generate_modal(template: Template, _user: AuthUser) -> impl IntoResponse {
+    template.render(GenerateModalTemplate)
+}
+
+#[derive(Deserialize, Debug)]
+pub struct GenerateForm {
+    pub count: u8,
+}
+
+/// Replace the list with freshly picked recipes, then send the browser back
+/// to the kitchen. The list is read back from the aggregate, so the
+/// redirected page is already up to date — no polling needed.
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn generate_action(
+    template: Template,
+    State(app): State<AppState>,
+    AuthUser(user): AuthUser,
+    Form(input): Form<GenerateForm>,
+) -> impl IntoResponse {
+    let preferences = imkitchen_web_shared::try_response!(anyhow:
+        app.identity.meal_preferences.load(&user.id),
+        template
+    );
+
+    imkitchen_web_shared::try_response!(
+        app.core.shopping.generate(
+            GenerateList {
+                count: input.count,
+                household_size: preferences.household_size,
+                randomize: Some(Randomize {
+                    cuisine_variety_weight: preferences.cuisine_variety_weight,
+                    dietary_restrictions: preferences.dietary_restrictions.to_vec(),
+                    recipe_types: preferences.recipe_types.to_vec(),
+                }),
+            },
+            &user.id
+        ),
+        template
+    );
+
+    Redirect::to("/").into_response()
+}
+
+/// Remove a recipe from the list and re-render the whole kitchen: the hero
+/// may have to move on to the next recipe.
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn remove_recipe_action(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    let preferences = imkitchen_web_shared::try_response!(anyhow:
+        app.identity.meal_preferences.load(&user.id),
+        template
+    );
+    imkitchen_web_shared::try_response!(
+        app.core
+            .shopping
+            .remove_recipe(&id, preferences.household_size, &user.id),
+        template
+    );
+
+    Redirect::to("/").into_response()
+}
+
 /// Calendar-era `/kitchen/{date}` bookmarks.
 async fn legacy_kitchen_redirect() -> impl IntoResponse {
     Redirect::permanent("/")
@@ -733,6 +806,11 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
     use axum::routing::{get, post};
     axum::Router::new()
         .route("/", get(page))
+        .route(
+            "/kitchen/generate",
+            get(generate_modal).post(generate_action),
+        )
+        .route("/kitchen/recipe/{id}/remove", post(remove_recipe_action))
         .route(
             "/kitchen/{recipe_id}/step/{direction}",
             post(update_step_action),

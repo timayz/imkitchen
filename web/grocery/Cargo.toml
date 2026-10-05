@@ -1,14 +1,12 @@
 [package]
-name = "imkitchen-web-menu"
+name = "imkitchen-web-grocery"
 version = "1.9.4"
 edition.workspace = true
 
 [dependencies]
 axum = { workspace = true }
-axum-extra = { workspace = true }
 askama = { workspace = true }
 serde = { workspace = true }
-anyhow = { workspace = true }
 tracing = { workspace = true }
 imkitchen-core = { path = "../../crates/core", version = "1.9.4" }
 imkitchen-types = { path = "../../crates/types", version = "1.9.4" }

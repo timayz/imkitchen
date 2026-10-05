@@ -2661,8 +2661,8 @@ dependencies = [
  "imkitchen-notification",
  "imkitchen-web-admin",
  "imkitchen-web-demo",
+ "imkitchen-web-grocery",
  "imkitchen-web-kitchen",
- "imkitchen-web-menu",
  "imkitchen-web-public",
  "imkitchen-web-recipe",
  "imkitchen-web-settings",
@@ -2853,29 +2853,28 @@ dependencies = [
  "evento",
  "imkitchen-core",
  "imkitchen-types",
+ "imkitchen-web-grocery",
  "imkitchen-web-kitchen",
- "imkitchen-web-menu",
  "imkitchen-web-recipe",
  "imkitchen-web-shared",
  "sqlx",
 ]
 
 [[package]]
-name = "imkitchen-web-kitchen"
+name = "imkitchen-web-grocery"
 version = "1.9.4"
 dependencies = [
- "anyhow",
  "askama",
  "axum",
- "axum-extra",
  "imkitchen-core",
  "imkitchen-types",
  "imkitchen-web-shared",
+ "serde",
  "tracing",
 ]
 
 [[package]]
-name = "imkitchen-web-menu"
+name = "imkitchen-web-kitchen"
 version = "1.9.4"
 dependencies = [
  "anyhow",

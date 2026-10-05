@@ -13,5 +13,5 @@ imkitchen-core = { path = "../../crates/core", version = "1.9.4" }
 imkitchen-types = { path = "../../crates/types", version = "1.9.4" }
 imkitchen-web-shared = { path = "../shared", version = "1.9.4" }
 imkitchen-web-kitchen = { path = "../kitchen", version = "1.9.4" }
-imkitchen-web-menu = { path = "../menu", version = "1.9.4" }
+imkitchen-web-grocery = { path = "../grocery", version = "1.9.4" }
 imkitchen-web-recipe = { path = "../recipe", version = "1.9.4" }

@@ -17,13 +17,13 @@
       <div class="text-6xl mb-6">👨‍🍳</div>
       <h2 class="text-2xl font-bold font-serif mb-4">{{ "Nothing to cook yet"|t }}</h2>
       <p class="text-ink-2 mb-8">
-        {{ "Generate a list from your recipes or add a few by hand, then come back here to cook them one by one."|t }}
+        {{ "Generate a list from your recipes or add a few by hand, then cook them one by one."|t }}
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="{{ "/menu"|demo_href }}"
+        <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/kitchen/generate{% endif %}" ts-target="body" ts-swap="append"
           class="px-6 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition">
-          ✨ {{ "Build your list"|t }}
-        </a>
+          ✨ {{ "Generate recipes"|t }}
+        </button>
         <a href="{{ "/recipes"|demo_href }}"
           class="px-6 py-3 bg-paper border border-line text-ink font-semibold rounded-xl hover:bg-cream-2 transition">
           ➕ {{ "Add recipes"|t }}
@@ -32,27 +32,36 @@
     </div>
   </div>
   {% else %}
-  {# ── Populated Home — the next thing to cook from the list ── #}
-  <header class="mb-5 flex items-start justify-between gap-3">
-    <div>
+  {# ── Populated Home — the next thing to cook, then the whole list ── #}
+  <header class="mb-4 flex items-start justify-between gap-3">
+    <div class="min-w-0">
       <h1 class="font-serif text-2xl leading-tight tracking-tight text-ink">{{ "Up next"|t }}</h1>
       <p class="text-sm text-ink-3 mt-0.5">
         {% if completed_count == total_count %}
         {{ "Everything is cooked — regenerate or add recipes."|t }}
         {% else %}
-        {{ "From your list"|t }} · <a href="{{ "/menu"|demo_href }}" class="text-primary-500 hover:text-primary-600 font-semibold">{{ "Full list"|t }} →</a>
+        {{ completed_count }}/{{ total_count }} {{ "cooked"|t }} · <a href="{{ "/groceries"|demo_href }}" class="text-primary-500 hover:text-primary-600 font-semibold">{{ "Groceries"|t }} →</a>
         {% endif %}
       </p>
     </div>
-    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-paper border border-line rounded-full shadow-sm">
-      <span class="w-1.5 h-1.5 rounded-full {% if completed_count == total_count %}bg-herb-500{% else %}bg-meal-side{% endif %}"></span>
-      <span class="text-xs font-semibold text-meal-side-ink">{{ completed_count }}/{{ total_count }} {{ "cooked"|t }}</span>
-    </div>
+    {# Desktop-only Regenerate inline with the header #}
+    <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/kitchen/generate{% endif %}" ts-target="body" ts-swap="append"
+      class="hidden md:inline-flex items-center gap-1.5 px-3 h-9 bg-meal-main-soft text-meal-main-ink font-semibold rounded-xl text-xs hover:opacity-90 shadow-sm transition shrink-0">
+      <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
+      {{ "Regenerate"|t }}
+    </button>
   </header>
+
+  {# Mobile-only Regenerate #}
+  <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/kitchen/generate{% endif %}" ts-target="body" ts-swap="append"
+    class="md:hidden w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 mb-4 bg-meal-main-soft text-meal-main-ink font-semibold rounded-xl text-sm hover:opacity-90 shadow-sm transition">
+    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
+    {{ "Regenerate recipes"|t }}
+  </button>
 
   {% let has_aside = !prep_ahead.is_empty() %}
   <div class="{% if has_aside %}grid lg:grid-cols-3 gap-6{% endif %}">
-    <!-- Main column: hero + also in your list -->
+    <!-- Main column: hero + the list -->
     <div class="{% if has_aside %}lg:col-span-2 {% endif %}min-w-0">
       {% if let Some(slot_recipe) = focused %}
         {% include "partials/kitchen-dish.html" %}

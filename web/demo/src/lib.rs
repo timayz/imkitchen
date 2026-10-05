@@ -1,7 +1,7 @@
 //! Demo mode — a browsable, no-login tour of imkitchen.
 //!
-//! Every page reuses the production templates (kitchen, menu, recipes,
-//! groceries, cooking screen) but is fed hand-authored placeholder data from
+//! Every page reuses the production templates (kitchen, recipes, groceries,
+//! cooking screen) but is fed hand-authored placeholder data from
 //! [`fixtures`]. Mutating actions are swapped client-side for a sign-up modal
 //! (see `templates/partials/demo-signup-modal.html`); the swap is driven by the
 //! `is_demo` flag injected into every render via [`imkitchen_web_shared::template::Template::demo`].
@@ -49,8 +49,8 @@ async fn cook(template: Template, Path((recipe_id,)): Path<(String,)>) -> impl I
     template.demo().render(fixtures::cooking(&recipe_id))
 }
 
-async fn menu(template: Template) -> impl IntoResponse {
-    template.demo().render(fixtures::menu())
+async fn menu() -> impl IntoResponse {
+    Redirect::permanent("/demo/kitchen")
 }
 
 async fn recipes(template: Template, Query(query): Query<PageQuery>) -> impl IntoResponse {

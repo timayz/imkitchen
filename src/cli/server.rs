@@ -248,7 +248,7 @@ pub async fn serve(
         .route("/ready", get(imkitchen_web_public::routes::health::ready))
         .with_state(app_state.read_db.clone())
         .merge(imkitchen_web_kitchen::routes())
-        .merge(imkitchen_web_menu::routes())
+        .merge(imkitchen_web_grocery::routes())
         .merge(imkitchen_web_recipe::routes())
         .merge(imkitchen_web_settings::routes())
         .merge(imkitchen_web_public::routes())

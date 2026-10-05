@@ -66,13 +66,6 @@
       "label": "{{ "Recipe instructions"|t }}"
     },
     {
-      "src": "/static/{{ "screenshots/meal-calendar-mobile" }}.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "platform": "narrow",
-      "label": "{{ "Weekly meal calendar"|t }}"
-    },
-    {
       "src": "/static/{{ "screenshots/groceries-mobile"|t }}.png",
       "sizes": "750x1334",
       "type": "image/png",

@@ -48,38 +48,10 @@
         <div>{{ "Kitchen"|t }}</div>
         <div
           class="text-[10.5px] font-mono mt-px font-medium tracking-wide opacity-85 {% if current_path == "kitchen" %}text-primary-800{% else %}text-ink-3{% endif %}">
-          {{ "Up next & cooking"|t }}
+          {{ "Your list & cooking"|t }}
         </div>
       </div>
       {% if current_path == "kitchen" %}
-      <svg class="hidden xl:block w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
-        stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 6l6 6-6 6" />
-      </svg>
-      {% endif %}
-    </a>
-
-    {# Nav: Menu #}
-    <a href="{{ "/menu"|demo_href }}"
-      class="flex items-center gap-3 px-0 xl:px-3 py-2.5 rounded-xl text-sm font-medium tracking-tight justify-center xl:justify-start
-        {% if current_path == "menu" %}bg-primary-100 text-primary-800 font-semibold{% else %}text-ink hover:bg-cream-2{% endif %}"
-      title="{{ "Menu"|t }}">
-      <div
-        class="w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0 {% if current_path == "menu" %}bg-paper shadow-sm{% endif %}">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
-          stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="5" width="18" height="16" rx="2" />
-          <path d="M3 9h18M8 3v4M16 3v4" />
-        </svg>
-      </div>
-      <div class="hidden xl:block flex-1 min-w-0">
-        <div>{{ "Menu"|t }}</div>
-        <div
-          class="text-[10.5px] font-mono mt-px font-medium tracking-wide opacity-85 {% if current_path == "menu" %}text-primary-800{% else %}text-ink-3{% endif %}">
-          {{ "Your recipe list"|t }}
-        </div>
-      </div>
-      {% if current_path == "menu" %}
       <svg class="hidden xl:block w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
         stroke-linecap="round" stroke-linejoin="round">
         <path d="M9 6l6 6-6 6" />
@@ -246,14 +218,6 @@
         <span class="text-xs mt-1">{{ "Kitchen"|t }}</span>
       </a>
       {% endblock %}
-      <a href="{{ "/menu"|demo_href }}" class="flex flex-col items-center py-2 px-3{% if current_path == "menu"%}
-        text-primary-500{% else %} text-ink-3{% endif %}">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-        </svg>
-        <span class="text-xs mt-1">{{ "Menu"|t }}</span>
-      </a>
       <a href="{{ "/recipes"|demo_href }}" class="flex flex-col items-center py-2 px-3{% if current_path == "recipes"%} text-primary-500{%
         else %} text-ink-3{% endif %}">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

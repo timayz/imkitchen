@@ -170,11 +170,11 @@
   </section>
 
   {# ── Primary CTA ──────────────────────────────────────────────── #}
-  <a href="/menu"
+  <button ts-trigger="click" ts-req="/kitchen/generate" ts-target="body" ts-swap="append"
     class="flex items-center justify-center gap-2 w-full px-5 py-3.5 bg-ink text-cream rounded-xl text-sm font-semibold shadow-sm hover:opacity-90 transition">
     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3l1.9 4.5L18.5 9l-4.6 1.5L12 15l-1.9-4.5L5.5 9l4.6-1.5z"/></svg>
     {{ "Generate your list"|t }}
-  </a>
+  </button>
   <p class="text-[11.5px] text-ink-3 text-center mt-2">
     {{ "Takes about 2 seconds · Edit or regenerate any time"|t }}
   </p>

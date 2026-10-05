@@ -1,7 +1,7 @@
 //! Synthetic data for demo mode.
 //!
 //! Everything here builds the *real* template context structs from the
-//! kitchen / menu / recipe web crates, so the demo renders the exact same
+//! kitchen / recipe / grocery web crates, so the demo renders the exact same
 //! templates a signed-in premium user would see — just fed from hand-authored
 //! placeholder data instead of the database.
 
@@ -10,14 +10,14 @@ use std::str::FromStr;
 
 use evento::cursor::{Edge, PageInfo, ReadResult, Value};
 use imkitchen_core::recipe::favorite::Favorite;
-use imkitchen_core::recipe::query::user::{RecipeCard, SortBy, UserView, UserViewList};
+use imkitchen_core::recipe::query::user::{SortBy, UserView, UserViewList};
 use imkitchen_core::recipe::query::user_stat::UserStatView;
 use imkitchen_types::recipe::{
     Ingredient, IngredientCategory, IngredientUnit, Instruction, RecipeType,
 };
 use imkitchen_types::shopping::RecipeStatus;
+use imkitchen_web_grocery::{GroceriesTemplate, grocery_view};
 use imkitchen_web_kitchen::{CookingTemplate, KitchenTemplate, ListEntry};
-use imkitchen_web_menu::{GroceriesTemplate, ListRecipe, MenuTemplate, grocery_view};
 use imkitchen_web_recipe::routes::cook::{CookTemplate, PageQuery as CookPageQuery};
 use imkitchen_web_recipe::routes::detail::{DetailTemplate, SimilarTemplate};
 use imkitchen_web_recipe::routes::index::{IndexTemplate as RecipesIndexTemplate, PageQuery};
@@ -412,19 +412,6 @@ const LIST: &[(&str, RecipeStatus)] = &[
     ("chimichurri", RecipeStatus::Idle),
 ];
 
-fn card(uv: &UserView) -> RecipeCard {
-    RecipeCard {
-        id: uv.id.clone(),
-        name: uv.name.clone(),
-        slug: uv.slug.clone(),
-        recipe_type: sqlx::types::Text(uv.recipe_type.0.clone()),
-        advance_prep: uv.advance_prep.clone(),
-        prep_time: uv.prep_time,
-        cook_time: uv.cook_time,
-        ..Default::default()
-    }
-}
-
 fn list_recipes() -> Vec<(UserView, RecipeStatus)> {
     LIST.iter()
         .filter_map(|(id, status)| find_recipe(id).map(|r| (r, status.clone())))
@@ -518,26 +505,6 @@ pub fn cooking(recipe_id: &str) -> CookingTemplate {
         show_iframe: false,
         show_ingredients: false,
         ingredient_aisles: vec![],
-    }
-}
-
-// ── Menu page ────────────────────────────────────────────────────────────
-
-pub fn menu() -> MenuTemplate {
-    let recipes: Vec<ListRecipe> = list_recipes()
-        .iter()
-        .map(|(r, status)| ListRecipe {
-            card: card(r),
-            status: status.clone(),
-        })
-        .collect();
-    let cooked_count = recipes.iter().filter(|r| r.status.is_completed()).count();
-
-    MenuTemplate {
-        user: demo_user(),
-        recipes,
-        cooked_count,
-        ..Default::default()
     }
 }
 
