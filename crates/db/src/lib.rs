@@ -14,6 +14,7 @@ pub(crate) mod m0011;
 pub(crate) mod m0012;
 pub(crate) mod m0013;
 pub(crate) mod m0014;
+pub(crate) mod m0015;
 
 pub mod contact_admin;
 pub mod contact_global_stat;
@@ -59,6 +60,7 @@ where
     m0012::Migration: sqlx_migrator::Migration<DB>,
     m0013::Migration: sqlx_migrator::Migration<DB>,
     m0014::Migration: sqlx_migrator::Migration<DB>,
+    m0015::Migration: sqlx_migrator::Migration<DB>,
 {
     let mut migrator = evento::sql_migrator::new::<DB>()?;
     migrator.add_migrations(vec![
@@ -76,6 +78,7 @@ where
         Box::new(m0012::Migration),
         Box::new(m0013::Migration),
         Box::new(m0014::Migration),
+        Box::new(m0015::Migration),
     ])?;
 
     Ok(migrator)

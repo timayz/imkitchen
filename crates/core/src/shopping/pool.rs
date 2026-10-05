@@ -1,81 +1,20 @@
-mod change_slot_recipe_status;
-mod generate;
+//! Candidate pool for list generation: the `meal_plan_recipe` table holds the
+//! user's own recipes plus the community recipes they saved, with the fields
+//! the picker filters on (type, dietary restrictions, accompaniment flag).
+//!
+//! The subscription key is kept as `"mealplan-command"` from the calendar
+//! era so the existing cursor and table carry over unchanged.
 
-use bitcode::{Decode, Encode};
 use evento::{
-    Executor, Projection, ProjectionAggregate,
+    Executor,
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::mealplan_recipe::MealPlanRecipe;
-use imkitchen_types::{
-    mealplan::{self, SlotRecipeStatusChanged},
-    recipe::RecipeType,
-};
+use imkitchen_types::recipe::RecipeType;
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
-use std::ops::Deref;
-
-pub use change_slot_recipe_status::ChangeSlotRecipeStatus;
-pub use generate::*;
-
-#[derive(Clone)]
-pub struct Module<E: Executor> {
-    state: crate::State<E>,
-}
-
-impl<E: Executor> Deref for Module<E> {
-    type Target = crate::State<E>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.state
-    }
-}
-
-impl<E: Executor> Module<E> {
-    pub fn new(state: crate::State<E>) -> Self {
-        Self { state }
-    }
-
-    pub async fn load(&self, id: impl Into<String>) -> anyhow::Result<Option<MealPlan>> {
-        create_projection().load(id).execute(&self.executor).await
-    }
-}
-
-#[evento::projection(name = "imkitchen-core/mealplan/MealPlan", Encode, Decode)]
-pub struct MealPlan {
-    pub user_id: String,
-    pub generated_at: u64,
-}
-
-impl ProjectionAggregate for MealPlan {
-    fn aggregate_id(&self) -> String {
-        self.user_id.to_owned()
-    }
-}
-
-pub fn create_projection<E: Executor>() -> Projection<E, MealPlan> {
-    Projection::new::<mealplan::MealPlan>()
-        .handler(handle_generated())
-        .skip::<SlotRecipeStatusChanged>()
-        .strict()
-        // Bumped from the implicit 0 → 1 when evento's `#[projection]` macro
-        // grew the `aggregate_version` field: invalidates old snapshots so they
-        // rebuild from events rather than failing to bitcode-decode.
-        .revision(1)
-}
-
-#[evento::handler]
-async fn handle_generated(
-    event: Event<mealplan::DaysGenerated>,
-    data: &mut MealPlan,
-) -> anyhow::Result<()> {
-    data.user_id = event.metadata.requested_by()?;
-    data.generated_at = event.timestamp;
-
-    Ok(())
-}
 
 pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
     SubscriptionBuilder::new("mealplan-command")

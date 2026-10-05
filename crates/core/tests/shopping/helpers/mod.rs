@@ -27,13 +27,38 @@ pub async fn setup_test_state(path: PathBuf) -> anyhow::Result<State<Sqlite>> {
     })
 }
 
-/// Import a recipe with a single ingredient and return its id.
+/// Import a main course with a single ingredient and return its id.
 pub async fn import_recipe(
     cmd: &imkitchen_core::recipe::Module<Sqlite>,
     name: &str,
     ingredient_name: &str,
     quantity: u32,
     household_size: u16,
+    user_id: &str,
+) -> anyhow::Result<String> {
+    import_typed_recipe(
+        cmd,
+        name,
+        ingredient_name,
+        quantity,
+        household_size,
+        RecipeType::MainCourse,
+        false,
+        user_id,
+    )
+    .await
+}
+
+/// Import a recipe of any type with a single ingredient and return its id.
+#[allow(clippy::too_many_arguments)]
+pub async fn import_typed_recipe(
+    cmd: &imkitchen_core::recipe::Module<Sqlite>,
+    name: &str,
+    ingredient_name: &str,
+    quantity: u32,
+    household_size: u16,
+    recipe_type: RecipeType,
+    accepts_accompaniment: bool,
     user_id: &str,
 ) -> anyhow::Result<String> {
     let input = ImportInput {
@@ -51,15 +76,15 @@ pub async fn import_recipe(
         household_size,
         cook_time: 25,
         prep_time: 10,
-        recipe_type: RecipeType::MainCourse,
-        accepts_accompaniment: false,
+        recipe_type,
+        accepts_accompaniment,
         dietary_restrictions: vec![],
     };
 
     cmd.import(input, user_id, None).await.map_err(Into::into)
 }
 
-/// Drain the shopping subscription (maintains `shopping_recipe` / `shopping_slot`).
+/// Drain the shopping subscription (maintains `shopping_recipe`).
 pub async fn run_shopping_subscription(state: &State<Sqlite>) -> anyhow::Result<()> {
     imkitchen_core::shopping::subscription()
         .data(state.write_db.clone())
@@ -69,9 +94,10 @@ pub async fn run_shopping_subscription(state: &State<Sqlite>) -> anyhow::Result<
     Ok(())
 }
 
-/// Drain the shopping-list read-model subscription (maintains `shopping_list`).
-pub async fn run_shopping_list_subscription(state: &State<Sqlite>) -> anyhow::Result<()> {
-    imkitchen_core::shopping::list::subscription()
+/// Drain the candidate-pool subscription (maintains `meal_plan_recipe`, which
+/// `generate` picks from).
+pub async fn run_pool_subscription(state: &State<Sqlite>) -> anyhow::Result<()> {
+    imkitchen_core::shopping::pool::subscription()
         .data(state.write_db.clone())
         .no_retry()
         .run_once(&state.executor)

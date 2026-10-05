@@ -1,19 +1,28 @@
 use evento::Executor;
-use imkitchen_types::recipe::Ingredient;
-use std::collections::HashSet;
+use imkitchen_types::{recipe::Ingredient, shopping::RecipeStatus};
+use std::collections::{HashMap, HashSet};
 
 use super::merge::merge_ingredients;
 
-/// Current shopping-list state, computed straight from the aggregate so it is
-/// immediately consistent after a command (unlike the `shopping_list` read
-/// model, which a background subscription updates asynchronously). Used to
-/// render the groceries page and to re-render it right after add/remove.
+/// Current list state, computed straight from the aggregate so it is
+/// immediately consistent after a command. Used to render the menu and
+/// kitchen pages and to re-render them right after add/remove.
 pub struct ShoppingState {
+    /// Recipe ids in list order.
     pub recipe_ids: Vec<String>,
     pub ingredients: Vec<Ingredient>,
     pub checked: HashSet<String>,
-    pub from_date: u64,
-    pub days: u8,
+    pub statuses: HashMap<String, RecipeStatus>,
+}
+
+impl ShoppingState {
+    pub fn status(&self, recipe_id: &str) -> RecipeStatus {
+        self.statuses.get(recipe_id).cloned().unwrap_or_default()
+    }
+
+    pub fn contains(&self, recipe_id: &str) -> bool {
+        self.recipe_ids.iter().any(|id| id == recipe_id)
+    }
 }
 
 impl<E: Executor> super::Module<E> {
@@ -24,14 +33,9 @@ impl<E: Executor> super::Module<E> {
         user_id: impl Into<String>,
         household_size: u16,
     ) -> anyhow::Result<ShoppingState> {
-        let (recipe_ids, checked, from_date, days) = match self.load(user_id).await? {
-            Some(s) => (
-                s.recipes.into_iter().collect::<Vec<_>>(),
-                s.checked,
-                s.from_date,
-                s.days,
-            ),
-            None => (vec![], HashSet::new(), 0, 0),
+        let (recipe_ids, checked, statuses) = match self.load(user_id).await? {
+            Some(s) => (s.recipes, s.checked, s.statuses),
+            None => (vec![], HashSet::new(), HashMap::new()),
         };
 
         let recipe_ingredients = self
@@ -43,8 +47,7 @@ impl<E: Executor> super::Module<E> {
             recipe_ids,
             ingredients,
             checked,
-            from_date,
-            days,
+            statuses,
         })
     }
 }

@@ -93,8 +93,8 @@ pub struct UserViewList {
     pub rank: f64,
 }
 
-/// Compact recipe view for listing recipes by id (e.g. the shopping list's
-/// "Recipes in this list" section). Selects just what a card needs.
+/// Compact recipe view for listing recipes by id (the menu's recipe list and
+/// the kitchen's course switcher). Selects just what a card needs.
 #[derive(Debug, Default, Clone, FromRow)]
 pub struct RecipeCard {
     pub id: String,
@@ -103,6 +103,9 @@ pub struct RecipeCard {
     pub recipe_type: sqlx::types::Text<RecipeType>,
     pub thumbnail_version: Option<String>,
     pub blur_placeholder: Option<String>,
+    pub advance_prep: String,
+    pub prep_time: u16,
+    pub cook_time: u16,
 }
 
 pub struct RecipesQuery {
@@ -544,6 +547,9 @@ impl<E: Executor> crate::recipe::Module<E> {
                 RecipeUser::RecipeType,
                 RecipeUser::ThumbnailVersion,
                 RecipeUser::BlurPlaceholder,
+                RecipeUser::AdvancePrep,
+                RecipeUser::PrepTime,
+                RecipeUser::CookTime,
             ])
             .from(RecipeUser::Table)
             .and_where(Expr::col(RecipeUser::Id).is_in(ids))

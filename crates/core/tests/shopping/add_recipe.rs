@@ -16,16 +16,37 @@ async fn test_add_recipe() -> anyhow::Result<()> {
 
     // Aggregate reflects the new recipe + its ingredient.
     let loaded = shopping.load("john").await?.expect("shopping aggregate");
-    assert!(loaded.recipes.contains(&recipe_id));
+    assert_eq!(loaded.recipes, vec![recipe_id.clone()]);
     assert_eq!(loaded.ingredients.len(), 1);
 
-    // Read model reflects it after the list subscription runs.
-    helpers::run_shopping_list_subscription(&state).await?;
-    let row = shopping.find("john").await?.expect("shopping list row");
-    let recipes = row.recipes.expect("recipes column").0;
-    assert_eq!(recipes, vec![recipe_id]);
-    assert_eq!(row.ingredients.0.len(), 1);
-    assert_eq!(row.ingredients.0[0].name, "carrot");
+    // The synchronous state view has the merged ingredient.
+    let view = shopping.state("john", 4).await?;
+    assert_eq!(view.recipe_ids, vec![recipe_id]);
+    assert_eq!(view.ingredients.len(), 1);
+    assert_eq!(view.ingredients[0].name, "carrot");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_add_recipe_keeps_list_order() -> anyhow::Result<()> {
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
+    let recipe_cmd = imkitchen_core::recipe::Module::new(state.clone());
+    let shopping = imkitchen_core::shopping::Module::new(state.clone());
+
+    let a = helpers::import_recipe(&recipe_cmd, "Bread", "flour", 500, 4, "john").await?;
+    let b = helpers::import_recipe(&recipe_cmd, "Cake", "sugar", 200, 4, "john").await?;
+    let c = helpers::import_recipe(&recipe_cmd, "Soup", "carrot", 300, 4, "john").await?;
+    helpers::run_shopping_subscription(&state).await?;
+
+    shopping.add_recipe(&b, 4, "john").await?;
+    shopping.add_recipe(&c, 4, "john").await?;
+    shopping.add_recipe(&a, 4, "john").await?;
+
+    let loaded = shopping.load("john").await?.expect("shopping aggregate");
+    assert_eq!(loaded.recipes, vec![b, c, a]);
 
     Ok(())
 }

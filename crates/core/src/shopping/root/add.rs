@@ -4,7 +4,7 @@ use imkitchen_types::shopping::RecipeAdded;
 use super::merge::merge_ingredients;
 
 impl<E: Executor> super::Module<E> {
-    /// Manually add a single recipe to the user's shopping list, recomputing the
+    /// Manually add a single recipe to the user's list, recomputing the
     /// merged ingredient list for the new recipe set.
     ///
     /// Idempotent: adding a recipe already in the list is a no-op. The recipe
@@ -23,26 +23,13 @@ impl<E: Executor> super::Module<E> {
             crate::not_found!("recipe");
         }
 
-        let shopping = self
-            .load(&request_by)
-            .await?
-            .unwrap_or_else(|| super::Shopping {
-                user_id: request_by.to_owned(),
-                checked: Default::default(),
-                ingredients: Default::default(),
-                recipes: Default::default(),
-                cursor: Default::default(),
-                aggregate_version: Default::default(),
-                from_date: 0,
-                days: 0,
-                generated_at: 0,
-            });
+        let shopping = self.load_or_empty(&request_by).await?;
 
         if shopping.recipes.contains(&recipe_id) {
             return Ok(());
         }
 
-        let mut recipe_ids: Vec<String> = shopping.recipes.iter().cloned().collect();
+        let mut recipe_ids = shopping.recipes.clone();
         recipe_ids.push(recipe_id.to_owned());
 
         let recipe_ingredients = self

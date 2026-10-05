@@ -1,3 +1,10 @@
+//! Legacy calendar meal plan — **no longer written**.
+//!
+//! The meal plan was replaced by the per-user recipe list (see
+//! [`crate::shopping`]). These declarations stay so the events already in the
+//! store keep decoding and `events.lock` stays append-only: bitcode is
+//! positional, so nothing here may change shape.
+
 use bitcode::{Decode, Encode};
 use serde::Deserialize;
 use strum::{AsRefStr, Display, EnumString, VariantArray};
@@ -31,34 +38,9 @@ pub enum DaySlotStatus {
     Completed,
 }
 
-#[derive(Encode, Decode, Default, Clone, PartialEq, Debug)]
-pub struct DaySlotRecipe {
-    pub id: String,
-    pub name: String,
-    pub prep_time: u16,
-    pub cook_time: u16,
-    pub advance_prep: String,
-    pub status: DaySlotStatus,
-}
-
-impl DaySlotRecipe {
-    pub fn total_prep_time(&self) -> u16 {
-        self.prep_time + self.cook_time
-    }
-
-    pub fn is_idle(&self) -> bool {
-        matches!(self.status, DaySlotStatus::Idle)
-    }
-
-    pub fn is_cooking(&self) -> bool {
-        matches!(self.status, DaySlotStatus::Cooking(_))
-    }
-
-    pub fn is_completed(&self) -> bool {
-        matches!(self.status, DaySlotStatus::Completed)
-    }
-}
-
+/// Never used by the app. Kept because the `events.lock` scanner resolves
+/// nested type names by bare identifier, and this `Status` is part of the
+/// recorded shape of the `imkitchen-core/contact/Contact` view.
 #[derive(
     Encode,
     Decode,

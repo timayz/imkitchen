@@ -312,7 +312,7 @@ dependencies = [
  "hyper-tls",
  "hyper-util",
  "miniserde",
- "thiserror 2.0.21",
+ "thiserror",
  "tokio",
  "tracing",
 ]
@@ -331,7 +331,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_qs",
- "thiserror 2.0.21",
+ "thiserror",
  "tracing",
  "uuid",
 ]
@@ -437,7 +437,7 @@ dependencies = [
  "num-traits",
  "pastey",
  "rayon",
- "thiserror 2.0.21",
+ "thiserror",
  "v_frame",
  "y4m",
 ]
@@ -1014,7 +1014,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fa961b519f0b462e3a3b4a34b64d119eeaca1d59af726fe450bbba07a9fc0a1"
 dependencies = [
- "thiserror 2.0.21",
+ "thiserror",
 ]
 
 [[package]]
@@ -1477,7 +1477,7 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10d60334b3b2e7c9d91ef8150abfb6fa4c1c39ebbcf4a81c2e346aad939fee3e"
 dependencies = [
- "thiserror 2.0.21",
+ "thiserror",
 ]
 
 [[package]]
@@ -1781,7 +1781,7 @@ dependencies = [
  "hex",
  "serde",
  "sha3",
- "thiserror 2.0.21",
+ "thiserror",
  "tokio",
  "tracing",
  "ulid",
@@ -2663,7 +2663,6 @@ dependencies = [
  "imkitchen-web-demo",
  "imkitchen-web-grocery",
  "imkitchen-web-kitchen",
- "imkitchen-web-menu",
  "imkitchen-web-public",
  "imkitchen-web-recipe",
  "imkitchen-web-settings",
@@ -2738,9 +2737,8 @@ dependencies = [
  "sqlx",
  "strum 0.28.0",
  "temp-dir",
- "thiserror 2.0.21",
+ "thiserror",
  "time",
- "time-tz",
  "tokio",
  "tracing",
  "validator",
@@ -2857,15 +2855,26 @@ dependencies = [
  "imkitchen-types",
  "imkitchen-web-grocery",
  "imkitchen-web-kitchen",
- "imkitchen-web-menu",
  "imkitchen-web-recipe",
  "imkitchen-web-shared",
  "sqlx",
- "time",
 ]
 
 [[package]]
 name = "imkitchen-web-grocery"
+version = "1.9.4"
+dependencies = [
+ "askama",
+ "axum",
+ "imkitchen-core",
+ "imkitchen-types",
+ "imkitchen-web-shared",
+ "serde",
+ "tracing",
+]
+
+[[package]]
+name = "imkitchen-web-kitchen"
 version = "1.9.4"
 dependencies = [
  "anyhow",
@@ -2876,33 +2885,6 @@ dependencies = [
  "imkitchen-types",
  "imkitchen-web-shared",
  "serde",
- "time",
- "tracing",
-]
-
-[[package]]
-name = "imkitchen-web-kitchen"
-version = "1.9.4"
-dependencies = [
- "askama",
- "axum",
- "axum-extra",
- "imkitchen-core",
- "imkitchen-types",
- "imkitchen-web-shared",
- "time",
- "tracing",
-]
-
-[[package]]
-name = "imkitchen-web-menu"
-version = "1.9.4"
-dependencies = [
- "askama",
- "axum",
- "imkitchen-core",
- "imkitchen-web-shared",
- "time",
  "tracing",
 ]
 
@@ -3127,7 +3109,7 @@ dependencies = [
  "jni-sys",
  "log",
  "simd_cesu8",
- "thiserror 2.0.21",
+ "thiserror",
  "walkdir",
  "windows-link",
 ]
@@ -3858,7 +3840,7 @@ dependencies = [
  "rustc-hash",
  "serde",
  "serde_json",
- "thiserror 2.0.21",
+ "thiserror",
 ]
 
 [[package]]
@@ -3873,7 +3855,7 @@ dependencies = [
  "postcard",
  "rustc-hash",
  "serde",
- "thiserror 2.0.21",
+ "thiserror",
 ]
 
 [[package]]
@@ -3886,7 +3868,7 @@ dependencies = [
  "owo-colors",
  "oxc-miette-derive",
  "textwrap",
- "thiserror 2.0.21",
+ "thiserror",
  "unicode-segmentation",
  "unicode-width",
 ]
@@ -4600,15 +4582,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "parse-zoneinfo"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f2a05b18d44e2957b88f96ba460715e295bc1d7510468a2f3d3b44535d26c24"
-dependencies = [
- "regex",
-]
-
-[[package]]
 name = "password-hash"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5053,7 +5026,7 @@ dependencies = [
  "rustc-hash",
  "rustls",
  "socket2",
- "thiserror 2.0.21",
+ "thiserror",
  "tokio",
  "tracing",
  "web-time",
@@ -5076,7 +5049,7 @@ dependencies = [
  "rustls",
  "rustls-pki-types",
  "slab",
- "thiserror 2.0.21",
+ "thiserror",
  "tinyvec",
  "tracing",
  "web-time",
@@ -5244,7 +5217,7 @@ dependencies = [
  "rand 0.9.5",
  "rand_chacha 0.9.0",
  "simd_helpers",
- "thiserror 2.0.21",
+ "thiserror",
  "v_frame",
  "wasm-bindgen",
 ]
@@ -5755,7 +5728,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
- "thiserror 2.0.21",
+ "thiserror",
 ]
 
 [[package]]
@@ -5861,18 +5834,6 @@ dependencies = [
  "serde",
  "serde_core",
  "typeid",
-]
-
-[[package]]
-name = "serde-xml-rs"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65162e9059be2f6a3421ebbb4fef3e74b7d9e7c60c50a0e292c6239f19f1edfa"
-dependencies = [
- "log",
- "serde",
- "thiserror 1.0.69",
- "xml-rs",
 ]
 
 [[package]]
@@ -6131,7 +6092,7 @@ checksum = "0d585997b0ac10be3c5ee635f1bab02d512760d14b7c468801ac8a01d9ae5f1d"
 dependencies = [
  "num-bigint 0.4.8",
  "num-traits",
- "thiserror 2.0.21",
+ "thiserror",
  "time",
 ]
 
@@ -6247,7 +6208,7 @@ dependencies = [
  "serde_json",
  "sha2 0.10.9",
  "smallvec",
- "thiserror 2.0.21",
+ "thiserror",
  "tokio",
  "tokio-stream",
  "tracing",
@@ -6288,7 +6249,7 @@ dependencies = [
  "sqlx-postgres",
  "sqlx-sqlite",
  "syn 2.0.119",
- "thiserror 2.0.21",
+ "thiserror",
  "tokio",
  "url",
 ]
@@ -6317,7 +6278,7 @@ dependencies = [
  "sha1 0.11.0",
  "sha2 0.11.0",
  "sqlx-core",
- "thiserror 2.0.21",
+ "thiserror",
  "tracing",
 ]
 
@@ -6351,7 +6312,7 @@ dependencies = [
  "smallvec",
  "sqlx-core",
  "stringprep",
- "thiserror 2.0.21",
+ "thiserror",
  "tracing",
  "whoami",
 ]
@@ -6375,7 +6336,7 @@ dependencies = [
  "percent-encoding",
  "serde",
  "sqlx-core",
- "thiserror 2.0.21",
+ "thiserror",
  "tracing",
  "url",
 ]
@@ -6390,7 +6351,7 @@ dependencies = [
  "clap",
  "crc32fast",
  "sqlx",
- "thiserror 2.0.21",
+ "thiserror",
  "tracing",
 ]
 
@@ -6562,31 +6523,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "1.0.69"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6aaf5339b578ea85b50e080feb250a3e8ae8cfcdff9a461c9ec2904bc923f52"
-dependencies = [
- "thiserror-impl 1.0.69",
-]
-
-[[package]]
-name = "thiserror"
 version = "2.0.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09e52cb86a36cede5cb101bf8908837b3e4c6e5e59fe7fd85c23fb56200d189e"
 dependencies = [
- "thiserror-impl 2.0.21",
-]
-
-[[package]]
-name = "thiserror-impl"
-version = "1.0.69"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fee6c4efc90059e10f81e6d42c60a18f76588c3d74cb83a0b242a2b6c7504c1"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
+ "thiserror-impl",
 ]
 
 [[package]]
@@ -6630,7 +6571,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cdb87b95ec50ddfa440816d227a17b2ccbdda963a316a727fda0fc4334f7d134"
 dependencies = [
  "deranged",
- "js-sys",
  "num-conv",
  "powerfmt",
  "serde_core",
@@ -6652,22 +6592,6 @@ checksum = "7e689342a48d2ea927c87ea50cabf8594854bf940e9310208848d680d668ed85"
 dependencies = [
  "num-conv",
  "time-core",
-]
-
-[[package]]
-name = "time-tz"
-version = "3.0.0-rc.5.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4fac6e9cb6fc1dfb318cb928baaeade3126a8e4f4312d26f0b5126e83c8bf2b"
-dependencies = [
- "cfg-if",
- "parse-zoneinfo",
- "phf 0.11.3",
- "phf_codegen",
- "serde",
- "serde-xml-rs",
- "time",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -7630,7 +7554,7 @@ dependencies = [
  "serde_json",
  "strum 0.28.0",
  "strum_macros 0.28.0",
- "thiserror 2.0.21",
+ "thiserror",
  "typeshare",
 ]
 
@@ -7648,12 +7572,6 @@ checksum = "05f360fc0b24296329c78fda852a1e9ae82de9cf7b27dae4b7f62f118f77b9ed"
 dependencies = [
  "tap",
 ]
-
-[[package]]
-name = "xml-rs"
-version = "0.8.29"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
 
 [[package]]
 name = "y4m"
