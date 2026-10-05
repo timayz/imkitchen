@@ -2089,5 +2089,10 @@
   "cooked": "cuisinées",
   "recipe": "recette",
   "recipe list": "liste de recettes",
-  "so Cooking Mode knows what to prepare next.": "pour que le mode Cuisine sache quoi préparer ensuite."
+  "so Cooking Mode knows what to prepare next.": "pour que le mode Cuisine sache quoi préparer ensuite.",
+  "Edit recipes": "Modifier les recettes",
+  "Go to your list": "Voir votre liste",
+  "Your recipe list": "Votre liste de recettes",
+  "Five sections: Kitchen (what to cook next), Menu (your recipe list), Recipes (your library), Groceries (shopping list), Settings.": "Cinq sections : Cuisine (la prochaine recette à cuisiner), Menu (votre liste de recettes), Recettes (votre bibliothèque), Courses (liste de courses), Paramètres.",
+  "Generate a list from your recipes and favourites, or add recipes one by one. Your groceries follow from whatever is here.": "Générez une liste à partir de vos recettes et favoris, ou ajoutez des recettes une par une. Vos courses découlent de ce qui se trouve ici."
 }

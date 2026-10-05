@@ -3,16 +3,6 @@
 
 {% block content %}
 {% let demo = ""|is_demo %}
-{% let on_recipes = tab == MenuTab::Recipes %}
-{# ── Per-aisle accent + active-node styles (groceries tab). ── #}
-<style>
-  .route-node .route-bubble { background-color: var(--color-cream-2); }
-  .route-node.is-done .route-bubble { background-color: color-mix(in srgb, var(--aisle) 14%, transparent); opacity: 0.7; }
-  .route-node.is-active .route-bubble { background-color: var(--aisle); color: #fff; box-shadow: 0 0 0 2px var(--color-paper), 0 0 0 4px var(--aisle); }
-  .route-node.is-active .route-label { color: var(--aisle); }
-  .aisle-fill { background-color: var(--aisle); }
-</style>
-
 <div class="container mx-auto px-4 py-6">
 
   {# ── Header — eyebrow + serif title + actions ─────────────────── #}
@@ -26,7 +16,7 @@
       <p class="text-[11px] font-mono text-ink-3 mt-2">
         {{ recipes.len() }} {% if recipes.len() == 1 %}{{ "recipe"|t }}{% else %}{{ "recipes"|t }}{% endif %}
         · {{ cooked_count }} {{ "cooked"|t }}
-        · {{ checked_items }}/{{ total_items }} {{ "items"|t }}
+        · <a href="{{ "/groceries"|demo_href }}" class="text-primary-500 hover:text-primary-600 font-semibold">{{ "Groceries"|t }} →</a>
       </p>
       {% endif %}
     </div>
@@ -41,54 +31,11 @@
 
   {# Mobile-only Generate button #}
   <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/menu/generate{% endif %}" ts-target="body" ts-swap="append"
-    class="md:hidden w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 mb-3 {% if recipes.is_empty() %}bg-primary-500 text-white hover:bg-primary-600{% else %}bg-meal-main-soft text-meal-main-ink hover:opacity-90{% endif %} font-semibold rounded-xl text-sm shadow-sm transition">
+    class="md:hidden w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 mb-4 {% if recipes.is_empty() %}bg-primary-500 text-white hover:bg-primary-600{% else %}bg-meal-main-soft text-meal-main-ink hover:opacity-90{% endif %} font-semibold rounded-xl text-sm shadow-sm transition">
     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
     {% if recipes.is_empty() %}{{ "Generate recipes"|t }}{% else %}{{ "Regenerate recipes"|t }}{% endif %}
   </button>
 
-  {# ── Tab bar — Recipes | Groceries ─────────────────────────────── #}
-  <nav class="flex gap-1 p-1 bg-paper rounded-2xl border border-line-2 shadow-sm mb-4">
-    <a href="{{ "/menu"|demo_href }}"
-      class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition {% if on_recipes %}bg-ink text-cream{% else %}text-ink-2 hover:bg-cream{% endif %}">
-      <span>🍽️</span>
-      {{ "Recipes"|t }}
-      <span class="text-[10px] font-mono {% if on_recipes %}text-cream/80{% else %}text-ink-3{% endif %}">{{ recipes.len() }}</span>
-    </a>
-    <a href="{{ "/menu/groceries"|demo_href }}"
-      class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition {% if !on_recipes %}bg-ink text-cream{% else %}text-ink-2 hover:bg-cream{% endif %}">
-      <span>🧺</span>
-      {{ "Groceries"|t }}
-      <span class="text-[10px] font-mono {% if !on_recipes %}text-cream/80{% else %}text-ink-3{% endif %}">{{ checked_items }}/{{ total_items }}</span>
-    </a>
-  </nav>
-
-  {% if on_recipes %}
   {% include "partials/menu-recipes.html" %}
-  {% else %}
-  {% include "partials/menu-groceries.html" %}
-  {% endif %}
 </div>
-
-{% if !on_recipes && !aisles.is_empty() %}
-<script>
-  function toggleCategory(name) {
-    if (window.matchMedia && window.matchMedia('(min-width: 1024px)').matches) {
-      // Desktop: jump to the section (everything is visible already).
-      var target = document.getElementById('category-' + name);
-      if (target) target.scrollIntoView({behavior: 'smooth', block: 'start'});
-      return;
-    }
-    // Mobile: swap visible section + reskin route nodes via .is-active.
-    document.querySelectorAll('.category-section').forEach(function (el) { el.classList.add('hidden'); });
-    var target = document.getElementById('category-' + name);
-    if (target) target.classList.remove('hidden');
-
-    document.querySelectorAll('.route-node').forEach(function (node) {
-      node.classList.remove('is-active');
-    });
-    var activeNode = document.querySelector('.route-node[data-aisle="' + name + '"]');
-    if (activeNode) activeNode.classList.add('is-active');
-  }
-</script>
-{% endif %}
 {% endblock %}

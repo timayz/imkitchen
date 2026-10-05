@@ -17,7 +17,7 @@ use imkitchen_types::recipe::{
 };
 use imkitchen_types::shopping::RecipeStatus;
 use imkitchen_web_kitchen::{CookingTemplate, KitchenTemplate, ListEntry};
-use imkitchen_web_menu::{ListRecipe, MenuTab, MenuTemplate, grocery_view};
+use imkitchen_web_menu::{GroceriesTemplate, ListRecipe, MenuTemplate, grocery_view};
 use imkitchen_web_recipe::routes::cook::{CookTemplate, PageQuery as CookPageQuery};
 use imkitchen_web_recipe::routes::detail::{DetailTemplate, SimilarTemplate};
 use imkitchen_web_recipe::routes::index::{IndexTemplate as RecipesIndexTemplate, PageQuery};
@@ -521,12 +521,9 @@ pub fn cooking(recipe_id: &str) -> CookingTemplate {
     }
 }
 
-// ── Menu page (Recipes + Groceries tabs) ─────────────────────────────────
+// ── Menu page ────────────────────────────────────────────────────────────
 
-pub fn menu(tab: MenuTab) -> MenuTemplate {
-    use IngredientCategory::*;
-    use IngredientUnit::*;
-
+pub fn menu() -> MenuTemplate {
     let recipes: Vec<ListRecipe> = list_recipes()
         .iter()
         .map(|(r, status)| ListRecipe {
@@ -535,6 +532,20 @@ pub fn menu(tab: MenuTab) -> MenuTemplate {
         })
         .collect();
     let cooked_count = recipes.iter().filter(|r| r.status.is_completed()).count();
+
+    MenuTemplate {
+        user: demo_user(),
+        recipes,
+        cooked_count,
+        ..Default::default()
+    }
+}
+
+// ── Groceries page ───────────────────────────────────────────────────────
+
+pub fn groceries() -> GroceriesTemplate {
+    use IngredientCategory::*;
+    use IngredientUnit::*;
 
     let produce = vec![
         ing("Bell pepper", 4, None, FruitsAndVegetables),
@@ -584,11 +595,9 @@ pub fn menu(tab: MenuTab) -> MenuTemplate {
         .collect();
     let view = grocery_view(&ingredients, checked);
 
-    MenuTemplate {
+    GroceriesTemplate {
         user: demo_user(),
-        tab,
-        recipes,
-        cooked_count,
+        recipe_count: LIST.len(),
         checked: view.checked,
         aisles: view.aisles,
         split_at: view.split_at,

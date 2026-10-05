@@ -1,4 +1,4 @@
-{# ── Groceries tab: the aisle-grouped ingredients of every recipe in the
+{# ── Groceries body: the aisle-grouped ingredients of every recipe in the
      list. Macros are redefined here (as elsewhere in the codebase) since
      includes don't inherit the parent's macros. ──────────────────────── #}
 {# ── Map shopping_<Category> → emoji ─────────────────────────────── #}
@@ -111,7 +111,7 @@
     {% for ingredient in aisle.items %}
     <label class="group flex items-center gap-3 px-3 md:px-4 py-3 hover:bg-cream/30 cursor-pointer transition has-checked:bg-cream/50">
       <input{% if checked.contains(&ingredient.key()) %} checked{% endif %} type="checkbox"
-        {% if !demo %}ts-trigger="change" ts-req="/menu/toggle" ts-json="{{ ingredient.json_key() }}" ts-req-method="post" ts-swap="none"{% endif %}
+        {% if !demo %}ts-trigger="change" ts-req="/groceries/toggle" ts-json="{{ ingredient.json_key() }}" ts-req-method="post" ts-swap="none"{% endif %}
         class="peer sr-only" autocomplete="off" />
       <div class="w-6 h-6 rounded-lg border-[1.5px] border-line bg-cream flex items-center justify-center shrink-0 transition peer-checked:bg-herb-500 peer-checked:border-herb-500">
         <svg class="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
@@ -142,7 +142,7 @@
     </p>
     <a href="{{ "/menu"|demo_href }}"
       class="inline-flex items-center justify-center gap-2 mt-6 px-4 py-2.5 bg-primary-500 text-white font-semibold rounded-xl text-sm hover:bg-primary-600 shadow-sm transition">
-      {{ "Go to recipes"|t }}
+      {{ "Go to your list"|t }}
     </a>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8 text-left">

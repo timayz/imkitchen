@@ -1,5 +1,5 @@
-//! The user's recipe list, in two tabs: the recipes themselves (generate,
-//! add, remove) and the aisle-grouped groceries they need.
+//! The user's recipe list (generate, add, remove) and, on its own page, the
+//! aisle-grouped groceries it needs.
 
 use axum::{
     extract::{Json, Path, State},
@@ -23,19 +23,12 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
     use axum::routing::{get, post};
     axum::Router::new()
         .route("/menu", get(page))
-        .route("/menu/groceries", get(groceries_page))
         .route("/menu/generate", get(generate_modal).post(generate_action))
-        .route("/menu/toggle", post(toggle_action))
         .route("/menu/recipe/{id}/remove", post(remove_recipe_action))
         // Calendar-era `/menu/{date}` bookmarks.
         .route("/menu/{legacy}", get(legacy_menu_redirect))
-        .route("/groceries", get(legacy_groceries_redirect))
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum MenuTab {
-    Recipes,
-    Groceries,
+        .route("/groceries", get(groceries_page))
+        .route("/groceries/toggle", post(toggle_action))
 }
 
 /// A recipe in the list together with its cooking status.
@@ -58,9 +51,27 @@ pub struct AisleSection {
 pub struct MenuTemplate {
     pub current_path: String,
     pub user: AuthUser,
-    pub tab: MenuTab,
     pub recipes: Vec<ListRecipe>,
     pub cooked_count: usize,
+}
+
+impl Default for MenuTemplate {
+    fn default() -> Self {
+        Self {
+            current_path: "menu".to_owned(),
+            user: AuthUser::default(),
+            recipes: vec![],
+            cooked_count: 0,
+        }
+    }
+}
+
+#[derive(askama::Template)]
+#[template(path = "groceries.html")]
+pub struct GroceriesTemplate {
+    pub current_path: String,
+    pub user: AuthUser,
+    pub recipe_count: usize,
     pub checked: HashSet<String>,
     pub aisles: Vec<AisleSection>,
     /// Index into `aisles` where the right desktop column starts (aisles are
@@ -71,14 +82,12 @@ pub struct MenuTemplate {
     pub progress_pct: usize,
 }
 
-impl Default for MenuTemplate {
+impl Default for GroceriesTemplate {
     fn default() -> Self {
         Self {
-            current_path: "menu".to_owned(),
+            current_path: "groceries".to_owned(),
             user: AuthUser::default(),
-            tab: MenuTab::Recipes,
-            recipes: vec![],
-            cooked_count: 0,
+            recipe_count: 0,
             checked: HashSet::default(),
             aisles: vec![],
             split_at: 0,
@@ -101,7 +110,7 @@ pub struct MenuRecipesTemplate {
 #[template(path = "partials/menu-generate-modal.html")]
 pub struct GenerateModalTemplate;
 
-/// Everything both tabs need, derived from the persisted list.
+/// Everything both pages need, derived from the persisted list.
 pub struct ListView {
     pub recipes: Vec<ListRecipe>,
     pub cooked_count: usize,
@@ -253,18 +262,34 @@ fn to_categories(ingredients: &[Ingredient]) -> Vec<(String, Vec<Ingredient>)> {
     categories
 }
 
-fn render_page(
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn page(
     template: Template,
     user: AuthUser,
-    tab: MenuTab,
-    view: ListView,
-) -> axum::response::Response {
+    State(app): State<AppState>,
+) -> impl IntoResponse {
+    let view = imkitchen_web_shared::try_page_response!(build_view(&app, &user.id), template);
     template
         .render(MenuTemplate {
             user,
-            tab,
             recipes: view.recipes,
             cooked_count: view.cooked_count,
+            ..Default::default()
+        })
+        .into_response()
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn groceries_page(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+) -> impl IntoResponse {
+    let view = imkitchen_web_shared::try_page_response!(build_view(&app, &user.id), template);
+    template
+        .render(GroceriesTemplate {
+            user,
+            recipe_count: view.recipes.len(),
             checked: view.checked,
             aisles: view.aisles,
             split_at: view.split_at,
@@ -276,32 +301,8 @@ fn render_page(
         .into_response()
 }
 
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn page(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-) -> impl IntoResponse {
-    let view = imkitchen_web_shared::try_page_response!(build_view(&app, &user.id), template);
-    render_page(template, user, MenuTab::Recipes, view)
-}
-
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn groceries_page(
-    template: Template,
-    user: AuthUser,
-    State(app): State<AppState>,
-) -> impl IntoResponse {
-    let view = imkitchen_web_shared::try_page_response!(build_view(&app, &user.id), template);
-    render_page(template, user, MenuTab::Groceries, view)
-}
-
 async fn legacy_menu_redirect() -> impl IntoResponse {
     Redirect::permanent("/menu")
-}
-
-async fn legacy_groceries_redirect() -> impl IntoResponse {
-    Redirect::permanent("/menu/groceries")
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -363,8 +364,8 @@ pub struct GenerateForm {
     pub count: u8,
 }
 
-/// Replace the list with freshly picked recipes, then send the browser to the
-/// Recipes tab. The list is read back from the aggregate, so the redirected
+/// Replace the list with freshly picked recipes, then send the browser back
+/// to the menu. The list is read back from the aggregate, so the redirected
 /// page is already up to date — no polling needed.
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn generate_action(

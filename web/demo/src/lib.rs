@@ -1,8 +1,7 @@
 //! Demo mode — a browsable, no-login tour of imkitchen.
 //!
-//! Every page reuses the production templates (kitchen, menu with its
-//! groceries tab, recipes, cooking screen) but is fed hand-authored
-//! placeholder data from
+//! Every page reuses the production templates (kitchen, menu, recipes,
+//! groceries, cooking screen) but is fed hand-authored placeholder data from
 //! [`fixtures`]. Mutating actions are swapped client-side for a sign-up modal
 //! (see `templates/partials/demo-signup-modal.html`); the swap is driven by the
 //! `is_demo` flag injected into every render via [`imkitchen_web_shared::template::Template::demo`].
@@ -14,7 +13,6 @@ use axum::{
 };
 use axum_extra::extract::Query;
 
-use imkitchen_web_menu::MenuTab;
 use imkitchen_web_recipe::routes::cook::PageQuery as CookPageQuery;
 use imkitchen_web_recipe::routes::index::PageQuery;
 use imkitchen_web_shared::{
@@ -34,7 +32,6 @@ pub fn routes() -> axum::Router<AppState> {
         .route("/demo/kitchen", get(kitchen))
         .route("/demo/kitchen/{recipe_id}/cook", get(cook))
         .route("/demo/menu", get(menu))
-        .route("/demo/menu/groceries", get(menu_groceries))
         .route("/demo/recipes", get(recipes))
         .route("/demo/recipes/{id}", get(recipes_detail))
         .route("/demo/r/{slug}", get(recipes_detail))
@@ -53,11 +50,7 @@ async fn cook(template: Template, Path((recipe_id,)): Path<(String,)>) -> impl I
 }
 
 async fn menu(template: Template) -> impl IntoResponse {
-    template.demo().render(fixtures::menu(MenuTab::Recipes))
-}
-
-async fn menu_groceries(template: Template) -> impl IntoResponse {
-    template.demo().render(fixtures::menu(MenuTab::Groceries))
+    template.demo().render(fixtures::menu())
 }
 
 async fn recipes(template: Template, Query(query): Query<PageQuery>) -> impl IntoResponse {
@@ -101,8 +94,8 @@ async fn cooks(
     template.demo().render(fixtures::cook(&username, query))
 }
 
-async fn groceries() -> impl IntoResponse {
-    Redirect::permanent("/demo/menu/groceries")
+async fn groceries(template: Template) -> impl IntoResponse {
+    template.demo().render(fixtures::groceries())
 }
 
 async fn signup_modal(template: Template) -> impl IntoResponse {
