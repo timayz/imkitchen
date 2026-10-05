@@ -79,7 +79,7 @@
           <svg class="w-5 h-5 text-herb-700" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 9h18M8 3v4M16 3v4"/></svg>
         </div>
         <div>
-          <div class="text-base font-semibold text-ink tracking-tight">{{ "Meal plans"|t }}</div>
+          <div class="text-base font-semibold text-ink tracking-tight">{{ "Recipe lists"|t }}</div>
           <div class="text-sm text-ink-2 leading-snug mt-0.5">{{ "Generation, swaps, and schedules"|t }}</div>
         </div>
         <div class="flex items-center gap-1 mt-0.5">
@@ -198,7 +198,7 @@
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Setting dietary preferences and allergies"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
-          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Settings → Preferences. imkitchen avoids flagged ingredients in every generated plan and warns you before importing a recipe that contains them."|t }}</p>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Settings → Preferences. imkitchen avoids flagged ingredients in every generated list and warns you before importing a recipe that contains them."|t }}</p>
         </details>
         <details class="group border-t border-line-2 py-3.5">
           <summary class="flex items-center gap-2.5 cursor-pointer list-none">
@@ -219,13 +219,13 @@
       </div>
     </div>
 
-    {# ── Meal Planning ── #}
+    {# ── Recipe lists ── #}
     <div id="meal-planning" class="bg-paper rounded-2xl border border-line-2 mb-3.5">
       <div class="flex items-center gap-2.5 px-5 pt-5 pb-2.5">
         <div class="w-8 h-8 rounded-xl bg-herb-100 flex items-center justify-center">
           <svg class="w-4 h-4 text-herb-700" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 9h18M8 3v4M16 3v4"/></svg>
         </div>
-        <h3 class="font-serif text-xl text-ink tracking-tight flex-1">{{ "Meal plans"|t }}</h3>
+        <h3 class="font-serif text-xl text-ink tracking-tight flex-1">{{ "Recipe lists"|t }}</h3>
         <span class="font-mono text-[10px] text-ink-3">{{ "5 articles"|t }}</span>
       </div>
       <div class="px-5 pb-4">
@@ -255,7 +255,7 @@
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "How does accompaniment pairing work?"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
-          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "When you mark a main as accepting accompaniments and pick allowed types (rice, pasta, bread…), the planner pairs them automatically — curry gets rice, pasta gets bread."|t }}</p>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "When you mark a main as accepting accompaniments and pick allowed types (rice, pasta, bread…), generation pairs them automatically — curry gets rice, pasta gets bread."|t }}</p>
         </details>
         <details class="group border-t border-line-2 py-3.5">
           <summary class="flex items-center gap-2.5 cursor-pointer list-none">
@@ -305,7 +305,7 @@
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Are dietary restrictions auto-detected?"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
-          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "No — dietary tags must be set explicitly on every recipe to be respected by the planner."|t }}</p>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "No — dietary tags must be set explicitly on every recipe to be respected when generating."|t }}</p>
         </details>
         <details class="group border-t border-line-2 py-3.5">
           <summary class="flex items-center gap-2.5 cursor-pointer list-none">
@@ -373,7 +373,7 @@
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "What are recipe snapshots?"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
-          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "When a meal plan is generated, the system snapshots referenced recipes. Historical plans stay intact even if the author later edits or deletes the source recipe."|t }}</p>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Your list keeps a reference to the recipe, so the author's edits show up the next time you open it. A recipe the author deletes simply drops out of your list and groceries."|t }}</p>
         </details>
         <details class="group border-t border-line-2 py-3.5">
           <summary class="flex items-center gap-2.5 cursor-pointer list-none">
@@ -440,7 +440,7 @@
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "What happens to my data when I downgrade?"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
-          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Recipes, plans and grocery lists are preserved. Your account simply returns to the free ad-supported tier — subscribe again anytime to remove ads."|t }}</p>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Recipes, lists and groceries are preserved. Your account simply returns to the free ad-supported tier — subscribe again anytime to remove ads."|t }}</p>
         </details>
       </div>
     </div>

@@ -2,1082 +2,813 @@
 
 ## Executive Summary
 
-imkitchen uses an event-driven CQRS architecture built on Rust/Axum with evento for event sourcing and SQLite for storage. The system is organized into three bounded contexts (user, recipe, mealplan) following DDD principles, with server-side rendering via Askama templates and Twinspark for UI reactivity. The architecture prioritizes performance (<5s meal plan generation, <3s page loads), security (JWT auth, OWASP standards), and portability (no vendor lock-in, configurable SMTP). A pure Rust in-memory algorithm handles meal plan generation with dietary filtering and accompaniment pairing, while a centralized Access Control Service enforces freemium tier restrictions throughout the application.
+imkitchen is an event-sourced CQRS application written in Rust on Axum, with evento 2 for event sourcing and SQLite for storage. A single binary (`src/`) mounts a set of web crates (`web/*`) over a set of domain crates (`crates/*`): identity, billing, notification, audience, and the `core` crate that holds the three product aggregates (`recipe`, `shopping`, `contact`). Pages are server-rendered with Askama and made reactive with twinspark.js partial swaps.
+
+The product has no calendar. There is no meal plan, no weeks, no day slots, no "today" dashboard and no scheduler. The central object is the user's **recipe list**, modelled by the `Shopping` aggregate (one per user, aggregate id = user id). Generation fills the list from the user's candidate pool (own recipes plus saved community favorites), the kitchen page walks the list recipe by recipe with a per-recipe cooking cursor (`RecipeStatus`), and the groceries page shows the merged, household-scaled ingredient list of everything in the list. All list commands are synchronous: the kitchen and groceries pages read the aggregate directly, so there is no read-model lag after a command.
+
+Persisted bitcode shapes are frozen by `events.lock`; this is why legacy `MealPlan` event declarations still exist in `crates/types/src/mealplan.rs` even though nothing writes them anymore.
 
 ## Project Initialization
 
-**Manual Setup Required** - No starter template used. Follow project structure defined below.
-
-First implementation story (Story 1.1) should:
-1. Create workspace Cargo.toml with all dependencies
-2. Set up CLI commands (serve, migrate, reset)
-3. Create config/ directory with default.toml
-4. Initialize git repository with proper .gitignore
-5. Set up migration directories (migrations/queries/, migrations/validation/)
+The workspace already exists. New work follows the structure below; there is no starter template. Use the `Makefile` targets (`make dev`, `make migrate`, `make reset`, `make css`, `make lint`, `make test`) and `config/dev.local.toml` for local overrides.
 
 ## Decision Summary
 
-| Category | Decision | Version | Affects Epics | Rationale |
-| -------- | -------- | ------- | ------------- | --------- |
-| Language | Rust | 1.90+ | All | Performance, safety, CLAUDE.md standard |
-| Web Framework | Axum | 0.8.6 | All | Modern async, excellent performance, Tower integration |
-| Templating | Askama | 0.14.0 | 4, 5, 6 | Type-safe templates, SSR for SEO |
-| UI Reactivity | Twinspark | Latest | 2, 4, 5 | Server-driven, minimal JS, CLAUDE.md standard |
-| Event Sourcing | evento | 1.5.0 | 1, 2, 3 | Event-driven architecture, CQRS, CLAUDE.md standard |
-| Database | SQLite | (via sqlx 0.8.2) | All | Simple, portable, separate write/read/validation DBs |
-| Styling | Tailwind CSS | 4.1.0 | All | Utility-first, no config file needed in 4.1+ |
-| Validation | validator | 0.20.0 | 1, 2 | Input validation for commands |
-| Request IDs | ulid | 1.2.0 | All | Unique IDs for request tracking in metadata |
-| CLI | clap | 4.5.23 | 1 | Command-line interface (serve, migrate, reset) |
-| Configuration | config | 0.15.0 | 1 | TOML-based configuration system |
-| Observability | opentelemetry | 0.31.0 | All | Structured logging, tracing |
-| Email | lettre | 0.11.14 | 6 | Configurable SMTP for admin notifications |
-| Testing | Playwright | 1.56.0 | All | E2E testing for critical user flows |
-| Meal Plan Algorithm | Pure Rust in-memory | N/A | 3 | Predictable <5s performance, full control |
-| Recipe Snapshots | Separate table with FKs | N/A | 3, 4 | Event size optimization, query performance |
-| Access Control | Centralized service | N/A | 4, 5 | Consistent freemium enforcement |
-| File Upload | Streaming parser (tokio) | N/A | 2 | Memory efficiency, 10MB file support |
-| Notifications | Hybrid (in-app + email) | N/A | 6 | MVP-friendly, Web Push deferred |
-| SEO/PWA | SSR + service worker | N/A | 6 | SEO optimization, offline capability |
+Versions are the workspace versions pinned in the root `Cargo.toml`.
+
+| Category | Decision | Version | Affects | Rationale |
+| -------- | -------- | ------- | ------- | --------- |
+| Language | Rust, edition 2024 | stable | All | Performance, safety |
+| Web Framework | Axum | 0.8 | All | Async, Tower integration, `{param}` routes |
+| Templating | Askama | 0.16 | All web crates | Type-safe server-side templates |
+| UI Reactivity | twinspark.js | vendored in `static/js` | All web crates | Server-driven partial swaps, minimal JS |
+| Event Sourcing | evento (`sqlite`, `rw` features) | 2.0.0-alpha.29 | All domain crates | Aggregates, projections, subscriptions, snapshots |
+| Shape lock | evento-lock | 2.0.0-alpha.29 | All domain crates | Freezes persisted bitcode shapes (`events.lock`) |
+| Database | SQLite via sqlx | 0.9 | All | Single file, read pool + single-connection write pool |
+| Migrations | sqlx_migrator + sea-query | 0.19 / 1.0.1 | `crates/db`, `crates/audience` | Code-defined migrations, one module per table |
+| Serialization of events/snapshots | bitcode | 0.6 | All domain crates | Compact positional encoding (hence the shape lock) |
+| Styling | Tailwind CSS CLI | see `tailwind.css` / `Makefile` | All web crates | Utility-first, compiled to `static/css/main.css` |
+| Validation | validator | 0.21 | Commands | Input validation on command inputs |
+| CLI | clap | 4.6 | Binary | `serve`, `migrate`, `reset` |
+| Configuration | config (TOML) | 0.15 | Binary, `web/shared` | `config/default.toml` + `--config` override |
+| Auth | jsonwebtoken + argon2 | 11.0 / 0.6 | `web/shared`, `crates/identity` | JWT cookie, Argon2 password hashes |
+| Billing | async-stripe | 1.0.0-rc.6 | `crates/billing`, `web/settings`, `web/public` | Premium subscriptions |
+| Scheduled jobs | tokio-cron-scheduler | 0.15 | `crates/billing` | Subscription renewals only (no meal-plan scheduler) |
+| Email | lettre | 0.11 | `crates/notification` | Configurable SMTP |
+| i18n | rust-i18n | 4.2 | `web/shared`, `crates/notification` | `locales/en.json`, `locales/fr.json` |
+| Static assets | rust-embed | 8.12 | `web/shared` | Assets embedded in the binary, served at `/static` |
+| Observability | tracing + tracing-subscriber | 0.1 / 0.3 | All | Structured (optionally JSON) logs |
+| Random picking | rand | 0.10 | `crates/core/shopping` | Shuffling the candidate pool |
+| E2E tests | Playwright (nix dev shell) | see `flake.nix` | All | Browser tests and store screenshots |
 
 ## Project Structure
 
 ```
 imkitchen/
-├── Cargo.toml                          # Workspace definition
+├── Cargo.toml                       # Workspace: crates/*, web/*, root binary `imkitchen`
 ├── config/
-│   ├── default.toml                    # Committed config
-│   └── dev.toml                        # .gitignore (SMTP passwords, etc.)
-├── src/
-│   ├── main.rs                         # CLI (serve, migrate, reset)
-│   ├── lib.rs                          # Shared app types
-│   ├── server.rs                       # Axum server setup
-│   ├── access_control.rs               # Freemium enforcement service
-│   ├── email.rs                        # Email service (lettre)
-│   ├── routes/
-│   │   ├── mod.rs
-│   │   ├── auth/
-│   │   │   ├── mod.rs
-│   │   │   ├── login.rs
-│   │   │   ├── register.rs
-│   │   │   └── profile.rs
-│   │   ├── recipes/
-│   │   │   ├── mod.rs
-│   │   │   ├── create.rs
-│   │   │   ├── import.rs              # Streaming JSON import
-│   │   │   ├── favorite.rs
-│   │   │   ├── community.rs
-│   │   │   └── rate.rs
-│   │   ├── mealplan/
-│   │   │   ├── mod.rs
-│   │   │   ├── generate.rs
-│   │   │   └── calendar.rs
-│   │   ├── shopping.rs                # Shopping list generation
-│   │   ├── dashboard.rs
-│   │   ├── landing.rs                 # SEO landing page
-│   │   ├── contact.rs
-│   │   └── admin/
-│   │       ├── mod.rs
-│   │       ├── users.rs
-│   │       └── contact_inbox.rs
-│   └── queries/
-│       ├── mod.rs
-│       ├── users.rs                   # User projections & queries
-│       ├── recipes.rs                 # Recipe projections & queries
-│       ├── mealplans.rs               # MealPlan projections & queries
-│       └── snapshots.rs               # Recipe snapshot queries
+│   ├── default.toml                 # Committed defaults
+│   └── dev.local.toml               # Local overrides (used by `make dev`)
+├── events.lock                      # Frozen persisted shapes (evento-lock)
+├── src/                             # Binary: CLI + server wiring only
+│   ├── main.rs                      # clap CLI: serve | migrate | reset
+│   ├── lib.rs / db.rs               # SQLite pool builders (read pool, write pool, CLI pool)
+│   └── cli/
+│       ├── server.rs                # Builds evento executor, starts every subscription, mounts routers
+│       └── migrate.rs               # Runs crates/db + crates/audience migrators
 ├── crates/
-│   ├── imkitchen-user/
-│   │   ├── Cargo.toml
-│   │   ├── src/
-│   │   │   ├── lib.rs
-│   │   │   ├── command.rs             # User commands
-│   │   │   ├── event.rs               # User events
-│   │   │   └── aggregate.rs           # User aggregate root
-│   ├── imkitchen-recipe/
-│   │   ├── Cargo.toml
-│   │   ├── src/
-│   │   │   ├── lib.rs
-│   │   │   ├── command.rs             # Recipe commands
-│   │   │   ├── event.rs               # Recipe events
-│   │   │   └── aggregate.rs           # Recipe aggregate root
-│   └── imkitchen-mealplan/
-│       ├── Cargo.toml
-│       ├── src/
-│       │   ├── lib.rs
-│       │   ├── command.rs             # MealPlan commands
-│       │   ├── event.rs               # MealPlan events
-│       │   ├── aggregate.rs           # MealPlan aggregate root
-│       │   └── generator.rs           # Pure Rust generation algorithm
-├── migrations/
-│   ├── queries/                       # Read database migrations
-│   │   ├── 20250101000000_users.sql
-│   │   ├── 20250101000001_user_profiles.sql
-│   │   ├── 20250101000002_recipes.sql
-│   │   ├── 20250101000003_recipe_favorites.sql
-│   │   ├── 20250101000004_recipe_ratings.sql
-│   │   ├── 20250101000005_meal_plans.sql
-│   │   ├── 20250101000006_meal_plan_recipe_snapshots.sql
-│   │   ├── 20250101000007_shopping_lists.sql
-│   │   └── 20250101000008_contact_messages.sql
-│   └── validation/                    # Validation database migrations
-│       └── 20250101000000_user_emails.sql
-├── templates/
-│   ├── base.html                      # Base template with SEO meta tags
-│   ├── pages/
-│   │   ├── landing.html               # SEO-optimized landing page
-│   │   ├── dashboard.html
-│   │   ├── auth/
-│   │   │   ├── login.html
-│   │   │   ├── register.html
-│   │   │   └── profile.html
-│   │   ├── recipes/
-│   │   │   ├── create.html
-│   │   │   ├── import.html
-│   │   │   ├── list.html
-│   │   │   ├── detail.html
-│   │   │   └── community.html
-│   │   ├── mealplan/
-│   │   │   └── calendar.html
-│   │   ├── shopping.html
-│   │   └── admin/
-│   │       ├── users.html
-│   │       └── contact_inbox.html
-│   ├── partials/                      # Twinspark partial responses
-│   │   ├── recipes/
-│   │   │   ├── import-progress.html
-│   │   │   └── import-summary.html
-│   │   └── mealplan/
-│   │       └── generation-pending.html
-│   └── components/                    # Reusable components
-│       ├── recipe-card.html
-│       └── meal-card.html
+│   ├── types/                       # evento aggregates and events (imkitchen-types)
+│   │   └── src/{recipe,favorite,recipe_share,shopping,meal_preferences,contact,user_profile}.rs
+│   │       mealplan.rs              # Legacy MealPlan declarations: frozen, never written
+│   ├── core/                        # imkitchen-core: State, Core, Error and the product modules
+│   │   └── src/
+│   │       ├── lib.rs               # State { executor, read_db, write_db }, Core { recipe, shopping, contact }
+│   │       ├── command.rs           # core::Error / core::Result + user!/not_found!/forbidden!/server! macros
+│   │       ├── recipe/              # Recipe aggregate (root/), favorites, read models (query/), sagas
+│   │       ├── shopping/            # The user's recipe list
+│   │       │   ├── root/            # Shopping projection + commands (generate, add, remove, status, toggle)
+│   │       │   │   ├── pick.rs      # Randomizer over the candidate pool
+│   │       │   │   ├── merge.rs     # Ingredient merge + household scaling
+│   │       │   │   └── state.rs     # ShoppingState: synchronous read of the list
+│   │       │   ├── pool.rs          # "mealplan-command" subscription → meal_plan_recipe candidate pool
+│   │       │   └── subscription.rs  # "shopping" subscription → shopping_recipe (ingredients, household size)
+│   │       └── contact/             # Contact aggregate + admin read models
+│   ├── identity/                    # User aggregate, login/admin views, password reset, meal preferences, profile
+│   ├── billing/                     # Subscription + Invoice aggregates, Stripe, renewal scheduler
+│   ├── notification/                # Email subscriptions (user, contact, billing) + lettre service
+│   ├── audience/                    # First-party visit measurement on its own evento instance/DB
+│   └── db/                          # sqlx_migrator migrations m0001..m0015, one sea-query module per table
+├── web/
+│   ├── shared/                      # AppState, Config, auth extractors, Template extractor, assets, middleware
+│   ├── kitchen/                     # `/` and `/kitchen/...`: list, generation, cooking screens
+│   ├── grocery/                     # `/groceries`, `/groceries/toggle`; `/menu` legacy redirects
+│   ├── recipe/                      # `/recipes/...`, `/r/{slug}`, `/cooks/{username}`
+│   ├── settings/                    # `/settings/{general,billing,account}`, `/invoices/{id}`
+│   ├── public/                      # Landing/legal pages, auth, contact, upgrade, PWA assets, health
+│   ├── admin/                       # `/admin/...` users, invoices, audience, contact inbox, batch import
+│   └── demo/                        # `/demo/...` read-only tour on fixture data
+├── templates/                       # Askama templates shared by every web crate
+│   ├── _base.html, _user.html, _public.html, _admin.html, _settings.html
+│   ├── index.html, kitchen.html, cooking.html, groceries.html, onboarding-*.html
+│   ├── recipes-*.html, settings-*.html, admin-*.html, login/register/reset-password*.html
+│   └── partials/                    # twinspark fragments (kitchen-dish, kitchen-generate-modal, cooking-screen, ...)
 ├── static/
-│   ├── css/
-│   │   ├── input.css                  # Tailwind input
-│   │   └── output.css                 # Compiled CSS
-│   ├── js/
-│   │   ├── twinspark.js
-│   │   └── service-worker.js          # PWA offline support
-│   ├── manifest.json                  # PWA manifest
-│   └── icons/
-└── tests/
-    ├── auth_test.rs
-    ├── recipes_test.rs
-    ├── mealplan_test.rs
-    ├── import_test.rs
-    └── e2e/                           # Playwright tests
-        └── user_flows.spec.ts
+│   ├── css/main.css                 # Compiled Tailwind output (from ./tailwind.css)
+│   ├── js/{twinspark.js,sw-register.js,sw-source.js,pwa-install.js}
+│   └── icons/, screenshots/         # PWA icons and store screenshots
+├── locales/{en,fr}.json
+├── tests/
+│   ├── events_lock.rs               # Fails when a persisted shape changes
+│   ├── e2e/, fixtures/, screenshots/  # Playwright
+├── helm/, Dockerfile, compose.yml   # Deployment
+└── docs/
 ```
 
 ## Epic to Architecture Mapping
 
-| Epic | Bounded Context | Key Components | Database Tables |
-|------|----------------|----------------|-----------------|
-| Epic 1: Foundation & User Management | `imkitchen-user` | User aggregate, auth commands, admin panel routes | users, user_profiles, user_emails (validation) |
-| Epic 2: Recipe Management & Import | `imkitchen-recipe` | Recipe aggregate, import handler, streaming parser | recipes, recipe_favorites, recipe_ratings |
-| Epic 3: Meal Planning Engine | `imkitchen-mealplan` | MealPlan aggregate, generation algorithm | meal_plans, meal_plan_recipe_snapshots |
-| Epic 4: Calendar & Shopping | Main binary (routes/queries) | Calendar routes, shopping list generator | meal_plans (read), shopping_lists |
-| Epic 5: Community & Freemium | `imkitchen-recipe` + `src/access_control.rs` | Recipe sharing, ratings, access control service | recipes (is_shared), recipe_ratings, access control logic |
-| Epic 6: Notifications & Landing | Main binary | Email service, landing page routes, reminder job | contact_messages, pending_reminders |
+| Area | Crates | Key Components | Database Tables |
+|------|--------|----------------|-----------------|
+| Foundation & identity | `crates/identity`, `web/public`, `web/settings`, `web/shared` | `User` aggregate, login/admin views, password reset, JWT cookie auth, meal preferences, user profile | `user`, `user_login`, `user_admin`, `user_global_stat`, `notification_recipient` |
+| Recipes & import | `crates/core::recipe`, `web/recipe`, `web/admin` | `Recipe` aggregate, favorites, share sagas, thumbnails, FTS, ZIP batch import | `recipe_user` (+FTS), `recipe_owner`, `recipe_thumbnail`, `recipe_user_stat`, `origin_framing` |
+| Recipe list & generation | `crates/core::shopping`, `web/kitchen` | `Shopping` aggregate, `generate`/`add_recipe`/`remove_recipe`, randomizer, ingredient merge | `meal_plan_recipe` (candidate pool), `shopping_recipe` |
+| Kitchen & groceries | `web/kitchen`, `web/grocery` | Cooking cursor (`RecipeStatus`), step navigation, aisle-grouped groceries, check/uncheck | none beyond the `Shopping` aggregate and the two tables above |
+| Community & premium | `crates/core::recipe`, `crates/billing`, `web/public`, `web/settings` | Share to community, saved favorites, Stripe subscription, invoices, renewal scheduler | `recipe_user.is_shared`, `user_subscription`, `user_invoice_user` |
+| Notifications, public pages & admin | `crates/notification`, `crates/audience`, `web/public`, `web/admin` | Email subscriptions, contact inbox, audience stats, sitemap, PWA assets | `contact_admin` (+FTS), `contact_global_stat`, `audience_daily_stat` (audience DB) |
 
 ## Technology Stack Details
 
 ### Core Technologies
 
 **Runtime & Language:**
-- Rust 1.90+ with 2021 edition
-- Tokio 1.42+ async runtime
-- Standard library for core algorithms
+- Rust, edition 2024, single workspace
+- Tokio 1.52 async runtime
 
 **Web Server:**
-- Axum 0.8.6 web framework
-- Tower 0.5+ for middleware
-- Hyper 1.5+ HTTP server
-- axum-extra 0.12+ for Form/Query extractors
+- Axum 0.8 with `macros` and `multipart`
+- axum-extra 0.12 (cookies, forms, query, typed headers)
+- tower-http 0.7: request body limits, brotli/gzip compression, tracing
+- Custom middleware in `web/shared/src/middleware`: cache-control headers and HTML minification (minify-html, oxc, lightningcss)
 
 **Event Sourcing & CQRS:**
-- evento 1.5.0 with SQLite feature
-- Separate databases: write (evento), read (queries), validation
-- Event-driven command/query separation
+- evento 2.0.0-alpha.29 with the `sqlite` and `rw` features
+- One `evento::Evento` executor over an `RwSqlite` pair (read pool + write pool) with a 100 ms stability margin
+- Aggregates are declared with `#[evento::aggregate]` enums in `crates/types`; projections with `#[evento::projection(name = "...")]`; event handlers with `#[evento::handler]`; read-model subscriptions with `#[evento::subscription]`
+- Snapshots are bitcode-encoded; every projection has an explicit `.revision(n)`
+- evento-lock freezes event, nested type and view shapes in `events.lock`
 
 **Data Layer:**
-- SQLite 3.x via sqlx 0.8.2
-- Runtime query checking (no compile-time macros)
-- Migration support via sqlx::migrate!
+- SQLite via sqlx 0.9 (runtime queries, no compile-time macros), statements built with sea-query 1.0.1 and bound with sea-query-sqlx
+- One application database file (`sqlite:imkitchen.db` by default), opened twice: a read-only pool (`database.max_connections`) and a single-connection write pool in WAL mode with `wal_autocheckpoint = 0` so Litestream owns checkpointing
+- Optional separate audience database (`[audience] database_url`) with its own evento instance
+- Migrations are Rust code in `crates/db` (sqlx_migrator 0.19): evento's own schema migrations first, then `m0001`..`m0015`
 
 **Templating & UI:**
-- Askama 0.14.0 + askama_web 0.14.0
-- Twinspark (latest) for reactivity
-- Tailwind CSS 4.1.0 for styling
-- Server-side rendering (SSR)
+- Askama 0.16; one `templates/` directory shared by all web crates
+- `Template` extractor (`web/shared/src/template.rs`) injects the preferred language and the demo flag into every render; rust-i18n filters translate strings from `locales/`
+- twinspark.js for partial swaps (`ts-req`, `ts-target`, `ts-swap`, `ts-trigger`)
+- Tailwind CSS compiled by the CLI (`make css`) into `static/css/main.css`
+- Assets embedded with rust-embed and served under `/static` by `AssetsService`
+- PWA: `/manifest.json`, `/sw.js` (Workbox `injectManifest` from `static/js/sw-source.js`), install prompt script
 
 **Authentication & Security:**
-- JWT cookie-based authentication
-- jsonwebtoken 9.3+ for token generation/validation
-- argon2 0.6+ for password hashing
-- HTTP-only cookies for token storage
+- JWT in an HTTP-only cookie (`jsonwebtoken` 11, `[jwt]` config: audience, issuer, secret, `expiration_days`, 14 by default)
+- Argon2 0.6 password hashes
+- Extractors in `web/shared/src/auth.rs`: `AuthToken`, `AuthUser` (user-facing pages), `RequireChef`, `AuthAdmin`
+- Roles: `User`, `Chef`, `Admin`; account state `Active` / `Suspended`
 
 **Validation & Serialization:**
-- validator 0.20.0 for input validation
-- serde 1.0+ with derive macros
-- serde_json 1.0+ for JSON handling
+- validator 0.21 (`#[derive(Validate)]` on command inputs such as `GenerateList`)
+- serde / serde_json for forms, JSON columns and the `/groceries/toggle` JSON body
+- bitcode 0.6 for events, snapshots and BLOB columns such as `shopping_recipe.ingredients`
 
-**Utilities:**
-- ulid 1.2.0 for request IDs
-- chrono 0.4+ for date/time handling
-- config 0.15.0 for TOML configuration
-- clap 4.5.23 for CLI parsing
+**Billing:**
+- async-stripe 1.0.0-rc.6 (customers, payment intents, setup intents, webhooks)
+- tokio-cron-scheduler 0.15 runs the subscription renewal job every minute, only when `[premium]` is configured
+
+**Email & i18n:**
+- lettre 0.11 over SMTP (`[email]` config)
+- rust-i18n 4.2 with `en` and `fr` locales
 
 **Observability:**
-- tracing 0.1+ for structured logging
-- tracing-subscriber 0.3+ for log output
-- opentelemetry 0.31.0 for telemetry
-
-**Email:**
-- lettre 0.11.14 for SMTP
-- Configurable via TOML (smtp_host, smtp_port, credentials)
+- tracing with per-handler `#[tracing::instrument]` spans
+- tracing-subscriber with env filter; JSON output when `monitoring.log_json = true`
 
 **Testing:**
-- Rust built-in test framework
-- Playwright 1.56.0 (TypeScript) for E2E tests
+- `cargo test --workspace` (unit tests live next to the code, for example `merge.rs`, `pick.rs`, kitchen `next_status`, grocery `balanced_split`)
+- `tests/events_lock.rs` guards persisted shapes
+- Playwright for e2e and screenshot capture (`npm test`, `npm run test:e2e`)
 
 ### Integration Points
 
 **Write Path (Commands):**
 ```
-User Request → Axum Route Handler → Command (in bounded context crate)
-  → evento::create/save → Write DB (evento.db)
-  → Event emitted → Command/Query Handlers subscribed
+HTTP request → Axum handler (web/*) → Module command (crates/*)
+  → load projection from evento → validate → .write()?.event(&E).requested_by(user).commit(executor)
+  → event appended to the SQLite event log (write pool)
 ```
 
 **Read Path (Queries):**
 ```
-User Request → Axum Route Handler → Query Function
-  → Read DB (queries.db) → Askama Template → HTML Response
+HTTP request → Axum handler → read model query (read pool, sea-query)
+  → Askama template → HTML (full page or twinspark partial)
 ```
 
-**Validation Path:**
+**Aggregate Read Path (no lag):**
 ```
-Command with async validation → Command Handler checks validation DB
-  → Emit success/failure event → Query handler updates projection
+HTTP request → Axum handler → Module::load / Module::state (evento projection + snapshot)
+  → Askama template
 ```
+Used wherever the page must reflect the command that just ran: the kitchen (`shopping.state()`), the groceries page, `meal_preferences.load()`, `identity.find_account()`.
 
-**Database Connections:**
-- Write DB: `evento.db` - evento manages this exclusively
-- Read DB: `queries.db` - query handlers write, route handlers read
-- Validation DB: `validation.db` - command handlers read/write for uniqueness checks
+**Projection Path:**
+```
+Event log → evento subscription (key such as "recipe-query", "shopping", "mealplan-command")
+  → handler writes a read-model table (write pool)
+```
 
 **Event Flow:**
-1. Commands emit events to evento
-2. evento stores events in write DB
-3. Subscriptions (command handlers, query handlers) process events
-4. Query handlers update projections in read DB
-5. Route handlers query read DB for user responses
+1. A command loads the aggregate's projection, checks invariants and commits one event.
+2. evento stores the event in the application database.
+3. Every subscription started in `src/cli/server.rs` receives the event in order and updates its read model, sends an email, or runs a saga.
+4. Handlers read either the read-model tables (lists, search, candidate pool) or the projection directly (list state, preferences).
 
 ## Implementation Patterns
 
-These patterns ensure consistent implementation across all AI agents:
+### Aggregate and Event Pattern
 
-### Command Pattern (per CLAUDE.md)
+Events are declared once, in `crates/types`, as enum variants of an `#[evento::aggregate]`:
 
-**Structure:**
 ```rust
-// crates/imkitchen-user/src/command.rs
-pub struct Command<E: Executor> {
-    evento: E,
-    validation_pool: SqlitePool,  // For async validation
+// crates/types/src/shopping.rs
+#[evento::aggregate]
+pub enum Shopping {
+    Checked { ingredient: String },
+    Unchecked { ingredient: String },
+    RecipeAdded { recipe_id: String, recipe_ids: Vec<String>, ingredients: Vec<Ingredient> },
+    RecipeRemoved { recipe_id: String, recipe_ids: Vec<String>, ingredients: Vec<Ingredient> },
+    ListGenerated { recipe_ids: Vec<String>, ingredients: Vec<Ingredient> },
+    RecipeStatusChanged { recipe_id: String, status: RecipeStatus },
+    // Legacy variants (Generated, RecipeSetGenerated) stay declared, never written.
+}
+```
+
+**Rules:**
+- Never change the shape of an existing variant or of a type nested in one: bitcode is positional. Add a new variant instead (see `MealPreferences::RecipeTypesChanged`).
+- Legacy variants that are no longer written stay declared with a doc comment saying so.
+- Run `EVENTO_LOCK=update cargo test -p imkitchen --test events_lock` after adding an event, type or view, and commit `events.lock`.
+
+### Projection Pattern
+
+```rust
+// crates/core/src/shopping/root/mod.rs
+#[evento::projection(name = "imkitchen-core/shopping/Shopping", Encode, Decode)]
+pub struct Shopping {
+    pub user_id: String,
+    pub checked: HashSet<String>,
+    pub ingredients: HashSet<String>,
+    pub recipes: Vec<String>,
+    pub statuses: HashMap<String, RecipeStatus>,
+    pub generated_at: u64,
 }
 
-impl<E: Executor> Command<E> {
-    // MUST use input struct as first argument, metadata as second
-    pub async fn register_user(
-        &self,
-        input: RegisterUserInput,
-        metadata: EventMetadata,
-    ) -> anyhow::Result<String> {
-        // Validation in command (sync only)
-        input.validate()?;
+pub fn create_projection<E: Executor>() -> Projection<E, Shopping> {
+    Projection::new::<shopping::Shopping>()
+        .revision(3)
+        .handler(handle_checked())
+        .handler(handle_list_generated())
+        // ...
+        .strict()
+}
 
-        // Emit event
-        let user_id = evento::create::<User>()
-            .data(&UserRegistered { ... })?
-            .metadata(&metadata)?
-            .commit(&self.evento)
+#[evento::handler]
+async fn handle_list_generated(event: Event<ListGenerated>, data: &mut Shopping) -> anyhow::Result<()> {
+    data.user_id = event.metadata.requested_by()?;
+    data.generated_at = event.timestamp;
+    data.recipes = event.data.recipe_ids;
+    data.ingredients = event.data.ingredients.iter().map(|i| i.key()).collect();
+    data.checked.clear();
+    data.statuses.clear();
+    Ok(())
+}
+```
+
+**Rules:**
+- Bump `.revision(n)` whenever the struct's field set or order changes; old snapshots are then rebuilt from events instead of failing to decode.
+- `.strict()` makes an unhandled event a hard error, so every variant of the aggregate (including legacy ones) needs a handler.
+- `impl ProjectionAggregate` returns the aggregate id; for `Shopping` and `MealPreferences` that is the user id.
+
+### Command Pattern
+
+Commands are methods on a per-aggregate `Module<E: Executor>` that derefs to `core::State` (`executor`, `read_db`, `write_db`). The input struct is the first argument, the requesting user id the last.
+
+```rust
+// crates/core/src/shopping/root/status.rs
+pub struct ChangeRecipeStatus { pub recipe_id: String, pub status: RecipeStatus }
+
+impl<E: Executor> super::Module<E> {
+    pub async fn change_recipe_status(&self, input: ChangeRecipeStatus, request_by: impl Into<String>) -> crate::Result<()> {
+        let request_by = request_by.into();
+        let shopping = match self.load(&request_by).await? {
+            Some(shopping) if shopping.recipes.contains(&input.recipe_id) => shopping,
+            _ => crate::not_found!("recipe"),
+        };
+        shopping.write()?
+            .event(&RecipeStatusChanged { recipe_id: input.recipe_id, status: input.status })
+            .requested_by(request_by)
+            .commit(&self.executor)
             .await?;
-
-        Ok(user_id)
+        Ok(())
     }
 }
 ```
 
 **Rules:**
-- Commands ONLY use evento or validation tables for data
-- NEVER use projections in commands (they're eventually consistent)
-- ALL async validation deferred to command handlers
-- Commands complete in <10 seconds (due to graceful shutdown)
+- Commands return `imkitchen_core::Result` and raise domain failures with the `user!`, `not_found!`, `forbidden!` and `server!` macros; the web layer maps these to toasts, 404 and 403 pages.
+- A command decides from the projection it just loaded (optimistic concurrency through `aggregate_version`). It may read read-model tables that are maintained by recipe events (`shopping_recipe`, `meal_plan_recipe`) because those are inputs, not invariants.
+- Commands are synchronous from the caller's point of view: when `commit` returns, `load()` and `state()` already reflect the event.
 
-### Query Pattern (per CLAUDE.md)
+### Subscription (Read Model) Pattern
 
-**Structure:**
 ```rust
-// src/queries/users.rs
-pub async fn get_user_profile(
-    pool: &SqlitePool,
-    user_id: &str,
-) -> anyhow::Result<Option<UserProfile>> {
-    sqlx::query_as::<_, UserProfile>(
-        "SELECT id, email, dietary_restrictions FROM user_profiles WHERE id = ?"
-    )
-    .bind(user_id)
-    .fetch_optional(pool)
-    .await
+// crates/core/src/shopping/subscription.rs
+pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
+    SubscriptionBuilder::new("shopping")
+        .handler(handle_recipe_created())
+        .handler(handle_recipe_imported())
+        .handler(handle_recipe_deleted())
+        .handler(handle_recipe_ingredients_changed())
+        .handler(handle_recipe_basic_information_changed())
 }
-```
 
-**Rules:**
-- Queries ONLY access read DB (queries.db)
-- NEVER try to access evento data directly
-- Query handlers MUST be idempotent (can replay events)
-- Use `event.timestamp` for all time fields in projections
-
-### Event Handler Pattern (per CLAUDE.md)
-
-**Structure:**
-```rust
-// src/queries/users.rs
-#[evento::handler(User)]
-async fn on_user_registered<E: Executor>(
+#[evento::subscription]
+async fn handle_recipe_ingredients_changed<E: Executor>(
     context: &Context<'_, E>,
-    event: EventDetails<UserRegistered, EventMetadata>,
+    event: Event<imkitchen_types::recipe::IngredientsChanged>,
 ) -> anyhow::Result<()> {
-    let pool = context.extract::<SqlitePool>();
-
-    sqlx::query("INSERT INTO users (id, email, created_at) VALUES (?, ?, ?)")
-        .bind(&event.aggregator_id)
-        .bind(&event.data.email)
-        .bind(event.timestamp)
-        .execute(&pool)
-        .await?;
-
+    let pool = context.extract::<sqlx::SqlitePool>();
+    // sea-query UPDATE shopping_recipe SET ingredients = bitcode(...) WHERE id = event.aggregate_id
     Ok(())
 }
+```
 
-pub fn subscribe_user_query(pool: SqlitePool) -> evento::SubscriptionBuilder {
-    evento::subscribe("user-query")
-        .data(pool)
-        .handler(on_user_registered())
-        .skip::<User, UserDeleted>()  // Skip events we don't handle
+**Rules:**
+- One subscription key per read model. Keys are persisted cursors: renaming one restarts the replay from the beginning, which is why the candidate-pool subscription keeps its historical key `"mealplan-command"`.
+- Handlers must be idempotent (events are replayed on rebuild) and use `event.timestamp` for time columns.
+- Every subscription is started in `src/cli/server.rs` and shut down gracefully on SIGTERM.
+- Dropping a read model is a migration that drops the table and deletes the subscriber row (see `m0015::ForgetSubscribers`).
+
+### Web Handler Pattern
+
+```rust
+// web/kitchen/src/lib.rs
+pub async fn remove_recipe_action(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    let preferences = imkitchen_web_shared::try_response!(anyhow:
+        app.identity.meal_preferences.load(&user.id), template);
+    imkitchen_web_shared::try_response!(
+        app.core.shopping.remove_recipe(&id, preferences.household_size, &user.id), template);
+    Redirect::to("/").into_response()
 }
 ```
 
 **Rules:**
-- One subscription per query view (don't combine unrelated projections)
-- Handlers complete in <10 seconds
-- Use `.skip::<Aggregate, Event>()` for events you don't need
-- Make subscription builders reusable (same function for main.rs and tests)
+- Handlers take the `Template` extractor and one of the auth extractors; `try_response!` turns a `core::Error` into a `partials/toast-error.html` response and `try_page_response!` into a full error page.
+- Mutations that change the whole page redirect to `/`; the triggering element uses `ts-target="body"` so twinspark swaps the redirected page in. Mutations that change one region return a partial (`partials/*.html`).
+- Each web crate exposes `routes() -> axum::Router<AppState>`; the binary merges them flat (no `nest`).
 
 ## Consistency Rules
 
 ### Naming Conventions
 
 **Files & Modules:**
-- File names: `snake_case.rs` (e.g., `meal_plan.rs`, `user_profile.rs`)
-- Module names: `snake_case` matching file names
-- Test files: `{feature}_test.rs` in `tests/` folder (e.g., `auth_test.rs`)
+- `snake_case.rs`; one command per file under `root/` (`generate.rs`, `remove.rs`), one read model per file under `query/`
+- Table modules in `crates/db/src/<table>.rs` with the `sea_query::Iden` enum and a `mN` submodule per migration that touches the table
 
-**Routes (Axum 0.8+):**
-- Route parameters: `{id}` format (NOT `:id`)
-- Examples: `/users/{id}`, `/recipes/{recipe_id}/rate`
+**Routes (Axum 0.8):**
+- Path parameters use `{id}` (never `:id`)
+- Page: `GET /thing`; modal or partial: `GET /thing/modal`; action: `POST /thing/action`; status polling: `GET /thing/{id}/status`
 
 **Database:**
-- Table names: `snake_case` plural (e.g., `users`, `meal_plans`, `recipe_favorites`)
-- Column names: `snake_case` (e.g., `user_id`, `created_at`, `is_admin`)
-- Foreign keys: `{table}_id` (e.g., `user_id`, `recipe_id`)
-- Timestamps: `INTEGER` storing Unix timestamps from `event.timestamp`
+- Table names are `snake_case` singular (`user`, `recipe_user`, `shopping_recipe`, `meal_plan_recipe`)
+- Columns `snake_case`; ids are 26-char ULID strings; timestamps are `INTEGER` unix seconds from `event.timestamp`
+- Read-model rows that mirror an aggregate carry `cursor` and `aggregate_version`
 
-**Rust Code:**
-- Structs: `PascalCase` (e.g., `UserProfile`, `MealPlanGenerator`)
-- Enums: `PascalCase` with `PascalCase` variants (e.g., `RecipeType::MainCourse`)
-- Functions: `snake_case` (e.g., `generate_meal_plan`, `get_user_profile`)
-- Constants: `SCREAMING_SNAKE_CASE` (e.g., `MAX_FAVORITES_FREE_TIER`)
+**Rust:**
+- Aggregates/events: `PascalCase` enum variants in `crates/types`
+- Commands: `verb_noun` methods (`add_recipe`, `change_recipe_status`), input structs `VerbNoun` (`GenerateList`, `ChangeRecipeStatus`, `ToggleInput`)
+- Subscription keys: kebab-case strings (`"recipe-query"`, `"shopping"`, `"notification-billing"`)
 
 ### Code Organization
 
-**Bounded Context Crates:**
-- One aggregate root per crate
-- Files: `command.rs`, `event.rs`, `aggregate.rs`, `lib.rs`
-- ALL commands in `command.rs` (not split across files)
-- ALL events in `event.rs` (not split across files)
+**Domain crates:**
+- `crates/types` only declares aggregates, events and shared value types; no I/O
+- `crates/core` groups each aggregate as `root/` (projection + commands), `query/` (read models), optional `saga/` and `favorite/`
+- `identity`, `billing`, `notification`, `audience` follow the same `Module(State)` shape
 
-**Route Handlers:**
-- Group by feature area: `routes/auth/`, `routes/recipes/`, `routes/mealplan/`
-- One file per route: `routes/recipes/create.rs`, `routes/recipes/import.rs`
-- Co-locate related routes in same module
-
-**Query Functions:**
-- Group by aggregate: `queries/users.rs`, `queries/recipes.rs`, `queries/mealplans.rs`
-- Include both query functions AND query handlers in same file
-- Subscription builders in same file as handlers
+**Web crates:**
+- `web/shared` owns `AppState`, config, auth, the `Template` extractor, i18n, assets and middleware
+- Feature crates own their handlers and `askama::Template` structs; templates live in the shared `templates/` tree
+- `web/demo` renders the same templates from `fixtures.rs` with every mutation replaced by the sign-up modal
 
 **Tests:**
-- Integration tests in `tests/` folder (NOT `src/`)
-- Test file naming: `{feature}_test.rs` (e.g., `auth_test.rs`, `import_test.rs`)
-- Use `sqlx::migrate!` and `evento::sql_migrator` for database setup
-- NEVER use direct SQL for test setup (always use migrations)
+- Unit tests next to the code; `tests/events_lock.rs` at the workspace root; Playwright under `tests/e2e`
 
 ### Error Handling
 
-**Strategy:** Use `anyhow::Result` for all fallible operations
-
-**Command Errors:**
-```rust
-// Return errors from commands - don't emit error events
-pub async fn create_recipe(&self, input: CreateRecipeInput) -> anyhow::Result<String> {
-    input.validate()?;  // Validation errors bubble up
-
-    let recipe_id = evento::create::<Recipe>()
-        .data(&RecipeCreated { ... })?
-        .commit(&self.evento)
-        .await?;  // Database errors bubble up
-
-    Ok(recipe_id)
-}
-```
-
-**Route Handler Errors:**
-```rust
-// Display user-friendly error messages in templates
-pub async fn create_recipe_handler(
-    State(state): State<AppState>,
-    Form(form): Form<CreateRecipeForm>,
-) -> impl IntoResponse {
-    match state.command.create_recipe(input, metadata).await {
-        Ok(recipe_id) => RecipeCreatedTemplate { recipe_id }.into_response(),
-        Err(e) => RecipeFormTemplate {
-            error: Some(format!("Failed to create recipe: {}", e))
-        }.into_response(),
-    }
-}
-```
-
-**Query Handler Errors:**
-```rust
-// Log errors but don't fail subscription
-#[evento::handler(Recipe)]
-async fn on_recipe_created<E: Executor>(
-    context: &Context<'_, E>,
-    event: EventDetails<RecipeCreated, EventMetadata>,
-) -> anyhow::Result<()> {
-    // If this fails, evento will retry
-    let pool = context.extract::<SqlitePool>();
-    sqlx::query("INSERT INTO recipes (...) VALUES (...)")
-        .execute(&pool)
-        .await?;
-
-    Ok(())
-}
-```
+- Domain: `imkitchen_core::Error { Validate, Forbidden, NotFound, User, Server }` with `From` impls for sqlx, evento, argon2 and time errors
+- Web: `try_response!` renders `partials/toast-error.html` (sent with `ts-swap: skip` when no fallback template is given) with a generic message for `Server`, "Forbidden" for `Forbidden`, and the error text for `User`, `Validate` and `NotFound`; `try_page_response!` renders the 404 template for a missing resource and the error pages otherwise
+- Subscriptions: return `anyhow::Error`; evento logs and retries, so handlers must be safe to re-run
 
 ### Logging Strategy
 
-**Use `tracing` crate extensively:**
-
-```rust
-use tracing::{info, warn, error, debug};
-
-// Log command execution
-#[tracing::instrument(skip(self))]
-pub async fn register_user(&self, input: RegisterUserInput) -> anyhow::Result<String> {
-    info!("Registering new user: {}", input.email);
-    // ... command logic
-    info!("User registered successfully: {}", user_id);
-    Ok(user_id)
-}
-
-// Log validation failures
-if exists {
-    warn!("Registration failed: email already exists: {}", input.email);
-    return Err(anyhow!("Email already registered"));
-}
-
-// Log event handling
-#[tracing::instrument(skip(context, event))]
-async fn on_user_registered<E: Executor>(
-    context: &Context<'_, E>,
-    event: EventDetails<UserRegistered, EventMetadata>,
-) -> anyhow::Result<()> {
-    debug!("Processing UserRegistered event: {}", event.aggregator_id);
-    // ... projection logic
-    Ok(())
-}
-```
-
-**Log Levels:**
-- `error!` - Failures, panics, critical issues
-- `warn!` - Potentially problematic situations
-- `info!` - Important business logic flow, state changes
-- `debug!` - Detailed diagnostic information
-- `trace!` - Very detailed (loop iterations, data transformations)
+- `#[tracing::instrument(skip_all, fields(user = user.id))]` on handlers
+- `tracing::info!` for lifecycle (startup, subscriptions, shutdown), `warn!` for recoverable issues, `error!` for failed jobs
+- Log level and JSON output come from `[monitoring]` in the config
 
 ## Data Architecture
 
-### Database Separation
+### Databases
 
-**Write DB (`evento.db`):**
-- Managed exclusively by evento
-- Stores all events and aggregate state
-- Never query directly - use evento API
+**Application database (`[database] url`, default `sqlite:imkitchen.db`):**
+- Holds the evento event log and snapshots and every read-model table
+- Opened by the server as a read-only pool and a single-connection write pool
+- The write pool disables automatic WAL checkpoints so Litestream can replicate; `migrate` runs a `TRUNCATE` checkpoint and a gated `VACUUM`
 
-**Read DB (`queries.db`):**
-- Projections for all queries
-- Updated by query handlers
-- Queried by route handlers
+**Audience database (`[audience] database_url`, optional):**
+- Separate evento instance for landing-page visit beacons and the `audience_daily_stat` rollup
+- Migrated automatically on `serve`
 
-**Validation DB (`validation.db`):**
-- Unique constraint validation (e.g., email uniqueness)
-- Used by command handlers for async validation
-- Example: `user_emails` table with unique index
+There is no separate validation database. Uniqueness checks (email, username) run against the `user` table, which has unique indexes and is written by the identity module on registration.
 
-### Core Tables (Read DB)
+### Migrations
 
-**users**
-```sql
-CREATE TABLE users (
-    id TEXT PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE,
-    hashed_password TEXT NOT NULL,
-    is_admin BOOLEAN NOT NULL DEFAULT 0,
-    is_suspended BOOLEAN NOT NULL DEFAULT 0,
-    created_at INTEGER NOT NULL
-);
-```
+`crates/db/src/lib.rs` chains evento's schema migrations and `m0001`..`m0015`. Notable steps:
 
-**user_profiles**
-```sql
-CREATE TABLE user_profiles (
-    user_id TEXT PRIMARY KEY,
-    dietary_restrictions TEXT,  -- JSON array
-    cuisine_variety_weight REAL NOT NULL DEFAULT 0.7,
-    household_size INTEGER,
-    is_premium_active BOOLEAN NOT NULL DEFAULT 0,
-    premium_bypass BOOLEAN NOT NULL DEFAULT 0,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-```
+| Migration | Effect |
+|-----------|--------|
+| m0001 | Creates every table: user views, contact views, `recipe_user` (+FTS), `recipe_thumbnail`, `recipe_user_stat`, `meal_plan_recipe`, `shopping_recipe`, `notification_recipient`, and the since-dropped `meal_plan_slot`, `shopping_list`, `shopping_slot` |
+| m0005 | Adds `recipe_user.slug`, creates `recipe_owner` for the share saga |
+| m0006 | Creates `origin_framing`; adds `shopping_recipe.household_size` backfilled from `recipe_user` |
+| m0013 | Adds `aggregate_version` to the mirrored read models |
+| m0015 | Drops `meal_plan_slot`, `shopping_slot`, `shopping_list` and forgets the `mealplan-slot` and `shopping-list` subscribers (calendar removal) |
 
-**recipes**
-```sql
-CREATE TABLE recipes (
-    id TEXT PRIMARY KEY,
-    owner_id TEXT NOT NULL,
-    recipe_type TEXT NOT NULL,  -- 'Appetizer' | 'MainCourse' | 'Dessert' | 'Accompaniment'
-    name TEXT NOT NULL,
-    ingredients TEXT NOT NULL,  -- JSON array
-    instructions TEXT NOT NULL,
-    dietary_restrictions TEXT,  -- JSON array
-    cuisine_type TEXT,
-    complexity TEXT,
-    advance_prep_text TEXT,
-    accepts_accompaniment BOOLEAN DEFAULT 0,
-    is_shared BOOLEAN DEFAULT 0,
-    created_at INTEGER NOT NULL,
-    FOREIGN KEY (owner_id) REFERENCES users(id)
-);
-```
+### Core Tables
 
-**recipe_favorites**
-```sql
-CREATE TABLE recipe_favorites (
-    user_id TEXT NOT NULL,
-    recipe_id TEXT NOT NULL,
-    favorited_at INTEGER NOT NULL,
-    PRIMARY KEY (user_id, recipe_id),
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
-);
-```
+**Recipe list inputs (maintained from `Recipe` and `Favorite` events):**
 
-**recipe_ratings**
-```sql
-CREATE TABLE recipe_ratings (
-    id TEXT PRIMARY KEY,
-    recipe_id TEXT NOT NULL,
-    user_id TEXT NOT NULL,
-    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
-    review_text TEXT,
-    created_at INTEGER NOT NULL,
-    FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-```
+`meal_plan_recipe` — candidate pool for generation, one row per (recipe, user): the user's own recipes plus community recipes they saved. Maintained by `shopping::pool::subscription()` (`"mealplan-command"`).
 
-**meal_plans**
-```sql
-CREATE TABLE meal_plans (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    week_start_date TEXT NOT NULL,  -- ISO date (e.g., "2025-11-03")
-    week_number INTEGER NOT NULL,  -- 1-5
-    is_current_week BOOLEAN NOT NULL DEFAULT 0,
-    generated_at INTEGER NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-);
-```
+| Column | Notes |
+|--------|-------|
+| `id`, `user_id` | Composite primary key |
+| `recipe_type` | `Appetizer`, `MainCourse`, `Dessert`, `Accompaniment`, `Beverage`, `Condiment` |
+| `name`, `prep_time`, `cook_time`, `advance_prep` | Display fields |
+| `accepts_accompaniment` | Only mains that accept one trigger accompaniment picking |
+| `dietary_restrictions` | JSON array, filtered with `json_each` |
 
-**meal_plan_recipe_snapshots**
-```sql
-CREATE TABLE meal_plan_recipe_snapshots (
-    id TEXT PRIMARY KEY,
-    meal_plan_id TEXT NOT NULL,
-    day_index INTEGER NOT NULL CHECK (day_index >= 0 AND day_index <= 6),
-    meal_slot TEXT NOT NULL,  -- 'appetizer' | 'main' | 'dessert' | 'accompaniment'
-    original_recipe_id TEXT,  -- Reference (may be deleted)
-    recipe_type TEXT NOT NULL,
-    name TEXT NOT NULL,
-    ingredients TEXT NOT NULL,
-    instructions TEXT NOT NULL,
-    dietary_restrictions TEXT,
-    cuisine_type TEXT,
-    snapshot_at INTEGER NOT NULL,
-    FOREIGN KEY (meal_plan_id) REFERENCES meal_plans(id) ON DELETE CASCADE
-);
-```
+`shopping_recipe` — ingredients and authored household size per recipe. Maintained by `shopping::subscription()` (`"shopping"`).
 
-**contact_messages**
-```sql
-CREATE TABLE contact_messages (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    email TEXT NOT NULL,
-    subject TEXT NOT NULL,
-    message TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'new',  -- 'new' | 'read' | 'resolved'
-    created_at INTEGER NOT NULL
-);
-```
+| Column | Notes |
+|--------|-------|
+| `id` | Recipe id, primary key |
+| `user_id` | Owner |
+| `ingredients` | BLOB, bitcode `Vec<Ingredient>` |
+| `household_size` | Authored servings, default 4 |
+
+**Recipe read models:** `recipe_user` (full recipe view with slug, times, ingredients, instructions, dietary restrictions, `is_shared`, thumbnail version, difficulty score, blur placeholder, plus an FTS table), `recipe_owner`, `recipe_thumbnail`, `recipe_user_stat`, `origin_framing` (per-domain iframe verdict).
+
+**Identity read models:** `user` (email, password hash, username, role, state), `user_login`, `user_admin` (+FTS), `user_global_stat`, `notification_recipient`.
+
+**Billing read models:** `user_subscription`, `user_invoice_user`.
+
+**Contact read models:** `contact_admin` (+FTS), `contact_global_stat`.
+
+### Aggregates and Snapshotted Views
+
+| Aggregate (events in `crates/types`) | Projection (view) | Aggregate id |
+|--------------------------------------|-------------------|--------------|
+| `Shopping` | `imkitchen-core/shopping/Shopping` rev 3 | user id |
+| `Recipe` | `imkitchen-core/recipe/Recipe` rev 3 | recipe id |
+| `RecipeShare` | `imkitchen-core/recipe/RecipeShareState` rev 1 | user id |
+| `Favorite` | `imkitchen-core/recipe/favorite/Favorite` rev 1 | `evento::hash_ids([recipe_id, user_id])` |
+| `MealPreferences` | `imkitchen-identity/meal_preferences/MealPreferences` rev 2 | user id |
+| `User` | `imkitchen-identity/User` rev 2 | user id |
+| `UserProfile`, `Password` | `.../UserProfile` rev 1, `.../Password` rev 1 | user id / reset id |
+| `Subscription`, `Invoice` | `imkitchen-billing/subscription/Subscription` rev 1 | user id / invoice id |
+| `Contact` | `imkitchen-core/contact/Contact` rev 1 | contact id |
+| `MealPlan` (legacy) | none; `DaysGenerated` and `SlotRecipeStatusChanged` stay declared for decoding | — |
+
+### The Recipe List (`Shopping`)
+
+- `recipes: Vec<String>` is the list in order; `statuses` holds each recipe's `RecipeStatus { Idle, Cooking(u8), Completed }` (missing means `Idle`); `ingredients` holds the merged ingredient keys and `checked` the ones ticked on the groceries page.
+- `RecipeAdded` / `RecipeRemoved` / `ListGenerated` carry the full new `recipe_ids` and merged `ingredients`, so a projection rebuild never has to recompute them.
+- `ListGenerated` replaces the list and clears `checked` and `statuses`. `RecipeRemoved` drops the recipe's status. `Checked`/`Unchecked` toggle one ingredient key.
+- `Module::state(user_id, household_size)` loads the projection and recomputes the merged, household-scaled ingredient list from `shopping_recipe` synchronously; this is what the kitchen and groceries pages render.
+
+## Data Flows
+
+### Generation
+
+1. `POST /kitchen/generate` with `count` (1..=30 mains) from the generate modal.
+2. The handler loads `MealPreferences` (household size, dietary restrictions, cuisine variety weight, enabled optional recipe types) and calls `shopping.generate(GenerateList { count, household_size, randomize })`.
+3. `pick::random` selects up to 35 random `MainCourse` rows from `meal_plan_recipe` matching every dietary restriction, shuffles them and truncates to `ceil(len * cuisine_variety_weight)`; `generate` then truncates to `count`. Without `randomize` a plain `sample_recipes` (up to 7) is used. No mains at all is a user error.
+4. For each enabled optional type, in the order appetizer, accompaniment, dessert, beverage, condiment, `optional_pool` picks random recipes of that type and `generate` keeps up to `ceil(count / 2)`. Accompaniments are skipped unless a picked main accepts one. Ids are deduplicated; a flat list never repeats a recipe.
+5. `merge::merge_ingredients` loads each recipe's `(household_size, ingredients)` from `shopping_recipe`, scales quantities with `scale_quantity` (serving target = `max(recipe size, household size)`, so quantities never scale below the authored size, rounding up) and sums duplicates by `Ingredient::key()`.
+6. One `ListGenerated { recipe_ids, ingredients }` event is committed; checks and statuses reset.
+7. The handler redirects to `/`; twinspark swaps the fresh kitchen page into `<body>`. No polling, because the page reads the aggregate.
+
+### Adding and Removing Recipes
+
+- `POST /recipes/{id}/add-to-shopping` → `shopping.add_recipe(id, household_size, user)`: idempotent, requires a `shopping_recipe` row (so shared recipes can be added), commits `RecipeAdded` with the recomputed set.
+- `POST /kitchen/recipe/{id}/remove` → `shopping.remove_recipe(...)`: commits `RecipeRemoved`, then redirects to `/` so the kitchen can move its focus to the next recipe.
+
+### Kitchen and Cooking Status
+
+1. `GET /` with a session renders the kitchen from `shopping.state()`. An empty list renders onboarding (`onboarding-recipe.html` when the pool has no mains, `onboarding-menu.html` otherwise, using `sample_recipes` counts).
+2. Entries are built from `recipe.filter_by_ids` plus the list order and statuses. The focused recipe is the first non-completed entry; "Prep ahead" lists other non-completed entries with an advance-prep note.
+3. `POST /kitchen/{recipe_id}/select-dish` returns the `partials/kitchen-dish.html` fragment for another recipe in the list.
+4. `GET /kitchen/{recipe_id}/cook` renders the full cooking screen; `POST /kitchen/{recipe_id}/step/{prev|next}` computes the next `RecipeStatus` in memory (`Idle` = ingredient screen, `Cooking(n)` = instruction `n`, `Completed` = last step), commits `RecipeStatusChanged`, and returns `partials/cooking-screen.html` from the new status without re-reading the aggregate.
+5. Imported recipes whose origin allows framing show the original page in an iframe (`origin_framing` cache maintained by the `recipe-saga-embeddable` subscription); an imported recipe with no parsed steps and a non-embeddable origin redirects to the original.
+
+### Groceries
+
+1. `GET /groceries` calls `shopping.state(user, household_size)` and groups `ingredients` by `IngredientCategory` into aisle sections with per-aisle and overall progress; aisles are split into two balanced desktop columns.
+2. `POST /groceries/toggle` with JSON `{ "name": "<ingredient key>" }` calls `shopping.toggle`, which commits `Checked` or `Unchecked` depending on the current `checked` set.
+3. Checks are kept per ingredient key; keys that leave the list after a removal are simply ignored when counting progress and are cleared by the next generation.
 
 ## API Contracts
 
 ### HTTP Routes
 
-**Authentication:**
-- `GET /auth/register` - Registration form
-- `POST /auth/register` - Create account
-- `GET /auth/login` - Login form
-- `POST /auth/login` - Authenticate user
-- `GET /auth/profile` - View/edit profile
-- `POST /auth/profile` - Update profile
+All routes are merged flat into one Axum router in `src/cli/server.rs`. `{param}` is an Axum 0.8 path parameter.
 
-**Recipes:**
-- `GET /recipes` - List user's recipes
-- `GET /recipes/new` - Recipe creation form
-- `POST /recipes` - Create recipe
-- `GET /recipes/{id}` - Recipe details
-- `POST /recipes/{id}/edit` - Update recipe
-- `POST /recipes/{id}/delete` - Delete recipe
-- `POST /recipes/{id}/favorite` - Toggle favorite
-- `POST /recipes/{id}/share` - Toggle sharing
-- `GET /recipes/import` - Import form
-- `POST /recipes/import` - Upload JSON files (returns import_id)
-- `GET /recipes/import/progress/{import_id}` - Real-time progress (Twinspark polling) - Returns partial HTML with imported/failed/remaining counts
-- `GET /recipes/community` - Browse shared recipes
-- `POST /recipes/{id}/rate` - Rate/review recipe
+**Kitchen (`web/kitchen`):**
+- `GET /` - Landing page for visitors; kitchen (recipe list + focused recipe) or onboarding for signed-in users
+- `GET /kitchen/generate` - Generate modal (partial)
+- `POST /kitchen/generate` - Replace the list (`count` form field), redirect to `/`
+- `POST /kitchen/recipe/{id}/remove` - Remove a recipe from the list, redirect to `/`
+- `POST /kitchen/{recipe_id}/select-dish` - Focus another recipe (partial `kitchen-dish`)
+- `GET /kitchen/{recipe_id}/cook` - Cooking screen
+- `POST /kitchen/{recipe_id}/step/{direction}` - Move the cooking cursor (`prev` | `next`), returns the cooking screen partial
+- `GET /kitchen/{legacy}` - Permanent redirect to `/` for calendar-era bookmarks
 
-**Meal Plans:**
-- `GET /mealplan` - Calendar view
-- `POST /mealplan/generate` - Generate meal plan
-- `POST /mealplan/regenerate` - Regenerate future weeks
-- `GET /mealplan/week/{week_number}` - View specific week
+**Groceries (`web/grocery`):**
+- `GET /groceries` - Aisle-grouped ingredient list for the whole recipe list
+- `POST /groceries/toggle` - JSON `{ "name" }`, check/uncheck one ingredient
+- `GET /menu`, `GET /menu/{legacy}` - Permanent redirect to `/`
 
-**Shopping:**
-- `GET /shopping/{week_number}` - Shopping list for week
+**Recipes (`web/recipe`):**
+- `GET /recipes` - User's recipes (search, filters)
+- `POST /recipes/create` - Create a draft recipe
+- `GET|POST /recipes/{id}/edit` - Edit form / save
+- `GET /recipes/_edit/ingredient-row`, `GET /recipes/_edit/instruction-row` - Form row partials
+- `GET|POST /recipes/import` - Import form / upload; `GET /recipes/import/{id}/status` - Progress partial
+- `GET /recipes/{id}/delete` (modal), `POST /recipes/{id}/delete`, `GET /recipes/{id}/delete/status`
+- `POST /recipes/{id}/save`, `POST /recipes/{id}/unsave` - Favorite a community recipe
+- `POST /recipes/{id}/add-to-shopping` - Add to the recipe list
+- `GET /recipes/{id}/share-to-community`, `GET /recipes/{id}/make-private`
+- `POST /recipes/share-all`, `POST /recipes/make-all-private`
+- `POST /recipes/{id}/thumbnail`, `GET /recipes/{id}/thumbnail/{device}/image.webp`
+- `GET /recipes/{id}` - Redirect to the slug URL
+- `GET /r/{slug}` - Recipe detail; `GET /r/{slug}/similar` - Similar recipes partial
+- `GET /cooks/{username}` - A chef's public recipes
 
-**Dashboard:**
-- `GET /` - Landing page (unauthenticated) or Dashboard (authenticated)
-- `GET /dashboard` - Dashboard with nearest day
+**Settings (`web/settings`):**
+- `GET|POST /settings/general`, `POST /settings/general/profile`, `POST /settings/general/set-username`
+- `GET /settings/billing`, `POST /settings/billing/check`, `POST /settings/billing/payment-method`
+- `GET|POST /settings/billing/cancel`, `GET|POST /settings/billing/update-payment`
+- `GET|POST /settings/account`
+- `GET /invoices/{id}`
 
-**Admin:**
-- `GET /admin/users` - User management
-- `POST /admin/users/{id}/suspend` - Suspend user
-- `POST /admin/users/{id}/activate` - Activate user
-- `POST /admin/users/{id}/premium-bypass` - Toggle bypass
-- `GET /admin/contact` - Contact inbox
-- `POST /admin/contact/{id}/mark-read` - Mark message read
+**Public (`web/public`):**
+- `GET|POST /register`, `GET|POST /login`, `GET /logout`
+- `GET|POST /reset-password`, `GET|POST /reset-password/new/{id}`
+- `GET|POST /contact`
+- `GET|POST /upgrade`, `GET /upgrade/modal`, `GET /upgrade/order-summary`
+- `GET /about`, `/help`, `/terms`, `/policy`, `/legal`
+- `POST /audience/visit` - Visit beacon (only when `[audience]` is configured)
+- `GET /manifest.json`, `/sw.js`, `/robots.txt`, `/sitemap.xml`
+- `GET /health`, `/ready`, `/_test-error` - Mounted with the read pool as state
 
-**Contact:**
-- `GET /contact` - Contact form
-- `POST /contact` - Submit message
+**Admin (`web/admin`, `AuthAdmin`):**
+- `GET /admin/users`, `GET /admin/users/{id}/edit`, `POST /admin/users/{id}`, `POST /admin/users/{id}/suspend`, `/activate`, `/toggle-premium`
+- `GET /admin/invoices`, `GET /admin/invoices/{id}`
+- `GET /admin/audience`
+- `GET /admin/contact`, `POST /admin/contact/{id}/mark-read-and-reply`, `/resolve`, `/reopen`
+- `GET /admin/recipes/import`, `POST /admin/recipes/import` (ZIP, 50 MB body limit), `GET /admin/recipes/import/{id}/status`
+
+**Demo (`web/demo`, no login):**
+- `GET /demo`, `/demo/kitchen`, `/demo/kitchen/{recipe_id}/cook`, `/demo/menu`, `/demo/recipes`, `/demo/recipes/{id}`, `/demo/r/{slug}`, `/demo/r/{slug}/similar`, `/demo/cooks/{username}`, `/demo/groceries`, `/demo/signup`
 
 ### Response Format
 
-**HTML Responses (SSR):**
-- All routes return rendered HTML via Askama templates
-- Error states return same template with error message
-- Success states may redirect or return updated template
-
-**Twinspark Partial Responses:**
-- Progress updates return partial HTML (e.g., `import-progress.html`)
-- Polling endpoints return updated fragments
-
-**No JSON API** - All data exchange via HTML forms and server-side rendering
+- Every route returns HTML rendered by Askama, either a full page or a `partials/*.html` fragment for twinspark.
+- Full-page mutations redirect to the page to show; the triggering element carries `ts-target="body"`.
+- Errors render toast partials or the 403/404/500 templates; there is no JSON API apart from the JSON request body of `/groceries/toggle` and the audience beacon.
+- The global request body limit is 1 MB; the admin ZIP upload route is merged after that layer with its own 50 MB limit.
 
 ## Security Architecture
 
 ### Authentication
 
-**JWT Cookie-Based:**
-- Secure HTTP-only cookies
-- Token contains: `user_id`, `is_admin`, `exp` (expiration)
-- Token lifetime: 7 days
-- Refresh on every request (sliding window)
+- JWT stored in an HTTP-only cookie built by `web/shared/src/auth.rs::build_cookie`; lifetime is `[jwt] expiration_days` (14 by default) and the kitchen page re-issues the cookie on each render (sliding window)
+- Passwords hashed with Argon2 (`argon2` 0.6)
+- `AuthUser` loads the login view (`user_login`) and refuses suspended accounts; `AuthAdmin` requires the `Admin` role; `RequireChef` requires `Login::is_chef()` and renders the 403 page otherwise
+- Password reset is its own `Password` aggregate with an expiring reset id, emailed by the `notification-user` subscription
 
-**Password Hashing:**
-- Argon2id algorithm (OWASP recommended)
-- Salt automatically generated per password
-- Cost parameters: time_cost=2, mem_cost=19456, parallelism=1
+### Input Validation
 
-**Route Protection:**
-- Middleware extracts JWT from cookie
-- Validates signature and expiration
-- Populates `Extension<User>` for protected routes
-- Redirects to `/auth/login` if not authenticated
+- Command inputs derive `validator::Validate` (for example `GenerateList.count` in 1..=30)
+- Forms are parsed by axum-extra `Form`; all SQL goes through sea-query bound parameters, with `sqlx::AssertSqlSafe` only wrapping builder output
+- Askama escapes by default; the `askama.toml` escaper config treats `json`/`js` templates as text
 
-### OWASP Compliance (NFR007)
+### Uploads
 
-**Input Validation:**
-- All user input validated with `validator` crate
-- Email format validation
-- Password complexity: min 8 chars, uppercase, lowercase, number
-- SQL injection prevented via sqlx parameterized queries
+- Recipe thumbnails are resized to WebP per device size by the recipe module
+- Admin batch import accepts a ZIP up to 50 MB and tracks progress in memory (`AdminImportJobs`), polled by the status route
 
-**XSS Prevention:**
-- Askama escapes all template variables by default
-- NEVER use `safe` filter unless absolutely necessary
-- CSP headers restrict inline scripts
+### Privacy
 
-**CSRF Protection:**
-- SameSite=Strict cookie attribute
-- Double-submit cookie pattern for state-changing operations
-
-**File Upload Security:**
-- Max file size: 10MB enforced at upload
-- Content-type validation: application/json only
-- Malicious content detection: scan for script tags, eval patterns
-- Streaming parser with timeout (30s per file)
-
-### GDPR Compliance (NFR008)
-
-**Data Encryption:**
-- Passwords hashed with Argon2id (never stored plaintext)
-- Database files encrypted at rest (deployment-specific)
-- TLS 1.3 for data in transit (deployment-specific)
-
-**User Rights:**
-- Account deletion: soft delete with data preservation
-- Data export: not in MVP (deferred to post-MVP)
-- Consent: registration implies consent for essential features
+- Ad consent is an event on the `User` aggregate (`AdConsentGranted` / `AdConsentRevoked`); analytics tags load with Consent Mode defaults denied
+- The audience beacon stores device, browser, OS, country, timezone and referrer only, in a separate database
 
 ## Performance Considerations
 
-### Meal Plan Generation (<5s P95)
+### Generation
 
-**Algorithm Optimization:**
-- Load user's favorited recipes into memory (typically <100 recipes)
-- Filter by dietary restrictions in single pass
-- Use Vec for storage, not HashMap (better cache locality)
-- Pre-compute cuisine frequency map
-- Weighted random selection with pre-allocated RNG
+- Generation is a handful of indexed SQLite queries on `meal_plan_recipe` (`user_id`, `user_id + recipe_type` indexes) plus one `shopping_recipe` lookup; the random sample is capped at 35 rows per course type, so cost is independent of library size
+- The merged ingredient list is computed in memory and stored in the event, so rendering never recomputes across recipes it does not need
 
-**Performance Testing:**
-- Benchmark with 10, 50, 100, 200 favorited recipes
-- Target: P95 < 5s for 5-week generation with 100 recipes
-- Profile with `cargo flamegraph` to identify bottlenecks
+### Page Loads
 
-### Page Load Times (<3s Mobile)
+- Pages that follow a command read the aggregate snapshot instead of waiting for a projection
+- HTML is minified and compressed (brotli/gzip); assets are embedded and cache-controlled; CSS is one compiled Tailwind file
+- The sitemap is pre-rendered in memory in identity, gzip and brotli encodings and rebuilt by a background task
+- The PWA service worker (Workbox) precaches the shell and provides `offline.html`
 
-**Optimizations:**
-- Minimal CSS (Tailwind 4.1 produces small bundle)
-- Twinspark library is tiny (<10KB)
-- No heavy JavaScript frameworks
-- Lazy load recipe images
-- SQLite queries indexed properly
+### Database
 
-**PWA Offline Caching:**
-- Service worker caches CSS, JS, fonts
-- Recipe pages cached for offline viewing
-- Network-first strategy for dynamic content
-
-### Database Performance
-
-**Indexing Strategy:**
-```sql
-CREATE INDEX idx_recipes_owner ON recipes(owner_id);
-CREATE INDEX idx_recipes_shared ON recipes(is_shared) WHERE is_shared = 1;
-CREATE INDEX idx_recipe_favorites_user ON recipe_favorites(user_id);
-CREATE INDEX idx_meal_plans_user_week ON meal_plans(user_id, week_number);
-CREATE INDEX idx_snapshots_meal_plan ON meal_plan_recipe_snapshots(meal_plan_id);
-```
-
-**Query Optimization:**
-- Use `EXPLAIN QUERY PLAN` to verify index usage
-- Avoid N+1 queries - fetch related data in single query
-- Use joins instead of multiple round-trips
+- Single writer connection avoids `SQLITE_BUSY`; the read pool is sized by `database.max_connections`
+- `mmap_size`, `cache_size`, `temp_store = memory` and `journal_size_limit` are set on every connection in `src/db.rs`
+- Read models keep purpose-built indexes (recipe sitemap indexes added in m0014, FTS tables for recipes, users and contacts)
 
 ## Deployment Architecture
 
 ### Deployment Model
 
-**Single Binary Deployment:**
-- Compile release binary: `cargo build --release`
-- Binary includes: web server, CLI, migrations
-- Self-contained, no external runtime dependencies
-
-**Database Files:**
-- `evento.db` - Event store (write DB)
-- `queries.db` - Projections (read DB)
-- `validation.db` - Validation constraints
-- All SQLite files on same filesystem
-
-**Static Assets:**
-- `static/` directory served by Axum
-- CDN optional for production (not required)
+- One statically built binary (`cargo build --release --bin imkitchen`) in a `FROM scratch` image, running as uid 10001 on port 3000
+- `imkitchen migrate --config …` runs as an init container; `imkitchen serve --config …` is the app (see `compose.yml` and `helm/`)
+- SQLite files live on a persistent volume; Litestream replication is assumed for the application database (the write pool leaves checkpointing to it)
 
 ### Configuration
 
-**Environment-Specific:**
-- `config/default.toml` - Committed defaults
-- `config/dev.toml` - Local overrides (.gitignored)
-- `config/prod.toml` - Production overrides (.gitignored)
+- `config/default.toml` is the committed baseline; pass `--config path` to override. Sections: `[server]` (url, host, port, optional `region` used as the evento routing key), `[database]`, `[jwt]`, `[root]` (bootstrap admin), `[email]`, `[stripe]`, optional `[premium]`, `[analytics]`, `[audience]`, `[monitoring]`
+- Removing `[premium]` disables billing UI and the renewal scheduler; removing `[audience]` disables the beacon and the second database
 
-**SMTP Configuration:**
-```toml
-[email]
-smtp_host = "smtp.gmail.com"
-smtp_port = 587
-smtp_username = "admin@imkitchen.app"
-smtp_password = ""  # Set in dev.toml or prod.toml
-from_address = "noreply@imkitchen.app"
-admin_emails = ["admin@imkitchen.app"]
-```
+### Local Stack
 
-**Premium Bypass:**
-```toml
-[access_control]
-global_premium_bypass = false  # Set to true for dev/staging
-```
-
-### Deployment Options
-
-**Option 1: VPS (e.g., DigitalOcean, Linode)**
-- Install Rust binary
-- SystemD service for auto-restart
-- Nginx reverse proxy with TLS
-- Let's Encrypt for SSL certificates
-
-**Option 2: Container (Docker)**
-- Multi-stage build for small image
-- Mount config/db volumes
-- Expose port 3000
-
-**Option 3: Platform (Fly.io, Railway)**
-- Push binary to platform
-- Configure environment variables
-- Auto-scaling based on load
+- `compose.yml` provides Traefik with local TLS certificates (`make cert`), MailDev for SMTP, and optional `standalone` profiles for running the built image
+- `make dev` runs `cargo watch -x "run -- --config config/dev.local.toml serve"`
 
 ## Development Environment
 
 ### Prerequisites
 
-**Required:**
-- Rust 1.90+ (`rustup install stable`)
-- Node.js 22+ (for Tailwind CLI and Playwright)
-- SQLite 3.x (usually pre-installed)
-
-**Optional:**
-- Playwright 1.56+ (for E2E tests)
-- `cargo-watch` for auto-rebuild
-- `cargo-flamegraph` for profiling
+- The nix dev shell in `flake.nix` provides the Rust toolchain, Tailwind CLI, Playwright with Chromium, and the Android SDK for the native shell
+- Without nix: stable Rust, Node 18+, the Tailwind CLI and Playwright
 
 ### Setup Commands
 
 ```bash
-# Clone repository
-git clone https://github.com/yourusername/imkitchen.git
-cd imkitchen
+# Migrate (creates imkitchen.db) and run the server with local config
+make migrate
+make dev
 
-# Copy configuration template
-cp config/default.toml config/dev.toml
-# Edit config/dev.toml with your SMTP credentials
+# Rebuild CSS once or watch
+make css
+make css-watch
 
-# Run migrations (creates databases)
-cargo run -- migrate
+# Rust checks
+make lint        # cargo clippy --workspace --all-targets --all-features -- -D warnings
+make fmt
+make test        # cargo test --workspace
 
-# Start development server
-cargo run -- serve
+# After adding an event, nested type or view
+EVENTO_LOCK=update cargo test -p imkitchen --test events_lock
 
-# In separate terminal: Watch and rebuild CSS
-npx tailwindcss -i static/css/input.css -o static/css/output.css --watch
-
-# Run tests
-cargo test
-
-# Run E2E tests (requires Playwright installed)
-npm install
-npx playwright test
-
-# Check code quality
-cargo clippy --workspace --all-targets --all-features -- -D warnings
-cargo fmt --all --check
+# Browser tests / service worker build
+npm run test:e2e
+npm run build:sw
 ```
 
 ### Local Development Workflow
 
-1. Run migrations: `cargo run -- migrate`
-2. Start server: `cargo run -- serve` (accessible at http://localhost:3000)
-3. Watch CSS: `npx tailwindcss -i static/css/input.css -o static/css/output.css --watch`
-4. Make changes, server auto-reloads (or use `cargo-watch`)
-5. Run tests frequently: `cargo test`
-6. Format before commit: `cargo fmt --all`
+1. `make migrate` once, then `make dev` (http://localhost:3000, or https://imkitchen.localhost through Traefik after `make up`)
+2. `make css-watch` in another terminal when touching templates
+3. Add events in `crates/types`, handlers and commands in the owning crate, routes in the web crate, templates under `templates/`
+4. If a projection struct changes shape, bump its `.revision(n)`; if an event or nested type must change, add a new variant instead
+5. `make check` before committing
 
 ## Architecture Decision Records (ADRs)
 
 ### ADR-001: Event-Driven Architecture with CQRS
 
-**Decision:** Use evento for event sourcing with separate write/read/validation databases
+**Decision:** Use evento 2 for event sourcing; one SQLite database with a read pool and a single-connection write pool; read models maintained by subscriptions.
 
 **Rationale:**
-- CLAUDE.md standard requires evento + CQRS
-- Separate databases enable independent scaling
-- Event sourcing provides audit trail and time travel
-- Commands enforce business rules, queries optimize for reads
+- Full audit trail of user actions; projections can be rebuilt
+- Commands enforce invariants on the aggregate; reads use purpose-built tables
+- A single file keeps deployment simple and Litestream-replicable
 
 **Consequences:**
-- Eventual consistency between commands and queries
-- Additional complexity vs traditional CRUD
-- Requires careful event schema design
+- Read models are eventually consistent; pages that must be immediately consistent read the aggregate (see ADR-004)
+- Event shapes are a public contract (see ADR-002)
 
 ---
 
-### ADR-002: Pure Rust Meal Planning Algorithm
+### ADR-002: Frozen Persisted Shapes (`events.lock`)
 
-**Decision:** Implement generation algorithm in pure Rust, in-memory, with deterministic performance
+**Decision:** Encode events and snapshots with bitcode and guard every persisted shape with evento-lock in `events.lock` and `tests/events_lock.rs`.
 
 **Rationale:**
-- <5s P95 requirement demands predictable performance
-- Complex constraints (dietary, cuisine variety, pairing) need algorithmic control
-- In-memory processing with <100 recipes is feasible
-- Easier to test and profile than SQL-based approach
+- bitcode is positional: adding or removing a field makes every stored occurrence undecodable
+- A failing test is cheaper than a corrupted event log
 
 **Consequences:**
-- Algorithm lives in application code (not database)
-- Need to load favorited recipes into memory
-- Simpler performance profiling and optimization
+- Event and nested-type lines are append-only; evolving a concept means adding a variant (`MealPreferences::RecipeTypesChanged`)
+- Projection changes require a `.revision(n)` bump, which invalidates snapshots and replays events
+- Legacy declarations (`MealPlan`, `Shopping::Generated`, `Shopping::RecipeSetGenerated`) stay in the code for as long as the event log contains them
 
 ---
 
-### ADR-003: Recipe Snapshots in Separate Table
+### ADR-003: The Recipe List Replaces the Calendar Meal Plan
 
-**Decision:** Store recipe snapshots in separate table, not embedded in events
+**Decision:** Remove weeks, day slots and the scheduler. Model the user's current cooking intent as one ordered list of recipes in the `Shopping` aggregate, generated on demand and edited one recipe at a time.
 
 **Rationale:**
-- Events stay lightweight (only reference snapshot IDs)
-- Query performance better with separate indexed table
-- Can deduplicate identical snapshots across weeks
-- Easier to query historical meal plans
+- Users cook from a list, not a timetable; a date-bound plan went stale as soon as a day was skipped
+- One aggregate per user keeps list, ingredient checks and cooking statuses consistent in a single event stream
+- Generation becomes a pure selection problem over the candidate pool with no time dimension
 
 **Consequences:**
-- Two-phase write (snapshot table + event)
-- Need to manage snapshot lifecycle
-- Calendar queries join with snapshots table
+- m0015 dropped `meal_plan_slot`, `shopping_slot`, `shopping_list`; `meal_plan_recipe` survives as the candidate pool and keeps the `"mealplan-command"` subscriber key for cursor continuity
+- `/kitchen/{date}` and `/menu/{date}` bookmarks permanently redirect to `/`
+- Events carry the full new list and merged ingredients so rebuilds stay cheap
 
 ---
 
-### ADR-004: Centralized Access Control Service
+### ADR-004: Synchronous List Reads from the Aggregate
 
-**Decision:** Create `AccessControlService` with methods like `can_view_week()`, `can_add_favorite()`
+**Decision:** The kitchen and groceries pages call `shopping.state()` (projection + `shopping_recipe` lookup) instead of a dedicated read-model table.
 
 **Rationale:**
-- Single source of truth for freemium logic
-- Fine-grained control (not just route-level)
-- Easy to test tier restrictions in isolation
-- Consistent enforcement across features
+- A generate, add, remove or toggle must be visible on the very next render; polling a lagging projection produced flicker and stale lists
+- The per-user list is small, so recomputing the merged ingredients per request is cheap
 
 **Consequences:**
-- Must remember to call service in all relevant code
-- Service becomes critical dependency
-- Changes to access logic centralized
+- No `shopping_list` table or subscription to maintain (dropped in m0015)
+- The ingredient scaling rule (`scale_quantity`) is applied at read time with the user's current household size
 
 ---
 
-### ADR-005: Streaming Parser for Recipe Import
+### ADR-005: Candidate Pool and Per-Recipe Ingredient Tables
 
-**Decision:** Use tokio tasks with streaming JSON parser for 10MB file uploads
+**Decision:** Keep two small recipe-event-driven tables for generation: `meal_plan_recipe` (what can be picked, with the fields the picker filters on) and `shopping_recipe` (authored household size and bitcode ingredients).
 
 **Rationale:**
-- Memory efficiency (constant memory, not 200MB spike)
-- Can yield progress updates during parse
-- Detect oversized payloads early
-- Handles 20 concurrent files safely
+- Generation needs random, dietary-filtered sampling per course type, which SQLite does well with `ORDER BY random()` and `json_each`
+- Merging needs each recipe's authored serving size; storing it next to the ingredients avoids joining the full recipe view
 
 **Consequences:**
-- Slightly more complex than loading entire file
-- Need to implement progress tracking
-- Must handle partial failures gracefully
+- Both tables are rebuilt from the event log if their subscription cursor is reset
+- Saved community recipes are copied into the user's pool on `Favorite::Saved` and removed on `Unsaved`
 
 ---
 
-### ADR-006: Hybrid Notifications (In-App + Email)
+### ADR-006: Per-Recipe Cooking Cursor
 
-**Decision:** Store reminders in database, show when user opens app, optional email
+**Decision:** Store cooking progress as `RecipeStatus { Idle, Cooking(u8), Completed }` per recipe id inside the `Shopping` aggregate (`RecipeStatusChanged`).
 
 **Rationale:**
-- No Web Push infrastructure needed for MVP
-- Email has universal support
-- In-app reminders work without permissions
-- Can add Web Push post-MVP based on demand
+- Progress belongs to the list entry, not to a date; completed recipes stay in the list, marked, until removed or regenerated
+- Step navigation is a pure function (`next_status`) over the instruction count, testable without I/O
 
 **Consequences:**
-- Not as immediate as push notifications
-- Requires user to open app to see reminder
-- Email may end up in spam
+- Generation resets every status; removal drops the recipe's status
+- The cooking screen partial is rendered from the new status in memory right after the command
 
 ---
 
-### ADR-007: SSR + Progressive Enhancement for PWA
+### ADR-007: SSR + twinspark + PWA
 
-**Decision:** Askama SSR with service worker for offline, no client-side rendering framework
+**Decision:** Askama server rendering with twinspark partial swaps and a Workbox service worker; no client-side framework.
 
 **Rationale:**
-- Perfect SEO (full HTML on first load)
-- Matches CLAUDE.md standard (Askama + Twinspark)
-- Service worker enables offline capability
-- Minimal JavaScript, better performance
+- Full HTML on first load for SEO (recipe pages, chef pages, sitemap)
+- Redirect-then-swap keeps mutation handling in one place on the server
+- Offline shell and install prompt with minimal JavaScript
 
 **Consequences:**
-- Need to write service worker manually
-- Less interactivity than SPA
-- Page transitions require server round-trip
+- Every interaction is a server round trip; partials must be designed per region
+- Demo mode reuses the same templates with mutations swapped for a sign-up modal
 
 ---
 
-### ADR-008: Configurable SMTP with lettre
+### ADR-008: Configurable SMTP with lettre; Stripe for Billing
 
-**Decision:** Use lettre crate with TOML-based SMTP configuration
+**Decision:** Send email through SMTP configured in `[email]`; run premium subscriptions through Stripe with a renewal cron job inside the binary.
 
 **Rationale:**
-- No vendor lock-in (any SMTP provider works)
-- Simple integration, no API dependencies
-- Portable across environments
-- Meets NFR010 (avoid vendor lock-in)
+- No vendor lock-in for email; local MailDev for development
+- Stripe handles payment methods and intents; the only scheduled job left in the system is the renewal check
 
 **Consequences:**
-- Users must configure SMTP credentials
-- Deliverability depends on SMTP provider
-- No built-in email tracking/analytics
+- Deployments must provide SMTP credentials and Stripe keys; omitting `[premium]` turns billing off entirely
 
 ---
 
-_Generated by BMAD Decision Architecture Workflow v1.3_
-_Date: 2025-10-31_
-_For: Jonathan_
+_Updated for the recipe-list architecture (calendar removed, evento 2)._

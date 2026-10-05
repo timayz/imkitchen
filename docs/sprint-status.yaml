@@ -48,39 +48,35 @@ development_status:
 
   # Epic 2: Recipe Management & Import System
   epic-2: backlog
-  2-1-recipe-creation-four-types: drafted
+  2-1-recipe-creation-course-types: drafted
   2-2-recipe-editing-and-deletion: drafted
   2-3-recipe-favorites-system: drafted
   2-4-recipe-json-import-file-upload-and-validation: drafted
   2-5-recipe-json-import-real-time-progress-and-summary: drafted
   2-6-json-schema-documentation: drafted
-  2-7-recipe-snapshot-system-for-meal-plans: drafted
+  2-7-recipe-candidate-pool: drafted
   epic-2-retrospective: optional
 
-  # Epic 3: Core Meal Planning Engine
+  # Epic 3: Recipe List Generation
   epic-3: backlog
-  3-1-basic-meal-plan-generation-algorithm: drafted
-  3-2-month-transition-handling: drafted
-  3-3-current-week-locking: drafted
-  3-4-regeneration-with-confirmation: drafted
-  3-5-dietary-restriction-filtering: drafted
-  3-6-cuisine-variety-scheduling: drafted
-  3-7-accompaniment-pairing-system: drafted
-  3-8-recipe-snapshot-integration: drafted
-  3-9-empty-slot-handling: drafted
-  3-10-algorithm-performance-optimization: drafted
+  3-1-basic-recipe-list-generation: drafted
+  3-2-regeneration-replaces-the-list: drafted
+  3-3-dietary-restriction-filtering: drafted
+  3-4-cuisine-variety-weight: drafted
+  3-5-optional-course-types: drafted
+  3-6-accompaniment-pairing: drafted
+  3-7-manual-add-and-remove: drafted
+  3-8-household-size-scaling: drafted
   epic-3-retrospective: optional
 
-  # Epic 4: Calendar Visualization & Shopping Lists
+  # Epic 4: Kitchen, Cooking Mode & Groceries
   epic-4: backlog
-  4-1-monthly-calendar-view: drafted
-  4-2-week-carousel-navigation-mobile: drafted
-  4-3-dashboard-with-nearest-day-display: drafted
-  4-4-freemium-calendar-restrictions-first-week-only: drafted
-  4-5-dashboard-freemium-restrictions: drafted
-  4-6-shopping-list-generation-per-week: drafted
-  4-7-shopping-list-access-current-and-future-weeks: drafted
-  4-8-empty-slot-community-recipe-links: drafted
+  4-1-kitchen-page-home: drafted
+  4-2-kitchen-onboarding-states: drafted
+  4-3-prep-ahead-rail: drafted
+  4-4-cooking-mode: drafted
+  4-5-groceries-page: drafted
+  4-6-app-navigation: drafted
   epic-4-retrospective: optional
 
   # Epic 5: Community Features & Freemium Access
@@ -88,7 +84,7 @@ development_status:
   5-1-recipe-sharing-public-private: drafted
   5-2-community-recipe-browse-and-discovery: drafted
   5-3-recipe-rating-system: drafted
-  5-4-freemium-favorite-limit-10-max: drafted
+  5-4-ad-supported-free-tier: drafted
   5-5-upgrade-prompts-multiple-touchpoints: drafted
   5-6-premium-access-control-logic: drafted
   5-7-admin-user-management-panel: drafted
@@ -96,12 +92,11 @@ development_status:
   5-9-recipe-deletion-impact-favorites-cascade: drafted
   epic-5-retrospective: optional
 
-  # Epic 6: Notifications & Landing Page
+  # Epic 6: Landing Page, Pricing & Contact
   epic-6: backlog
-  6-1-advance-preparation-reminders-8-am-daily: backlog
-  6-2-seo-optimized-landing-page: backlog
-  6-3-pricing-page-with-tier-comparison: backlog
-  6-4-public-contact-form: backlog
-  6-5-admin-email-notifications: backlog
-  6-6-home-route-dynamic-routing: backlog
+  6-1-seo-optimized-landing-page: backlog
+  6-2-pricing-page-with-tier-comparison: backlog
+  6-3-public-contact-form: backlog
+  6-4-admin-email-notifications: backlog
+  6-5-home-route-dynamic-routing: backlog
   epic-6-retrospective: optional
