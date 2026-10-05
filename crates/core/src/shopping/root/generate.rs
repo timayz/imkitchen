@@ -1,100 +1,105 @@
 use evento::{Executor, ProjectionAggregate};
-use imkitchen_db::shopping_slot::ShoppingSlot;
-use imkitchen_types::shopping::{Generated, RecipeSetGenerated};
-use sea_query::{Expr, ExprTrait, SqliteQueryBuilder};
-use sea_query_sqlx::SqlxBinder;
-use std::collections::HashSet;
+use imkitchen_types::{recipe::RecipeType, shopping::ListGenerated};
 use validator::Validate;
 
-use super::merge::merge_ingredients;
+use super::{merge::merge_ingredients, pick::Randomize};
 
 #[derive(Validate)]
-pub struct Generate {
-    pub date: u64,
+pub struct GenerateList {
+    /// How many main courses to pick (1..=30).
     #[validate(range(min = 1, max = 30))]
-    pub days: u8,
+    pub count: u8,
     pub household_size: u16,
+    pub randomize: Option<Randomize>,
 }
 
 impl<E: Executor> super::Module<E> {
+    /// Replace the user's list with freshly picked recipes. Checks and cooking
+    /// statuses are reset.
+    ///
+    /// Selection rule:
+    /// 1. up to `count` main courses from the pool (random, filtered by dietary
+    ///    restrictions and sized by `cuisine_variety_weight` when `randomize`
+    ///    is given, otherwise a plain sample). Fewer mains than `count` simply
+    ///    yields a shorter list — a flat list never repeats a recipe;
+    /// 2. for each optional course type enabled in `randomize.recipe_types`
+    ///    (appetizer, accompaniment, dessert, beverage, condiment, in that
+    ///    order), up to `ceil(count / 2)` recipes of that type. Accompaniments
+    ///    are skipped unless at least one picked main accepts one;
+    /// 3. the merged ingredient list is scaled to `household_size`.
     pub async fn generate(
         &self,
-        input: Generate,
+        input: GenerateList,
         request_by: impl Into<String>,
     ) -> crate::Result<()> {
         input.validate()?;
         let request_by = request_by.into();
-        let shopping = self
-            .load(&request_by)
-            .await?
-            .unwrap_or_else(|| super::Shopping {
-                user_id: request_by.to_owned(),
-                checked: Default::default(),
-                ingredients: Default::default(),
-                recipes: Default::default(),
-                cursor: Default::default(),
-                aggregate_version: Default::default(),
-                from_date: 0,
-                days: 0,
-                generated_at: 0,
-            });
+        let randomize = input.randomize.as_ref();
 
-        let slots_recipe_ids = self
-            .filter_slot_recipe_ids(input.date, &request_by, input.days.into())
-            .await?;
+        let mut mains = match randomize {
+            Some(opts) => {
+                self.random(
+                    &request_by,
+                    RecipeType::MainCourse,
+                    opts.cuisine_variety_weight,
+                    opts.dietary_restrictions.to_vec(),
+                )
+                .await?
+            }
+            None => {
+                self.sample_recipes(&request_by, RecipeType::MainCourse)
+                    .await?
+            }
+        };
+
+        if mains.is_empty() {
+            crate::user!("No main course found");
+        }
+
+        mains.truncate(input.count as usize);
+        let accepts_accompaniment = mains.iter().any(|r| r.accepts_accompaniment);
+        let per_type = (input.count as usize).div_ceil(2);
+
+        let mut recipe_ids: Vec<String> = mains.into_iter().map(|r| r.id).collect();
+
+        for recipe_type in [
+            RecipeType::Appetizer,
+            RecipeType::Accompaniment,
+            RecipeType::Dessert,
+            RecipeType::Beverage,
+            RecipeType::Condiment,
+        ] {
+            if recipe_type == RecipeType::Accompaniment && !accepts_accompaniment {
+                continue;
+            }
+
+            let picked = self
+                .optional_pool(&request_by, recipe_type, randomize)
+                .await?;
+
+            for recipe in picked.into_iter().take(per_type) {
+                if !recipe_ids.contains(&recipe.id) {
+                    recipe_ids.push(recipe.id);
+                }
+            }
+        }
 
         let recipe_ingredients = self
-            .filter_recipe_ingredients_by_ids(slots_recipe_ids.clone())
+            .filter_recipe_ingredients_by_ids(recipe_ids.clone())
             .await?;
-
         let ingredients = merge_ingredients(recipe_ingredients, input.household_size);
 
-        shopping
+        self.load_or_empty(&request_by)
+            .await?
             .write()?
-            .event(&Generated {
+            .event(&ListGenerated {
+                recipe_ids,
                 ingredients,
-                from_date: input.date,
-                days: input.days,
-            })
-            .event(&RecipeSetGenerated {
-                recipe_ids: slots_recipe_ids,
             })
             .requested_by(request_by)
             .commit(&self.executor)
             .await?;
 
         Ok(())
-    }
-
-    async fn filter_slot_recipe_ids(
-        &self,
-        date: u64,
-        user_id: impl Into<String>,
-        limit: u64,
-    ) -> anyhow::Result<Vec<String>> {
-        let user_id = user_id.into();
-        let statement = sea_query::Query::select()
-            .column(ShoppingSlot::RecipeIds)
-            .from(ShoppingSlot::Table)
-            .and_where(Expr::col(ShoppingSlot::UserId).eq(&user_id))
-            .and_where(Expr::col(ShoppingSlot::Date).gte(date))
-            .limit(limit)
-            .to_owned();
-
-        let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-
-        Ok(
-            sqlx::query_as_with::<_, (evento::sql_types::Bitcode<Vec<String>>,), _>(
-                sqlx::AssertSqlSafe(sql),
-                values,
-            )
-            .fetch_all(&self.read_db)
-            .await?
-            .into_iter()
-            .flat_map(|ids| ids.0.0)
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .collect(),
-        )
     }
 }

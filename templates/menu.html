@@ -1,420 +1,94 @@
 {% extends "_user.html" %}
 {% block title %}{{ "Menu"|t }} - imkitchen{% endblock %}
+
 {% block content %}
 {% let demo = ""|is_demo %}
+{% let on_recipes = tab == MenuTab::Recipes %}
+{# ── Per-aisle accent + active-node styles (groceries tab). ── #}
+<style>
+  .route-node .route-bubble { background-color: var(--color-cream-2); }
+  .route-node.is-done .route-bubble { background-color: color-mix(in srgb, var(--aisle) 14%, transparent); opacity: 0.7; }
+  .route-node.is-active .route-bubble { background-color: var(--aisle); color: #fff; box-shadow: 0 0 0 2px var(--color-paper), 0 0 0 4px var(--aisle); }
+  .route-node.is-active .route-label { color: var(--aisle); }
+  .aisle-fill { background-color: var(--aisle); }
+</style>
+
 <div class="container mx-auto px-4 py-6">
 
-  {# ── Header — eyebrow + serif title + month nav ── #}
+  {# ── Header — eyebrow + serif title + actions ─────────────────── #}
   <header class="flex items-start justify-between gap-3 mb-3">
     <div class="min-w-0">
       <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Menu"|t }}</div>
-      <h1 class="font-serif text-3xl md:text-4xl leading-none tracking-tight text-ink mt-1 truncate">
-        {{ first_month_day|month_year(first_month_day) }}
+      <h1 class="font-serif text-3xl md:text-4xl leading-none tracking-tight text-ink mt-1">
+        {{ "Your list"|t }}
       </h1>
-    </div>
-    <div class="flex items-center gap-1.5 shrink-0">
-      {# Desktop-only Regenerate/Generate inline with header #}
-      {% if !is_past %}
-      {% if selected_slot.is_some() %}
-      <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/menu/{{ current_date }}/generate{% endif %}" ts-target="body" ts-swap="append"
-        class="hidden md:inline-flex items-center gap-1.5 px-3 h-9 bg-meal-main-soft text-meal-main-ink font-semibold rounded-xl text-xs hover:opacity-90 transition mr-1.5">
-        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
-        {{ "Regenerate plan"|t }}
-      </button>
-      {% else %}
-      <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/menu/{{ current_date }}/generate{% endif %}" ts-target="body" ts-swap="append"
-        class="hidden md:inline-flex items-center gap-1.5 px-3 h-9 bg-primary-500 text-white font-semibold rounded-xl text-xs hover:bg-primary-600 shadow-sm transition mr-1.5">
-        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
-        {{ "Generate plan"|t }}
-      </button>
+      {% if !recipes.is_empty() %}
+      <p class="text-[11px] font-mono text-ink-3 mt-2">
+        {{ recipes.len() }} {% if recipes.len() == 1 %}{{ "recipe"|t }}{% else %}{{ "recipes"|t }}{% endif %}
+        · {{ cooked_count }} {{ "cooked"|t }}
+        · {{ checked_items }}/{{ total_items }} {{ "items"|t }}
+      </p>
       {% endif %}
-      {% endif %}
-      <a href="{{ "/menu/"|demo_href }}{{ prev_month }}" aria-label="{{ "Previous"|t }}"
-        class="w-9 h-9 rounded-xl border border-line bg-paper text-ink-2 hover:text-ink hover:bg-cream-2 flex items-center justify-center transition">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
-      </a>
-      <a href="{{ "/menu/"|demo_href }}{{ next_month }}" aria-label="{{ "Next"|t }}"
-        class="w-9 h-9 rounded-xl border border-line bg-paper text-ink-2 hover:text-ink hover:bg-cream-2 flex items-center justify-center transition">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-      </a>
     </div>
+
+    {# Desktop-only Generate button #}
+    <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/menu/generate{% endif %}" ts-target="body" ts-swap="append"
+      class="hidden md:inline-flex items-center gap-1.5 px-3 h-9 {% if recipes.is_empty() %}bg-primary-500 text-white hover:bg-primary-600{% else %}bg-meal-main-soft text-meal-main-ink hover:opacity-90{% endif %} font-semibold rounded-xl text-xs shadow-sm transition shrink-0">
+      <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
+      {% if recipes.is_empty() %}{{ "Generate"|t }}{% else %}{{ "Regenerate"|t }}{% endif %}
+    </button>
   </header>
 
-  {# ── Mobile-only action bar — full-width Generate/Regenerate ── #}
-  {% if !is_past %}
-  <div class="flex gap-2 mb-3 md:hidden">
-    {% if selected_slot.is_some() %}
-    <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/menu/{{ current_date }}/generate{% endif %}" ts-target="body" ts-swap="append"
-      class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-meal-main-soft text-meal-main-ink font-semibold rounded-xl text-sm hover:opacity-90 transition">
-      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
-      {{ "Regenerate plan"|t }}
-    </button>
-    {% else %}
-    <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/menu/{{ current_date }}/generate{% endif %}" ts-target="body" ts-swap="append"
-      class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-semibold rounded-xl text-sm hover:bg-primary-600 shadow-sm transition">
-      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
-      {{ "Generate plan"|t }}
-    </button>
-    {% endif %}
-  </div>
+  {# Mobile-only Generate button #}
+  <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/menu/generate{% endif %}" ts-target="body" ts-swap="append"
+    class="md:hidden w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 mb-3 {% if recipes.is_empty() %}bg-primary-500 text-white hover:bg-primary-600{% else %}bg-meal-main-soft text-meal-main-ink hover:opacity-90{% endif %} font-semibold rounded-xl text-sm shadow-sm transition">
+    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
+    {% if recipes.is_empty() %}{{ "Generate recipes"|t }}{% else %}{{ "Regenerate recipes"|t }}{% endif %}
+  </button>
+
+  {# ── Tab bar — Recipes | Groceries ─────────────────────────────── #}
+  <nav class="flex gap-1 p-1 bg-paper rounded-2xl border border-line-2 shadow-sm mb-4">
+    <a href="{{ "/menu"|demo_href }}"
+      class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition {% if on_recipes %}bg-ink text-cream{% else %}text-ink-2 hover:bg-cream{% endif %}">
+      <span>🍽️</span>
+      {{ "Recipes"|t }}
+      <span class="text-[10px] font-mono {% if on_recipes %}text-cream/80{% else %}text-ink-3{% endif %}">{{ recipes.len() }}</span>
+    </a>
+    <a href="{{ "/menu/groceries"|demo_href }}"
+      class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition {% if !on_recipes %}bg-ink text-cream{% else %}text-ink-2 hover:bg-cream{% endif %}">
+      <span>🧺</span>
+      {{ "Groceries"|t }}
+      <span class="text-[10px] font-mono {% if !on_recipes %}text-cream/80{% else %}text-ink-3{% endif %}">{{ checked_items }}/{{ total_items }}</span>
+    </a>
+  </nav>
+
+  {% if on_recipes %}
+  {% include "partials/menu-recipes.html" %}
+  {% else %}
+  {% include "partials/menu-groceries.html" %}
   {% endif %}
-
-  {# ── Desktop: stacked week boards covering the whole month ── #}
-  <div class="hidden lg:block space-y-3">
-    {# Weekday headers — once at the top #}
-    <div class="grid grid-cols-7 gap-3 px-3">
-      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Mon"|t }}</div>
-      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Tue"|t }}</div>
-      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Wed"|t }}</div>
-      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Thu"|t }}</div>
-      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Fri"|t }}</div>
-      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Sat"|t }}</div>
-      <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Sun"|t }}</div>
-    </div>
-
-    {% for week in board_weeks %}
-    <div class="grid grid-cols-7 gap-3">
-      {% for d in week %}
-      <div
-        class="block rounded-2xl border p-3 min-h-[240px] flex flex-col gap-2
-          {% if d.is_today %}bg-primary-50 border-primary-200
-          {% else if !d.is_in_month %}bg-transparent border-line-2/40 opacity-50
-          {% else %}bg-cream-2/40 border-line-2{% endif %}">
-
-        {# Day header — weekday + day number + meal count #}
-        <div class="flex items-baseline justify-between pb-1">
-          <div>
-            <div class="font-serif text-2xl leading-none tracking-tight {% if d.is_today %}text-primary-700{% else %}text-ink{% endif %}">
-              {{ d.day_num }}
-            </div>
-          </div>
-          {% if let Some(slot) = d.slot %}
-          <div class="text-[10px] font-mono text-ink-3">
-            {% let count = 1 + slot.appetizer.is_some() as u8 + slot.accompaniment.is_some() as u8 + slot.dessert.is_some() as u8 + slot.beverage.is_some() as u8 + slot.condiment.is_some() as u8 %}
-            {{ count }}
-          </div>
-          {% endif %}
-        </div>
-
-        {# Meal cards stacked, compact WebMealCard style #}
-        {% if let Some(slot) = d.slot %}
-        <div class="flex flex-col gap-1.5 flex-1">
-          {% if let Some(appetizer) = slot.appetizer %}
-          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(appetizer.id.as_str()) }}"
-            class="block bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-entree p-2 shadow-sm hover:bg-cream/30 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="text-base leading-none">🥗</span>
-              <div class="min-w-0 flex-1">
-                <div class="text-[9px] font-mono font-semibold tracking-widest uppercase text-meal-entree-ink">{{ "Starter"|t }}</div>
-              </div>
-            </div>
-            <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ appetizer.name }}</div>
-          </a>
-          {% endif %}
-
-          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(slot.main_course.id.as_str()) }}"
-            class="block bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-main p-2 shadow-sm hover:bg-cream/30 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="text-base leading-none">🍛</span>
-              <div class="min-w-0 flex-1">
-                <div class="text-[9px] font-mono font-semibold tracking-widest uppercase text-meal-main-ink">{{ "Main"|t }}</div>
-              </div>
-            </div>
-            <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ slot.main_course.name }}</div>
-          </a>
-
-          {% if let Some(accompaniment) = slot.accompaniment %}
-          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(accompaniment.id.as_str()) }}"
-            class="block bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-side p-2 shadow-sm hover:bg-cream/30 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="text-base leading-none">🥖</span>
-              <div class="min-w-0 flex-1">
-                <div class="text-[9px] font-mono font-semibold tracking-widest uppercase text-meal-side-ink">{{ "Side"|t }}</div>
-              </div>
-            </div>
-            <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ accompaniment.name }}</div>
-          </a>
-          {% endif %}
-
-          {% if let Some(dessert) = slot.dessert %}
-          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(dessert.id.as_str()) }}"
-            class="block bg-paper rounded-lg border border-line-2 border-l-4 border-l-meal-dessert p-2 shadow-sm hover:bg-cream/30 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="text-base leading-none">🍰</span>
-              <div class="min-w-0 flex-1">
-                <div class="text-[9px] font-mono font-semibold tracking-widest uppercase text-meal-dessert-ink">{{ "Dessert"|t }}</div>
-              </div>
-            </div>
-            <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ dessert.name }}</div>
-          </a>
-          {% endif %}
-
-          {% if let Some(beverage) = slot.beverage %}
-          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(beverage.id.as_str()) }}"
-            class="block bg-paper rounded-lg border border-line-2 border-l-4 border-l-cyan-500 p-2 shadow-sm hover:bg-cream/30 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="text-base leading-none">🥤</span>
-              <div class="min-w-0 flex-1">
-                <div class="text-[9px] font-mono font-semibold tracking-widest uppercase text-cyan-900">{{ "Drink"|t }}</div>
-              </div>
-            </div>
-            <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ beverage.name }}</div>
-          </a>
-          {% endif %}
-
-          {% if let Some(condiment) = slot.condiment %}
-          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(condiment.id.as_str()) }}"
-            class="block bg-paper rounded-lg border border-line-2 border-l-4 border-l-amber-500 p-2 shadow-sm hover:bg-cream/30 transition">
-            <div class="flex items-center gap-1.5">
-              <span class="text-base leading-none">🥫</span>
-              <div class="min-w-0 flex-1">
-                <div class="text-[9px] font-mono font-semibold tracking-widest uppercase text-amber-900">{{ "Sauce"|t }}</div>
-              </div>
-            </div>
-            <div class="text-[11px] font-semibold text-ink mt-1 leading-snug">{{ condiment.name }}</div>
-          </a>
-          {% endif %}
-        </div>
-        {% else %}
-        {# Empty day cell — only shown for in-month days #}
-        <div class="flex-1 flex items-center justify-center min-h-16">
-          <div class="text-[11px] font-mono text-ink-3 opacity-50">—</div>
-        </div>
-        {% endif %}
-      </div>
-      {% endfor %}
-    </div>
-    {% endfor %}
-  </div>
-
-  {# ── Mobile: Calendar (full) + Sidebar ── #}
-  <div class="lg:hidden grid lg:grid-cols-5 lg:gap-6">
-    <div class="lg:col-span-2 min-w-0">
-
-      {# ── Calendar card — aspect-square dot-chord grid ── #}
-      <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-3 md:p-4">
-        {# Weekday headers — single letters #}
-        <div class="grid grid-cols-7 gap-0.5 mb-1.5">
-          <div class="text-center text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 py-1">{{ "Mon"|t }}</div>
-          <div class="text-center text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 py-1">{{ "Tue"|t }}</div>
-          <div class="text-center text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 py-1">{{ "Wed"|t }}</div>
-          <div class="text-center text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 py-1">{{ "Thu"|t }}</div>
-          <div class="text-center text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 py-1">{{ "Fri"|t }}</div>
-          <div class="text-center text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 py-1">{{ "Sat"|t }}</div>
-          <div class="text-center text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 py-1">{{ "Sun"|t }}</div>
-        </div>
-
-        {# Day cells — aspect-square, no borders #}
-        <div class="grid grid-cols-7 gap-1">
-          {% for m_slot in slots %}
-          {% if let Some(slot) = m_slot.slot %}
-          {% let is_selected = slot.day == selected_day %}
-          <a href="{{ "/menu/"|demo_href }}{{ slot.day|yyyymmdd }}"
-            class="aspect-square md:max-w-14 md:mx-auto rounded-xl flex flex-col items-center justify-between p-1.5 transition {% if is_selected %}bg-ink text-cream{% else %}text-ink hover:bg-cream-2{% endif %}">
-            <div class="font-serif text-base leading-none mt-1 tracking-tight">{{ m_slot.day }}</div>
-            <div class="flex justify-center items-center gap-0.5 mb-0.5 min-h-[6px]">
-              {% if slot.appetizer.is_some() %}
-              <span class="w-1 h-1 rounded-full {% if is_selected %}bg-cream/70{% else %}bg-meal-entree{% endif %}"></span>
-              {% endif %}
-              <span class="w-1 h-1 rounded-full {% if is_selected %}bg-cream/70{% else %}bg-meal-main{% endif %}"></span>
-              {% if slot.accompaniment.is_some() %}
-              <span class="w-1 h-1 rounded-full {% if is_selected %}bg-cream/70{% else %}bg-meal-side{% endif %}"></span>
-              {% endif %}
-              {% if slot.dessert.is_some() %}
-              <span class="w-1 h-1 rounded-full {% if is_selected %}bg-cream/70{% else %}bg-meal-dessert{% endif %}"></span>
-              {% endif %}
-              {% if slot.beverage.is_some() %}
-              <span class="w-1 h-1 rounded-full {% if is_selected %}bg-cream/70{% else %}bg-cyan-500{% endif %}"></span>
-              {% endif %}
-              {% if slot.condiment.is_some() %}
-              <span class="w-1 h-1 rounded-full {% if is_selected %}bg-cream/70{% else %}bg-amber-500{% endif %}"></span>
-              {% endif %}
-            </div>
-          </a>
-          {% else %}
-          <div class="aspect-square md:max-w-14 md:mx-auto rounded-xl flex items-start justify-center p-1.5 opacity-40">
-            <div class="font-serif text-base leading-none mt-1 tracking-tight text-ink-3">{{ m_slot.day }}</div>
-          </div>
-          {% endif %}
-          {% endfor %}
-        </div>
-      </div>
-
-      {# ── Legend — dots centered ── #}
-      <div class="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-3 mb-4 text-xs text-ink-2">
-        <span class="inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-meal-entree"></span>{{ "Starter"|t }}</span>
-        <span class="inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-meal-main"></span>{{ "Main"|t }}</span>
-        <span class="inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-meal-side"></span>{{ "Side"|t }}</span>
-        <span class="inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-meal-dessert"></span>{{ "Dessert"|t }}</span>
-      </div>
-    </div>
-
-    {# ── Day detail panel ── #}
-    <aside class="mt-4 lg:mt-0 lg:col-span-3 min-w-0">
-      {% if let Some(slot) = selected_slot %}
-      <div class="lg:sticky lg:top-4 space-y-3">
-
-        {# Day header — serif day-of-week + time pill #}
-        <div class="flex items-center gap-2">
-          <h2 class="font-serif text-2xl leading-tight tracking-tight text-ink min-w-0 truncate">{{ slot.day|day }}</h2>
-          <div class="flex-1"></div>
-          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cream-2 text-xs text-ink-2 shrink-0">
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            {{ &slot.prep_time()|minutes }}
-          </span>
-        </div>
-
-        {# Meal cards — 4px left border by type. Mobile: horizontal row stack.
-           Desktop: 2-col grid of vertical cards matching WebMealCard from the mock. #}
-        <div class="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3">
-          {% if let Some(appetizer) = slot.appetizer %}
-          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(appetizer.id.as_str()) }}"
-            class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-entree shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
-            <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
-              <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-entree-soft">🥗</div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5 lg:flex-col lg:items-start lg:gap-0.5">
-                  <span class="text-[10px] font-mono font-semibold tracking-widest uppercase text-meal-entree-ink">{{ "Appetizer"|t }}</span>
-                  <span class="text-[11px] text-ink-3 lg:hidden">·</span>
-                  <span class="text-[11px] font-mono text-ink-3">{{ &appetizer.total_prep_time()|minutes }}</span>
-                </div>
-                <div class="text-sm lg:hidden font-semibold text-ink mt-0.5 truncate">{{ appetizer.name }}</div>
-                {% if !appetizer.advance_prep.is_empty() %}
-                <div class="text-[11px] text-amber-700 mt-0.5 lg:hidden">⏰ {{ "Prep in AM"|t }}</div>
-                {% endif %}
-              </div>
-            </div>
-            <div class="hidden lg:block text-base font-semibold text-ink leading-snug">{{ appetizer.name }}</div>
-            {% if !appetizer.advance_prep.is_empty() %}
-            <div class="hidden lg:block text-xs text-amber-700 mt-1.5">⏰ {{ "Prep in AM"|t }}</div>
-            {% endif %}
-          </a>
-          {% endif %}
-
-          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(slot.main_course.id.as_str()) }}"
-            class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-main shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
-            <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
-              <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-main-soft">🍛</div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5 lg:flex-col lg:items-start lg:gap-0.5">
-                  <span class="text-[10px] font-mono font-semibold tracking-widest uppercase text-meal-main-ink">{{ "Main course"|t }}</span>
-                  <span class="text-[11px] text-ink-3 lg:hidden">·</span>
-                  <span class="text-[11px] font-mono text-ink-3">{{ &slot.main_course.total_prep_time()|minutes }}</span>
-                </div>
-                <div class="text-sm lg:hidden font-semibold text-ink mt-0.5 truncate">{{ slot.main_course.name }}</div>
-                {% if !slot.main_course.advance_prep.is_empty() %}
-                <div class="text-[11px] text-amber-700 mt-0.5 lg:hidden">⏰ {{ "Prep in AM"|t }}</div>
-                {% endif %}
-              </div>
-            </div>
-            <div class="hidden lg:block text-base font-semibold text-ink leading-snug">{{ slot.main_course.name }}</div>
-            {% if !slot.main_course.advance_prep.is_empty() %}
-            <div class="hidden lg:block text-xs text-amber-700 mt-1.5">⏰ {{ "Prep in AM"|t }}</div>
-            {% endif %}
-          </a>
-
-          {% if let Some(accompaniment) = slot.accompaniment %}
-          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(accompaniment.id.as_str()) }}"
-            class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-side shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
-            <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
-              <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-side-soft">🥖</div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5 lg:flex-col lg:items-start lg:gap-0.5">
-                  <span class="text-[10px] font-mono font-semibold tracking-widest uppercase text-meal-side-ink">{{ "Accompaniment"|t }}</span>
-                  <span class="text-[11px] text-ink-3 lg:hidden">·</span>
-                  <span class="text-[11px] font-mono text-ink-3">{{ &accompaniment.total_prep_time()|minutes }}</span>
-                </div>
-                <div class="text-sm lg:hidden font-semibold text-ink mt-0.5 truncate">{{ accompaniment.name }}</div>
-                {% if !accompaniment.advance_prep.is_empty() %}
-                <div class="text-[11px] text-amber-700 mt-0.5 lg:hidden">⏰ {{ "Prep in AM"|t }}</div>
-                {% endif %}
-              </div>
-            </div>
-            <div class="hidden lg:block text-base font-semibold text-ink leading-snug">{{ accompaniment.name }}</div>
-            {% if !accompaniment.advance_prep.is_empty() %}
-            <div class="hidden lg:block text-xs text-amber-700 mt-1.5">⏰ {{ "Prep in AM"|t }}</div>
-            {% endif %}
-          </a>
-          {% endif %}
-
-          {% if let Some(dessert) = slot.dessert %}
-          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(dessert.id.as_str()) }}"
-            class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-meal-dessert shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
-            <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
-              <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-meal-dessert-soft">🍰</div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5 lg:flex-col lg:items-start lg:gap-0.5">
-                  <span class="text-[10px] font-mono font-semibold tracking-widest uppercase text-meal-dessert-ink">{{ "Dessert"|t }}</span>
-                  <span class="text-[11px] text-ink-3 lg:hidden">·</span>
-                  <span class="text-[11px] font-mono text-ink-3">{{ &dessert.total_prep_time()|minutes }}</span>
-                </div>
-                <div class="text-sm lg:hidden font-semibold text-ink mt-0.5 truncate">{{ dessert.name }}</div>
-                {% if !dessert.advance_prep.is_empty() %}
-                <div class="text-[11px] text-amber-700 mt-0.5 lg:hidden">⏰ {{ "Prep in AM"|t }}</div>
-                {% endif %}
-              </div>
-            </div>
-            <div class="hidden lg:block text-base font-semibold text-ink leading-snug">{{ dessert.name }}</div>
-            {% if !dessert.advance_prep.is_empty() %}
-            <div class="hidden lg:block text-xs text-amber-700 mt-1.5">⏰ {{ "Prep in AM"|t }}</div>
-            {% endif %}
-          </a>
-          {% endif %}
-
-          {% if let Some(beverage) = slot.beverage %}
-          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(beverage.id.as_str()) }}"
-            class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-cyan-500 shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
-            <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
-              <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-cyan-100">🥤</div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5 lg:flex-col lg:items-start lg:gap-0.5">
-                  <span class="text-[10px] font-mono font-semibold tracking-widest uppercase text-cyan-900">{{ "Beverage"|t }}</span>
-                  <span class="text-[11px] text-ink-3 lg:hidden">·</span>
-                  <span class="text-[11px] font-mono text-ink-3">{{ &beverage.total_prep_time()|minutes }}</span>
-                </div>
-                <div class="text-sm lg:hidden font-semibold text-ink mt-0.5 truncate">{{ beverage.name }}</div>
-              </div>
-            </div>
-            <div class="hidden lg:block text-base font-semibold text-ink leading-snug">{{ beverage.name }}</div>
-          </a>
-          {% endif %}
-
-          {% if let Some(condiment) = slot.condiment %}
-          <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(condiment.id.as_str()) }}"
-            class="block bg-paper rounded-xl lg:rounded-2xl border border-line-2 border-l-4 border-l-amber-500 shadow-sm p-3 lg:p-4 hover:bg-cream/30 transition">
-            <div class="flex items-center gap-3 lg:items-start lg:gap-2.5 lg:mb-2">
-              <div class="w-11 h-11 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center text-xl shrink-0 bg-amber-100">🥫</div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1.5 lg:flex-col lg:items-start lg:gap-0.5">
-                  <span class="text-[10px] font-mono font-semibold tracking-widest uppercase text-amber-900">{{ "Condiment"|t }}</span>
-                  <span class="text-[11px] text-ink-3 lg:hidden">·</span>
-                  <span class="text-[11px] font-mono text-ink-3">{{ &condiment.total_prep_time()|minutes }}</span>
-                </div>
-                <div class="text-sm lg:hidden font-semibold text-ink mt-0.5 truncate">{{ condiment.name }}</div>
-              </div>
-            </div>
-            <div class="hidden lg:block text-base font-semibold text-ink leading-snug">{{ condiment.name }}</div>
-          </a>
-          {% endif %}
-        </div>
-      </div>
-      {% else %}
-      {# ── Empty day card ── #}
-      <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-6 text-center">
-        <div class="text-4xl mb-2.5">🌾</div>
-        <h3 class="font-serif text-lg text-ink mb-1">{{ "No plan for this day yet"|t }}</h3>
-        <p class="text-xs text-ink-3 mb-4">{{ "Generate a weekly plan from your recipes."|t }}</p>
-        {% if !is_past %}
-        <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/menu/{{ current_date }}/generate{% endif %}" ts-target="body" ts-swap="append"
-          class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-semibold rounded-xl text-sm hover:bg-primary-600 shadow-sm transition">
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
-          {{ "Generate plan"|t }}
-        </button>
-        {% endif %}
-      </div>
-      {% endif %}
-
-    </aside>
-  </div>
 </div>
+
+{% if !on_recipes && !aisles.is_empty() %}
+<script>
+  function toggleCategory(name) {
+    if (window.matchMedia && window.matchMedia('(min-width: 1024px)').matches) {
+      // Desktop: jump to the section (everything is visible already).
+      var target = document.getElementById('category-' + name);
+      if (target) target.scrollIntoView({behavior: 'smooth', block: 'start'});
+      return;
+    }
+    // Mobile: swap visible section + reskin route nodes via .is-active.
+    document.querySelectorAll('.category-section').forEach(function (el) { el.classList.add('hidden'); });
+    var target = document.getElementById('category-' + name);
+    if (target) target.classList.remove('hidden');
+
+    document.querySelectorAll('.route-node').forEach(function (node) {
+      node.classList.remove('is-active');
+    });
+    var activeNode = document.querySelector('.route-node[data-aisle="' + name + '"]');
+    if (activeNode) activeNode.classList.add('is-active');
+  }
+</script>
+{% endif %}
 {% endblock %}

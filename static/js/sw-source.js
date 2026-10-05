@@ -86,7 +86,6 @@ if (workbox) {
       url.pathname.startsWith('/login') ||
       url.pathname.startsWith('/reset-password') ||
       url.pathname.startsWith('/menu') ||
-      url.pathname.startsWith('/groceries') ||
       url.pathname.startsWith('/recipes') ||
       url.pathname.startsWith('/r/') ||
       url.pathname.startsWith('/logout') ||

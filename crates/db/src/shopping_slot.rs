@@ -15,7 +15,7 @@ pub(crate) mod m0001 {
 
     pub struct CreateTable;
 
-    fn create_table() -> TableCreateStatement {
+    pub(super) fn create_table() -> TableCreateStatement {
         Table::create()
             .table(ShoppingSlot::Table)
             .col(
@@ -57,6 +57,45 @@ pub(crate) mod m0001 {
             connection: &mut sqlx::SqliteConnection,
         ) -> Result<(), sqlx_migrator::Error> {
             let statement = drop_table().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(sqlx::AssertSqlSafe(statement))
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+    }
+}
+
+pub(crate) mod m0015 {
+    use sea_query::Table;
+
+    use super::ShoppingSlot;
+
+    /// The date → recipe-ids index fed by the calendar meal plan; the list generates from the pool instead.
+    pub struct DropTable;
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for DropTable {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let statement = Table::drop()
+                .table(ShoppingSlot::Table)
+                .if_exists()
+                .to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(sqlx::AssertSqlSafe(statement))
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let statement = super::m0001::create_table().to_string(sea_query::SqliteQueryBuilder);
             sqlx::query(sqlx::AssertSqlSafe(statement))
                 .execute(connection)
                 .await?;

@@ -39,7 +39,7 @@ pub async fn scheduler<E: Executor + Clone>(
                 }
 
                 if let Err(err) = l.next_tick_for_job(uuid).await{
-                    tracing::error!(err = %err, "failed to get next tick for auto generate mealplan user weeks");
+                    tracing::error!(err = %err, "failed to get next tick for subscription renewals");
                 }
             })
         })?)

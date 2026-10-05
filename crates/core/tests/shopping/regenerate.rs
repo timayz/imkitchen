@@ -1,43 +1,50 @@
 use crate::helpers;
-use imkitchen_core::shopping::Generate;
+use imkitchen_core::shopping::{ChangeRecipeStatus, GenerateList, ToggleInput};
+use imkitchen_types::shopping::RecipeStatus;
 use temp_dir::TempDir;
 
-/// Regenerating from the meal plan replaces the whole recipe set: manually-added
-/// recipes are dropped and only the meal-plan's recipes remain. (Product
-/// decision: "regenerate clears everything".)
+/// Regenerating replaces the whole list: manually-added recipes are dropped,
+/// checked ingredients and cooking statuses are reset. (Product decision:
+/// "regenerate clears everything".)
 #[tokio::test]
-async fn test_regenerate_replaces_manual_recipes() -> anyhow::Result<()> {
+async fn test_regenerate_replaces_manual_recipes_and_resets_progress() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
     let path = dir.child("db.sqlite3");
     let state = helpers::setup_test_state(path).await?;
     let recipe_cmd = imkitchen_core::recipe::Module::new(state.clone());
     let shopping = imkitchen_core::shopping::Module::new(state.clone());
 
-    let manual = helpers::import_recipe(&recipe_cmd, "Bread", "flour", 500, 4, "john").await?;
-    let planned = helpers::import_recipe(&recipe_cmd, "Cake", "sugar", 200, 4, "john").await?;
+    // The manual recipe belongs to another user, so it is never in john's pool
+    // and can only reach his list by being added by hand.
+    let manual = helpers::import_recipe(&recipe_cmd, "Bread", "flour", 500, 4, "albert").await?;
+    let pooled = helpers::import_recipe(&recipe_cmd, "Cake", "sugar", 200, 4, "john").await?;
     helpers::run_shopping_subscription(&state).await?;
+    helpers::run_pool_subscription(&state).await?;
 
-    // Seed a meal-plan slot for the range (what `generate` reads from).
-    let recipe_ids = bitcode::encode(&vec![planned.clone()]);
-    sqlx::query("INSERT INTO shopping_slot (user_id, date, recipe_ids) VALUES (?, ?, ?)")
-        .bind("john")
-        .bind(20260101_i64)
-        .bind(recipe_ids)
-        .execute(&state.write_db)
+    shopping.add_recipe(&manual, 4, "john").await?;
+    let flour = shopping.state("john", 4).await?.ingredients[0].key();
+    shopping.toggle(ToggleInput { name: flour }, "john").await?;
+    shopping
+        .change_recipe_status(
+            ChangeRecipeStatus {
+                recipe_id: manual.clone(),
+                status: RecipeStatus::Completed,
+            },
+            "john",
+        )
         .await?;
 
-    // Manually add a recipe that is NOT in the plan.
-    shopping.add_recipe(&manual, 4, "john").await?;
     let loaded = shopping.load("john").await?.expect("shopping aggregate");
-    assert!(loaded.recipes.contains(&manual));
+    assert_eq!(loaded.recipes, vec![manual.clone()]);
+    assert_eq!(loaded.checked.len(), 1);
+    assert_eq!(loaded.status(&manual), RecipeStatus::Completed);
 
-    // Regenerate from the plan.
     shopping
         .generate(
-            Generate {
-                date: 20260101,
-                days: 7,
+            GenerateList {
+                count: 7,
                 household_size: 4,
+                randomize: None,
             },
             "john",
         )
@@ -45,11 +52,15 @@ async fn test_regenerate_replaces_manual_recipes() -> anyhow::Result<()> {
 
     let loaded = shopping.load("john").await?.expect("shopping aggregate");
     assert_eq!(
-        loaded.recipes.iter().cloned().collect::<Vec<_>>(),
-        vec![planned],
-        "manual recipe should be dropped, only planned recipe remains"
+        loaded.recipes,
+        vec![pooled],
+        "manual recipe should be dropped, only pooled recipes remain"
     );
-    assert!(!loaded.recipes.contains(&manual));
+    assert!(loaded.checked.is_empty(), "checks reset on regenerate");
+    assert!(
+        loaded.statuses.is_empty(),
+        "cooking statuses reset on regenerate"
+    );
     assert_eq!(loaded.ingredients.len(), 1);
 
     Ok(())

@@ -48,7 +48,7 @@
         <div>{{ "Kitchen"|t }}</div>
         <div
           class="text-[10.5px] font-mono mt-px font-medium tracking-wide opacity-85 {% if current_path == "kitchen" %}text-primary-800{% else %}text-ink-3{% endif %}">
-          {{ "Today & cooking"|t }}
+          {{ "Up next & cooking"|t }}
         </div>
       </div>
       {% if current_path == "kitchen" %}
@@ -76,7 +76,7 @@
         <div>{{ "Menu"|t }}</div>
         <div
           class="text-[10.5px] font-mono mt-px font-medium tracking-wide opacity-85 {% if current_path == "menu" %}text-primary-800{% else %}text-ink-3{% endif %}">
-          {{ "Weekly plan"|t }}
+          {{ "Recipes & groceries"|t }}
         </div>
       </div>
       {% if current_path == "menu" %}
@@ -108,35 +108,6 @@
         </div>
       </div>
       {% if current_path == "recipes" %}
-      <svg class="hidden xl:block w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
-        stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 6l6 6-6 6" />
-      </svg>
-      {% endif %}
-    </a>
-
-    {# Nav: Groceries #}
-    <a href="{{ "/groceries"|demo_href }}"
-      class="flex items-center gap-3 px-0 xl:px-3 py-2.5 rounded-xl text-sm font-medium tracking-tight justify-center xl:justify-start
-        {% if current_path == "groceries" %}bg-primary-100 text-primary-800 font-semibold{% else %}text-ink hover:bg-cream-2{% endif %}"
-      title="{{ "Groceries"|t }}">
-      <div
-        class="w-[30px] h-[30px] rounded-lg flex items-center justify-center shrink-0 {% if current_path == "groceries" %}bg-paper shadow-sm{% endif %}">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
-          stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="9" cy="20" r="1.5" />
-          <circle cx="18" cy="20" r="1.5" />
-          <path d="M3 4h2l2.7 11.3a1 1 0 001 .7h9.6a1 1 0 001-.7L21 8H6" />
-        </svg>
-      </div>
-      <div class="hidden xl:block flex-1 min-w-0">
-        <div>{{ "Groceries"|t }}</div>
-        <div
-          class="text-[10.5px] font-mono mt-px font-medium tracking-wide opacity-85 {% if current_path == "groceries" %}text-primary-800{% else %}text-ink-3{% endif %}">
-          {{ "Groceries & route"|t }}
-        </div>
-      </div>
-      {% if current_path == "groceries" %}
       <svg class="hidden xl:block w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"
         stroke-linecap="round" stroke-linejoin="round">
         <path d="M9 6l6 6-6 6" />
@@ -262,15 +233,6 @@
           </path>
         </svg>
         <span class="text-xs mt-1">{{ "Recipes"|t }}</span>
-      </a>
-      <a href="{{ "/groceries"|demo_href }}" class="flex flex-col items-center py-2 px-3{% if current_path == "groceries"%} text-primary-500{%
-        else %} text-ink-3{% endif %}">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z">
-          </path>
-        </svg>
-        <span class="text-xs mt-1">{{ "Groceries"|t }}</span>
       </a>
       <a href="/settings/general"
         class="flex flex-col items-center py-2 px-3{% if current_path == "settings" %} text-primary-500{% else %} text-ink-3{% endif %}">

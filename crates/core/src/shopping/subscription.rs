@@ -4,9 +4,8 @@ use evento::{
     subscription::{Context, SubscriptionBuilder},
 };
 use imkitchen_db::shopping_recipe::ShoppingRecipe;
-use imkitchen_db::shopping_slot::ShoppingSlot;
 use imkitchen_types::recipe::Ingredient;
-use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
+use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
 
@@ -15,7 +14,6 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .handler(handle_recipe_created())
         .handler(handle_recipe_imported())
         .handler(handle_recipe_deleted())
-        .handler(handle_mealplan_days_generated())
         .handler(handle_recipe_ingredients_changed())
         .handler(handle_recipe_basic_information_changed())
 }
@@ -23,60 +21,6 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
 /// Recipes are authored for this many servings by default (matches the
 /// `recipe_user` projection default).
 const DEFAULT_HOUSEHOLD_SIZE: u16 = 4;
-
-#[evento::subscription]
-async fn handle_mealplan_days_generated<E: Executor>(
-    context: &Context<'_, E>,
-    event: Event<imkitchen_types::mealplan::DaysGenerated>,
-) -> anyhow::Result<()> {
-    let pool = context.extract::<sqlx::SqlitePool>();
-
-    let mut statement = Query::insert()
-        .into_table(ShoppingSlot::Table)
-        .columns([
-            ShoppingSlot::UserId,
-            ShoppingSlot::Date,
-            ShoppingSlot::RecipeIds,
-        ])
-        .to_owned();
-
-    for slot in event.data.slots.iter() {
-        let mut ids = vec![slot.main_course.id.to_owned()];
-
-        if let Some(ref r) = slot.appetizer {
-            ids.push(r.id.to_owned());
-        }
-
-        if let Some(ref r) = slot.dessert {
-            ids.push(r.id.to_owned());
-        }
-
-        if let Some(ref r) = slot.accompaniment {
-            ids.push(r.id.to_owned());
-        }
-
-        let ids = bitcode::encode(&ids);
-
-        statement.values_panic([
-            event.metadata.requested_by()?.into(),
-            slot.date.into(),
-            ids.into(),
-        ]);
-    }
-
-    statement.on_conflict(
-        OnConflict::columns([ShoppingSlot::UserId, ShoppingSlot::Date])
-            .update_column(ShoppingSlot::RecipeIds)
-            .to_owned(),
-    );
-
-    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
-        .execute(&pool)
-        .await?;
-
-    Ok(())
-}
 
 #[evento::subscription]
 async fn handle_recipe_created<E: Executor>(

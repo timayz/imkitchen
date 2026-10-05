@@ -1,43 +1,56 @@
+//! The user's recipe list, in two tabs: the recipes themselves (generate,
+//! add, remove) and the aisle-grouped groceries they need.
+
 use axum::{
-    extract::{Path, State},
+    extract::{Json, Path, State},
     response::{IntoResponse, Redirect},
 };
-use imkitchen_core::mealplan::{Generate, Randomize, slot::SlotRow};
-use time::OffsetDateTime;
+use axum_extra::extract::Form;
+use imkitchen_core::recipe::query::user::RecipeCard;
+use imkitchen_core::shopping::{GenerateList, Randomize, ToggleInput};
+use imkitchen_types::recipe::{Ingredient, IngredientUnitFormat, RecipeType};
+use imkitchen_types::shopping::RecipeStatus;
+use serde::Deserialize;
+use std::collections::{HashMap, HashSet};
 
 use imkitchen_web_shared::{
-    AppState,
     auth::AuthUser,
-    template::{Status as TemplateStatus, Template, filters},
+    state::AppState,
+    template::{Template, filters},
 };
 
-pub struct MenuSlot {
-    pub day: u8,
-    pub slot: Option<SlotRow>,
+pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
+    use axum::routing::{get, post};
+    axum::Router::new()
+        .route("/menu", get(page))
+        .route("/menu/groceries", get(groceries_page))
+        .route("/menu/generate", get(generate_modal).post(generate_action))
+        .route("/menu/toggle", post(toggle_action))
+        .route("/menu/recipe/{id}/remove", post(remove_recipe_action))
+        // Calendar-era `/menu/{date}` bookmarks.
+        .route("/menu/{legacy}", get(legacy_menu_redirect))
+        .route("/groceries", get(legacy_groceries_redirect))
 }
 
-#[derive(Default, Clone)]
-pub struct MenuBoardDay {
-    pub date: String,
-    pub weekday: String,
-    pub day_num: u8,
-    pub is_today: bool,
-    pub is_past: bool,
-    pub is_in_month: bool,
-    pub slot: Option<SlotRow>,
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum MenuTab {
+    Recipes,
+    Groceries,
 }
 
-#[derive(askama::Template)]
-#[template(path = "partials/menu-regenerate-modal.html")]
-pub struct GenerateModalTemplate {
-    pub date: String,
+/// A recipe in the list together with its cooking status.
+pub struct ListRecipe {
+    pub card: RecipeCard,
+    pub status: RecipeStatus,
 }
 
-#[derive(askama::Template)]
-#[template(path = "partials/menu-generate-button.html")]
-pub struct GenerateButtonTemplate {
-    pub date: String,
-    pub status: TemplateStatus,
+pub struct AisleSection {
+    pub name: String,
+    pub items: Vec<Ingredient>,
+    pub checked: usize,
+    pub total: usize,
+    pub done: bool,
+    pub pct: usize,
 }
 
 #[derive(askama::Template)]
@@ -45,26 +58,17 @@ pub struct GenerateButtonTemplate {
 pub struct MenuTemplate {
     pub current_path: String,
     pub user: AuthUser,
-    pub slots: Vec<MenuSlot>,
-    pub selected_slot: Option<SlotRow>,
-    pub selected_day: u64,
-    pub current_date: String,
-    pub is_past: bool,
-    pub first_month_day: u64,
-    pub prev_month: String,
-    pub next_month: String,
-    pub board_weeks: Vec<Vec<MenuBoardDay>>,
-    /// Recipe id → slug for every recipe shown, so course cards can link to the
-    /// canonical `/r/{slug}` detail page. Missing ids fall back to the id.
-    pub slugs: std::collections::HashMap<String, String>,
-}
-
-impl MenuTemplate {
-    /// Slug for a slot recipe id, falling back to the id when unknown (the
-    /// `/r/{param}` route also accepts a raw id).
-    pub fn dish_slug<'a>(&'a self, id: &'a str) -> &'a str {
-        self.slugs.get(id).map(String::as_str).unwrap_or(id)
-    }
+    pub tab: MenuTab,
+    pub recipes: Vec<ListRecipe>,
+    pub cooked_count: usize,
+    pub checked: HashSet<String>,
+    pub aisles: Vec<AisleSection>,
+    /// Index into `aisles` where the right desktop column starts (aisles are
+    /// split into two columns balanced by item count).
+    pub split_at: usize,
+    pub total_items: usize,
+    pub checked_items: usize,
+    pub progress_pct: usize,
 }
 
 impl Default for MenuTemplate {
@@ -72,39 +76,204 @@ impl Default for MenuTemplate {
         Self {
             current_path: "menu".to_owned(),
             user: AuthUser::default(),
-            slots: vec![],
-            selected_slot: None,
-            selected_day: 0,
-            current_date: String::new(),
-            is_past: false,
-            first_month_day: 0,
-            prev_month: "".to_owned(),
-            next_month: "".to_owned(),
-            board_weeks: vec![],
-            slugs: std::collections::HashMap::new(),
+            tab: MenuTab::Recipes,
+            recipes: vec![],
+            cooked_count: 0,
+            checked: HashSet::default(),
+            aisles: vec![],
+            split_at: 0,
+            total_items: 0,
+            checked_items: 0,
+            progress_pct: 0,
         }
     }
 }
 
-/// Collects every course recipe id present in a set of slots.
-fn slot_recipe_ids(slots: &[SlotRow]) -> Vec<String> {
-    let mut ids = vec![];
-    for slot in slots {
-        ids.push(slot.main_course.id.to_owned());
-        for course in [
-            &slot.appetizer,
-            &slot.accompaniment,
-            &slot.dessert,
-            &slot.beverage,
-            &slot.condiment,
-        ]
+/// Recipes-tab fragment swapped in via twinspark when a recipe is removed.
+#[derive(askama::Template)]
+#[template(path = "partials/menu-recipes.html")]
+pub struct MenuRecipesTemplate {
+    pub recipes: Vec<ListRecipe>,
+    pub cooked_count: usize,
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/menu-generate-modal.html")]
+pub struct GenerateModalTemplate;
+
+/// Everything both tabs need, derived from the persisted list.
+pub struct ListView {
+    pub recipes: Vec<ListRecipe>,
+    pub cooked_count: usize,
+    pub checked: HashSet<String>,
+    pub aisles: Vec<AisleSection>,
+    pub split_at: usize,
+    pub total_items: usize,
+    pub checked_items: usize,
+    pub progress_pct: usize,
+}
+
+async fn build_view(app: &AppState, user_id: &str) -> anyhow::Result<ListView> {
+    // Read straight from the aggregate (immediately consistent) so a re-render
+    // right after add/remove/generate never shows the pre-change list.
+    let household_size = app
+        .identity
+        .meal_preferences
+        .load(user_id)
+        .await?
+        .household_size;
+    let state = app.core.shopping.state(user_id, household_size).await?;
+
+    let cards = app
+        .core
+        .recipe
+        .filter_by_ids(state.recipe_ids.clone())
+        .await?;
+    let recipes: Vec<ListRecipe> = order_by_list(&state.recipe_ids, cards)
         .into_iter()
-        .flatten()
-        {
-            ids.push(course.id.to_owned());
+        .map(|card| ListRecipe {
+            status: state.status(&card.id),
+            card,
+        })
+        .collect();
+    let cooked_count = recipes.iter().filter(|r| r.status.is_completed()).count();
+
+    Ok(ListView {
+        recipes,
+        cooked_count,
+        ..grocery_view(&state.ingredients, state.checked)
+    })
+}
+
+/// Aisle sections, counts and the column split for an ingredient list.
+pub fn grocery_view(ingredients: &[Ingredient], checked: HashSet<String>) -> ListView {
+    let categories: Vec<(String, Vec<Ingredient>)> = to_categories(ingredients);
+
+    let total_items: usize = categories.iter().map(|(_, items)| items.len()).sum();
+    // Count only keys still on the list: the aggregate keeps checks for
+    // ingredients a removed recipe took away.
+    let checked_items = ingredients
+        .iter()
+        .filter(|i| checked.contains(&i.key()))
+        .count();
+    let progress_pct = (checked_items * 100).checked_div(total_items).unwrap_or(0);
+
+    let aisles: Vec<AisleSection> = categories
+        .into_iter()
+        .map(|(name, items)| {
+            let total = items.len();
+            let checked_count = items.iter().filter(|i| checked.contains(&i.key())).count();
+            let pct = (checked_count * 100).checked_div(total).unwrap_or(0);
+            AisleSection {
+                name,
+                items,
+                checked: checked_count,
+                total,
+                done: total > 0 && checked_count == total,
+                pct,
+            }
+        })
+        .collect();
+
+    let split_at = balanced_split(&aisles);
+
+    ListView {
+        recipes: vec![],
+        cooked_count: 0,
+        checked,
+        aisles,
+        split_at,
+        total_items,
+        checked_items,
+        progress_pct,
+    }
+}
+
+/// `filter_by_ids` returns rows in no particular order; put them back in list
+/// order (ids without a row are skipped).
+fn order_by_list(ids: &[String], cards: Vec<RecipeCard>) -> Vec<RecipeCard> {
+    let mut by_id: HashMap<String, RecipeCard> =
+        cards.into_iter().map(|c| (c.id.clone(), c)).collect();
+    ids.iter().filter_map(|id| by_id.remove(id)).collect()
+}
+
+/// Choose where the right desktop column starts. Aisles keep their route order;
+/// the split is the contiguous point that most evenly divides the total item
+/// count between the two columns. E.g. counts `[2, 54, 6, 4, 39, 2, 1]` split
+/// after index 2 → `[2, 54]` (56) and `[6, 4, 39, 2, 1]` (52). Both columns are
+/// always non-empty (for 2+ aisles).
+fn balanced_split(aisles: &[AisleSection]) -> usize {
+    let n = aisles.len();
+    if n <= 1 {
+        return n;
+    }
+    let total: usize = aisles.iter().map(|a| a.total).sum();
+    let mut left = 0usize;
+    let mut best_split = 1;
+    let mut best_diff = usize::MAX;
+    // Consider splitting after each aisle except the last, so both columns are
+    // non-empty; the split index is `i + 1`.
+    for (i, aisle) in aisles[..n - 1].iter().enumerate() {
+        left += aisle.total;
+        let diff = left.abs_diff(total - left);
+        if diff < best_diff {
+            best_diff = diff;
+            best_split = i + 1;
         }
     }
-    ids
+    best_split
+}
+
+fn to_categories(ingredients: &[Ingredient]) -> Vec<(String, Vec<Ingredient>)> {
+    let mut categories = HashMap::new();
+    let mut ingredients = ingredients.to_vec();
+    ingredients.sort_by_key(|i| i.name.to_owned());
+
+    for ingredient in ingredients.iter() {
+        match &ingredient.category {
+            Some(c) => {
+                let entry = categories.entry(format!("shopping_{c}")).or_insert(vec![]);
+                entry.push(ingredient.clone());
+            }
+            _ => {
+                let entry = categories
+                    .entry("shopping_Unknown".to_owned())
+                    .or_insert(vec![]);
+                entry.push(ingredient.clone());
+            }
+        };
+    }
+
+    let mut categories = categories
+        .into_iter()
+        .collect::<Vec<(String, Vec<Ingredient>)>>();
+
+    categories.sort_by_key(|(k, _)| k.to_owned());
+
+    categories
+}
+
+fn render_page(
+    template: Template,
+    user: AuthUser,
+    tab: MenuTab,
+    view: ListView,
+) -> axum::response::Response {
+    template
+        .render(MenuTemplate {
+            user,
+            tab,
+            recipes: view.recipes,
+            cooked_count: view.cooked_count,
+            checked: view.checked,
+            aisles: view.aisles,
+            split_at: view.split_at,
+            total_items: view.total_items,
+            checked_items: view.checked_items,
+            progress_pct: view.progress_pct,
+            ..Default::default()
+        })
+        .into_response()
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -112,254 +281,163 @@ pub async fn page(
     template: Template,
     user: AuthUser,
     State(app): State<AppState>,
-    params: Option<Path<(String,)>>,
 ) -> impl IntoResponse {
-    let bounds = if let Some(Path((date,))) = params {
-        imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz)
-    } else {
-        imkitchen_core::mealplan::month_bounds_from_now(&user.tz)
-    };
-    let bounds = imkitchen_web_shared::try_page_response!(sync: bounds, template);
-    let (prev_month, next_month) = imkitchen_web_shared::try_page_response!(sync: imkitchen_core::mealplan::prev_next_month(bounds.first), template);
-    let slots = imkitchen_web_shared::try_page_response!(
-        app.core.mealplan.range(&user.id, bounds.first, bounds.last),
+    let view = imkitchen_web_shared::try_page_response!(build_view(&app, &user.id), template);
+    render_page(template, user, MenuTab::Recipes, view)
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn groceries_page(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+) -> impl IntoResponse {
+    let view = imkitchen_web_shared::try_page_response!(build_view(&app, &user.id), template);
+    render_page(template, user, MenuTab::Groceries, view)
+}
+
+async fn legacy_menu_redirect() -> impl IntoResponse {
+    Redirect::permanent("/menu")
+}
+
+async fn legacy_groceries_redirect() -> impl IntoResponse {
+    Redirect::permanent("/menu/groceries")
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn remove_recipe_action(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    let preferences = imkitchen_web_shared::try_response!(anyhow:
+        app.identity.meal_preferences.load(&user.id),
+        template
+    );
+    imkitchen_web_shared::try_response!(
+        app.core
+            .shopping
+            .remove_recipe(&id, preferences.household_size, &user.id),
         template
     );
 
-    let slugs = imkitchen_web_shared::try_page_response!(
-        app.core.recipe.slugs(slot_recipe_ids(&slots)),
-        template
-    );
-
-    let mut menu_slots = imkitchen_core::mealplan::week_days_before(bounds.first)
-        .iter()
-        .map(|date| MenuSlot {
-            day: date.day(),
-            slot: None,
-        })
-        .collect::<Vec<_>>();
-
-    for day in 1..bounds.last.day() + 1 {
-        let slot = slots
-            .iter()
-            .find_map(|s| {
-                let s_day = OffsetDateTime::from_unix_timestamp(s.day as i64)
-                    .unwrap()
-                    .day();
-
-                if s_day == day {
-                    Some(MenuSlot {
-                        slot: Some(s.clone()),
-                        day: s_day,
-                    })
-                } else {
-                    None
-                }
-            })
-            .unwrap_or(MenuSlot { day, slot: None });
-
-        menu_slots.push(slot);
-    }
-
-    for date in imkitchen_core::mealplan::week_days_after(bounds.last) {
-        menu_slots.push(MenuSlot {
-            day: date.day(),
-            slot: None,
-        });
-    }
-
-    let selected_slot = slots
-        .iter()
-        .find(|s| {
-            let dt = OffsetDateTime::from_unix_timestamp(s.day as i64).unwrap();
-            dt.day() == bounds.date.day() && dt.month() == bounds.date.month()
-        })
-        .or_else(|| slots.first())
-        .cloned();
-
-    let selected_day = selected_slot.as_ref().map(|s| s.day).unwrap_or(0);
-
-    let today = imkitchen_core::mealplan::now(&user.tz);
-    let today_u64 = imkitchen_core::mealplan::date_to_u64(today);
-    let is_past = imkitchen_core::mealplan::date_to_u64(bounds.date) < today_u64;
-
-    let fmt = time::macros::format_description!("[year]-[month]-[day]");
-    let current_date = bounds.date.format(&fmt).unwrap_or_default();
-
-    // ── Desktop week-board: walk the same Mon–Sun-padded date sequence the
-    // calendar uses, but build rich cells (date string for URL, weekday label,
-    // slot, today/past flags) and group them into weeks of 7.
-    let mut all_board_dates: Vec<OffsetDateTime> =
-        imkitchen_core::mealplan::week_days_before(bounds.first);
-    let mut d = bounds.first;
-    while d <= bounds.last {
-        all_board_dates.push(d);
-        d += time::Duration::days(1);
-    }
-    all_board_dates.extend(imkitchen_core::mealplan::week_days_after(bounds.last));
-
-    let bounds_month = bounds.date.month();
-    let board_days: Vec<MenuBoardDay> = all_board_dates
-        .iter()
-        .map(|d| {
-            let d_u64 = imkitchen_core::mealplan::date_to_u64(*d);
-            let slot = slots
-                .iter()
-                .find(|s| {
-                    OffsetDateTime::from_unix_timestamp(s.day as i64)
-                        .map(|sd| imkitchen_core::mealplan::date_to_u64(sd) == d_u64)
-                        .unwrap_or(false)
-                })
-                .cloned();
-            MenuBoardDay {
-                date: d.format(&fmt).unwrap_or_default(),
-                weekday: d.weekday().to_string().chars().take(3).collect(),
-                day_num: d.day(),
-                is_today: d_u64 == today_u64,
-                is_past: d_u64 < today_u64,
-                is_in_month: d.month() == bounds_month,
-                slot,
-            }
-        })
-        .collect();
-
-    let board_weeks: Vec<Vec<MenuBoardDay>> = board_days.chunks(7).map(|c| c.to_vec()).collect();
+    let view = imkitchen_web_shared::try_response!(anyhow: build_view(&app, &user.id), template);
 
     template
-        .render(MenuTemplate {
-            user,
-            slots: menu_slots,
-            first_month_day: bounds.first.unix_timestamp() as u64,
-            current_date,
-            is_past,
-            prev_month,
-            next_month,
-            selected_slot,
-            selected_day,
-            board_weeks,
-            slugs,
-            ..Default::default()
+        .render(MenuRecipesTemplate {
+            recipes: view.recipes,
+            cooked_count: view.cooked_count,
         })
         .into_response()
 }
 
+#[derive(Deserialize, Default, Clone)]
+pub struct ToggleJson {
+    pub name: String,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn toggle_action(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Json(input): Json<ToggleJson>,
+) -> impl IntoResponse {
+    imkitchen_web_shared::try_response!(
+        app.core
+            .shopping
+            .toggle(ToggleInput { name: input.name }, &user.id),
+        template
+    );
+
+    "<div></div>".into_response()
+}
+
+pub async fn generate_modal(template: Template, _user: AuthUser) -> impl IntoResponse {
+    template.render(GenerateModalTemplate)
+}
+
+#[derive(Deserialize, Debug)]
+pub struct GenerateForm {
+    pub count: u8,
+}
+
+/// Replace the list with freshly picked recipes, then send the browser to the
+/// Recipes tab. The list is read back from the aggregate, so the redirected
+/// page is already up to date — no polling needed.
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn generate_action(
     template: Template,
     State(app): State<AppState>,
     AuthUser(user): AuthUser,
-    Path((date,)): Path<(String,)>,
+    Form(input): Form<GenerateForm>,
 ) -> impl IntoResponse {
     let preferences = imkitchen_web_shared::try_response!(anyhow:
         app.identity.meal_preferences.load(&user.id),
         template
     );
 
-    let randomize = Some(Randomize {
-        cuisine_variety_weight: preferences.cuisine_variety_weight,
-        dietary_restrictions: preferences.dietary_restrictions.to_vec(),
-        recipe_types: preferences.recipe_types.to_vec(),
-    });
-
-    let bounds = imkitchen_web_shared::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
-    let now_bounds = imkitchen_web_shared::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_now(&user.tz), template);
-    let (target_local, last_day) = if now_bounds.date > bounds.date {
-        (now_bounds.date, now_bounds.last.day())
-    } else {
-        (bounds.date, bounds.last.day())
-    };
-    // Use user-tz noon as start so date_to_u64(from_unix_timestamp(start)) yields
-    // the user-tz date — from_unix_timestamp always returns UTC, so encoding start
-    // at user-tz midnight gives the wrong UTC day for any non-UTC user (e.g. in
-    // Martinique UTC-4 evening, midnight rolls into the next UTC day, infinite-polling
-    // on a slot stored under tomorrow's date).
-    let start_noon = time::PrimitiveDateTime::new(target_local.date(), time::macros::time!(12:00))
-        .assume_offset(target_local.offset());
-    let start = start_noon.unix_timestamp();
-    let days = last_day - target_local.date().day() + 1;
-
     imkitchen_web_shared::try_response!(
-        app.core.mealplan.generate(Generate {
-            start: start as u64,
-            days,
-            user_id: user.id.to_owned(),
-            randomize,
-            household_size: preferences.household_size,
-        }),
+        app.core.shopping.generate(
+            GenerateList {
+                count: input.count,
+                household_size: preferences.household_size,
+                randomize: Some(Randomize {
+                    cuisine_variety_weight: preferences.cuisine_variety_weight,
+                    dietary_restrictions: preferences.dietary_restrictions.to_vec(),
+                    recipe_types: preferences.recipe_types.to_vec(),
+                }),
+            },
+            &user.id
+        ),
         template
     );
 
-    template
-        .render(GenerateButtonTemplate {
-            date,
-            status: TemplateStatus::Pending,
-        })
-        .into_response()
+    Redirect::to("/menu").into_response()
 }
 
-#[tracing::instrument(skip_all, fields(user = user.id))]
-pub async fn generate_status(
-    template: Template,
-    State(app): State<AppState>,
-    user: AuthUser,
-    Path((date,)): Path<(String,)>,
-) -> impl IntoResponse {
-    let bounds = imkitchen_web_shared::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_date(&date, &user.tz), template);
-    let now_bounds = imkitchen_web_shared::try_response!(sync anyhow: imkitchen_core::mealplan::month_bounds_from_now(&user.tz), template);
+#[cfg(test)]
+mod tests {
+    use super::{AisleSection, balanced_split};
 
-    // Polling must look at the same start day that generate_action used, otherwise
-    // we'll keep finding a stale slot from before today (whose generated_at never
-    // updates) and never match the aggregate's new generated_at.
-    let start = if now_bounds.date > bounds.date {
-        now_bounds.date
-    } else {
-        bounds.date
-    };
-
-    let s_generated_at = imkitchen_web_shared::try_response!(anyhow:
-        app.core.mealplan.next_slot_from(start, &user.id),
-        template,
-        Some(GenerateButtonTemplate {
-            date,
-            status: TemplateStatus::Idle
-        })
-    )
-    .map(|m| m.generated_at);
-
-    let c_generated_at =
-        imkitchen_web_shared::try_response!(anyhow: app.core.mealplan.load(&user.id),
-            template,
-            Some(GenerateButtonTemplate{date, status: TemplateStatus::Idle})
-        )
-        .map(|m| m.generated_at);
-
-    if s_generated_at == c_generated_at {
-        return Redirect::to(&format!("/menu/{date}")).into_response();
+    fn aisle(total: usize) -> AisleSection {
+        AisleSection {
+            name: format!("a{total}"),
+            items: vec![],
+            checked: 0,
+            total,
+            done: false,
+            pct: 0,
+        }
     }
 
-    template
-        .render(GenerateButtonTemplate {
-            date,
-            status: TemplateStatus::Checking,
-        })
-        .into_response()
-}
+    fn split(totals: Vec<usize>) -> (usize, usize, usize) {
+        let aisles: Vec<AisleSection> = totals.into_iter().map(aisle).collect();
+        let split_at = balanced_split(&aisles);
+        let left: usize = aisles[..split_at].iter().map(|a| a.total).sum();
+        let right: usize = aisles[split_at..].iter().map(|a| a.total).sum();
+        (split_at, left, right)
+    }
 
-pub async fn generate_modal(
-    template: Template,
-    Path((date,)): Path<(String,)>,
-) -> impl IntoResponse {
-    template.render(GenerateModalTemplate { date })
-}
+    #[test]
+    fn contiguous_split_balances_item_counts() {
+        // [2, 54, 6, 4, 39, 2, 1] → after index 2: [2,54]=56 and rest=52.
+        let (split_at, left, right) = split(vec![2, 54, 6, 4, 39, 2, 1]);
+        assert_eq!(split_at, 2);
+        assert_eq!((left, right), (56, 52));
+    }
 
-pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
-    use axum::routing::get;
-    axum::Router::new()
-        .route("/menu", get(page))
-        .route("/menu/{date}", get(page))
-        .route(
-            "/menu/{date}/generate",
-            get(generate_modal).post(generate_action),
-        )
-        .route("/menu/{date}/generate/status", get(generate_status))
+    #[test]
+    fn even_sizes_split_in_the_middle() {
+        let (split_at, left, right) = split(vec![3, 3, 3, 3]);
+        assert_eq!(split_at, 2);
+        assert_eq!((left, right), (6, 6));
+    }
+
+    #[test]
+    fn keeps_both_columns_non_empty() {
+        let (split_at, _, _) = split(vec![10, 1]);
+        assert_eq!(split_at, 1);
+    }
 }

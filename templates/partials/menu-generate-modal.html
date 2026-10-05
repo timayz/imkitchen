@@ -1,0 +1,131 @@
+{# ── Generate recipes — confirm sheet
+   Bottom sheet on mobile, centered dialog on md+. The user picks how many
+   main courses to draw via chips / stepper / range; the form posts `count`
+   and the server redirects to the refreshed list. ───────────────────── #}
+<div id="modal-generate"
+  class="fixed inset-0 bg-ink/45 backdrop-blur-sm z-60 flex items-end md:items-center justify-center md:p-4"
+  ts-trigger="click target #modal-generate" ts-action="remove #modal-generate">
+  <form ts-req="/menu/generate" ts-req-method="post" ts-target="body"
+    onclick="event.stopPropagation()"
+    class="bg-paper w-full md:max-w-lg rounded-t-3xl md:rounded-3xl border border-line-2 md:shadow-lg flex flex-col max-h-[90vh] md:max-h-[85vh] overflow-hidden">
+
+    {# Drag handle — mobile only #}
+    <div class="md:hidden flex justify-center pt-3 pb-1">
+      <div class="w-10 h-1 bg-line rounded-full"></div>
+    </div>
+
+    {# Header — sparkle tile + eyebrow + serif title + close #}
+    <div class="flex items-start gap-3 px-5 md:px-7 py-4 md:pt-6">
+      <div class="w-11 h-11 rounded-2xl bg-primary-100 text-primary-700 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Confirm"|t }}</div>
+        <h3 class="font-serif text-2xl leading-tight tracking-tight text-ink mt-0.5">{{ "Generate recipes"|t }}</h3>
+      </div>
+      <button type="button" ts-trigger="click" ts-action="remove #modal-generate"
+        class="w-9 h-9 rounded-xl bg-cream text-ink-2 hover:bg-cream-2 flex items-center justify-center shrink-0 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="h-px bg-line-2"></div>
+
+    {# Body — scrollable #}
+    <div class="flex-1 overflow-y-auto px-5 md:px-7 py-4 md:py-5">
+      <p class="text-sm text-ink-2 leading-relaxed mb-5">
+        {{ "We pick main courses from your recipes and favourites, plus starters, sides and desserts according to your preferences."|t }}
+      </p>
+
+      <input type="hidden" name="count" id="gen-count" value="7" />
+
+      <div class="text-xs font-semibold text-ink-2 mb-2.5">{{ "How many main courses?"|t }}</div>
+
+      {# Preset chips #}
+      <div class="grid grid-cols-4 gap-2 mb-3" id="gen-presets">
+        <button type="button" data-count="3" class="gen-preset px-2 py-2.5 rounded-xl border border-line bg-paper text-ink-2 text-xs font-semibold transition">3</button>
+        <button type="button" data-count="7" class="gen-preset px-2 py-2.5 rounded-xl border-2 border-primary-500 bg-primary-100 text-primary-700 text-xs font-semibold transition">7</button>
+        <button type="button" data-count="14" class="gen-preset px-2 py-2.5 rounded-xl border border-line bg-paper text-ink-2 text-xs font-semibold transition">14</button>
+        <button type="button" data-count="30" class="gen-preset px-2 py-2.5 rounded-xl border border-line bg-paper text-ink-2 text-xs font-semibold transition">30</button>
+      </div>
+
+      {# Stepper #}
+      <div class="flex items-center gap-2 p-2.5 rounded-2xl bg-cream border border-line-2 mb-3">
+        <button type="button" id="gen-minus" class="w-10 h-10 rounded-xl border border-line bg-paper text-ink text-xl font-semibold flex items-center justify-center hover:bg-cream transition">−</button>
+        <div class="flex-1 text-center">
+          <div id="gen-num" class="font-serif text-3xl text-ink leading-none tracking-tight">7</div>
+          <div id="gen-label"
+            data-one="{{ "main course"|t }}" data-many="{{ "main courses"|t }}"
+            class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 mt-1">{{ "main courses"|t }}</div>
+        </div>
+        <button type="button" id="gen-plus" class="w-10 h-10 rounded-xl border border-line bg-paper text-ink text-xl font-semibold flex items-center justify-center hover:bg-cream transition">+</button>
+      </div>
+
+      {# Range slider #}
+      <div class="mb-5">
+        <input type="range" id="gen-range" min="1" max="30" value="7" class="w-full accent-primary-500" />
+        <div class="flex justify-between text-[10px] font-mono text-ink-3 mt-0.5 px-0.5">
+          <span>1</span><span>7</span><span>14</span><span>21</span><span>30</span>
+        </div>
+      </div>
+
+      <div class="p-3.5 rounded-2xl border border-amber-200 bg-amber-50 text-[12px] text-amber-900 leading-snug flex gap-2">
+        <svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>{{ "This replaces your current list, unchecks the groceries and resets cooking progress."|t }}</span>
+      </div>
+    </div>
+
+    {# Footer #}
+    <div class="flex gap-2 px-5 md:px-7 py-4 border-t border-line-2 bg-paper">
+      <button type="button" ts-trigger="click" ts-action="remove #modal-generate"
+        class="flex-1 px-4 py-2.5 bg-cream border border-line text-ink-2 font-semibold rounded-xl text-sm hover:bg-cream-2 transition">
+        {{ "Cancel"|t }}
+      </button>
+      <button
+        class="flex-[2] inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 text-white font-semibold rounded-xl text-sm hover:bg-primary-600 shadow-sm transition">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
+        {{ "Generate"|t }}
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  (function () {
+    var countInput = document.getElementById('gen-count');
+    var num       = document.getElementById('gen-num');
+    var label     = document.getElementById('gen-label');
+    var range     = document.getElementById('gen-range');
+    var presets   = document.querySelectorAll('.gen-preset');
+    var minusBtn  = document.getElementById('gen-minus');
+    var plusBtn   = document.getElementById('gen-plus');
+    var labels = { one: label.dataset.one, many: label.dataset.many };
+
+    function apply(count) {
+      count = Math.max(1, Math.min(30, count | 0));
+      countInput.value = count;
+      num.textContent = count;
+      label.textContent = count === 1 ? labels.one : labels.many;
+      range.value = count;
+
+      presets.forEach(function (p) {
+        if (parseInt(p.dataset.count, 10) === count) {
+          p.classList.remove('border', 'border-line', 'bg-paper', 'text-ink-2');
+          p.classList.add('border-2', 'border-primary-500', 'bg-primary-100', 'text-primary-700');
+        } else {
+          p.classList.remove('border-2', 'border-primary-500', 'bg-primary-100', 'text-primary-700');
+          p.classList.add('border', 'border-line', 'bg-paper', 'text-ink-2');
+        }
+      });
+    }
+
+    presets.forEach(function (p) {
+      p.addEventListener('click', function () { apply(parseInt(p.dataset.count, 10)); });
+    });
+    range.addEventListener('input', function () { apply(parseInt(range.value, 10)); });
+    minusBtn.addEventListener('click', function () { apply(parseInt(range.value, 10) - 1); });
+    plusBtn.addEventListener('click', function () { apply(parseInt(range.value, 10) + 1); });
+
+    apply(7);
+  })();
+</script>

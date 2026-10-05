@@ -1,10 +1,6 @@
-{# ── Groceries body: "Recipes in this list" section + aisle sections. ──
-     Rendered both inline (via {% include %} from groceries.html) and on its
-     own by `remove_recipe_action` so removing a recipe re-renders the recipe
-     cards and recomputed ingredient totals in one twinspark swap. Macros are
-     redefined here (as elsewhere in the codebase) since includes don't inherit
-     the parent's macros. ──────────────────────────────────────────────────── #}
-
+{# ── Groceries tab: the aisle-grouped ingredients of every recipe in the
+     list. Macros are redefined here (as elsewhere in the codebase) since
+     includes don't inherit the parent's macros. ──────────────────────── #}
 {# ── Map shopping_<Category> → emoji ─────────────────────────────── #}
 {% macro aisle_emoji(name) -%}
 {%- match name.as_str() -%}
@@ -85,29 +81,6 @@
 {%- endmatch -%}
 {%- endmacro %}
 
-{# ── Recipe-card helpers (mirror templates/partials/recipes-similar.html) ── #}
-{% macro recipe_emoji(rt) -%}
-{%- match rt -%}
-{%- when RecipeType::Appetizer -%}🥗
-{%- when RecipeType::MainCourse -%}🍛
-{%- when RecipeType::Accompaniment -%}🥖
-{%- when RecipeType::Dessert -%}🍰
-{%- when RecipeType::Beverage -%}🥤
-{%- when RecipeType::Condiment -%}🥫
-{%- endmatch -%}
-{%- endmacro %}
-
-{% macro recipe_hero_classes(rt) -%}
-{%- match rt -%}
-{%- when RecipeType::Appetizer -%}from-meal-entree-soft to-blue-100
-{%- when RecipeType::MainCourse -%}from-meal-main-soft to-orange-100
-{%- when RecipeType::Accompaniment -%}from-meal-side-soft to-herb-100
-{%- when RecipeType::Dessert -%}from-meal-dessert-soft to-pink-100
-{%- when RecipeType::Beverage -%}from-cyan-100 to-cyan-200
-{%- when RecipeType::Condiment -%}from-amber-100 to-amber-200
-{%- endmatch -%}
-{%- endmacro %}
-
 {# One aisle card. `hidden` collapses it on mobile (only the active aisle shows;
    the route strip toggles the rest via JS). #}
 {% macro category_card(aisle, checked, demo, hidden) %}
@@ -138,7 +111,7 @@
     {% for ingredient in aisle.items %}
     <label class="group flex items-center gap-3 px-3 md:px-4 py-3 hover:bg-cream/30 cursor-pointer transition has-checked:bg-cream/50">
       <input{% if checked.contains(&ingredient.key()) %} checked{% endif %} type="checkbox"
-        {% if !demo %}ts-trigger="change" ts-req="/groceries/toggle" ts-json="{{ ingredient.json_key() }}" ts-req-method="post" ts-swap="none"{% endif %}
+        {% if !demo %}ts-trigger="change" ts-req="/menu/toggle" ts-json="{{ ingredient.json_key() }}" ts-req-method="post" ts-swap="none"{% endif %}
         class="peer sr-only" autocomplete="off" />
       <div class="w-6 h-6 rounded-lg border-[1.5px] border-line bg-cream flex items-center justify-center shrink-0 transition peer-checked:bg-herb-500 peer-checked:border-herb-500">
         <svg class="w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
@@ -163,16 +136,20 @@
     <div class="w-24 h-24 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-herb-100 to-cream-2 flex items-center justify-center text-5xl">
       🧺
     </div>
-    <h2 class="font-serif text-2xl md:text-4xl text-ink tracking-tight">{{ "No list yet"|t }}</h2>
+    <h2 class="font-serif text-2xl md:text-4xl text-ink tracking-tight">{{ "Nothing to buy yet"|t }}</h2>
     <p class="text-sm md:text-base text-ink-2 mt-3 max-w-md mx-auto leading-relaxed">
-      {{ "Generate a shopping list from your meal plan — we'll pull every ingredient, merge duplicates, and group it by aisle."|t }}
+      {{ "Generate or add recipes first — we'll pull every ingredient, merge duplicates, and group it by aisle."|t }}
     </p>
+    <a href="{{ "/menu"|demo_href }}"
+      class="inline-flex items-center justify-center gap-2 mt-6 px-4 py-2.5 bg-primary-500 text-white font-semibold rounded-xl text-sm hover:bg-primary-600 shadow-sm transition">
+      {{ "Go to recipes"|t }}
+    </a>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-8 text-left">
       <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-4">
-        <div class="text-2xl">🗓️</div>
-        <div class="text-sm font-semibold text-ink mt-2">{{ "From your plan"|t }}</div>
-        <div class="text-xs text-ink-3 mt-0.5">{{ "Every meal in range"|t }}</div>
+        <div class="text-2xl">🍽️</div>
+        <div class="text-sm font-semibold text-ink mt-2">{{ "From your list"|t }}</div>
+        <div class="text-xs text-ink-3 mt-0.5">{{ "Every recipe in it"|t }}</div>
       </div>
       <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-4">
         <div class="text-2xl">🧮</div>
@@ -303,48 +280,4 @@
   </div>
   {% endif %}
 
-  {# ── Recipes in this list — placed after the shopping list: the run
-       comes first, and the recipe set can be long (30+ recipes). ── #}
-  {% if !recipes.is_empty() %}
-  <section class="mt-8 pt-6 border-t border-line-2">
-    <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-2">
-      {{ "Recipes in this list"|t }} · {{ recipes.len() }}
-    </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-      {% for r in recipes %}
-      {% let rt = r.recipe_type.0 %}
-      <div id="grocery-recipe-{{ r.id }}"
-        class="flex items-center gap-3 bg-paper rounded-xl border border-line-2 shadow-sm p-2 pr-2.5">
-        <a href="{{ "/r/"|demo_href }}{{ r.slug }}"
-          class="relative w-16 h-12 rounded-lg overflow-hidden bg-linear-to-br {% call recipe_hero_classes(rt) %}{% endcall %} flex items-center justify-center shrink-0">
-          {% if let Some(version) = r.thumbnail_version %}
-          {% if let Some(blur) = r.blur_placeholder %}
-          <div class="absolute inset-0 bg-cover bg-center scale-110 blur-lg" style="background-image:url({{ blur }})"></div>
-          {% endif %}
-          <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-            data-src="/recipes/{{ r.id }}/thumbnail/mobile/image.webp?v={{ version }}" alt="{{ r.name }}"
-            class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500 [&.loaded]:opacity-100"
-            ts-trigger="closeby once" ts-action="lazy" />
-          {% else %}
-          <span class="text-2xl">{% call recipe_emoji(rt) %}{% endcall %}</span>
-          {% endif %}
-        </a>
-        <a href="{{ "/r/"|demo_href }}{{ r.slug }}" class="flex-1 min-w-0">
-          <span class="block text-sm font-semibold text-ink leading-snug line-clamp-2 hover:text-primary-500">{{ r.name }}</span>
-        </a>
-        {% if !demo %}
-        <button ts-req="/groceries/recipe/{{ r.id }}/remove" ts-req-method="post"
-          ts-target="#groceries-body" ts-swap="replace"
-          class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-ink-3 hover:bg-red-50 hover:text-red-600 transition shrink-0"
-          title="{{ "Remove from list"|t }}">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
-        {% endif %}
-      </div>
-      {% endfor %}
-    </div>
-  </section>
-  {% endif %}
 </div>

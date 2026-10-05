@@ -40,7 +40,7 @@
         <span>{{ "Popular:"|t }}</span>
         <a href="#account-billing" class="text-white underline underline-offset-2 hover:opacity-80">{{ "Cancel subscription"|t }}</a>
         <a href="#recipes" class="text-white underline underline-offset-2 hover:opacity-80">{{ "Import recipes"|t }}</a>
-        <a href="#meal-planning" class="text-white underline underline-offset-2 hover:opacity-80">{{ "Lock a meal"|t }}</a>
+        <a href="#meal-planning" class="text-white underline underline-offset-2 hover:opacity-80">{{ "Regenerate a list"|t }}</a>
         <a href="#community" class="text-white underline underline-offset-2 hover:opacity-80">{{ "Share with family"|t }}</a>
       </div>
     </div>
@@ -66,7 +66,7 @@
         </div>
         <div>
           <div class="text-base font-semibold text-ink tracking-tight">{{ "Getting started"|t }}</div>
-          <div class="text-sm text-ink-2 leading-snug mt-0.5">{{ "Your first week on imkitchen"|t }}</div>
+          <div class="text-sm text-ink-2 leading-snug mt-0.5">{{ "Your first list on imkitchen"|t }}</div>
         </div>
         <div class="flex items-center gap-1 mt-0.5">
           <span class="font-mono text-[11px] text-primary-800 font-medium">{{ "8 articles"|t }}</span>
@@ -156,7 +156,7 @@
       <span class="text-sm font-medium text-primary-800">{{ "See all →"|t }}</span>
     </div>
     <div class="grid md:grid-cols-2 gap-3">
-      {% for article in [("Meal plans","2 days ago","Why did my plan repeat a recipe this week?"),("Recipes","5 days ago","How do I import from a recipe site?"),("Shopping","1 week ago","Merging two overlapping grocery lists"),("Account","2 weeks ago","Sharing recipes with a household member")] %}
+      {% for article in [("Lists","2 days ago","Why did my list come back shorter than I asked?"),("Recipes","5 days ago","How do I import from a recipe site?"),("Shopping","1 week ago","Merging two overlapping grocery lists"),("Account","2 weeks ago","Sharing recipes with a household member")] %}
       <a href="#" class="bg-paper rounded-2xl p-4 border border-line-2 hover:shadow-md transition flex gap-3 items-start">
         <div class="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center shrink-0">
           <svg class="w-3.5 h-3.5 text-primary-800" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 4.5L18.5 9l-4.6 1.5L12 15l-1.9-4.5L5.5 9l4.6-1.5z"/></svg>
@@ -205,7 +205,7 @@
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Understanding the navigation"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
-          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Five sections: Kitchen (today's meal), Menu (this week's plan), Recipes (your library), Groceries (shopping list), Settings."|t }}</p>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Four sections: Kitchen (what to cook next), Menu (your recipe list and its groceries), Recipes (your library), Settings."|t }}</p>
         </details>
         {% if ""|premium_enabled %}
         <details class="group border-t border-line-2 py-3.5">
@@ -234,21 +234,21 @@
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "How does automatic generation work?"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
-          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "imkitchen shuffles your collection against a handful of rules — cuisine variety, dietary restrictions, accompaniment pairing — then assembles a plan in about two seconds. You can regenerate until you're happy."|t }}</p>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "imkitchen shuffles your collection against a handful of rules — cuisine variety, dietary restrictions, accompaniment pairing — then assembles a list in about two seconds. You can regenerate until you're happy."|t }}</p>
         </details>
         <details class="group border-t border-line-2 py-3.5">
           <summary class="flex items-center gap-2.5 cursor-pointer list-none">
-            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Why can't I regenerate the current week?"|t }}</span>
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "What happens when I regenerate?"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
-          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "The current week is locked to preserve in-progress meals you've already started preparing. Future weeks can be regenerated individually or all at once."|t }}</p>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Generation replaces the whole list: recipes you added by hand are dropped, checked groceries are cleared and cooking progress resets. Add recipes back from any recipe page."|t }}</p>
         </details>
         <details class="group border-t border-line-2 py-3.5">
           <summary class="flex items-center gap-2.5 cursor-pointer list-none">
-            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "What if I don't have enough recipes for all weeks?"|t }}</span>
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "What if I don't have enough recipes?"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
-          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Empty slots remain — the algorithm avoids repeating mains across consecutive weeks. Add or import a few more favourites and regenerate to fill the gaps."|t }}</p>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "The list is simply shorter — a recipe never appears twice. Add or import a few more favourites and regenerate."|t }}</p>
         </details>
         <details class="group border-t border-line-2 py-3.5">
           <summary class="flex items-center gap-2.5 cursor-pointer list-none">
@@ -259,7 +259,7 @@
         </details>
         <details class="group border-t border-line-2 py-3.5">
           <summary class="flex items-center gap-2.5 cursor-pointer list-none">
-            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Will I get the same plan twice?"|t }}</span>
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Will I get the same list twice?"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
           <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "No. Generation is non-deterministic — regenerate until you find an arrangement you like."|t }}</p>
@@ -282,7 +282,7 @@
             <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "What are the recipe types?"|t }}</span>
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
-          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Six categories: appetizer, main course, dessert, accompaniment, beverage and condiment. Each day's plan can include one of each type."|t }}</p>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Six categories: appetizer, main course, dessert, accompaniment, beverage and condiment. A generated list draws main courses plus the optional types enabled in your preferences."|t }}</p>
         </details>
         <details class="group border-t border-line-2 py-3.5">
           <summary class="flex items-center gap-2.5 cursor-pointer list-none">
