@@ -17,21 +17,8 @@ interface Recipe {
   cached_at: string;
 }
 
-interface MealPlan {
-  id: string;
-  user_id: string;
-  start_date: string;
-  meals: Array<{
-    date: string;
-    meal_type: string;
-    recipe_id?: string;
-  }>;
-  cached_at: string;
-}
-
 interface ShoppingList {
   id: string;
-  week_start_date: string;
   items: Array<{
     id: string;
     ingredient: string;
@@ -53,7 +40,6 @@ interface SyncQueueRequest {
 
 interface CacheStats {
   recipes: number;
-  mealPlans: number;
   shoppingLists: number;
   queuedRequests: number;
   totalCached: number;
@@ -78,11 +64,6 @@ interface Window {
     cacheRecipe(recipe: Recipe): Promise<void>;
     getCachedRecipe(recipeId: string): Promise<Recipe | null>;
     getAllCachedRecipes(): Promise<Recipe[]>;
-
-    // Meal plan-specific operations
-    cacheMealPlan(mealPlan: MealPlan): Promise<void>;
-    getCachedMealPlan(mealPlanId: string): Promise<MealPlan | null>;
-    getActiveMealPlan(): Promise<MealPlan | null>;
 
     // Shopping list-specific operations
     cacheShoppingList(shoppingList: ShoppingList): Promise<void>;

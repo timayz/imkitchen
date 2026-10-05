@@ -19,16 +19,12 @@ async fn test_remove_recipe() -> anyhow::Result<()> {
     // Remove one — only the other recipe's ingredient remains.
     shopping.remove_recipe(&a, 4, "john").await?;
     let loaded = shopping.load("john").await?.expect("shopping aggregate");
-    assert_eq!(
-        loaded.recipes.iter().cloned().collect::<Vec<_>>(),
-        vec![b.clone()]
-    );
+    assert_eq!(loaded.recipes, vec![b.clone()]);
     assert_eq!(loaded.ingredients.len(), 1);
 
-    helpers::run_shopping_list_subscription(&state).await?;
-    let row = shopping.find("john").await?.expect("shopping list row");
-    assert_eq!(row.ingredients.0.len(), 1);
-    assert_eq!(row.ingredients.0[0].name, "sugar");
+    let view = shopping.state("john", 4).await?;
+    assert_eq!(view.ingredients.len(), 1);
+    assert_eq!(view.ingredients[0].name, "sugar");
 
     // Remove the last — empty list.
     shopping.remove_recipe(&b, 4, "john").await?;

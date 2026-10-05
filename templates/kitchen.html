@@ -10,140 +10,78 @@
 
 <!-- Main Content -->
 <div class="container mx-auto px-4 py-6">
-  <!-- Empty State -->
-  {% if slot.is_none() %}
+  {% if focused.is_none() %}
+  {# ── Empty state — recipes in the list could not be found ── #}
   <div class="max-w-2xl mx-auto">
     <div class="bg-paper rounded-xl shadow-md p-12 text-center">
       <div class="text-6xl mb-6">👨‍🍳</div>
-      <h2 class="text-2xl font-bold font-serif mb-4">{{ "Welcome to imkitchen!"|t }}</h2>
+      <h2 class="text-2xl font-bold font-serif mb-4">{{ "Nothing to cook yet"|t }}</h2>
       <p class="text-ink-2 mb-8">
-        {{ "Your kitchen is empty. Let's start by importing some delicious recipes and planning your meals for the week."|t }}
+        {{ "Generate a list from your recipes or add a few by hand, then cook them one by one."|t }}
       </p>
-
-      <!-- Getting Started Steps -->
-      <div class="space-y-4 mb-8 text-left">
-        <div class="flex items-start gap-4 p-4 bg-blue-50 rounded-xl">
-          <div class="shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">1
-          </div>
-          <div>
-            <h3 class="font-semibold font-serif mb-1">{{ "Create Your First Recipe"|t }}</h3>
-            <p class="text-sm text-ink-2">{{ "Add recipes from the web or create your own custom recipes"|t }}</p>
-          </div>
-        </div>
-
-        <div class="flex items-start gap-4 p-4 bg-primary-50 rounded-xl">
-          <div class="shrink-0 w-8 h-8 bg-primary-500 text-white rounded-full flex items-center justify-center font-bold">
-            2
-          </div>
-          <div>
-            <h3 class="font-semibold font-serif mb-1">{{ "Plan Your Week"|t }}</h3>
-            <p class="text-sm text-ink-2">{{ "Organize your meals on the calendar and let us generate your shopping list"|t }}</p>
-          </div>
-        </div>
-
-        <div class="flex items-start gap-4 p-4 bg-purple-50 rounded-xl">
-          <div
-            class="shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">
-            3</div>
-          <div>
-            <h3 class="font-semibold font-serif mb-1">{{ "Cook & Enjoy"|t }}</h3>
-            <p class="text-sm text-ink-2">{{ "Follow your meal plan and enjoy home-cooked meals every day"|t }}</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Call to Action -->
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="{{ "/recipes"|demo_href }}"
+        <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/kitchen/generate{% endif %}" ts-target="body" ts-swap="append"
           class="px-6 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition">
-          ➕ {{ "Create Recipe"|t }}
-        </a>
-        <a href="{{ "/menu"|demo_href }}"
-          class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition">
-          📅 {{ "View Menu"|t }}
+          ✨ {{ "Generate recipes"|t }}
+        </button>
+        <a href="{{ "/recipes"|demo_href }}"
+          class="px-6 py-3 bg-paper border border-line text-ink font-semibold rounded-xl hover:bg-cream-2 transition">
+          ➕ {{ "Add recipes"|t }}
         </a>
       </div>
     </div>
   </div>
   {% else %}
-  {# ── Populated Home (Today's Table) — Redesign artboard 01 ── #}
-  {% if let Some(slot) = slot %}
-  <header class="mb-5 flex items-start justify-between gap-3">
-    <div>
-      <h1 class="font-serif text-2xl leading-tight tracking-tight text-ink">{{ "Today's table"|t }}</h1>
-      <p class="text-sm text-ink-3 mt-0.5">{{ slot.day|date_year }}</p>
-    </div>
-    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-paper border border-line rounded-full shadow-sm">
-      <span class="w-1.5 h-1.5 rounded-full bg-meal-side"></span>
-      <span class="text-xs font-semibold text-meal-side-ink">{{ slot_total_count }} {{ "meals"|t }}</span>
-    </div>
-  </header>
-  {% endif %}
-
-  {% let has_aside = prep_remiders.is_some() %}
-  <div class="{% if has_aside %}grid lg:grid-cols-3 gap-6{% endif %}">
-    <!-- Main column: course switcher + hero + also today -->
-    <div class="{% if has_aside %}lg:col-span-2 {% endif %}min-w-0">
-      {% if let Some(slot) = slot %}
-        {% if let Some(slot_recipe) = slot_recipe %}
-          {% include "partials/kitchen-dish.html" %}
+  {# ── Populated Home — the next thing to cook, then the whole list ── #}
+  <header class="mb-4 flex items-start justify-between gap-3">
+    <div class="min-w-0">
+      <h1 class="font-serif text-2xl leading-tight tracking-tight text-ink">{{ "Up next"|t }}</h1>
+      <p class="text-sm text-ink-3 mt-0.5">
+        {% if completed_count == total_count %}
+        {{ "Everything is cooked — regenerate or add recipes."|t }}
+        {% else %}
+        {{ completed_count }}/{{ total_count }} {{ "cooked"|t }} · <a href="{{ "/groceries"|demo_href }}" class="text-primary-500 hover:text-primary-600 font-semibold">{{ "Groceries"|t }} →</a>
         {% endif %}
-      {% endif %}
+      </p>
+    </div>
+    {# Desktop-only Regenerate inline with the header #}
+    <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/kitchen/generate{% endif %}" ts-target="body" ts-swap="append"
+      class="hidden md:inline-flex items-center gap-1.5 px-3 h-9 bg-meal-main-soft text-meal-main-ink font-semibold rounded-xl text-xs hover:opacity-90 shadow-sm transition shrink-0">
+      <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
+      {{ "Regenerate"|t }}
+    </button>
+  </header>
 
-      {# ── Week Strip — Mon–Sun glance with meal-type dot chord per day ── #}
-      {% if !week_days.is_empty() %}
-      <section class="mt-4 bg-paper rounded-2xl border border-line-2 shadow-sm p-4">
-        <header class="flex items-center gap-2 mb-3">
-          <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3">{{ "This week"|t }}</div>
-          <div class="flex-1 h-px bg-line"></div>
-          <a href="{{ "/menu"|demo_href }}" class="text-xs font-semibold text-primary-500 hover:text-primary-600">{{ "Full menu"|t }} →</a>
-        </header>
-        <div class="grid grid-cols-7 gap-1">
-          {% for d in week_days %}
-          <a href="{{ "/kitchen/"|demo_href }}{{ d.date }}"
-            class="rounded-xl py-2 text-center transition hover:bg-cream">
-            <div class="text-[9px] font-mono font-semibold uppercase {% if d.is_today %}text-primary-500{% else %}text-ink-3{% endif %}">{{ d.weekday|t }}</div>
-            <div class="font-serif text-lg leading-none mt-0.5 tracking-tight {% if d.is_today %}text-primary-500{% endif %}">{{ d.day_num }}</div>
-            <div class="mt-1.5 min-h-[6px] flex justify-center items-center gap-0.5">
-              {% for mt in d.meal_types %}
-                {% match mt %}
-                  {% when RecipeType::Appetizer %}
-                    <span class="w-1.5 h-1.5 rounded-full bg-meal-entree"></span>
-                  {% when RecipeType::MainCourse %}
-                    <span class="w-1.5 h-1.5 rounded-full bg-meal-main"></span>
-                  {% when RecipeType::Accompaniment %}
-                    <span class="w-1.5 h-1.5 rounded-full bg-meal-side"></span>
-                  {% when RecipeType::Dessert %}
-                    <span class="w-1.5 h-1.5 rounded-full bg-meal-dessert"></span>
-                  {% when RecipeType::Beverage %}
-                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>
-                  {% when RecipeType::Condiment %}
-                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                {% endmatch %}
-              {% endfor %}
-            </div>
-          </a>
-          {% endfor %}
-        </div>
-      </section>
+  {# Mobile-only Regenerate #}
+  <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/kitchen/generate{% endif %}" ts-target="body" ts-swap="append"
+    class="md:hidden w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 mb-4 bg-meal-main-soft text-meal-main-ink font-semibold rounded-xl text-sm hover:opacity-90 shadow-sm transition">
+    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
+    {{ "Regenerate recipes"|t }}
+  </button>
+
+  {% let has_aside = !prep_ahead.is_empty() %}
+  <div class="{% if has_aside %}grid lg:grid-cols-3 gap-6{% endif %}">
+    <!-- Main column: hero + the list -->
+    <div class="{% if has_aside %}lg:col-span-2 {% endif %}min-w-0">
+      {% if let Some(slot_recipe) = focused %}
+        {% include "partials/kitchen-dish.html" %}
       {% endif %}
     </div>
 
     {% if has_aside %}
-    <!-- Side column: prep reminders -->
+    <!-- Side column: advance prep -->
     <aside class="space-y-6 min-w-0">
-      {% if let Some(remiders) = prep_remiders.as_ref() %}
       <div class="bg-paper rounded-xl shadow-md p-6">
-        <h3 class="font-bold font-serif text-lg mb-4">{{ "Tomorrow's Prep Reminder"|t }}</h3>
-        {% for recipe in remiders %}
-        <a href="{{ "/r/"|demo_href }}{{ self.dish_slug(recipe.id.as_str()) }}">
+        <h3 class="font-bold font-serif text-lg mb-1">{{ "Prep ahead"|t }}</h3>
+        <p class="text-xs text-ink-3 mb-3">{{ "Recipes in your list that need something done in advance."|t }}</p>
+        {% for recipe in prep_ahead %}
+        <a href="{{ "/r/"|demo_href }}{{ recipe.slug }}">
           <div class="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded text-sm text-yellow-800">
             ⏰ <strong>{{ recipe.name }}:</strong> {{ recipe.advance_prep }}
           </div>
         </a>
         {% endfor %}
       </div>
-      {% endif %}
     </aside>
     {% endif %}
   </div>

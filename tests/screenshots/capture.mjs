@@ -27,9 +27,8 @@ const DEVICE_SCALE_FACTOR = 2;
 const PAGES = [
   { name: 'dashboard-mobile', path: '/demo/kitchen', scrolled: true },
   { name: 'recipe-detail-mobile', path: '/demo/r/arroz-con-pollo', scrolled: true },
-  { name: 'meal-calendar-mobile', path: '/demo/menu', scrolled: false },
   { name: 'groceries-mobile', path: '/demo/groceries', scrolled: false },
-  { name: 'cooking-mobile', path: '/demo/kitchen/2026-06-12/arroz-con-pollo/cook', scrolled: false },
+  { name: 'cooking-mobile', path: '/demo/kitchen/arroz-con-pollo/cook', scrolled: false },
 ];
 
 // EN keeps the base filename; FR appends `-fr` (matches locales/fr.json remap).

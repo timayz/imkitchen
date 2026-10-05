@@ -73,7 +73,7 @@
             <em class="text-primary-500 not-italic"><span class="italic">{{ "Plan less."|t }}</span></em>
           </h1>
           <p class="text-lg md:text-xl text-ink-2 leading-relaxed mt-6 max-w-xl">
-            {{ "Intelligent meal planning that unlocks your entire recipe collection. Generate weeks of meals in seconds, with auto-paired sides and desserts."|t }}
+            {{ "Intelligent recipe picking that unlocks your entire collection. Generate a list of meals in seconds, with auto-paired sides and desserts."|t }}
           </p>
           <div class="flex flex-wrap gap-2.5 mt-7">
             <a href="/register" class="inline-flex items-center justify-center px-6 py-3.5 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition shadow-sm">
@@ -93,8 +93,8 @@
           <div class="relative mx-auto w-[280px] h-[520px] rounded-[44px] bg-ink p-2.5" style="box-shadow: 0 40px 80px rgba(0,0,0,.22), 0 12px 24px rgba(0,0,0,.12);">
             <div class="w-full h-full rounded-[36px] overflow-hidden bg-cream relative">
               <div class="pt-10 px-5 pb-2">
-                <div class="font-mono text-[9px] text-ink-3 tracking-widest">{{ "TUESDAY · APR 21"|t }}</div>
-                <div class="font-serif text-2xl text-ink tracking-tight mt-0.5">{{ "Today's table"|t }}</div>
+                <div class="font-mono text-[9px] text-ink-3 tracking-widest">{{ "1 / 11 COOKED"|t }}</div>
+                <div class="font-serif text-2xl text-ink tracking-tight mt-0.5">{{ "Up next"|t }}</div>
               </div>
               <div class="mx-4 mt-2 rounded-2xl p-3.5 relative overflow-hidden" style="background: linear-gradient(160deg, #fff3e4, #ffc99b);">
                 <div class="font-mono text-[9px] text-primary-800 uppercase tracking-widest">🍛 {{ "Main · 65m"|t }}</div>
@@ -105,43 +105,31 @@
                 </div>
               </div>
               <div class="pt-3.5 px-4">
-                <div class="font-mono text-[9px] text-ink-3 uppercase tracking-widest">{{ "This week"|t }}</div>
-                <div class="grid grid-cols-7 gap-1 mt-2">
-                  {# Each day cell #}
-                  <div class="bg-paper border border-line-2 rounded-lg py-1.5 text-center">
-                    <div class="font-mono text-[8px] text-ink opacity-70">M</div>
-                    <div class="font-serif text-[13px] text-ink leading-none mt-0.5">20</div>
-                    <div class="flex justify-center gap-px mt-1 min-h-[3px]"><span class="w-[3px] h-[3px] rounded-full bg-primary-500"></span><span class="w-[3px] h-[3px] rounded-full bg-meal-dessert"></span></div>
+                <div class="font-mono text-[9px] text-ink-3 uppercase tracking-widest">{{ "Your list"|t }}</div>
+                <div class="space-y-1.5 mt-2">
+                  <div class="flex items-center gap-2 bg-paper border border-line-2 rounded-lg px-2 py-1.5">
+                    <span class="text-sm leading-none">🥗</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="font-mono text-[7px] text-meal-entree-ink uppercase tracking-wider">{{ "Appetizer"|t }}</div>
+                      <div class="text-[11px] font-semibold text-ink truncate line-through opacity-60">{{ "Tomato Bruschetta"|t }}</div>
+                    </div>
+                    <span class="text-[8px] font-semibold text-herb-700">✓</span>
                   </div>
-                  <div class="bg-primary-500 rounded-lg py-1.5 text-center">
-                    <div class="font-mono text-[8px] text-white opacity-70">T</div>
-                    <div class="font-serif text-[13px] text-white leading-none mt-0.5">21</div>
-                    <div class="flex justify-center gap-px mt-1 min-h-[3px]"><span class="w-[3px] h-[3px] rounded-full bg-white"></span><span class="w-[3px] h-[3px] rounded-full bg-white/70"></span><span class="w-[3px] h-[3px] rounded-full bg-white/50"></span></div>
+                  <div class="flex items-center gap-2 bg-paper border border-line-2 rounded-lg px-2 py-1.5">
+                    <span class="text-sm leading-none">🍛</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="font-mono text-[7px] text-meal-main-ink uppercase tracking-wider">{{ "Main Course"|t }}</div>
+                      <div class="text-[11px] font-semibold text-ink truncate">{{ "Coq au Vin"|t }}</div>
+                    </div>
+                    <span class="text-[8px] font-semibold text-primary-500">›</span>
                   </div>
-                  <div class="bg-paper border border-line-2 rounded-lg py-1.5 text-center">
-                    <div class="font-mono text-[8px] text-ink opacity-70">W</div>
-                    <div class="font-serif text-[13px] text-ink leading-none mt-0.5">22</div>
-                    <div class="flex justify-center gap-px mt-1 min-h-[3px]"></div>
-                  </div>
-                  <div class="bg-paper border border-line-2 rounded-lg py-1.5 text-center">
-                    <div class="font-mono text-[8px] text-ink opacity-70">T</div>
-                    <div class="font-serif text-[13px] text-ink leading-none mt-0.5">23</div>
-                    <div class="flex justify-center gap-px mt-1 min-h-[3px]"><span class="w-[3px] h-[3px] rounded-full bg-primary-500"></span></div>
-                  </div>
-                  <div class="bg-paper border border-line-2 rounded-lg py-1.5 text-center">
-                    <div class="font-mono text-[8px] text-ink opacity-70">F</div>
-                    <div class="font-serif text-[13px] text-ink leading-none mt-0.5">24</div>
-                    <div class="flex justify-center gap-px mt-1 min-h-[3px]"><span class="w-[3px] h-[3px] rounded-full bg-primary-500"></span><span class="w-[3px] h-[3px] rounded-full bg-meal-dessert"></span></div>
-                  </div>
-                  <div class="bg-paper border border-line-2 rounded-lg py-1.5 text-center">
-                    <div class="font-mono text-[8px] text-ink opacity-70">S</div>
-                    <div class="font-serif text-[13px] text-ink leading-none mt-0.5">25</div>
-                    <div class="flex justify-center gap-px mt-1 min-h-[3px]"><span class="w-[3px] h-[3px] rounded-full bg-primary-500"></span><span class="w-[3px] h-[3px] rounded-full bg-meal-dessert"></span><span class="w-[3px] h-[3px] rounded-full bg-herb-500"></span></div>
-                  </div>
-                  <div class="bg-paper border border-line-2 rounded-lg py-1.5 text-center">
-                    <div class="font-mono text-[8px] text-ink opacity-70">S</div>
-                    <div class="font-serif text-[13px] text-ink leading-none mt-0.5">26</div>
-                    <div class="flex justify-center gap-px mt-1 min-h-[3px]"></div>
+                  <div class="flex items-center gap-2 bg-paper border border-line-2 rounded-lg px-2 py-1.5">
+                    <span class="text-sm leading-none">🍰</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="font-mono text-[7px] text-meal-dessert-ink uppercase tracking-wider">{{ "Dessert"|t }}</div>
+                      <div class="text-[11px] font-semibold text-ink truncate">{{ "Chocolate Mousse"|t }}</div>
+                    </div>
+                    <span class="text-[8px] font-semibold text-primary-500">›</span>
                   </div>
                 </div>
               </div>
@@ -156,8 +144,8 @@
               </svg>
             </div>
             <div>
-              <div class="font-semibold text-xs text-ink">{{ "Plan generated"|t }}</div>
-              <div class="text-[11px] text-ink-3">{{ "7 days · 15 meals"|t }}</div>
+              <div class="font-semibold text-xs text-ink">{{ "List generated"|t }}</div>
+              <div class="text-[11px] text-ink-3">{{ "7 mains · 15 recipes"|t }}</div>
             </div>
           </div>
 
@@ -183,7 +171,7 @@
         {{ "You cook the same"|t }} <span class="italic text-primary-500">{{ "ten"|t }}</span>.
       </h2>
       <p class="text-base md:text-lg text-ink-2 leading-relaxed max-w-2xl mx-auto mt-5">
-        {{ "Planning a week of meals is a choose-your-own-adventure of indecision. imkitchen reads your whole collection, your dietary needs, and your tastes — then builds a balanced, varied week in seconds."|t }}
+        {{ "Deciding what to cook is a choose-your-own-adventure of indecision. imkitchen reads your whole collection, your dietary needs, and your tastes — then builds a balanced, varied list in seconds."|t }}
       </p>
       <div class="grid grid-cols-3 gap-4 md:gap-8 mt-10 md:mt-12">
         <div>
@@ -192,7 +180,7 @@
         </div>
         <div>
           <div class="font-serif text-4xl md:text-6xl text-primary-500 leading-none tracking-tighter">3 {{ "sec"|t }}</div>
-          <div class="text-xs md:text-sm text-ink-2 mt-2">{{ "to generate a week"|t }}</div>
+          <div class="text-xs md:text-sm text-ink-2 mt-2">{{ "to generate a list"|t }}</div>
         </div>
         <div>
           <div class="font-serif text-4xl md:text-6xl text-primary-500 leading-none tracking-tighter">$0</div>
@@ -208,7 +196,7 @@
       <div class="text-center mb-10 md:mb-14">
         <div class="font-mono text-[11px] text-ink-3 uppercase tracking-widest mb-3.5">{{ "How it works"|t }}</div>
         <h2 class="font-serif text-3xl md:text-5xl text-ink leading-[1.05] tracking-tight">
-          {{ "Three steps to the week's menu"|t }}
+          {{ "Three steps to your next meal"|t }}
         </h2>
       </div>
       <div class="grid md:grid-cols-3 gap-5">
@@ -221,8 +209,8 @@
         <div class="bg-paper rounded-3xl p-7 border border-line-2">
           <div class="w-14 h-14 rounded-2xl bg-herb-100 flex items-center justify-center text-3xl mb-5">✨</div>
           <div class="font-mono text-[11px] text-herb-700 tracking-wider mb-2">{{ "Step 02"|t }}</div>
-          <h3 class="font-serif text-2xl text-ink tracking-tight mb-2.5">{{ "Generate a plan"|t }}</h3>
-          <p class="text-sm text-ink-2 leading-relaxed">{{ "Pick how many days. The algorithm balances cuisines, respects your diet, and auto-pairs sides."|t }}</p>
+          <h3 class="font-serif text-2xl text-ink tracking-tight mb-2.5">{{ "Generate a list"|t }}</h3>
+          <p class="text-sm text-ink-2 leading-relaxed">{{ "Pick how many meals. The algorithm balances cuisines, respects your diet, and auto-pairs sides."|t }}</p>
         </div>
         <div class="bg-paper rounded-3xl p-7 border border-line-2">
           <div class="w-14 h-14 rounded-2xl bg-meal-dessert-soft flex items-center justify-center text-3xl mb-5">🍳</div>

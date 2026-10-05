@@ -1,7 +1,7 @@
 //! Demo mode — a browsable, no-login tour of imkitchen.
 //!
-//! Every page reuses the production templates (kitchen, menu, recipes,
-//! groceries, cooking screen) but is fed hand-authored placeholder data from
+//! Every page reuses the production templates (kitchen, recipes, groceries,
+//! cooking screen) but is fed hand-authored placeholder data from
 //! [`fixtures`]. Mutating actions are swapped client-side for a sign-up modal
 //! (see `templates/partials/demo-signup-modal.html`); the swap is driven by the
 //! `is_demo` flag injected into every render via [`imkitchen_web_shared::template::Template::demo`].
@@ -30,10 +30,8 @@ pub fn routes() -> axum::Router<AppState> {
     axum::Router::new()
         .route("/demo", get(kitchen))
         .route("/demo/kitchen", get(kitchen))
-        .route("/demo/kitchen/{date}", get(kitchen))
-        .route("/demo/kitchen/{date}/{recipe_id}/cook", get(cook))
+        .route("/demo/kitchen/{recipe_id}/cook", get(cook))
         .route("/demo/menu", get(menu))
-        .route("/demo/menu/{date}", get(menu_date))
         .route("/demo/recipes", get(recipes))
         .route("/demo/recipes/{id}", get(recipes_detail))
         .route("/demo/r/{slug}", get(recipes_detail))
@@ -47,19 +45,12 @@ async fn kitchen(template: Template) -> impl IntoResponse {
     template.demo().render(fixtures::kitchen())
 }
 
-async fn cook(
-    template: Template,
-    Path((_date, recipe_id)): Path<(String, String)>,
-) -> impl IntoResponse {
+async fn cook(template: Template, Path((recipe_id,)): Path<(String,)>) -> impl IntoResponse {
     template.demo().render(fixtures::cooking(&recipe_id))
 }
 
-async fn menu(template: Template) -> impl IntoResponse {
-    template.demo().render(fixtures::menu(None))
-}
-
-async fn menu_date(template: Template, Path((date,)): Path<(String,)>) -> impl IntoResponse {
-    template.demo().render(fixtures::menu(Some(date)))
+async fn menu() -> impl IntoResponse {
+    Redirect::permanent("/demo/kitchen")
 }
 
 async fn recipes(template: Template, Query(query): Query<PageQuery>) -> impl IntoResponse {

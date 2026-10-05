@@ -1,38 +1,27 @@
 //! Synthetic data for demo mode.
 //!
 //! Everything here builds the *real* template context structs from the
-//! kitchen / menu / recipe / grocery web crates, so the demo renders the
-//! exact same templates a signed-in premium user would see — just fed from
-//! hand-authored placeholder data instead of the database.
+//! kitchen / recipe / grocery web crates, so the demo renders the exact same
+//! templates a signed-in premium user would see — just fed from hand-authored
+//! placeholder data instead of the database.
 
 use std::collections::HashSet;
 use std::str::FromStr;
 
 use evento::cursor::{Edge, PageInfo, ReadResult, Value};
-use imkitchen_core::mealplan;
-use imkitchen_core::mealplan::slot::SlotRow;
 use imkitchen_core::recipe::favorite::Favorite;
 use imkitchen_core::recipe::query::user::{SortBy, UserView, UserViewList};
 use imkitchen_core::recipe::query::user_stat::UserStatView;
-use imkitchen_types::mealplan::{DaySlotRecipe, DaySlotStatus};
 use imkitchen_types::recipe::{
     Ingredient, IngredientCategory, IngredientUnit, Instruction, RecipeType,
 };
-use imkitchen_web_grocery::{AisleSection, GroceriesTemplate};
-use imkitchen_web_kitchen::{CookingTemplate, KitchenTemplate, KitchenWeekDay};
-use imkitchen_web_menu::{MenuBoardDay, MenuSlot, MenuTemplate};
+use imkitchen_types::shopping::RecipeStatus;
+use imkitchen_web_grocery::{GroceriesTemplate, grocery_view};
+use imkitchen_web_kitchen::{CookingTemplate, KitchenTemplate, ListEntry};
 use imkitchen_web_recipe::routes::cook::{CookTemplate, PageQuery as CookPageQuery};
 use imkitchen_web_recipe::routes::detail::{DetailTemplate, SimilarTemplate};
 use imkitchen_web_recipe::routes::index::{IndexTemplate as RecipesIndexTemplate, PageQuery};
 use imkitchen_web_shared::auth::AuthUser;
-use time::{Duration, OffsetDateTime};
-
-const TZ: &str = "UTC";
-
-fn ymd(date: OffsetDateTime) -> String {
-    let fmt = time::macros::format_description!("[year]-[month]-[day]");
-    date.format(&fmt).unwrap_or_default()
-}
 
 // ── Demo user ────────────────────────────────────────────────────────────
 
@@ -93,8 +82,8 @@ fn recipe(
     }
 }
 
-/// The full demo recipe library — also the source for meal-plan slots and the
-/// shopping list, so every page stays internally consistent.
+/// The full demo recipe library — also the source for the demo list, so every
+/// page stays internally consistent.
 pub fn catalog() -> Vec<UserView> {
     use IngredientCategory::*;
     use IngredientUnit::*;
@@ -405,180 +394,74 @@ pub fn find_recipe(id: &str) -> Option<UserView> {
     catalog().into_iter().find(|r| r.id == id)
 }
 
-fn dsr(id: &str, status: DaySlotStatus) -> DaySlotRecipe {
-    let r = find_recipe(id).unwrap_or_default();
-    DaySlotRecipe {
-        id: r.id,
-        name: r.name,
-        prep_time: r.prep_time,
-        cook_time: r.cook_time,
-        advance_prep: r.advance_prep,
-        status,
-    }
-}
+// ── The demo list ────────────────────────────────────────────────────────
 
-// ── Meal-plan slots ──────────────────────────────────────────────────────
-
-/// `(appetizer, main, accompaniment, dessert, beverage, condiment)` — recipe
-/// ids for one day. Optional courses are `None`.
-type DayPlan = (
-    &'static str,
-    &'static str,
-    &'static str,
-    Option<&'static str>,
-    Option<&'static str>,
-    Option<&'static str>,
-);
-
-/// A repeating week of plans. Index by day-of-month so each calendar day is
-/// deterministic.
-const PLANS: &[DayPlan] = &[
-    (
-        "tomato-bruschetta",
-        "arroz-con-pollo",
-        "garlic-butter-rice",
-        Some("creme-brulee"),
-        Some("mint-lemonade"),
-        None,
-    ),
-    (
-        "caesar-salad",
-        "coq-au-vin",
-        "roasted-vegetables",
-        Some("chocolate-mousse"),
-        None,
-        None,
-    ),
-    (
-        "tomato-bruschetta",
-        "thai-green-curry",
-        "garlic-butter-rice",
-        Some("creme-brulee"),
-        None,
-        Some("chimichurri"),
-    ),
-    (
-        "caesar-salad",
-        "spaghetti-bolognese",
-        "roasted-vegetables",
-        Some("chocolate-mousse"),
-        Some("mint-lemonade"),
-        None,
-    ),
-    (
-        "tomato-bruschetta",
-        "coq-au-vin",
-        "garlic-butter-rice",
-        Some("creme-brulee"),
-        None,
-        None,
-    ),
-    (
-        "caesar-salad",
-        "arroz-con-pollo",
-        "roasted-vegetables",
-        Some("chocolate-mousse"),
-        None,
-        Some("chimichurri"),
-    ),
-    (
-        "tomato-bruschetta",
-        "spaghetti-bolognese",
-        "garlic-butter-rice",
-        Some("creme-brulee"),
-        Some("mint-lemonade"),
-        None,
-    ),
+/// `(recipe id, cooking status)` — the recipes in the demo user's list, in
+/// meal order (starter, main, side, dessert, drink). One is already cooked
+/// and one is mid-way so every state shows.
+const LIST: &[(&str, RecipeStatus)] = &[
+    // Meal 1
+    ("tomato-bruschetta", RecipeStatus::Completed),
+    ("arroz-con-pollo", RecipeStatus::Cooking(1)),
+    ("garlic-butter-rice", RecipeStatus::Idle),
+    ("creme-brulee", RecipeStatus::Idle),
+    ("mint-lemonade", RecipeStatus::Idle),
+    // Meal 2
+    ("caesar-salad", RecipeStatus::Idle),
+    ("coq-au-vin", RecipeStatus::Idle),
+    ("roasted-vegetables", RecipeStatus::Idle),
+    ("chocolate-mousse", RecipeStatus::Idle),
+    // Meal 3
+    ("thai-green-curry", RecipeStatus::Idle),
+    ("chimichurri", RecipeStatus::Idle),
 ];
 
-fn slot_for(day: OffsetDateTime) -> SlotRow {
-    let plan = PLANS[(day.day() as usize) % PLANS.len()];
-    let day_unix = day.unix_timestamp() as u64;
-
-    SlotRow {
-        day: day_unix,
-        household_size: 4,
-        main_course: dsr(plan.1, DaySlotStatus::Idle).into(),
-        appetizer: Some(dsr(plan.0, DaySlotStatus::Idle).into()),
-        accompaniment: Some(dsr(plan.2, DaySlotStatus::Idle).into()),
-        dessert: plan.3.map(|id| dsr(id, DaySlotStatus::Idle).into()),
-        beverage: plan.4.map(|id| dsr(id, DaySlotStatus::Idle).into()),
-        condiment: plan.5.map(|id| dsr(id, DaySlotStatus::Idle).into()),
-        generated_at: 0,
-    }
-}
-
-fn meal_types_for(day: OffsetDateTime) -> Vec<RecipeType> {
-    let plan = PLANS[(day.day() as usize) % PLANS.len()];
-    let mut types = vec![
-        RecipeType::Appetizer,
-        RecipeType::MainCourse,
-        RecipeType::Accompaniment,
-    ];
-    if plan.3.is_some() {
-        types.push(RecipeType::Dessert);
-    }
-    if plan.4.is_some() {
-        types.push(RecipeType::Beverage);
-    }
-    if plan.5.is_some() {
-        types.push(RecipeType::Condiment);
-    }
-    types
+fn list_recipes() -> Vec<(UserView, RecipeStatus)> {
+    LIST.iter()
+        .filter_map(|(id, status)| find_recipe(id).map(|r| (r, status.clone())))
+        .collect()
 }
 
 // ── Kitchen page ─────────────────────────────────────────────────────────
 
 pub fn kitchen() -> KitchenTemplate {
-    let today = mealplan::now(TZ);
-    let slot = slot_for(today);
-    let plan = PLANS[(today.day() as usize) % PLANS.len()];
-    let slot_recipe = find_recipe(plan.1);
-
-    let slot_total_count = 3
-        + slot.dessert.is_some() as u8
-        + slot.beverage.is_some() as u8
-        + slot.condiment.is_some() as u8;
-
-    // Week strip — Mon..Sun anchored on today.
-    let mut week_dates = mealplan::week_days_before(today);
-    week_dates.push(today);
-    week_dates.extend(mealplan::week_days_after(today));
-    let today_u64 = mealplan::date_to_u64(today);
-
-    let week_days: Vec<KitchenWeekDay> = week_dates
+    let entries: Vec<ListEntry> = list_recipes()
         .iter()
-        .map(|d| KitchenWeekDay {
-            date: ymd(*d),
-            day_num: d.day(),
-            weekday: d.weekday().to_string().chars().take(3).collect(),
-            is_today: mealplan::date_to_u64(*d) == today_u64,
-            meal_types: meal_types_for(*d),
+        .map(|(r, status)| ListEntry {
+            id: r.id.clone(),
+            name: r.name.clone(),
+            slug: r.slug.clone(),
+            recipe_type: r.recipe_type.0.clone(),
+            status: status.clone(),
+            advance_prep: r.advance_prep.clone(),
+            prep_time: r.prep_time,
+            cook_time: r.cook_time,
         })
         .collect();
 
-    // Tomorrow's prep reminders (premium-only section) — surface the recipes
-    // that carry an advance-prep note.
-    let tomorrow = today + Duration::days(1);
-    let prep_remiders: Vec<DaySlotRecipe> = {
-        let plan = PLANS[(tomorrow.day() as usize) % PLANS.len()];
-        [Some(plan.1), Some(plan.0), plan.3]
-            .into_iter()
-            .flatten()
-            .map(|id| dsr(id, DaySlotStatus::Idle))
-            .filter(|r| !r.advance_prep.is_empty())
-            .collect()
-    };
+    let total_count = entries.len();
+    let completed_count = entries.iter().filter(|e| e.is_completed()).count();
+    let focused_entry = entries
+        .iter()
+        .find(|e| !e.is_completed())
+        .cloned()
+        .expect("demo list has an uncooked recipe");
+    let focused = find_recipe(&focused_entry.id);
+
+    let prep_ahead: Vec<ListEntry> = entries
+        .iter()
+        .filter(|e| !e.advance_prep.is_empty() && !e.is_completed() && e.id != focused_entry.id)
+        .cloned()
+        .collect();
 
     KitchenTemplate {
         user: demo_user(),
-        slot: Some(slot),
-        slot_recipe,
-        slot_total_count,
-        slot_completed_count: 0,
-        prep_remiders: (!prep_remiders.is_empty()).then_some(prep_remiders),
-        date: ymd(today),
-        week_days,
+        entries,
+        focused,
+        focused_status: focused_entry.status,
+        completed_count,
+        total_count,
+        prep_ahead,
         ..Default::default()
     }
 }
@@ -586,7 +469,6 @@ pub fn kitchen() -> KitchenTemplate {
 // ── Cooking screen ───────────────────────────────────────────────────────
 
 pub fn cooking(recipe_id: &str) -> CookingTemplate {
-    let today = mealplan::now(TZ);
     let slot_recipe =
         find_recipe(recipe_id).unwrap_or_else(|| find_recipe("arroz-con-pollo").unwrap());
 
@@ -612,114 +494,13 @@ pub fn cooking(recipe_id: &str) -> CookingTemplate {
         completed_instructions,
         coming_instructions,
         current_instruction,
-        date: ymd(today),
         show_iframe: false,
         show_ingredients: false,
         ingredient_aisles: vec![],
     }
 }
 
-// ── Menu page ────────────────────────────────────────────────────────────
-
-pub fn menu(date: Option<String>) -> MenuTemplate {
-    let bounds = match date {
-        Some(d) => mealplan::month_bounds_from_date(&d, TZ),
-        None => mealplan::month_bounds_from_now(TZ),
-    }
-    .unwrap_or_else(|_| mealplan::month_bounds_from_now(TZ).expect("now bounds"));
-
-    let (prev_month, next_month) = mealplan::prev_next_month(bounds.first).unwrap_or_default();
-
-    let today = mealplan::now(TZ);
-    let today_u64 = mealplan::date_to_u64(today);
-    let is_past = mealplan::date_to_u64(bounds.date) < today_u64;
-
-    // Mobile calendar list: leading weekday padding, then each in-month day.
-    let mut menu_slots: Vec<MenuSlot> = mealplan::week_days_before(bounds.first)
-        .iter()
-        .map(|d| MenuSlot {
-            day: d.day(),
-            slot: None,
-        })
-        .collect();
-
-    let mut d = bounds.first;
-    while d <= bounds.last {
-        menu_slots.push(MenuSlot {
-            day: d.day(),
-            slot: Some(slot_for(d)),
-        });
-        d += Duration::days(1);
-    }
-    for d in mealplan::week_days_after(bounds.last) {
-        menu_slots.push(MenuSlot {
-            day: d.day(),
-            slot: None,
-        });
-    }
-
-    // Desktop board: Mon..Sun padded grid grouped into weeks.
-    let mut board_dates = mealplan::week_days_before(bounds.first);
-    let mut d = bounds.first;
-    while d <= bounds.last {
-        board_dates.push(d);
-        d += Duration::days(1);
-    }
-    board_dates.extend(mealplan::week_days_after(bounds.last));
-
-    let bounds_month = bounds.date.month();
-    let board_days: Vec<MenuBoardDay> = board_dates
-        .iter()
-        .map(|d| {
-            let in_month = d.month() == bounds_month;
-            let d_u64 = mealplan::date_to_u64(*d);
-            MenuBoardDay {
-                date: ymd(*d),
-                weekday: d.weekday().to_string().chars().take(3).collect(),
-                day_num: d.day(),
-                is_today: d_u64 == today_u64,
-                is_past: d_u64 < today_u64,
-                is_in_month: in_month,
-                slot: in_month.then(|| slot_for(*d)),
-            }
-        })
-        .collect();
-
-    let board_weeks: Vec<Vec<MenuBoardDay>> = board_days.chunks(7).map(|c| c.to_vec()).collect();
-
-    let selected = slot_for(bounds.date);
-    let selected_day = selected.day;
-
-    MenuTemplate {
-        user: demo_user(),
-        slots: menu_slots,
-        selected_slot: Some(selected),
-        selected_day,
-        current_date: ymd(bounds.date),
-        is_past,
-        first_month_day: bounds.first.unix_timestamp() as u64,
-        prev_month,
-        next_month,
-        board_weeks,
-        ..Default::default()
-    }
-}
-
 // ── Groceries page ───────────────────────────────────────────────────────
-
-fn aisle(name: &str, items: Vec<Ingredient>, checked: &HashSet<String>) -> AisleSection {
-    let total = items.len();
-    let checked_count = items.iter().filter(|i| checked.contains(&i.key())).count();
-    let pct = (checked_count * 100).checked_div(total).unwrap_or(0);
-    AisleSection {
-        name: name.to_owned(),
-        items,
-        checked: checked_count,
-        total,
-        done: total > 0 && checked_count == total,
-        pct,
-    }
-}
 
 pub fn groceries() -> GroceriesTemplate {
     use IngredientCategory::*;
@@ -767,31 +548,21 @@ pub fn groceries() -> GroceriesTemplate {
         checked.insert(i.key());
     }
 
-    let aisles = vec![
-        aisle("shopping_FruitsAndVegetables", produce, &checked),
-        aisle("shopping_Butcher", butcher, &checked),
-        aisle("shopping_DairyAndEggs", dairy, &checked),
-        aisle("shopping_Grocery", pantry, &checked),
-        aisle("shopping_Bakery", bakery, &checked),
-    ];
-
-    let total_items: usize = aisles.iter().map(|a| a.total).sum();
-    let checked_items: usize = aisles.iter().map(|a| a.checked).sum();
-    let progress_pct = (checked_items * 100).checked_div(total_items).unwrap_or(0);
-
-    let today = mealplan::now(TZ);
-    let from = today + Duration::days(1);
-    let to = from + Duration::days(6);
+    let ingredients: Vec<Ingredient> = [produce, butcher, dairy, pantry, bakery]
+        .into_iter()
+        .flatten()
+        .collect();
+    let view = grocery_view(&ingredients, checked);
 
     GroceriesTemplate {
         user: demo_user(),
-        checked,
-        aisles,
-        from_date: from.unix_timestamp() as u64,
-        to_date: to.unix_timestamp() as u64,
-        total_items,
-        checked_items,
-        progress_pct,
+        recipe_count: LIST.len(),
+        checked: view.checked,
+        aisles: view.aisles,
+        split_at: view.split_at,
+        total_items: view.total_items,
+        checked_items: view.checked_items,
+        progress_pct: view.progress_pct,
         ..Default::default()
     }
 }

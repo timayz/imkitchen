@@ -4,7 +4,7 @@ use imkitchen_types::shopping::RecipeRemoved;
 use super::merge::merge_ingredients;
 
 impl<E: Executor> super::Module<E> {
-    /// Remove a recipe from the user's shopping list, recomputing the merged
+    /// Remove a recipe from the user's list, recomputing the merged
     /// ingredient list for the remaining recipe set. When the set becomes empty
     /// the list is left with no ingredients.
     pub async fn remove_recipe(

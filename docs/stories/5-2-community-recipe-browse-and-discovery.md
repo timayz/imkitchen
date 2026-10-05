@@ -72,7 +72,6 @@ so that I can discover new recipes to add to my favorites.
 - [ ] Implement quick-favorite functionality (AC: #6)
   - [ ] Reuse POST `/recipes/{id}/favorite` endpoint from Story 2.3
   - [ ] Return partial template showing updated favorite button state
-  - [ ] Display favorite limit warning if free tier user hits 10 favorites
   - [ ] Update favorite count in card after toggle
 - [ ] Write tests (AC: #8)
   - [ ] Test get_community_recipes returns only shared recipes (is_shared = 1)

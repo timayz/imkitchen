@@ -140,25 +140,13 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
-    let sub_mealplan_cmd = imkitchen_core::mealplan::subscription()
+    let sub_shopping_pool = imkitchen_core::shopping::pool::subscription()
         .data(write_pool.clone())
-        .start(&executor)
-        .await?;
-
-    let sub_mealplan_slot = imkitchen_core::mealplan::slot::subscription()
-        .data(write_pool.clone())
-        .any_routing_key()
         .start(&executor)
         .await?;
 
     let sub_shopping = imkitchen_core::shopping::subscription()
         .data(write_pool.clone())
-        .start(&executor)
-        .await?;
-
-    let sub_shopping_list = imkitchen_core::shopping::list::subscription()
-        .data(write_pool.clone())
-        .any_routing_key()
         .start(&executor)
         .await?;
 
@@ -260,9 +248,8 @@ pub async fn serve(
         .route("/ready", get(imkitchen_web_public::routes::health::ready))
         .with_state(app_state.read_db.clone())
         .merge(imkitchen_web_kitchen::routes())
-        .merge(imkitchen_web_menu::routes())
-        .merge(imkitchen_web_recipe::routes())
         .merge(imkitchen_web_grocery::routes())
+        .merge(imkitchen_web_recipe::routes())
         .merge(imkitchen_web_settings::routes())
         .merge(imkitchen_web_public::routes())
         .merge(imkitchen_web_admin::routes())
@@ -342,10 +329,8 @@ pub async fn serve(
         sub_recipe_user_fts.shutdown(),
         sub_recipe_user_stat.shutdown(),
         sub_recipe_thumbnail.shutdown(),
-        sub_mealplan_cmd.shutdown(),
-        sub_mealplan_slot.shutdown(),
+        sub_shopping_pool.shutdown(),
         sub_shopping.shutdown(),
-        sub_shopping_list.shutdown(),
     ])
     .await;
 

@@ -28,7 +28,6 @@ time = { workspace = true }
 rand = { workspace = true }
 reqwest.workspace = true
 tracing.workspace = true
-time-tz.workspace = true
 imkitchen-types = { path = "../types", version = "1.9.4" }
 imkitchen-db = { path = "../db", version = "1.9.4" }
 
