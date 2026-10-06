@@ -33,6 +33,7 @@
     "build": "sparkling-app-cli build --copy",
     "autolink": "sparkling-app-cli autolink",
     "doctor": "sparkling-app-cli doctor",
+    "icons": "node scripts/icons.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "run:android": "sparkling-app-cli run:android",

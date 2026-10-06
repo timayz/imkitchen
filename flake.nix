@@ -77,6 +77,7 @@
             cargo-tarpaulin
             cargo-edit
             tailwindcss_4
+            imagemagick # mobile/scripts/icons.mjs
             pkgs-unstable.playwright-test
             (writeShellScriptBin "mcp-server-playwright" ''
               export PWMCP_PROFILES_DIR_FOR_TEST="$PWD/.pwmcp-profiles"
