@@ -123,12 +123,14 @@ export function App() {
   useEffect(() => {
     getEditable(id)
       .then((input) => {
-        setDraft({
+        const loaded: Draft = {
           ...input,
           ingredients: input.ingredients.map((i) => ({ ...i, key: key() })),
           instructions: input.instructions.map((i) => ({ ...i, key: key() })),
-        })
-        setSaved(JSON.stringify(input))
+        }
+        setDraft(loaded)
+        // Serialise through `toInput` so key order matches the dirty check.
+        setSaved(JSON.stringify(toInput(loaded)))
         setState({ kind: 'ready' })
       })
       .catch((err: unknown) =>
@@ -171,7 +173,7 @@ export function App() {
       await uploadThumbnail(id, picked.mimeType, picked.base64)
       setNotice({ kind: 'ok', text: t('edit.photo_uploaded') })
       // The server resizes in the background; look for the result a bit later.
-      for (const ms of PHOTO_POLL_MS) setTimeout(() => void loadPhoto(), ms)
+      PHOTO_POLL_MS.forEach((ms) => setTimeout(() => void loadPhoto(), ms))
     } catch (err) {
       setNotice({ kind: 'error', text: err instanceof ApiError ? err.message : String(err) })
     } finally {

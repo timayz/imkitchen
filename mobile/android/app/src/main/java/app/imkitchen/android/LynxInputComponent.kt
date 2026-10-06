@@ -120,7 +120,7 @@ class LynxInputComponent(context: LynxContext?) : LynxUI<AppCompatEditText>(cont
 
   /** Keyboard action button: `done` | `next` | `go` | `search` | `send`. */
   @LynxProp(name = "confirm-type")
-  fun setConfirmType(value: String) {
+  fun setConfirmType(value: String?) {
     mView.imeOptions = when (value) {
       "done" -> EditorInfo.IME_ACTION_DONE
       "next" -> EditorInfo.IME_ACTION_NEXT
@@ -176,8 +176,8 @@ class LynxInputComponent(context: LynxContext?) : LynxUI<AppCompatEditText>(cont
   }
 
   @LynxProp(name = "placeholder")
-  fun setPlaceHolder(value: String) {
-    mView.hint = value
+  fun setPlaceHolder(value: String?) {
+    mView.hint = value ?: ""
   }
 
   @LynxProp(name = "text-color")
