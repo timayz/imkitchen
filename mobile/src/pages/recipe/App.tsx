@@ -117,62 +117,90 @@ export function App() {
   const r = state.recipe
   const c = course(r.recipe_type)
   const isChef = user?.is_chef === true
+  const owner = r.owner_name
+  const prepNeeded = r.advance_prep.trim() !== ''
 
   return (
     <view className="screen">
       <scroll-view className="rdet__scroll" scroll-orientation="vertical">
-        <view className="content">
-          <view className="row rdet__bar">
-            <view className="cook__close" bindtap={back}>
-              <text className="cook__close-text">←</text>
-            </view>
-            <text className="muted">
-              {t('tabs.recipes')} / {c.label}
-            </text>
-          </view>
-
+        {/* Full-bleed hero: course-tinted photo, floating back button, badges at the foot */}
+        <view className="rdet__hero">
           <RecipeImage
             thumbnailUrl={r.thumbnail_url}
             blurPlaceholder={r.blur_placeholder}
             recipeType={r.recipe_type}
-            size="hero"
+            size="cover"
           />
-
-          <view className="hero__pills">
-            <view className="pill" style={{ backgroundColor: c.soft }}>
-              <text className="pill__text" style={{ color: c.ink }}>
-                {c.emoji} {c.label}
+          <view className="rdet__hero-bar">
+            <view className="rdet__round" bindtap={back}>
+              <text className="rdet__round-glyph">←</text>
+            </view>
+          </view>
+          <view className="rdet__badges">
+            <view className="rdet__badge rdet__badge--paper">
+              <text className="rdet__badge-text" style={{ color: c.ink }}>
+                {c.label}
               </text>
             </view>
-            <view className="pill pill--line">
-              <text className="pill__text">⏱ {minutes(r.total_time)}</text>
-            </view>
-            <view className="pill pill--line">
-              <text className="pill__text">👥 {r.household_size}</text>
-            </view>
-            {r.is_shared && !r.is_owner && (
-              <view className="pill pill--line">
-                <text className="pill__text">{t('recipes.shared')}</text>
+            {r.is_owner && r.is_shared && (
+              <view className="rdet__badge rdet__badge--shared">
+                <text className="rdet__badge-text rdet__badge-text--shared">{t('recipes.shared')}</text>
               </view>
             )}
-            {r.dietary_restrictions.map((d) => (
-              <view key={d} className="pill pill--line">
-                <text className="pill__text">{t(`diet.${d}` as const)}</text>
+            {r.is_owner && !r.is_shared && (
+              <view className="rdet__badge rdet__badge--private">
+                <text className="rdet__badge-text rdet__badge-text--private">{t('recipes.private')}</text>
               </view>
-            ))}
+            )}
+          </view>
+        </view>
+
+        <view className="content">
+          <view className="rdet__title">
+            <text className="rdet__h1">{r.name}</text>
+            {r.description !== '' && <text className="body">{r.description}</text>}
+            {r.origin && (
+              <view className="rdet__origin" bindtap={() => openExternal(r.origin!)}>
+                <text className="link">↗ {t('recipes.origin')}</text>
+              </view>
+            )}
           </view>
 
-          <text className="h1">{r.name}</text>
-          {r.description !== '' && <text className="body">{r.description}</text>}
-          {r.owner_name && (
-            <text className="link" bindtap={() => void push('cook', { username: r.owner_name! })}>
-              @{r.owner_name}
-            </text>
+          {!r.is_owner && owner && (
+            <view className="rdet__author" bindtap={() => void push('cook', { username: owner })}>
+              <view className="rdet__avatar">
+                <text className="rdet__avatar-text">{owner.charAt(0).toUpperCase()}</text>
+              </view>
+              <view className="rdet__author-body">
+                <view className="row">
+                  <text className="rdet__author-name">@{owner}</text>
+                  <text className="badge badge--chef">{t('cook.eyebrow')}</text>
+                </view>
+                <text className="rcard__meta">{t('recipes.shared_count', { n: r.owner_stat.shared })}</text>
+              </view>
+              <text className="rcard__chevron">›</text>
+            </view>
           )}
-          {r.origin && (
-            <text className="link" bindtap={() => openExternal(r.origin!)}>
-              {t('recipes.origin')}
-            </text>
+
+          <view className="rdet__stats">
+            <Stat label={t('recipes.prep')} value={minutes(r.prep_time)} divider />
+            <Stat label={t('recipes.cook_time')} value={minutes(r.cook_time)} divider />
+            <Stat label={t('recipes.serves')} value={String(r.household_size)} />
+          </view>
+
+          {(r.dietary_restrictions.length > 0 || r.accepts_accompaniment) && (
+            <view className="hero__pills">
+              {r.dietary_restrictions.map((d) => (
+                <view key={d} className="pill pill--line">
+                  <text className="pill__text">{t(`diet.${d}` as const)}</text>
+                </view>
+              ))}
+              {r.accepts_accompaniment && (
+                <view className="pill pill--line">
+                  <text className="pill__text">{t('recipes.takes_side')}</text>
+                </view>
+              )}
+            </view>
           )}
 
           {notice && <text className="error">{notice}</text>}
@@ -188,6 +216,7 @@ export function App() {
               }
               variant={r.in_shopping ? 'secondary' : 'primary'}
               disabled={busy || r.in_shopping}
+              block
             />
             {!r.is_owner && (
               <Button
@@ -200,70 +229,88 @@ export function App() {
                 }
                 variant="secondary"
                 disabled={busy}
+                block
               />
             )}
             {r.is_owner && (
-              <Button
-                label={t('recipes.edit')}
-                onTap={() => void push('recipe-edit', { id: r.id })}
-                variant="secondary"
-              />
-            )}
-            {r.is_owner && isChef && (
-              <Button
-                label={r.is_shared ? t('recipes.make_private') : t('recipes.make_public')}
-                onTap={() =>
-                  run(
-                    () => (r.is_shared ? unshareRecipe(r.id) : shareRecipe(r.id)),
-                    (x) => ({ ...x, is_shared: !x.is_shared }),
-                  )
-                }
-                variant="secondary"
-                disabled={busy}
-              />
-            )}
-            {r.is_owner && (
-              <Button
-                label={t('recipes.delete')}
-                onTap={() => setConfirmDelete(true)}
-                variant="ghost"
-                disabled={busy}
-              />
+              <view className="rdet__row">
+                <view className="rdet__secondary" bindtap={() => void push('recipe-edit', { id: r.id })}>
+                  <text className="rdet__secondary-text">{t('recipes.edit')}</text>
+                </view>
+                {isChef && (
+                  <view
+                    className={busy ? 'rdet__secondary rdet__secondary--disabled' : 'rdet__secondary'}
+                    bindtap={
+                      busy
+                        ? undefined
+                        : () =>
+                            run(
+                              () => (r.is_shared ? unshareRecipe(r.id) : shareRecipe(r.id)),
+                              (x) => ({ ...x, is_shared: !x.is_shared }),
+                            )
+                    }
+                  >
+                    <text className="rdet__secondary-text">
+                      {r.is_shared ? t('recipes.make_private') : t('recipes.make_public')}
+                    </text>
+                  </view>
+                )}
+                <view
+                  className={busy ? 'rdet__icon-btn rdet__secondary--disabled' : 'rdet__icon-btn'}
+                  bindtap={busy ? undefined : () => setConfirmDelete(true)}
+                >
+                  <text className="rdet__icon-btn-glyph">🗑</text>
+                </view>
+              </view>
             )}
           </view>
 
-          {r.advance_prep.trim() !== '' && (
-            <view className="kitchen__prep">
-              <text className="kitchen__prep-text">⏰ {r.advance_prep}</text>
+          {prepNeeded && (
+            <view className="rdet__prep">
+              <view className="rdet__prep-icon">
+                <text className="rdet__prep-glyph">⏰</text>
+              </view>
+              <view className="rdet__prep-body">
+                <text className="rdet__eyebrow">{t('recipes.plan_ahead').toUpperCase()}</text>
+                <text className="rdet__prep-text">{r.advance_prep}</text>
+              </view>
             </view>
           )}
 
-          <view className="card">
-            <text className="h2">
-              {t('recipes.ingredients')} · {r.ingredients.length}
-            </text>
-            {r.ingredients.map((i) => (
-              <view key={i.key} className="row rdet__ing">
+          <view className="card rdet__card">
+            <view className="rdet__card-head">
+              <text className="h2">{t('recipes.ingredients')}</text>
+              <text className="rdet__count">{t('recipes.items_count', { n: r.ingredients.length })}</text>
+            </view>
+            {r.ingredients.map((i, index) => (
+              <view
+                key={i.key}
+                className={index === r.ingredients.length - 1 ? 'rdet__ing rdet__ing--last' : 'rdet__ing'}
+              >
                 <text className="rdet__ing-name">{i.name}</text>
-                <text className="ing__qty">{i.quantity_label}</text>
+                <text className="rdet__ing-qty">{i.quantity_label}</text>
               </view>
             ))}
           </view>
 
           {r.instructions.length > 0 && (
-            <view className="card">
+            <view className="card rdet__steps">
               <text className="h2">{t('recipes.instructions')}</text>
               {r.instructions.map((ins, index) => (
-                <view key={index} className="row rdet__step">
-                  <view className="rdet__num" style={{ backgroundColor: c.soft }}>
-                    <text className="rdet__num-text" style={{ color: c.ink }}>
-                      {index + 1}
-                    </text>
+                <view key={index} className="rdet__step-group">
+                  <view className="rdet__step">
+                    <view className="rdet__num" style={{ backgroundColor: c.soft }}>
+                      <text className="rdet__num-text" style={{ color: c.ink }}>
+                        {index + 1}
+                      </text>
+                    </view>
+                    <text className="rdet__step-text">{ins.description}</text>
                   </view>
-                  <view className="rdet__step-body">
-                    <text className="body">{ins.description}</text>
-                    {ins.time_next > 0 && <text className="muted">⏲ {minutes(ins.time_next)}</text>}
-                  </view>
+                  {ins.time_next > 0 && (
+                    <view className="rdet__wait">
+                      <text className="rdet__wait-text">⏲ {t('recipes.wait', { time: minutes(ins.time_next) })}</text>
+                    </view>
+                  )}
                 </view>
               ))}
             </view>
@@ -283,9 +330,18 @@ export function App() {
       <Sheet open={confirmDelete} onClose={() => setConfirmDelete(false)}>
         <text className="h2">{t('recipes.delete_title')}</text>
         <text className="body">{t('recipes.delete_hint')}</text>
-        <Button label={t('recipes.delete')} onTap={remove} block />
+        <Button label={t('recipes.delete')} onTap={remove} variant="danger" block />
         <Button label={t('common.cancel')} onTap={() => setConfirmDelete(false)} variant="ghost" />
       </Sheet>
+    </view>
+  )
+}
+
+function Stat({ label, value, divider }: { label: string; value: string; divider?: boolean }) {
+  return (
+    <view className={divider ? 'rdet__stat rdet__stat--divider' : 'rdet__stat'}>
+      <text className="rdet__eyebrow">{label.toUpperCase()}</text>
+      <text className="rdet__stat-value">{value}</text>
     </view>
   )
 }
