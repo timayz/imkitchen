@@ -24,6 +24,10 @@
   padding: 8px 4px;
 }
 
+.btn--danger {
+  background-color: var(--color-primary-700);
+}
+
 .btn--disabled {
   opacity: 0.5;
 }
@@ -43,4 +47,16 @@
 
 .btn__text--ghost {
   color: var(--color-primary-600);
+}
+
+.btn__text--danger {
+  color: var(--color-paper);
+}
+
+.btn--ink {
+  background-color: var(--color-ink);
+}
+
+.btn__text--ink {
+  color: var(--color-cream);
 }

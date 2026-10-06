@@ -82,3 +82,16 @@
   letter-spacing: 2px;
   color: var(--color-ink-3);
 }
+
+.gen__warn {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background-color: #fef3c7;
+  border: 1px solid #f5d77a;
+}
+
+.gen__warn-text {
+  font-size: 13px;
+  line-height: 18px;
+  color: #78350f;
+}

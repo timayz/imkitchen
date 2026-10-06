@@ -3,7 +3,7 @@ import './Button.css'
 export interface ButtonProps {
   label: string
   onTap: () => void
-  variant?: 'primary' | 'secondary' | 'ghost'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'ink'
   disabled?: boolean
   block?: boolean
 }
