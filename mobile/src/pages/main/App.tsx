@@ -72,7 +72,7 @@ export function App() {
     <view className="screen shell">
       <view className="shell__body">
         {tab === 'kitchen' && <KitchenTab refreshKey={refreshKey} onAddRecipes={() => selectTab('recipes')} />}
-        {tab === 'groceries' && <GroceriesTab refreshKey={refreshKey} />}
+        {tab === 'groceries' && <GroceriesTab refreshKey={refreshKey} onAddRecipes={() => selectTab('recipes')} />}
         {tab === 'recipes' && <RecipesTab refreshKey={refreshKey} />}
         {tab === 'settings' && <SettingsTab refreshKey={refreshKey} />}
       </view>
