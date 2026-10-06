@@ -3,6 +3,7 @@ pub mod auth;
 pub mod config;
 pub mod language;
 pub mod middleware;
+pub mod services;
 pub mod state;
 pub mod template;
 

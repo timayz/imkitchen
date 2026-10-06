@@ -1,8 +1,8 @@
 use axum::{extract::State, response::IntoResponse};
 use axum_extra::extract::Query;
-use evento::cursor::{Args, ReadResult, Value};
+use evento::cursor::{ReadResult, Value};
 use imkitchen_core::recipe::query::{
-    user::{RecipesQuery, SortBy, UserViewList},
+    user::{SortBy, UserViewList},
     user_stat::UserStatView,
 };
 use imkitchen_types::recipe::RecipeType;
@@ -13,6 +13,7 @@ use strum::VariantArray;
 use imkitchen_web_shared::{
     AppState,
     auth::AuthUser,
+    services::recipe::{self, CookQuery},
     template::{NotFoundTemplate, Template, filters},
 };
 
@@ -63,12 +64,24 @@ pub async fn page(
     State(app): State<AppState>,
     Query(input): Query<PageQuery>,
 ) -> impl IntoResponse {
-    let owner_id = match imkitchen_web_shared::try_page_response!(
-        app.core.recipe.find_owner_id_by_name(&username),
+    let query = input.clone();
+    let cook_query = CookQuery {
+        first: input.first,
+        after: input.after,
+        last: input.last,
+        before: input.before,
+        recipe_type: input
+            .recipe_type
+            .and_then(|v| RecipeType::from_str(v.as_str()).ok()),
+        search: input.search,
+        sort_by: input.sort_by.unwrap_or_default(),
+    };
+
+    let Some(profile) = imkitchen_web_shared::try_page_response!(
+        recipe::cook_profile(&app, &username, cook_query),
         template
-    ) {
-        Some(id) => id,
-        None => return template.render(NotFoundTemplate).into_response(),
+    ) else {
+        return template.render(NotFoundTemplate).into_response();
     };
 
     // Public page: anonymous visitors get a demo "guest" identity and the page
@@ -82,54 +95,13 @@ pub async fn page(
         template
     };
 
-    let stat = imkitchen_web_shared::try_page_response!(
-        app.core.recipe.find_user_stat(&owner_id),
-        template
-    )
-    .unwrap_or_default();
-
-    let owner_profile = imkitchen_web_shared::try_page_response!(
-        app.identity.user_profile.load(&owner_id),
-        template
-    );
-
-    let query = input.clone();
-
-    let args = Args {
-        first: input.first,
-        after: input.after,
-        last: input.last,
-        before: input.before,
-    };
-
-    let recipe_type = input
-        .recipe_type
-        .and_then(|v| RecipeType::from_str(v.as_str()).ok());
-
-    let recipes = imkitchen_web_shared::try_page_response!(
-        app.core.recipe.filter_user(RecipesQuery {
-            exclude_ids: None,
-            user_id: Some(owner_id),
-            recipe_type,
-            is_shared: Some(true),
-            has_thumbnail: None,
-            dietary_restrictions: vec![],
-            dietary_where_any: false,
-            in_meal_plan: None,
-            sort_by: input.sort_by.unwrap_or_default(),
-            args: args.limit(20),
-            search: input.search,
-        }),
-        template
-    );
-
     template
         .render(CookTemplate {
             user,
             username,
-            stat,
-            owner_description: owner_profile.description,
-            recipes,
+            stat: profile.stat,
+            owner_description: profile.description,
+            recipes: profile.recipes,
             query,
             ..Default::default()
         })

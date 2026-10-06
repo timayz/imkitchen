@@ -3,8 +3,8 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::Query;
-use evento::cursor::{Args, ReadResult, Value};
-use imkitchen_core::recipe::query::user::{RecipesQuery, SortBy, UserViewList};
+use evento::cursor::{ReadResult, Value};
+use imkitchen_core::recipe::query::user::{SortBy, UserViewList};
 use imkitchen_types::recipe::RecipeType;
 use serde::Deserialize;
 use std::str::FromStr;
@@ -13,6 +13,7 @@ use strum::VariantArray;
 use imkitchen_web_shared::{
     AppState,
     auth::{AuthUser, RequireChef},
+    services::recipe::{self, BrowseQuery, ShareError},
     template::{Template, filters},
 };
 
@@ -55,6 +56,25 @@ pub struct PageQuery {
     pub view: Option<String>,
 }
 
+impl From<PageQuery> for BrowseQuery {
+    fn from(q: PageQuery) -> Self {
+        Self {
+            first: q.first,
+            after: q.after,
+            last: q.last,
+            before: q.before,
+            recipe_type: q
+                .recipe_type
+                .and_then(|v| RecipeType::from_str(v.as_str()).ok()),
+            search: q.search,
+            sort_by: q.sort_by.unwrap_or_default(),
+            in_meal_plan: q.in_meal_plan.unwrap_or(false),
+            mine: q.mine.unwrap_or(false),
+            no_image: q.no_image.unwrap_or(false),
+        }
+    }
+}
+
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn page(
     template: Template,
@@ -64,81 +84,17 @@ pub async fn page(
 ) -> impl IntoResponse {
     let query = input.clone();
 
-    let args = Args {
-        first: input.first,
-        after: input.after,
-        last: input.last,
-        before: input.before,
-    };
-
-    let recipe_type = input
-        .recipe_type
-        .and_then(|v| RecipeType::from_str(v.as_str()).ok());
-
-    let in_meal_plan = input.in_meal_plan.unwrap_or(false);
-    let mine = input.mine.unwrap_or(false);
-
-    let dietary_restrictions = if in_meal_plan || mine {
-        vec![]
-    } else {
-        let preferences = imkitchen_web_shared::try_page_response!(
-            app.identity.meal_preferences.load(&user.id),
-            template
-        );
-        preferences.dietary_restrictions
-    };
-
-    let (user_id, is_shared) = if mine {
-        (Some(user.id.to_owned()), None)
-    } else {
-        (None, Some(true))
-    };
-
-    // `in_meal_plan: Some((_, false))` is an exclusion (NOT EXISTS), used by the
-    // community browse default to hide already-planned recipes from the picker.
-    // When filtering by ownership, that exclusion would hide every recipe the
-    // user has already added — drop the plan filter unless In plan is on.
-    let in_meal_plan_filter = if in_meal_plan {
-        Some((user.id.to_owned(), true))
-    } else if mine {
-        None
-    } else {
-        Some((user.id.to_owned(), false))
-    };
-
-    let has_thumbnail = if input.no_image.unwrap_or(false) {
-        Some(false)
-    } else {
-        None
-    };
-
-    let recipes = imkitchen_web_shared::try_page_response!(
-        app.core.recipe.filter_user(RecipesQuery {
-            exclude_ids: None,
-            user_id,
-            recipe_type,
-            is_shared,
-            has_thumbnail,
-            dietary_restrictions,
-            dietary_where_any: false,
-            in_meal_plan: in_meal_plan_filter,
-            sort_by: input.sort_by.unwrap_or_default(),
-            args: args.limit(20),
-            search: input.search,
-        }),
+    let browse = imkitchen_web_shared::try_page_response!(
+        recipe::browse(&app, &user.id, BrowseQuery::from(input)),
         template
     );
-
-    // Drives the Share All / Make All Private toggle on the chef toolbar.
-    // Only considers the loaded page of recipes.
-    let has_shared = recipes.edges.iter().any(|r| r.node.is_shared);
 
     template
         .render(IndexTemplate {
             user,
-            recipes,
+            recipes: browse.recipes,
             query,
-            has_shared,
+            has_shared: browse.has_shared,
             ..Default::default()
         })
         .into_response()
@@ -150,14 +106,10 @@ pub async fn create(
     AuthUser(user): AuthUser,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let id = match imkitchen_web_shared::try_response!(anyhow: app.core.recipe.find_user_draft(&user.id), template)
-    {
-        Some(id) => id,
-        _ => imkitchen_web_shared::try_response!(
-            app.core.recipe.create(&user.id, user.username.to_owned()),
-            template
-        ),
-    };
+    let id = imkitchen_web_shared::try_response!(
+        recipe::create_or_resume_draft(&app, &user.id, user.username.to_owned()),
+        template
+    );
 
     Redirect::to(&format!("/recipes/{id}/edit")).into_response()
 }
@@ -174,18 +126,19 @@ pub async fn share_all(
     State(app): State<AppState>,
     RequireChef(user): RequireChef,
 ) -> impl IntoResponse {
-    let Some(ref username) = user.username else {
-        return (
-            [("ts-swap", "skip")],
-            template.render(SetUsernameModalTemplate),
-        )
-            .into_response();
-    };
-
-    imkitchen_web_shared::try_response!(
-        app.core.recipe.share_all_to_community(&user.id, username),
-        template
-    );
+    match recipe::share_all(&app, &user.id, user.username.as_deref()).await {
+        Ok(()) => {}
+        Err(ShareError::UsernameRequired) => {
+            return (
+                [("ts-swap", "skip")],
+                template.render(SetUsernameModalTemplate),
+            )
+                .into_response();
+        }
+        Err(ShareError::Core(err)) => {
+            imkitchen_web_shared::try_response!(sync: Err::<(), _>(err), template);
+        }
+    }
 
     template
         .render(ShareAllButtonTemplate { has_shared: true })
@@ -198,7 +151,7 @@ pub async fn make_all_private(
     State(app): State<AppState>,
     RequireChef(user): RequireChef,
 ) -> impl IntoResponse {
-    imkitchen_web_shared::try_response!(app.core.recipe.make_all_private(&user.id), template);
+    imkitchen_web_shared::try_response!(recipe::unshare_all(&app, &user.id), template);
 
     template
         .render(ShareAllButtonTemplate { has_shared: false })

@@ -46,6 +46,7 @@ Versions are the workspace versions pinned in the root `Cargo.toml`.
 ```
 imkitchen/
 ├── Cargo.toml                       # Workspace: crates/*, web/*, root binary `imkitchen`
+├── mobile/                          # Native Android/iOS app (Sparkling / Lynx, ReactLynx); client of web/api only, see mobile/README.md
 ├── config/
 │   ├── default.toml                 # Committed defaults
 │   └── dev.local.toml               # Local overrides (used by `make dev`)
@@ -584,12 +585,25 @@ All routes are merged flat into one Axum router in `src/cli/server.rs`. `{param}
 **Demo (`web/demo`, no login):**
 - `GET /demo`, `/demo/kitchen`, `/demo/kitchen/{recipe_id}/cook`, `/demo/menu`, `/demo/recipes`, `/demo/recipes/{id}`, `/demo/r/{slug}`, `/demo/r/{slug}/similar`, `/demo/cooks/{username}`, `/demo/groceries`, `/demo/signup`
 
+**JSON API (`web/api`, consumed by the native app in `mobile/`):** every route is under `/api/v1`, speaks JSON only and authenticates with `Authorization: Bearer <jwt>` (the same JWT claims as the `auth_token` cookie). The client identity is sent as `User-Agent` and must match the login record exactly, like the HTML stack. Errors use the envelope `{"error":{"code","message"}}`; 401 is JSON with `WWW-Authenticate: Bearer`, never a redirect (the Lynx `fetch` has no cookies and follows no redirects). Every response carries `Cache-Control: no-store`. Billing, upgrade and invoice endpoints deliberately do not exist (store payment policies).
+- `GET /api/v1/health`
+- `POST /api/v1/auth/login` (`{email,password}` → `{token,expires_at,user}`), `POST /api/v1/auth/logout`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/password-reset` (`{email}`, always 202)
+- `GET /api/v1/me`
+- `GET /api/v1/kitchen` (tagged `kind`: `onboarding_recipe` | `onboarding_menu` | `list`), `POST /api/v1/kitchen/generate` (`{count}`), `GET|DELETE /api/v1/kitchen/recipes/{id}`, `GET /api/v1/kitchen/recipes/{id}/cook`, `POST /api/v1/kitchen/recipes/{id}/step` (`{direction: "next"|"prev"}`)
+- `GET /api/v1/groceries`, `POST /api/v1/groceries/toggle` (`{key}`)
+- `GET /api/v1/recipes` (cursor page: `first`, `after`, `recipe_type`, `search`, `sort_by`, `mine`, `in_meal_plan`, `no_image`), `POST /api/v1/recipes` (draft), `POST /api/v1/recipes/import` (202, poll `exists`), `POST /api/v1/recipes/share-all`, `POST /api/v1/recipes/unshare-all`
+- `GET|PUT|DELETE /api/v1/recipes/{id}` (GET also resolves slugs; DELETE is 202), `GET /api/v1/recipes/{id}/edit`, `GET /api/v1/recipes/{id}/similar`, `GET /api/v1/recipes/{id}/exists`, `POST|DELETE /api/v1/recipes/{id}/save`, `POST /api/v1/recipes/{id}/shopping`, `POST /api/v1/recipes/{id}/share`, `POST /api/v1/recipes/{id}/unshare`
+- `POST /api/v1/recipes/{id}/thumbnail` — multipart or JSON `{content_type,data_base64}`; merged after the global body limit with its own 20 MB cap
+- `GET /api/v1/cooks/{username}` (cursor page)
+- `GET /api/v1/settings/general`, `PUT /api/v1/settings/preferences`, `PUT /api/v1/settings/profile`, `POST /api/v1/settings/username`, `POST /api/v1/settings/account/password-reset`, `GET /api/v1/settings/sessions`, `DELETE /api/v1/settings/sessions/{acc}`
+
 ### Response Format
 
-- Every route returns HTML rendered by Askama, either a full page or a `partials/*.html` fragment for twinspark.
+- Every HTML route returns HTML rendered by Askama, either a full page or a `partials/*.html` fragment for twinspark.
 - Full-page mutations redirect to the page to show; the triggering element carries `ts-target="body"`.
-- Errors render toast partials or the 403/404/500 templates; there is no JSON API apart from the JSON request body of `/groceries/toggle` and the audience beacon.
+- Errors render toast partials or the 403/404/500 templates. Apart from `/api/v1/*`, the only JSON is the request body of `/groceries/toggle` and the audience beacon.
 - The global request body limit is 1 MB; the admin ZIP upload route is merged after that layer with its own 50 MB limit.
+- Logic shared by the HTML routes and the API lives in `web/shared/src/services/*` (framework-agnostic: `&AppState` + plain inputs, no axum/askama types), so handlers in both stacks stay thin adapters.
 
 ## Security Architecture
 

@@ -10,7 +10,8 @@ use serde::Deserialize;
 use imkitchen_web_shared::{
     AppState,
     auth::AuthUser,
-    template::{SERVER_ERROR_MESSAGE, Template, filters},
+    services::recipe,
+    template::{Template, filters},
 };
 
 #[derive(Deserialize, Default, Clone)]
@@ -77,52 +78,34 @@ pub async fn action(
     AuthUser(user): AuthUser,
     Json(recipes): Json<Vec<ImportJson>>,
 ) -> impl IntoResponse {
-    let mut id = None;
-    let mut error_recipes = vec![];
+    let inputs = recipes
+        .into_iter()
+        .map(|recipe| imkitchen_core::recipe::ImportInput {
+            recipe_type: recipe.recipe_type,
+            name: recipe.name,
+            origin: recipe.origin,
+            description: recipe.description,
+            household_size: recipe.household_size,
+            prep_time: recipe.prep_time,
+            cook_time: recipe.cook_time,
+            ingredients: recipe.ingredients,
+            instructions: recipe.instructions,
+            advance_prep: recipe.advance_prep.unwrap_or_default(),
+            accepts_accompaniment: recipe.accepts_accompaniment,
+            dietary_restrictions: recipe.dietary_restrictions,
+        })
+        .collect();
 
-    for recipe in recipes {
-        match app
-            .core
-            .recipe
-            .import(
-                imkitchen_core::recipe::ImportInput {
-                    recipe_type: recipe.recipe_type,
-                    name: recipe.name.to_owned(),
-                    origin: recipe.origin.to_owned(),
-                    description: recipe.description,
-                    household_size: recipe.household_size,
-                    prep_time: recipe.prep_time,
-                    cook_time: recipe.cook_time,
-                    ingredients: recipe.ingredients,
-                    instructions: recipe.instructions,
-                    advance_prep: recipe.advance_prep.unwrap_or_default(),
-                    accepts_accompaniment: recipe.accepts_accompaniment,
-                    dietary_restrictions: recipe.dietary_restrictions,
-                },
-                &user.id,
-                user.username.to_owned(),
-            )
-            .await
-        {
-            Ok(recipe_id) => {
-                id = Some(recipe_id);
-            }
-            Err(imkitchen_core::Error::Server(err)) => {
-                tracing::error!(user = user.id, err = %err,"failed to import recipes");
-
-                error_recipes.push(ErrorRecipe {
-                    name: recipe.name,
-                    error: SERVER_ERROR_MESSAGE.to_string(),
-                });
-            }
-            Err(error) => {
-                error_recipes.push(ErrorRecipe {
-                    name: recipe.name,
-                    error: error.to_string(),
-                });
-            }
-        };
-    }
+    let outcome = recipe::import_many(&app, &user.id, user.username.to_owned(), inputs).await;
+    let id = outcome.last_id;
+    let error_recipes = outcome
+        .errors
+        .into_iter()
+        .map(|e| ErrorRecipe {
+            name: e.name,
+            error: e.error,
+        })
+        .collect();
     template.render(ImportingTemplate { id, error_recipes })
 }
 
