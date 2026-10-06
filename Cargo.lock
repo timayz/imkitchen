@@ -2894,7 +2894,6 @@ version = "1.9.4"
 dependencies = [
  "askama",
  "axum",
- "imkitchen-core",
  "imkitchen-types",
  "imkitchen-web-shared",
  "serde",
@@ -2905,7 +2904,6 @@ dependencies = [
 name = "imkitchen-web-kitchen"
 version = "1.9.4"
 dependencies = [
- "anyhow",
  "askama",
  "axum",
  "axum-extra",

@@ -8,6 +8,5 @@ axum = { workspace = true }
 askama = { workspace = true }
 serde = { workspace = true }
 tracing = { workspace = true }
-imkitchen-core = { path = "../../crates/core", version = "1.9.4" }
 imkitchen-types = { path = "../../crates/types", version = "1.9.4" }
 imkitchen-web-shared = { path = "../shared", version = "1.9.4" }
