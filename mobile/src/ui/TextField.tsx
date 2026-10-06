@@ -13,6 +13,10 @@ export interface TextFieldProps {
   maxlength?: number
   confirmType?: 'done' | 'next' | 'go' | 'search' | 'send'
   onConfirm?: () => void
+  /** A growing text area (the host's `multiline` input mode). */
+  multiline?: boolean
+  /** Caption under the field. */
+  hint?: string
 }
 
 /**
@@ -30,22 +34,26 @@ export function TextField({
   maxlength = 255,
   confirmType = 'done',
   onConfirm,
+  multiline,
+  hint,
 }: TextFieldProps) {
   const initial = useRef(value)
   return (
     <view className="field">
       <text className="field__label">{label}</text>
       <input
-        className="field__input"
+        className={multiline ? 'field__input field__input--multi' : 'field__input'}
         value={initial.current}
         placeholder={placeholder}
         type={type}
         maxlength={maxlength}
-        confirm-type={confirmType}
+        multiline={multiline}
+        confirm-type={multiline ? undefined : confirmType}
         text-color="#1b140c"
         bindinput={(e) => onChange(e.detail.value)}
-        bindconfirm={onConfirm ? () => onConfirm() : undefined}
+        bindconfirm={onConfirm && !multiline ? () => onConfirm() : undefined}
       />
+      {hint && <text className="field__hint">{hint}</text>}
     </view>
   )
 }

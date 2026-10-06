@@ -18,3 +18,16 @@
   border: 1px solid var(--color-line);
   border-radius: var(--radius-md);
 }
+
+.field__input--multi {
+  height: auto;
+  min-height: 92px;
+  padding: 12px 14px;
+  line-height: 22px;
+}
+
+.field__hint {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-ink-3);
+}

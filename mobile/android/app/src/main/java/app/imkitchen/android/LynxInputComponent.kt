@@ -28,6 +28,9 @@ import com.lynx.tasm.event.LynxCustomEvent
 
 class LynxInputComponent(context: LynxContext?) : LynxUI<AppCompatEditText>(context) {
 
+  private var multiline = false
+  private var password = false
+
   override fun createView(context: Context): AppCompatEditText {
     return AppCompatEditText(context).apply {
       setLines(1)
@@ -61,6 +64,7 @@ class LynxInputComponent(context: LynxContext?) : LynxUI<AppCompatEditText>(cont
   /** `text` (default) | `password` | `email` | `number` | `digit` | `tel`. */
   @LynxProp(name = "type")
   fun setType(value: String) {
+    password = value == "password"
     mView.inputType = when (value) {
       "password" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
       "email" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
@@ -69,15 +73,43 @@ class LynxInputComponent(context: LynxContext?) : LynxUI<AppCompatEditText>(cont
       "tel" -> InputType.TYPE_CLASS_PHONE
       else -> InputType.TYPE_CLASS_TEXT
     }
-    // setInputType resets these, and setSingleLine installs its own
-    // transformation method, which would undo password masking.
-    mView.setSingleLine()
-    mView.typeface = android.graphics.Typeface.DEFAULT
-    mView.transformationMethod = if (value == "password") {
-      PasswordTransformationMethod.getInstance()
+    applyLineMode()
+  }
+
+  /**
+   * `true` turns the field into a growing text area: wrapped lines, the
+   * keyboard's return key inserts a newline, text starts at the top.
+   */
+  @LynxProp(name = "multiline")
+  fun setMultiline(value: Boolean) {
+    multiline = value
+    applyLineMode()
+  }
+
+  /**
+   * setInputType resets the line mode, and setSingleLine installs its own
+   * transformation method (which would undo password masking), so both props
+   * re-apply the whole set here.
+   */
+  private fun applyLineMode() {
+    if (multiline && !password) {
+      mView.inputType = mView.inputType or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+      mView.setSingleLine(false)
+      mView.maxLines = Int.MAX_VALUE
+      mView.setHorizontallyScrolling(false)
+      mView.gravity = Gravity.TOP or Gravity.START
+      mView.transformationMethod = null
     } else {
-      SingleLineTransformationMethod.getInstance()
+      mView.setSingleLine()
+      mView.setHorizontallyScrolling(true)
+      mView.gravity = Gravity.CENTER_VERTICAL
+      mView.transformationMethod = if (password) {
+        PasswordTransformationMethod.getInstance()
+      } else {
+        SingleLineTransformationMethod.getInstance()
+      }
     }
+    mView.typeface = android.graphics.Typeface.DEFAULT
     mView.setSelection(mView.text?.length ?: 0)
   }
 

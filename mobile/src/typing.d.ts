@@ -35,6 +35,8 @@ declare module '@lynx-js/types' {
   interface InputProps {
     value?: string
     'text-color'?: string
+    /** Growing text area: wrapped lines, return inserts a newline. */
+    multiline?: boolean
   }
 
   /** `<webview>` is not typed by @lynx-js/types 3.6; it needs a fixed size. */
@@ -47,4 +49,3 @@ declare module '@lynx-js/types' {
     webview: WebviewProps
   }
 }
-

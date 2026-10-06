@@ -25,10 +25,7 @@ import { RecipeCard } from '../../ui/RecipeCard.js'
 import { RecipeImage } from '../../ui/RecipeImage.js'
 import { Sheet } from '../../ui/Sheet.js'
 
-type State =
-  | { kind: 'loading' }
-  | { kind: 'error'; message: string }
-  | { kind: 'ready'; recipe: Detail }
+type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; recipe: Detail }
 
 /** Recipe detail: `recipe.lynx.bundle?id=<id or slug>`. */
 export function App() {
@@ -56,7 +53,16 @@ export function App() {
 
   useEffect(() => {
     load()
-    me().then(setUser).catch(() => {})
+    me()
+      .then(setUser)
+      .catch(() => {})
+  }, [load])
+
+  // Returning from the editor: show what was saved.
+  useEffect(() => {
+    const emitter = lynx.getJSModule('GlobalEventEmitter')
+    emitter.addListener('onShow', load)
+    return () => emitter.removeListener('onShow', load)
   }, [load])
 
   const run = useCallback(
@@ -174,7 +180,12 @@ export function App() {
           <view className="rdet__actions">
             <Button
               label={r.in_shopping ? t('recipes.in_list') : t('recipes.add_to_list')}
-              onTap={() => run(() => addRecipeToList(r.id), (x) => ({ ...x, in_shopping: true }))}
+              onTap={() =>
+                run(
+                  () => addRecipeToList(r.id),
+                  (x) => ({ ...x, in_shopping: true }),
+                )
+              }
               variant={r.in_shopping ? 'secondary' : 'primary'}
               disabled={busy || r.in_shopping}
             />
@@ -192,7 +203,11 @@ export function App() {
               />
             )}
             {r.is_owner && (
-              <Button label={t('recipes.edit')} onTap={() => void push('recipe-edit', { id: r.id })} variant="secondary" />
+              <Button
+                label={t('recipes.edit')}
+                onTap={() => void push('recipe-edit', { id: r.id })}
+                variant="secondary"
+              />
             )}
             {r.is_owner && isChef && (
               <Button
@@ -208,7 +223,12 @@ export function App() {
               />
             )}
             {r.is_owner && (
-              <Button label={t('recipes.delete')} onTap={() => setConfirmDelete(true)} variant="ghost" disabled={busy} />
+              <Button
+                label={t('recipes.delete')}
+                onTap={() => setConfirmDelete(true)}
+                variant="ghost"
+                disabled={busy}
+              />
             )}
           </view>
 
