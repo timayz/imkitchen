@@ -16,6 +16,8 @@ export const en = {
   'login.register_submit': 'Create account',
   'login.have_account': 'Already have an account?',
   'login.sign_in': 'Sign in',
+  'login.show_password': 'Show',
+  'login.hide_password': 'Hide',
   'tabs.kitchen': 'Kitchen',
   'tabs.groceries': 'Groceries',
   'tabs.recipes': 'Recipes',

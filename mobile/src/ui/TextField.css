@@ -4,10 +4,30 @@
   gap: 6px;
 }
 
+.field__head {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .field__label {
   font-size: 13px;
   font-weight: 600;
   color: var(--color-ink-2);
+}
+
+.field__action {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary-600);
+  padding: 4px 0;
+}
+
+.field__box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .field__input {
@@ -24,6 +44,37 @@
   min-height: 92px;
   padding: 12px 14px;
   line-height: 22px;
+}
+
+.field__input--trailing {
+  padding-right: 72px;
+}
+
+.field__input--cream {
+  background-color: var(--color-cream);
+}
+
+.field__input--invalid {
+  background-color: var(--color-primary-50);
+  border-color: var(--color-primary-700);
+}
+
+/* Centered on the 48px single-line field; 44px tall for the thumb. */
+.field__trailing {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+}
+
+.field__trailing-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-3);
 }
 
 .field__hint {

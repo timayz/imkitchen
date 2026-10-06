@@ -2,6 +2,11 @@ import { useRef } from '@lynx-js/react'
 
 import './TextField.css'
 
+export interface FieldAction {
+  label: string
+  onTap: () => void
+}
+
 export interface TextFieldProps {
   label: string
   /** Initial text. Later changes are ignored: the field is uncontrolled. */
@@ -17,6 +22,14 @@ export interface TextFieldProps {
   multiline?: boolean
   /** Caption under the field. */
   hint?: string
+  /** Small link at the right of the label ("Forgot your password?"). */
+  labelAction?: FieldAction
+  /** Tappable text inside the field, at its right edge ("Show" / "Hide"). */
+  trailing?: FieldAction
+  /** Outlines the field in the error color. */
+  invalid?: boolean
+  /** Field fill; `cream` reads better on a paper card. */
+  surface?: 'paper' | 'cream'
 }
 
 /**
@@ -36,23 +49,46 @@ export function TextField({
   onConfirm,
   multiline,
   hint,
+  labelAction,
+  trailing,
+  invalid,
+  surface = 'paper',
 }: TextFieldProps) {
   const initial = useRef(value)
+  const inputClasses = ['field__input']
+  if (multiline) inputClasses.push('field__input--multi')
+  if (trailing) inputClasses.push('field__input--trailing')
+  if (surface === 'cream') inputClasses.push('field__input--cream')
+  if (invalid) inputClasses.push('field__input--invalid')
   return (
     <view className="field">
-      <text className="field__label">{label}</text>
-      <input
-        className={multiline ? 'field__input field__input--multi' : 'field__input'}
-        value={initial.current}
-        placeholder={placeholder}
-        type={type}
-        maxlength={maxlength}
-        multiline={multiline}
-        confirm-type={multiline ? undefined : confirmType}
-        text-color="#1b140c"
-        bindinput={(e) => onChange(e.detail.value)}
-        bindconfirm={onConfirm && !multiline ? () => onConfirm() : undefined}
-      />
+      <view className="field__head">
+        <text className="field__label">{label}</text>
+        {labelAction && (
+          <text className="field__action" bindtap={labelAction.onTap}>
+            {labelAction.label}
+          </text>
+        )}
+      </view>
+      <view className="field__box">
+        <input
+          className={inputClasses.join(' ')}
+          value={initial.current}
+          placeholder={placeholder}
+          type={type}
+          maxlength={maxlength}
+          multiline={multiline}
+          confirm-type={multiline ? undefined : confirmType}
+          text-color="#1b140c"
+          bindinput={(e) => onChange(e.detail.value)}
+          bindconfirm={onConfirm && !multiline ? () => onConfirm() : undefined}
+        />
+        {trailing && (
+          <view className="field__trailing" bindtap={trailing.onTap}>
+            <text className="field__trailing-text">{trailing.label}</text>
+          </view>
+        )}
+      </view>
       {hint && <text className="field__hint">{hint}</text>}
     </view>
   )

@@ -18,6 +18,8 @@ export const fr: Record<MessageKey, string> = {
   'login.register_submit': 'Créer le compte',
   'login.have_account': 'Déjà un compte ?',
   'login.sign_in': 'Se connecter',
+  'login.show_password': 'Afficher',
+  'login.hide_password': 'Masquer',
   'tabs.kitchen': 'Cuisine',
   'tabs.groceries': 'Courses',
   'tabs.recipes': 'Recettes',

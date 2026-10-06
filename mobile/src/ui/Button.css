@@ -10,6 +10,11 @@
   align-self: stretch;
 }
 
+.btn--lg {
+  height: 52px;
+  padding: 0 20px;
+}
+
 .btn--primary {
   background-color: var(--color-primary-500);
 }
