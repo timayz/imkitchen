@@ -1,3 +1,10 @@
+/* The scroll-view must be flex-sized inside .screen (which only sets a
+   min-height); as a direct `.screen` it would grow with its content and
+   never scroll. Same structure as the recipe details page. */
+.cook__scroll {
+  flex: 1;
+}
+
 /* Infinite-scroll footer, shown while the next page is being fetched */
 .cook__more {
   align-items: center;

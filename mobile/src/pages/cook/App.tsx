@@ -65,31 +65,33 @@ export function App() {
 
   const { cook } = state
   return (
-    <scroll-view
-      className="screen"
-      scroll-orientation="vertical"
-      lower-threshold={400}
-      bindscrolltolower={() => void loadMore()}
-    >
-      <view className="content">
-        <view className="row" style={{ gap: '12px' }}>
-          <view className="cook__close" bindtap={back}>
-            <text className="cook__close-text">←</text>
+    <view className="screen">
+      <scroll-view
+        className="cook__scroll"
+        scroll-orientation="vertical"
+        lower-threshold={400}
+        bindscrolltolower={() => void loadMore()}
+      >
+        <view className="content">
+          <view className="row" style={{ gap: '12px' }}>
+            <view className="cook__close" bindtap={back}>
+              <text className="cook__close-text">←</text>
+            </view>
+            <text className="muted">{t('cook.eyebrow')}</text>
           </view>
-          <text className="muted">{t('cook.eyebrow')}</text>
+          <text className="h1">@{cook.username}</text>
+          {cook.description !== '' && <text className="body">{cook.description}</text>}
+          <text className="muted">{t('cook.stats', { shared: cook.stat.shared, total: cook.stat.total })}</text>
+          {items.map((recipe) => (
+            <RecipeCard key={recipe.id} recipe={recipe} onTap={() => void push('recipe', { id: recipe.id })} />
+          ))}
+          {cursor && loadingMore && (
+            <view className="cook__more">
+              <text className="muted">{t('common.loading')}</text>
+            </view>
+          )}
         </view>
-        <text className="h1">@{cook.username}</text>
-        {cook.description !== '' && <text className="body">{cook.description}</text>}
-        <text className="muted">{t('cook.stats', { shared: cook.stat.shared, total: cook.stat.total })}</text>
-        {items.map((recipe) => (
-          <RecipeCard key={recipe.id} recipe={recipe} onTap={() => void push('recipe', { id: recipe.id })} />
-        ))}
-        {cursor && loadingMore && (
-          <view className="cook__more">
-            <text className="muted">{t('common.loading')}</text>
-          </view>
-        )}
-      </view>
-    </scroll-view>
+      </scroll-view>
+    </view>
   )
 }
