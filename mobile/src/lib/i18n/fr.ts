@@ -55,7 +55,6 @@ export const fr: Record<MessageKey, string> = {
   'settings.premium': 'Premium',
   'settings.chef': 'Chef',
   'settings.logout': 'Se déconnecter',
-  'common.loading': 'Chargement…',
   'common.retry': 'Réessayer',
   'common.soon': 'Bientôt disponible',
   'common.cancel': 'Annuler',

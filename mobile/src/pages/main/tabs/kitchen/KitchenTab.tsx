@@ -16,6 +16,7 @@ import { t } from '../../../../lib/i18n/index.js'
 import { openExternal, push } from '../../../../lib/nav.js'
 import { Button } from '../../../../ui/Button.js'
 import { Sheet } from '../../../../ui/Sheet.js'
+import { Spinner } from '../../../../ui/Spinner.js'
 import { GenerateSheet } from './GenerateSheet.js'
 import './KitchenTab.css'
 
@@ -104,8 +105,8 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
 
   if (state.kind === 'loading') {
     return (
-      <view className="content">
-        <text className="muted">{t('common.loading')}</text>
+      <view className="content content--center">
+        <Spinner size="lg" />
       </view>
     )
   }

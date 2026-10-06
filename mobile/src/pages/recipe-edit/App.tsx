@@ -22,6 +22,7 @@ import { Counter } from '../../ui/Counter.js'
 import { RecipeImage } from '../../ui/RecipeImage.js'
 import { Segmented } from '../../ui/Segmented.js'
 import { Sheet } from '../../ui/Sheet.js'
+import { Spinner } from '../../ui/Spinner.js'
 import { Switch } from '../../ui/Switch.js'
 import { TextField } from '../../ui/TextField.js'
 import { AisleSheet } from './AisleSheet.js'
@@ -184,7 +185,7 @@ export function App() {
   if (state.kind === 'loading' || !draft) {
     return (
       <view className="screen cook--center">
-        <text className="muted">{state.kind === 'error' ? state.message : t('common.loading')}</text>
+        {state.kind === 'error' ? <text className="muted">{state.message}</text> : <Spinner size="lg" />}
         {state.kind === 'error' && <Button label={t('common.close')} onTap={back} variant="secondary" />}
       </view>
     )

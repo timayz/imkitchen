@@ -20,6 +20,7 @@ import { course } from '../../../../lib/course.js'
 import { t } from '../../../../lib/i18n/index.js'
 import { replace } from '../../../../lib/nav.js'
 import { Button } from '../../../../ui/Button.js'
+import { Spinner } from '../../../../ui/Spinner.js'
 import { TextField } from '../../../../ui/TextField.js'
 import { DeleteSheet } from './DeleteSheet.js'
 import { DevicesSheet } from './DevicesSheet.js'
@@ -136,8 +137,8 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
 
   if (state.kind === 'loading') {
     return (
-      <view className="content">
-        <text className="muted">{t('common.loading')}</text>
+      <view className="content content--center">
+        <Spinner size="lg" />
       </view>
     )
   }

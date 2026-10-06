@@ -53,7 +53,6 @@ export const en = {
   'settings.premium': 'Premium',
   'settings.chef': 'Chef',
   'settings.logout': 'Sign out',
-  'common.loading': 'Loading…',
   'common.retry': 'Retry',
   'common.soon': 'Coming soon',
   'common.cancel': 'Cancel',

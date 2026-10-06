@@ -18,8 +18,9 @@ import { push } from '../../../../lib/nav.js'
 import { Button } from '../../../../ui/Button.js'
 import { Chip } from '../../../../ui/Chip.js'
 import { RecipeCard } from '../../../../ui/RecipeCard.js'
-import { AddSheet } from './AddSheet.js'
 import { SortSheet } from '../../../../ui/SortSheet.js'
+import { Spinner } from '../../../../ui/Spinner.js'
+import { AddSheet } from './AddSheet.js'
 import './RecipesTab.css'
 
 const TYPES: RecipeType[] = ['Appetizer', 'MainCourse', 'Accompaniment', 'Dessert', 'Beverage', 'Condiment']
@@ -268,7 +269,7 @@ export function RecipesTab({ refreshKey }: { refreshKey: number }) {
         </view>
 
         {error && <text className="error">{error}</text>}
-        {loading && items.length === 0 && <text className="muted">{t('common.loading')}</text>}
+        {loading && items.length === 0 && <Spinner />}
         {!loading && items.length === 0 && !error && (
           <view className="card rec__empty">
             <view className="rec__empty-art" style={{ backgroundColor: selected ? selected.soft : '#fde3cf' }}>
@@ -294,7 +295,7 @@ export function RecipesTab({ refreshKey }: { refreshKey: number }) {
 
         {cursor && loadingMore && (
           <view className="rec__more">
-            <text className="muted">{t('common.loading')}</text>
+            <Spinner />
           </view>
         )}
       </view>

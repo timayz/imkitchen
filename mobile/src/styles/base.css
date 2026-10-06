@@ -363,3 +363,8 @@
 .rec__center {
   text-align: center;
 }
+
+.content--center {
+  align-items: center;
+  padding-top: 48px;
+}

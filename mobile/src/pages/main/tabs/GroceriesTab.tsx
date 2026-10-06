@@ -5,6 +5,7 @@ import { type Groceries, type GroceryAisle, getGroceries, toggleGrocery } from '
 import { aisle } from '../../../lib/course.js'
 import { t } from '../../../lib/i18n/index.js'
 import { Button } from '../../../ui/Button.js'
+import { Spinner } from '../../../ui/Spinner.js'
 import './GroceriesTab.css'
 
 type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; groceries: Groceries }
@@ -120,8 +121,8 @@ export function GroceriesTab({ refreshKey, onAddRecipes }: GroceriesTabProps) {
 
   if (state.kind === 'loading') {
     return (
-      <view className="content">
-        <text className="muted">{t('common.loading')}</text>
+      <view className="content content--center">
+        <Spinner size="lg" />
       </view>
     )
   }

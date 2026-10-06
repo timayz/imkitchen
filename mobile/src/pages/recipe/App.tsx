@@ -24,6 +24,7 @@ import { Button } from '../../ui/Button.js'
 import { RecipeCard } from '../../ui/RecipeCard.js'
 import { RecipeImage } from '../../ui/RecipeImage.js'
 import { Sheet } from '../../ui/Sheet.js'
+import { Spinner } from '../../ui/Spinner.js'
 
 type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; recipe: Detail }
 
@@ -99,7 +100,7 @@ export function App() {
   if (state.kind === 'loading') {
     return (
       <view className="screen rdet--center">
-        <text className="muted">{t('common.loading')}</text>
+        <Spinner size="lg" />
       </view>
     )
   }

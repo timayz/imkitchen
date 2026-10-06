@@ -9,6 +9,7 @@ import { t } from '../../lib/i18n/index.js'
 import { setKeepAwake } from '../../lib/keep-awake.js'
 import { back, openExternal, pageParams } from '../../lib/nav.js'
 import { Button } from '../../ui/Button.js'
+import { Spinner } from '../../ui/Spinner.js'
 
 type State =
   | { kind: 'loading' }
@@ -64,7 +65,7 @@ export function App() {
   if (state.kind === 'loading') {
     return (
       <view className="screen cook cook--center">
-        <text className="muted">{t('common.loading')}</text>
+        <Spinner size="lg" />
       </view>
     )
   }

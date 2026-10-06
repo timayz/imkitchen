@@ -7,6 +7,7 @@ import { loadSession } from '../../lib/auth/session.js'
 import { t } from '../../lib/i18n/index.js'
 import { pageParams, replace } from '../../lib/nav.js'
 import { BottomTabs, type Tab } from '../../ui/BottomTabs.js'
+import { Spinner } from '../../ui/Spinner.js'
 import groceriesIcon from '../../assets/icons/groceries.png'
 import kitchenIcon from '../../assets/icons/kitchen.png'
 import recipesIcon from '../../assets/icons/recipes.png'
@@ -60,7 +61,7 @@ export function App() {
   if (!ready) {
     return (
       <view className="screen shell__loading">
-        <text className="muted">{t('common.loading')}</text>
+        <Spinner size="lg" />
       </view>
     )
   }
