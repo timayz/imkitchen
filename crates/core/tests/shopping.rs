@@ -10,3 +10,5 @@ mod regenerate;
 mod remove_recipe;
 #[path = "shopping/status.rs"]
 mod status;
+#[path = "shopping/toggle.rs"]
+mod toggle;
