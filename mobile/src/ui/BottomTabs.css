@@ -1,28 +1,31 @@
+/* Mirrors the web's mobile <nav> in templates/_user.html: 24 dp outline icon,
+   4 px gap, 12 px label, primary-500 when active and ink-3 otherwise. */
 .tabs {
   display: flex;
   flex-direction: row;
+  justify-content: space-around;
   background-color: var(--color-paper);
-  border-top: 1px solid var(--color-line);
+  border-top: 1px solid var(--color-line-2);
 }
 
 .tab {
   flex: 1;
   align-items: center;
   justify-content: center;
-  padding: 10px 0 12px;
-  gap: 2px;
+  padding: 8px 12px;
+  gap: 4px;
 }
 
-.tab__glyph {
-  font-size: 20px;
+.tab__icon {
+  width: 24px;
+  height: 24px;
 }
 
 .tab__label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 12px;
   color: var(--color-ink-3);
 }
 
 .tab__label--active {
-  color: var(--color-primary-600);
+  color: var(--color-primary-500);
 }

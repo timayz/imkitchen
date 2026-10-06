@@ -7,6 +7,10 @@ import { loadSession } from '../../lib/auth/session.js'
 import { t } from '../../lib/i18n/index.js'
 import { pageParams, replace } from '../../lib/nav.js'
 import { BottomTabs, type Tab } from '../../ui/BottomTabs.js'
+import groceriesIcon from '../../assets/icons/groceries.png'
+import kitchenIcon from '../../assets/icons/kitchen.png'
+import recipesIcon from '../../assets/icons/recipes.png'
+import settingsIcon from '../../assets/icons/settings.png'
 import { GroceriesTab } from './tabs/GroceriesTab.js'
 import { KitchenTab } from './tabs/kitchen/KitchenTab.js'
 import { RecipesTab } from './tabs/recipes/RecipesTab.js'
@@ -61,11 +65,12 @@ export function App() {
     )
   }
 
+  // Same order and icons as the web's mobile nav (templates/_user.html).
   const tabs: Tab<TabKey>[] = [
-    { key: 'kitchen', label: t('tabs.kitchen'), glyph: '🍳' },
-    { key: 'groceries', label: t('tabs.groceries'), glyph: '🛒' },
-    { key: 'recipes', label: t('tabs.recipes'), glyph: '📖' },
-    { key: 'settings', label: t('tabs.settings'), glyph: '⚙️' },
+    { key: 'kitchen', label: t('tabs.kitchen'), icon: kitchenIcon },
+    { key: 'recipes', label: t('tabs.recipes'), icon: recipesIcon },
+    { key: 'groceries', label: t('tabs.groceries'), icon: groceriesIcon },
+    { key: 'settings', label: t('tabs.settings'), icon: settingsIcon },
   ]
 
   return (
