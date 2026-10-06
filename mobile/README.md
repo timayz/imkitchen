@@ -68,7 +68,8 @@ cd android && ./gradlew assembleDebug   # debug APK without the CLI
 | Bundle | Params | What |
 |---|---|---|
 | `main` | `tab?` | Tab shell: Kitchen, Groceries, Recipes, Settings |
-| `login` | — | Sign in, create an account, password reset request |
+| `login` | — | Sign in, create an account |
+| `reset` | `email?`, `id?` | Password reset: request the email, then choose the new password when opened from the emailed link (`id`) |
 | `cooking` | `id` | Cooking mode (ingredients, steps, timer, embedded origin page); keeps the screen on |
 | `recipe` | `id` (id or slug) | Recipe detail: add to list, save, share, edit, delete, similar |
 | `recipe-edit` | `id` | Editor: fields, dynamic ingredients/steps, photo upload |
@@ -76,6 +77,27 @@ cd android && ./gradlew assembleDebug   # debug APK without the CLI
 | `cook` | `username` | A chef's public recipes |
 
 Page parameters are read with `pageParams()` (`src/lib/nav.ts`), see the quirks.
+
+### Deep links
+
+The reset email links to `https://imkitchen.app/reset-password/new/<id>`.
+`SplashActivity` opens that path in the `reset` bundle (`id` page param)
+instead of `main`; any other launch goes to `main`. Android only opens an
+`https` link in the app once it has verified the site (Android App Links):
+serve `https://imkitchen.app/.well-known/assetlinks.json` with the release
+signing certificate's SHA-256 fingerprint for `app.imkitchen.android`, then
+the `autoVerify` intent filter in `AndroidManifest.xml` does the rest. Until
+then (and for debug builds) the browser gets the link; the custom scheme
+`imkitchen://reset-password/new/<id>` opens the same screen:
+
+```sh
+adb shell am start -a android.intent.action.VIEW -d "imkitchen://reset-password/new/<id>"
+# or force verification for a debug install:
+adb shell pm set-app-links --package app.imkitchen.android 1 imkitchen.app
+```
+
+iOS universal links are not set up: the `ios/` wrapper has no associated
+domains entitlement.
 
 ### Known quirks
 

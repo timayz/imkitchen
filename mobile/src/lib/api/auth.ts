@@ -54,6 +54,24 @@ export function requestPasswordReset(email: string): Promise<void> {
   })
 }
 
+/**
+ * Whether the id from the emailed link can still be used. Rejects with a
+ * 404 for an unknown link and a 400 once it has expired (15 minutes) or
+ * been used.
+ */
+export function checkPasswordReset(id: string): Promise<void> {
+  return request<void>(`/api/v1/auth/password-reset/${encodeURIComponent(id)}`, { anonymous: true })
+}
+
+/** Sets the new password; 422 when it is outside 8 to 20 characters. */
+export function confirmPasswordReset(id: string, password: string): Promise<void> {
+  return request<void>(`/api/v1/auth/password-reset/${encodeURIComponent(id)}`, {
+    method: 'POST',
+    body: { password },
+    anonymous: true,
+  })
+}
+
 export function me(): Promise<Me> {
   return request<Me>('/api/v1/me')
 }

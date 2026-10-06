@@ -2,7 +2,7 @@ mod common;
 
 use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
-use imkitchen_identity::RegisterInput;
+use imkitchen_identity::{RegisterInput, password::RequestInput};
 use serde_json::json;
 use tower::ServiceExt;
 
@@ -211,6 +211,70 @@ async fn password_reset_is_accepted_for_unknown_addresses_too() -> anyhow::Resul
         .await?;
 
     assert_eq!(response.status(), StatusCode::ACCEPTED);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn password_reset_link_sets_the_new_password() -> anyhow::Result<()> {
+    let app = TestApp::new().await?;
+    register(&app).await?;
+    let id = app
+        .state
+        .identity
+        .password
+        .request(RequestInput {
+            email: EMAIL.to_owned(),
+            lang: "en".to_owned(),
+            host: "http://localhost".to_owned(),
+        })
+        .await?
+        .expect("a reset id for a known address");
+
+    let check = |id: &str| -> anyhow::Result<Request<Body>> {
+        Ok(Request::get(format!("/api/v1/auth/password-reset/{id}")).body(Body::empty())?)
+    };
+    let confirm = |id: &str, password: &str| -> anyhow::Result<Request<Body>> {
+        Ok(Request::post(format!("/api/v1/auth/password-reset/{id}"))
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from(json!({ "password": password }).to_string()))?)
+    };
+
+    // A fresh link checks out; an unknown one does not.
+    let response = app.router().oneshot(check(&id)?).await?;
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+    let response = app.router().oneshot(check("nope")?).await?;
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+
+    // Too short: a validation error, and the link is still usable.
+    let response = app.router().oneshot(confirm(&id, "short")?).await?;
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(json(response).await["error"]["code"], "validation");
+
+    let response = app
+        .router()
+        .oneshot(confirm(&id, "new-horse-staple")?)
+        .await?;
+    assert_eq!(response.status(), StatusCode::NO_CONTENT);
+
+    // The new password signs in, the old one no longer does.
+    let response = app
+        .router()
+        .oneshot(login_request(EMAIL, "new-horse-staple", UA)?)
+        .await?;
+    assert_eq!(response.status(), StatusCode::OK);
+    let response = app
+        .router()
+        .oneshot(login_request(EMAIL, PASSWORD, UA)?)
+        .await?;
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    // A link only works once.
+    let response = app.router().oneshot(check(&id)?).await?;
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(json(response).await["error"]["code"], "user");
+    let response = app.router().oneshot(confirm(&id, "another-horse")?).await?;
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
     Ok(())
 }

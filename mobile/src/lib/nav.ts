@@ -10,7 +10,7 @@ export function pageParams(): Record<string, string> {
   return { ...(props.queryItems ?? {}), ...(props.pageQuery ?? {}) }
 }
 
-export type Bundle = 'main' | 'login' | 'cooking' | 'recipe' | 'recipe-edit' | 'recipe-import' | 'cook'
+export type Bundle = 'main' | 'login' | 'reset' | 'cooking' | 'recipe' | 'recipe-edit' | 'recipe-import' | 'cook'
 
 function scheme(bundle: Bundle, params: Record<string, string> = {}): string {
   const query = new URLSearchParams({

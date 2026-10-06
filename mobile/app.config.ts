@@ -21,6 +21,7 @@ const lynxConfig = defineConfig({
       // screens get their own bundle so they keep the native back gesture.
       main: './src/pages/main/index.tsx',
       login: './src/pages/login/index.tsx',
+      reset: './src/pages/reset/index.tsx',
       cooking: './src/pages/cooking/index.tsx',
       recipe: './src/pages/recipe/index.tsx',
       cook: './src/pages/cook/index.tsx',

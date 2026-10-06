@@ -1,9 +1,12 @@
 use axum::{
     Json,
-    extract::State,
+    extract::{Path, State},
     http::{HeaderMap, StatusCode},
 };
-use imkitchen_identity::{LoginInput, RegisterInput, password::RequestInput};
+use imkitchen_identity::{
+    LoginInput, RegisterInput,
+    password::{RequestInput, ResetInput},
+};
 use imkitchen_web_shared::{
     AppState,
     auth::{decode_claims, encode_token, resolve_login},
@@ -13,7 +16,10 @@ use imkitchen_web_shared::{
 use crate::{
     ApiError, ApiJson, ApiResult,
     auth::{ApiClaims, ApiLocale, ApiUser, client_identity},
-    dto::auth::{LoginRequest, Me, PasswordResetRequest, RegisterRequest, SessionResponse, Token},
+    dto::auth::{
+        LoginRequest, Me, PasswordResetConfirm, PasswordResetRequest, RegisterRequest,
+        SessionResponse, Token,
+    },
 };
 
 #[tracing::instrument(skip_all)]
@@ -139,6 +145,39 @@ pub async fn password_reset(
         .await?;
 
     Ok(StatusCode::ACCEPTED)
+}
+
+/// Whether the emailed link can still be used: 204 when it can, 404 for an
+/// unknown id, 400 once it has expired (15 minutes) or been used. The app
+/// asks before showing the new-password form.
+#[tracing::instrument(skip_all)]
+pub async fn password_reset_check(
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+) -> Result<StatusCode, ApiError> {
+    app.identity.password.check(&id).await?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Sets the new password from the emailed link. Same answers as the check,
+/// plus 422 for a password outside 8 to 20 characters. The app confirms the
+/// two fields match locally, like the web form does.
+#[tracing::instrument(skip_all)]
+pub async fn password_reset_confirm(
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+    ApiJson(input): ApiJson<PasswordResetConfirm>,
+) -> Result<StatusCode, ApiError> {
+    app.identity
+        .password
+        .reset(ResetInput {
+            id,
+            password: input.password,
+        })
+        .await?;
+
+    Ok(StatusCode::NO_CONTENT)
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]

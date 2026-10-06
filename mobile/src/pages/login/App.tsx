@@ -1,12 +1,12 @@
 import { useCallback, useState } from '@lynx-js/react'
 
 import '../../styles/base.css'
-import './App.css'
+import '../../styles/auth.css'
 import { ApiError } from '../../lib/api/client.js'
-import { login, register, requestPasswordReset } from '../../lib/api/auth.js'
+import { login, register } from '../../lib/api/auth.js'
 import { saveSession } from '../../lib/auth/session.js'
 import { t } from '../../lib/i18n/index.js'
-import { replace } from '../../lib/nav.js'
+import { push, replace } from '../../lib/nav.js'
 import { Button } from '../../ui/Button.js'
 import { TextField } from '../../ui/TextField.js'
 
@@ -20,12 +20,10 @@ export function App() {
   const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
 
   const switchMode = useCallback((next: Mode) => {
     setMode(next)
     setError(null)
-    setNotice(null)
   }, [])
 
   const submit = useCallback(async () => {
@@ -36,7 +34,6 @@ export function App() {
     }
     setBusy(true)
     setError(null)
-    setNotice(null)
     try {
       const session = mode === 'register' ? await register(email.trim(), password) : await login(email.trim(), password)
       await saveSession({ token: session.token, expiresAt: session.expires_at })
@@ -48,18 +45,10 @@ export function App() {
     }
   }, [busy, mode, email, password, confirm])
 
-  const forgot = useCallback(async () => {
-    if (busy || !email.trim()) return
-    setBusy(true)
-    setError(null)
-    try {
-      await requestPasswordReset(email.trim())
-      setNotice(t('login.reset_sent'))
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('error.network'))
-    } finally {
-      setBusy(false)
-    }
+  // The reset flow has its own screens; the address typed so far comes along.
+  const forgot = useCallback(() => {
+    if (busy) return
+    void push('reset', email.trim() ? { email: email.trim() } : {})
   }, [busy, email])
 
   const registering = mode === 'register'
@@ -73,25 +62,25 @@ export function App() {
 
   return (
     <view className="screen">
-      <scroll-view className="login__scroll" scroll-orientation="vertical">
-        <view className="login">
-          <view className={registering ? 'login__blob login__blob--herb' : 'login__blob'} />
-          <view className={registering ? 'login__dot' : 'login__dot login__dot--herb'} />
+      <scroll-view className="auth__scroll" scroll-orientation="vertical">
+        <view className="auth">
+          <view className={registering ? 'auth__blob auth__blob--herb' : 'auth__blob'} />
+          <view className={registering ? 'auth__dot' : 'auth__dot auth__dot--herb'} />
 
-          <view className="login__hero" style={{ paddingTop: `${topInset}px` }}>
-            <view className="row login__brand">
-              <view className="login__mark">
-                <text className="login__mark-glyph">🍳</text>
+          <view className="auth__hero" style={{ paddingTop: `${topInset}px` }}>
+            <view className="row auth__brand">
+              <view className="auth__mark">
+                <text className="auth__mark-glyph">🍳</text>
               </view>
-              <text className="login__wordmark">imkitchen</text>
+              <text className="auth__wordmark">imkitchen</text>
             </view>
-            <view className="login__titles">
-              <text className="login__title">{registering ? t('login.register_title') : t('login.title')}</text>
+            <view className="auth__titles">
+              <text className="auth__title">{registering ? t('login.register_title') : t('login.title')}</text>
               <text className="body">{registering ? t('login.register_subtitle') : t('login.subtitle')}</text>
             </view>
           </view>
 
-          <view className="login__card">
+          <view className="auth__card">
             <TextField
               label={t('login.email')}
               value={email}
@@ -128,15 +117,9 @@ export function App() {
               />
             )}
             {error && (
-              <view className="login__banner login__banner--error">
-                <text className="login__banner-glyph">!</text>
-                <text className="login__banner-text login__banner-text--error">{error}</text>
-              </view>
-            )}
-            {notice && (
-              <view className="login__banner login__banner--notice">
-                <text className="login__banner-glyph login__banner-glyph--notice">✓</text>
-                <text className="login__banner-text login__banner-text--notice">{notice}</text>
+              <view className="auth__banner auth__banner--error">
+                <text className="auth__banner-glyph">!</text>
+                <text className="auth__banner-text auth__banner-text--error">{error}</text>
               </view>
             )}
             <Button
@@ -148,7 +131,7 @@ export function App() {
             />
           </view>
 
-          <view className="row login__switch">
+          <view className="row auth__switch">
             <text className="muted">{registering ? t('login.have_account') : t('login.no_account')}</text>
             <Button
               label={registering ? t('login.sign_in') : t('login.create_one')}

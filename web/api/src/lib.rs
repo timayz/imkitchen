@@ -51,6 +51,10 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
         .route("/auth/logout", post(routes::auth::logout))
         .route("/auth/refresh", post(routes::auth::refresh))
         .route("/auth/password-reset", post(routes::auth::password_reset))
+        .route(
+            "/auth/password-reset/{id}",
+            get(routes::auth::password_reset_check).post(routes::auth::password_reset_confirm),
+        )
         .route("/me", get(routes::auth::me))
         .route("/kitchen", get(routes::kitchen::overview))
         .route("/kitchen/generate", post(routes::kitchen::generate))

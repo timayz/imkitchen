@@ -36,6 +36,12 @@ pub struct PasswordResetRequest {
     pub email: String,
 }
 
+/// The new password, sent against the id from the emailed link.
+#[derive(Deserialize)]
+pub struct PasswordResetConfirm {
+    pub password: String,
+}
+
 /// The signed-in user as the app needs it. `premium_enabled` says whether
 /// monetization exists at all (badges), never whether anything is for sale:
 /// purchase flows do not exist in the API by design.
