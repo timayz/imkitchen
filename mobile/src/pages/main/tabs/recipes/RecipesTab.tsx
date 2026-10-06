@@ -52,6 +52,7 @@ export function RecipesTab({ refreshKey }: { refreshKey: number }) {
   const [error, setError] = useState<string | null>(null)
   const [user, setUser] = useState<Me | null>(null)
   const [busy, setBusy] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [sortOpen, setSortOpen] = useState(false)
   const generation = useRef(0)
@@ -73,6 +74,7 @@ export function RecipesTab({ refreshKey }: { refreshKey: number }) {
     (f: Filters) => {
       const gen = ++generation.current
       setLoading(true)
+      setLoadingMore(false)
       setError(null)
       browse(params(f))
         .then((result) => {
@@ -104,19 +106,26 @@ export function RecipesTab({ refreshKey }: { refreshKey: number }) {
     return () => clearTimeout(handle)
   }, [filters, load, refreshKey])
 
+  // Infinite scroll: fired by the scroll-view when the bottom comes within
+  // `lower-threshold` px, like the web's "visible" sentinel. A page fetched for
+  // a filter set that has since changed is dropped (same generation guard as
+  // `load`) so it never gets appended to the wrong list.
   const loadMore = useCallback(async () => {
-    if (!cursor || busy) return
-    setBusy(true)
+    if (!cursor || loading || loadingMore) return
+    const gen = generation.current
+    setLoadingMore(true)
     try {
       const result = await browse(params(filters, cursor))
+      if (gen !== generation.current) return
       setItems((prev) => [...prev, ...result.page.edges.map((e) => e.node)])
       setCursor(result.page.page_info.has_next_page ? result.page.page_info.end_cursor : null)
     } catch (err) {
+      if (gen !== generation.current) return
       setError(err instanceof ApiError ? err.message : t('error.network'))
     } finally {
-      setBusy(false)
+      if (gen === generation.current) setLoadingMore(false)
     }
-  }, [busy, cursor, filters, params])
+  }, [cursor, filters, loading, loadingMore, params])
 
   const newRecipe = useCallback(async () => {
     if (busy) return
@@ -168,7 +177,12 @@ export function RecipesTab({ refreshKey }: { refreshKey: number }) {
     filters.no_image
 
   return (
-    <scroll-view className="tab-scroll" scroll-orientation="vertical">
+    <scroll-view
+      className="tab-scroll"
+      scroll-orientation="vertical"
+      lower-threshold={400}
+      bindscrolltolower={() => void loadMore()}
+    >
       <view className="content">
         <view className="rec__header">
           <view className="rec__header-text">
@@ -278,7 +292,11 @@ export function RecipesTab({ refreshKey }: { refreshKey: number }) {
           ))}
         </view>
 
-        {cursor && <Button label={t('recipes.load_more')} onTap={loadMore} variant="secondary" disabled={busy} block />}
+        {cursor && loadingMore && (
+          <view className="rec__more">
+            <text className="muted">{t('common.loading')}</text>
+          </view>
+        )}
       </view>
 
       <AddSheet

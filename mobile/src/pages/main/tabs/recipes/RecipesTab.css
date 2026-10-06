@@ -172,6 +172,12 @@
   gap: 10px;
 }
 
+/* Infinite-scroll footer, shown while the next page is being fetched */
+.rec__more {
+  align-items: center;
+  padding: 8px 0 16px;
+}
+
 /* Empty state */
 .rec__empty {
   align-items: center;

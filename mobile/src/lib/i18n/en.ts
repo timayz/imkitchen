@@ -150,7 +150,6 @@ export const en = {
   'recipes.share_all': 'Share all',
   'recipes.make_all_private': 'Make all private',
   'recipes.empty': 'No recipes match. Try another filter, or add your own.',
-  'recipes.load_more': 'Load more',
   'recipes.shared': 'Shared',
   'recipes.add': 'Add a recipe',
   'recipes.new_hint': 'Write it yourself, step by step.',

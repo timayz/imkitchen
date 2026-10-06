@@ -152,7 +152,6 @@ export const fr: Record<MessageKey, string> = {
   'recipes.share_all': 'Tout partager',
   'recipes.make_all_private': 'Tout rendre privé',
   'recipes.empty': 'Aucune recette ne correspond. Changez de filtre ou ajoutez la vôtre.',
-  'recipes.load_more': 'Voir plus',
   'recipes.shared': 'Partagée',
   'recipes.add': 'Ajouter une recette',
   'recipes.new_hint': 'Rédigez-la vous-même, étape par étape.',

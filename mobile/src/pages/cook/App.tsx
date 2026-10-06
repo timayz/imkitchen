@@ -7,6 +7,7 @@ import { t } from '../../lib/i18n/index.js'
 import { back, pageParams, push } from '../../lib/nav.js'
 import { Button } from '../../ui/Button.js'
 import { RecipeCard } from '../../ui/RecipeCard.js'
+import './App.css'
 
 type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; cook: Cook }
 
@@ -16,7 +17,7 @@ export function App() {
   const [state, setState] = useState<State>({ kind: 'loading' })
   const [items, setItems] = useState<Summary[]>([])
   const [cursor, setCursor] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   useEffect(() => {
     getCook(username)
@@ -30,17 +31,19 @@ export function App() {
       )
   }, [username])
 
+  // Infinite scroll: fired by the scroll-view when the bottom comes within
+  // `lower-threshold` px, like the web's "visible" sentinel.
   const loadMore = useCallback(async () => {
-    if (!cursor || busy) return
-    setBusy(true)
+    if (!cursor || loadingMore) return
+    setLoadingMore(true)
     try {
       const cook = await getCook(username, cursor)
       setItems((prev) => [...prev, ...cook.recipes.edges.map((e) => e.node)])
       setCursor(cook.recipes.page_info.has_next_page ? cook.recipes.page_info.end_cursor : null)
     } finally {
-      setBusy(false)
+      setLoadingMore(false)
     }
-  }, [busy, cursor, username])
+  }, [cursor, loadingMore, username])
 
   if (state.kind === 'loading') {
     return (
@@ -62,7 +65,12 @@ export function App() {
 
   const { cook } = state
   return (
-    <scroll-view className="screen" scroll-orientation="vertical">
+    <scroll-view
+      className="screen"
+      scroll-orientation="vertical"
+      lower-threshold={400}
+      bindscrolltolower={() => void loadMore()}
+    >
       <view className="content">
         <view className="row" style={{ gap: '12px' }}>
           <view className="cook__close" bindtap={back}>
@@ -76,7 +84,11 @@ export function App() {
         {items.map((recipe) => (
           <RecipeCard key={recipe.id} recipe={recipe} onTap={() => void push('recipe', { id: recipe.id })} />
         ))}
-        {cursor && <Button label={t('recipes.load_more')} onTap={loadMore} variant="secondary" disabled={busy} block />}
+        {cursor && loadingMore && (
+          <view className="cook__more">
+            <text className="muted">{t('common.loading')}</text>
+          </view>
+        )}
       </view>
     </scroll-view>
   )
