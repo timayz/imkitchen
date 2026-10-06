@@ -1,10 +1,10 @@
-import type { SortBy } from '../../../../lib/api/recipes.js'
-import { t } from '../../../../lib/i18n/index.js'
-import { Button } from '../../../../ui/Button.js'
-import { Sheet } from '../../../../ui/Sheet.js'
+import type { SortBy } from '../lib/api/recipes.js'
+import { t } from '../lib/i18n/index.js'
+import { Button } from './Button.js'
+import { Sheet } from './Sheet.js'
 import './SortSheet.css'
 
-export const SORTS: SortBy[] = ['RecentlyAdded', 'Easiest', 'Hardest', 'Random']
+const ALL_SORTS: SortBy[] = ['RecentlyAdded', 'Easiest', 'Hardest', 'Random']
 
 export interface SortSheetProps {
   open: boolean
@@ -12,18 +12,20 @@ export interface SortSheetProps {
   onClose: () => void
   /** Applied immediately; the list behind the sheet reloads. */
   onPick: (sort: SortBy) => void
+  /** The orders offered; the library's four by default. */
+  sorts?: SortBy[]
 }
 
 /** Sort order picker behind the filter row's sort chip. */
-export function SortSheet({ open, value, onClose, onPick }: SortSheetProps) {
+export function SortSheet({ open, value, onClose, onPick, sorts = ALL_SORTS }: SortSheetProps) {
   return (
     <Sheet open={open} onClose={onClose}>
       <text className="h2">{t('recipes.sort')}</text>
       <view className="sort__list">
-        {SORTS.map((sort, i) => {
+        {sorts.map((sort, i) => {
           const on = sort === value
           const classes = ['sort__row']
-          if (i < SORTS.length - 1) classes.push('sort__row--divided')
+          if (i < sorts.length - 1) classes.push('sort__row--divided')
           return (
             <view key={sort} className={classes.join(' ')} bindtap={() => onPick(sort)}>
               <view className="sort__text">

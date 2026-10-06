@@ -19,7 +19,7 @@ import { Button } from '../../../../ui/Button.js'
 import { Chip } from '../../../../ui/Chip.js'
 import { RecipeCard } from '../../../../ui/RecipeCard.js'
 import { AddSheet } from './AddSheet.js'
-import { SortSheet } from './SortSheet.js'
+import { SortSheet } from '../../../../ui/SortSheet.js'
 import './RecipesTab.css'
 
 const TYPES: RecipeType[] = ['Appetizer', 'MainCourse', 'Accompaniment', 'Dessert', 'Beverage', 'Condiment']

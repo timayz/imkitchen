@@ -70,6 +70,14 @@ export interface Cook {
   recipes: Page<Summary>
 }
 
+/** The web cook page's filters: `GET /cooks/{username}`. */
+export interface CookParams {
+  after?: string
+  recipe_type?: RecipeType
+  search?: string
+  sort_by?: SortBy
+}
+
 function query(params: Record<string, string | boolean | undefined>): string {
   const q = new URLSearchParams()
   for (const [k, v] of Object.entries(params)) {
@@ -134,8 +142,8 @@ export function recipeExists(id: string): Promise<boolean> {
   )
 }
 
-export function getCook(username: string, after?: string): Promise<Cook> {
-  return request<Cook>(`/api/v1/cooks/${encodeURIComponent(username)}${query({ after })}`)
+export function getCook(username: string, params: CookParams = {}): Promise<Cook> {
+  return request<Cook>(`/api/v1/cooks/${encodeURIComponent(username)}${query({ ...params })}`)
 }
 
 /** Polls `exists` until it reports `expected`, at most ~10 s. */

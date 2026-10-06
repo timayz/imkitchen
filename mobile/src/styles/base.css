@@ -232,3 +232,128 @@
   font-size: 13px;
   color: #854d0e;
 }
+
+/* Recipe list filters and results, shared by the recipes tab and the cook page */
+/* Search pill */
+.rec__search {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 14px;
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+}
+
+.rec__search-icon {
+  font-size: 16px;
+}
+
+.rec__search-input {
+  flex: 1;
+  height: 46px;
+  font-size: 16px;
+  background-color: transparent;
+}
+
+/* Filter rows */
+.rec__chips {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.rec__toggles {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.rec__spacer {
+  flex: 1;
+}
+
+.rec__sort {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 10px 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-cream-2);
+}
+
+.rec__sort-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+/* Section rule */
+.rec__section {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.rec__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  color: var(--color-ink-3);
+}
+
+.rec__line {
+  flex: 1;
+  height: 1px;
+  background-color: var(--color-line);
+}
+
+.rec__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Infinite-scroll footer, shown while the next page is being fetched */
+.rec__more {
+  align-items: center;
+  padding: 8px 0 16px;
+}
+
+/* Empty state */
+.rec__empty {
+  align-items: center;
+  padding: 32px 24px 20px;
+}
+
+.rec__empty-art {
+  width: 112px;
+  height: 112px;
+  border-radius: 999px;
+  align-items: center;
+  justify-content: center;
+}
+
+.rec__empty-emoji {
+  font-size: 52px;
+}
+
+.rec__empty-title {
+  font-size: 22px;
+  line-height: 26px;
+  font-weight: 700;
+  color: var(--color-ink);
+  text-align: center;
+}
+
+.rec__center {
+  text-align: center;
+}
