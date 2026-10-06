@@ -214,3 +214,48 @@ async fn password_reset_is_accepted_for_unknown_addresses_too() -> anyhow::Resul
 
     Ok(())
 }
+
+#[tokio::test]
+async fn register_creates_the_account_and_signs_it_in() -> anyhow::Result<()> {
+    let app = TestApp::new().await?;
+
+    let register = |email: &str, password: &str| -> anyhow::Result<Request<Body>> {
+        Ok(Request::post("/api/v1/auth/register")
+            .header(header::CONTENT_TYPE, "application/json")
+            .header(header::USER_AGENT, UA)
+            .header(header::ACCEPT_LANGUAGE, "fr-FR,fr;q=0.9")
+            .header("x-timezone", "Europe/Paris")
+            .body(Body::from(
+                json!({ "email": email, "password": password }).to_string(),
+            ))?)
+    };
+
+    let response = app.router().oneshot(register(EMAIL, PASSWORD)?).await?;
+    assert_eq!(response.status(), StatusCode::CREATED);
+    let body = json(response).await;
+    let token = body["token"].as_str().expect("token").to_owned();
+    assert_eq!(body["user"]["email"], EMAIL);
+    assert_eq!(body["user"]["role"], "User");
+    assert_eq!(body["user"]["tz"], "Europe/Paris");
+
+    // The token works on this device right away.
+    let response = app
+        .router()
+        .oneshot(bearer("/api/v1/me", &token, UA)?)
+        .await?;
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Taken address: a user error. Short password: a validation error.
+    let response = app.router().oneshot(register(EMAIL, PASSWORD)?).await?;
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    assert_eq!(json(response).await["error"]["code"], "user");
+
+    let response = app
+        .router()
+        .oneshot(register("other@imkitchen.test", "short")?)
+        .await?;
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(json(response).await["error"]["code"], "validation");
+
+    Ok(())
+}

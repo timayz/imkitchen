@@ -14,3 +14,8 @@
   font-weight: 700;
   color: var(--color-primary-600);
 }
+
+.login__switch {
+  align-items: center;
+  gap: 4px;
+}

@@ -71,4 +71,8 @@ pub enum User {
     Activated,
     AdConsentGranted,
     AdConsentRevoked,
+    /// The user deleted their account. Every projection drops the personal
+    /// data it holds; the `user` row is removed in the same command so the
+    /// email can be registered again.
+    Deleted,
 }

@@ -47,6 +47,7 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
     let v1 = axum::Router::new()
         .route("/health", get(routes::health::health))
         .route("/auth/login", post(routes::auth::login))
+        .route("/auth/register", post(routes::auth::register))
         .route("/auth/logout", post(routes::auth::logout))
         .route("/auth/refresh", post(routes::auth::refresh))
         .route("/auth/password-reset", post(routes::auth::password_reset))
@@ -98,6 +99,10 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             axum::routing::put(routes::settings::profile),
         )
         .route("/settings/username", post(routes::settings::username))
+        .route(
+            "/settings/account",
+            axum::routing::delete(routes::settings::delete_account),
+        )
         .route(
             "/settings/account/password-reset",
             post(routes::settings::password_reset),

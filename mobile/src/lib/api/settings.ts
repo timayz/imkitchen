@@ -52,3 +52,8 @@ export function getSessions(): Promise<Session[]> {
 export function revokeSession(id: string): Promise<void> {
   return request<void>(`/api/v1/settings/sessions/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
+
+/** Irreversible: on success every session is gone, including this one. */
+export function deleteAccount(password: string): Promise<void> {
+  return request<void>('/api/v1/settings/account', { method: 'DELETE', body: { password } })
+}

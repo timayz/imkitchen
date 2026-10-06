@@ -211,3 +211,66 @@ async fn sessions_list_and_revoke_other_device() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn delete_account_needs_the_password_and_ends_every_session() -> anyhow::Result<()> {
+    let app = TestApp::new().await?;
+    let ua = "ua-phone";
+    let token = sign_in(&app, ua, true).await?;
+    let other_ua = "ua-laptop";
+    let other_token = sign_in(&app, other_ua, false).await?;
+
+    let (status, body) = call(
+        &app,
+        &token,
+        ua,
+        "DELETE",
+        "/api/v1/settings/account",
+        Some(json!({ "password": "wrong-horse" })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(body["error"]["code"], "user");
+
+    let (status, _) = call(&app, &token, ua, "GET", "/api/v1/me", None).await?;
+    assert_eq!(status, StatusCode::OK);
+
+    let (status, _) = call(
+        &app,
+        &token,
+        ua,
+        "DELETE",
+        "/api/v1/settings/account",
+        Some(json!({ "password": "correct-horse" })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    // Both devices are signed out and the credentials no longer work.
+    let (status, _) = call(&app, &token, ua, "GET", "/api/v1/me", None).await?;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let (status, _) = call(&app, &other_token, other_ua, "GET", "/api/v1/me", None).await?;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+
+    let response = app
+        .router()
+        .oneshot(
+            Request::post("/api/v1/auth/login")
+                .header(header::CONTENT_TYPE, "application/json")
+                .header(header::USER_AGENT, ua)
+                .body(Body::from(
+                    json!({ "email": "chef@imkitchen.test", "password": "correct-horse" })
+                        .to_string(),
+                ))?,
+        )
+        .await?;
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    // The address can sign up again.
+    let token = sign_in(&app, ua, true).await?;
+    let (status, body) = call(&app, &token, ua, "GET", "/api/v1/me", None).await?;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["email"], "chef@imkitchen.test");
+
+    Ok(())
+}

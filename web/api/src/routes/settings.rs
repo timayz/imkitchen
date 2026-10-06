@@ -9,7 +9,9 @@ use imkitchen_web_shared::{AppState, services::settings};
 use crate::{
     ApiError, ApiJson, ApiResult,
     auth::{ApiClaims, ApiLocale, ApiUser},
-    dto::settings::{General, PreferencesRequest, ProfileRequest, Session, UsernameRequest},
+    dto::settings::{
+        DeleteAccountRequest, General, PreferencesRequest, ProfileRequest, Session, UsernameRequest,
+    },
 };
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -110,5 +112,18 @@ pub async fn revoke_session(
     Path((acc,)): Path<(String,)>,
 ) -> Result<StatusCode, ApiError> {
     app.identity.logout(&user.id, acc).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Deletes the account for good. The password is re-checked; a wrong one is
+/// a 400 `user` error. On 204 every session is gone and the app returns to
+/// the login screen.
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn delete_account(
+    State(app): State<AppState>,
+    user: ApiUser,
+    ApiJson(input): ApiJson<DeleteAccountRequest>,
+) -> Result<StatusCode, ApiError> {
+    settings::delete_account(&app, &user, &input.password).await?;
     Ok(StatusCode::NO_CONTENT)
 }

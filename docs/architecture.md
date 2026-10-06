@@ -587,7 +587,7 @@ All routes are merged flat into one Axum router in `src/cli/server.rs`. `{param}
 
 **JSON API (`web/api`, consumed by the native app in `mobile/`):** every route is under `/api/v1`, speaks JSON only and authenticates with `Authorization: Bearer <jwt>` (the same JWT claims as the `auth_token` cookie). The client identity is sent as `User-Agent` and must match the login record exactly, like the HTML stack. Errors use the envelope `{"error":{"code","message"}}`; 401 is JSON with `WWW-Authenticate: Bearer`, never a redirect (the Lynx `fetch` has no cookies and follows no redirects). Every response carries `Cache-Control: no-store`. Billing, upgrade and invoice endpoints deliberately do not exist (store payment policies).
 - `GET /api/v1/health`
-- `POST /api/v1/auth/login` (`{email,password}` → `{token,expires_at,user}`), `POST /api/v1/auth/logout`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/password-reset` (`{email}`, always 202)
+- `POST /api/v1/auth/login` (`{email,password}` → `{token,expires_at,user}`), `POST /api/v1/auth/register` (same body, 201 with the same session envelope: the new account is signed in on this device), `POST /api/v1/auth/logout`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/password-reset` (`{email}`, always 202)
 - `GET /api/v1/me`
 - `GET /api/v1/kitchen` (tagged `kind`: `onboarding_recipe` | `onboarding_menu` | `list`), `POST /api/v1/kitchen/generate` (`{count}`), `GET|DELETE /api/v1/kitchen/recipes/{id}`, `GET /api/v1/kitchen/recipes/{id}/cook`, `POST /api/v1/kitchen/recipes/{id}/step` (`{direction: "next"|"prev"}`)
 - `GET /api/v1/groceries`, `POST /api/v1/groceries/toggle` (`{key}`)
@@ -595,7 +595,7 @@ All routes are merged flat into one Axum router in `src/cli/server.rs`. `{param}
 - `GET|PUT|DELETE /api/v1/recipes/{id}` (GET also resolves slugs; DELETE is 202), `GET /api/v1/recipes/{id}/edit`, `GET /api/v1/recipes/{id}/similar`, `GET /api/v1/recipes/{id}/exists`, `POST|DELETE /api/v1/recipes/{id}/save`, `POST /api/v1/recipes/{id}/shopping`, `POST /api/v1/recipes/{id}/share`, `POST /api/v1/recipes/{id}/unshare`
 - `POST /api/v1/recipes/{id}/thumbnail` — multipart or JSON `{content_type,data_base64}`; merged after the global body limit with its own 20 MB cap
 - `GET /api/v1/cooks/{username}` (cursor page)
-- `GET /api/v1/settings/general`, `PUT /api/v1/settings/preferences`, `PUT /api/v1/settings/profile`, `POST /api/v1/settings/username`, `POST /api/v1/settings/account/password-reset`, `GET /api/v1/settings/sessions`, `DELETE /api/v1/settings/sessions/{acc}`
+- `GET /api/v1/settings/general`, `PUT /api/v1/settings/preferences`, `PUT /api/v1/settings/profile`, `POST /api/v1/settings/username`, `POST /api/v1/settings/account/password-reset`, `DELETE /api/v1/settings/account` (`{password}` re-checked; 204 ends every session, cancels the subscription, deletes the user's recipes and frees the email), `GET /api/v1/settings/sessions`, `DELETE /api/v1/settings/sessions/{acc}`
 
 ### Response Format
 

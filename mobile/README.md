@@ -68,7 +68,7 @@ cd android && ./gradlew assembleDebug   # debug APK without the CLI
 | Bundle | Params | What |
 |---|---|---|
 | `main` | `tab?` | Tab shell: Kitchen, Groceries, Recipes, Settings |
-| `login` | — | Sign in, password reset request |
+| `login` | — | Sign in, create an account, password reset request |
 | `cooking` | `id` | Cooking mode (ingredients, steps, timer, embedded origin page); keeps the screen on |
 | `recipe` | `id` (id or slug) | Recipe detail: add to list, save, share, edit, delete, similar |
 | `recipe-edit` | `id` | Editor: fields, dynamic ingredients/steps, photo upload |

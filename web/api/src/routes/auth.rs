@@ -3,7 +3,7 @@ use axum::{
     extract::State,
     http::{HeaderMap, StatusCode},
 };
-use imkitchen_identity::{LoginInput, password::RequestInput};
+use imkitchen_identity::{LoginInput, RegisterInput, password::RequestInput};
 use imkitchen_web_shared::{
     AppState,
     auth::{decode_claims, encode_token, resolve_login},
@@ -13,7 +13,7 @@ use imkitchen_web_shared::{
 use crate::{
     ApiError, ApiJson, ApiResult,
     auth::{ApiClaims, ApiLocale, ApiUser, client_identity},
-    dto::auth::{LoginRequest, Me, PasswordResetRequest, SessionResponse, Token},
+    dto::auth::{LoginRequest, Me, PasswordResetRequest, RegisterRequest, SessionResponse, Token},
 };
 
 #[tracing::instrument(skip_all)]
@@ -24,12 +24,56 @@ pub async fn login(
     ApiJson(input): ApiJson<LoginRequest>,
 ) -> ApiResult<SessionResponse> {
     let identity = client_identity(&headers)?.to_owned();
+    let session = sign_in(&app, identity, locale, input.email, input.password).await?;
 
-    let session = services::auth::login(
+    Ok(Json(session))
+}
+
+/// Creates the account and signs it in on this device, so the app lands in
+/// the kitchen with a token instead of bouncing to the login screen like
+/// the web does.
+#[tracing::instrument(skip_all)]
+pub async fn register(
+    State(app): State<AppState>,
+    headers: HeaderMap,
+    locale: ApiLocale,
+    ApiJson(input): ApiJson<RegisterRequest>,
+) -> Result<(StatusCode, Json<SessionResponse>), ApiError> {
+    let identity = client_identity(&headers)?.to_owned();
+
+    services::auth::register(
         &app,
+        RegisterInput {
+            email: input.email.to_owned(),
+            password: input.password.to_owned(),
+            lang: locale.lang.to_owned(),
+            timezone: locale.timezone.to_owned(),
+        },
+    )
+    .await?;
+
+    // The root address is signed up with the configured root password, not
+    // the submitted one (see `services::auth::register`), so its session is
+    // only issued when both agree.
+    let session = sign_in(&app, identity, locale, input.email, input.password).await?;
+
+    Ok((StatusCode::CREATED, Json(session)))
+}
+
+/// Verifies the credentials, records this device and resolves the login so
+/// the response carries the same `user` the app would get from `GET /me`.
+async fn sign_in(
+    app: &AppState,
+    identity: String,
+    locale: ApiLocale,
+    email: String,
+    password: String,
+) -> Result<SessionResponse, ApiError> {
+    let session = services::auth::login(
+        app,
         LoginInput {
-            email: input.email,
-            password: input.password,
+            email,
+            password,
             lang: locale.lang,
             timezone: locale.timezone,
             user_agent: identity.to_owned(),
@@ -37,22 +81,20 @@ pub async fn login(
     )
     .await?;
 
-    // Resolve the login we just created so the response carries the same
-    // `user` the app would get from `GET /me`.
     let claims = decode_claims(&app.config.jwt, &session.token).ok_or_else(|| {
         ApiError::Server(anyhow::anyhow!("freshly signed token failed to decode"))
     })?;
-    let login = resolve_login(&app, &claims, &identity)
+    let login = resolve_login(app, &claims, &identity)
         .await
         .ok_or_else(|| ApiError::Server(anyhow::anyhow!("login record missing after login")))?;
 
-    Ok(Json(SessionResponse {
+    Ok(SessionResponse {
         token: Token {
             token: session.token,
             expires_at: session.expires_at,
         },
-        user: Me::new(&app, &login),
-    }))
+        user: Me::new(app, &login),
+    })
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]

@@ -48,6 +48,13 @@ pub struct UsernameRequest {
     pub username: String,
 }
 
+/// Deleting the account re-asks for the password; a session token alone is
+/// not enough for an irreversible action.
+#[derive(Deserialize)]
+pub struct DeleteAccountRequest {
+    pub password: String,
+}
+
 /// A signed-in device.
 #[derive(Serialize, Debug)]
 pub struct Session {

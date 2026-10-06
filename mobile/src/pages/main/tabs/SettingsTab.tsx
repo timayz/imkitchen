@@ -6,6 +6,7 @@ import type { DietaryRestriction, RecipeType } from '../../../lib/api/recipe.js'
 import {
   type General,
   type Session,
+  deleteAccount,
   getGeneral,
   getSessions,
   requestAccountPasswordReset,
@@ -20,12 +21,19 @@ import { t } from '../../../lib/i18n/index.js'
 import { replace } from '../../../lib/nav.js'
 import { Button } from '../../../ui/Button.js'
 import { Chip } from '../../../ui/Chip.js'
+import { Sheet } from '../../../ui/Sheet.js'
 import { Stepper } from '../../../ui/Stepper.js'
 import { TextField } from '../../../ui/TextField.js'
 import './SettingsTab.css'
 
 const DIETS: DietaryRestriction[] = ['Vegetarian', 'Vegan', 'GlutenFree', 'DairyFree', 'NutFree']
-const OPTIONAL_COURSES: RecipeType[] = ['Appetizer', 'Accompaniment', 'Dessert', 'Beverage', 'Condiment']
+const OPTIONAL_COURSES: RecipeType[] = [
+  'Appetizer',
+  'Accompaniment',
+  'Dessert',
+  'Beverage',
+  'Condiment',
+]
 
 type State =
   | { kind: 'loading' }
@@ -38,6 +46,9 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
   const [username, setUsernameInput] = useState('')
   const [description, setDescription] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const load = useCallback(() => {
     Promise.all([me(), getGeneral(), getSessions()])
@@ -46,7 +57,7 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
         setState({
           kind: 'error',
           message: err instanceof ApiError ? err.message : t('error.network'),
-        }),
+        })
       )
   }, [])
 
@@ -64,16 +75,21 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
         setNotice({ kind: 'ok', text: ok })
         if (reload) load()
       } catch (err) {
-        setNotice({ kind: 'error', text: err instanceof ApiError ? err.message : t('error.network') })
+        setNotice({
+          kind: 'error',
+          text: err instanceof ApiError ? err.message : t('error.network'),
+        })
       } finally {
         setBusy(false)
       }
     },
-    [busy, load],
+    [busy, load]
   )
 
   const patchGeneral = (p: Partial<General>) =>
-    setState((prev) => (prev.kind === 'ready' ? { ...prev, general: { ...prev.general, ...p } } : prev))
+    setState((prev) =>
+      prev.kind === 'ready' ? { ...prev, general: { ...prev.general, ...p } } : prev
+    )
 
   const signOut = useCallback(async () => {
     try {
@@ -84,6 +100,27 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
     await clearSession()
     await replace('login')
   }, [])
+
+  const openDelete = useCallback(() => {
+    setDeletePassword('')
+    setDeleteError(null)
+    setDeleting(true)
+  }, [])
+
+  const confirmDelete = useCallback(async () => {
+    if (busy || !deletePassword) return
+    setBusy(true)
+    setDeleteError(null)
+    try {
+      await deleteAccount(deletePassword)
+      // Every session is gone server-side; the 204 never trips the 401 handler.
+      await clearSession()
+      await replace('login')
+    } catch (err) {
+      setDeleteError(err instanceof ApiError ? err.message : t('error.network'))
+      setBusy(false)
+    }
+  }, [busy, deletePassword])
 
   if (state.kind === 'loading') {
     return (
@@ -132,7 +169,9 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
               <text className="muted">{t('settings.username_hint')}</text>
               <Button
                 label={t('settings.username_set')}
-                onTap={() => run(() => setUsername(username.trim()), t('settings.username_done'), true)}
+                onTap={() =>
+                  run(() => setUsername(username.trim()), t('settings.username_done'), true)
+                }
                 variant="secondary"
                 disabled={busy || username.trim().length < 3}
               />
@@ -140,7 +179,9 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
           )}
         </view>
 
-        {notice && <text className={notice.kind === 'ok' ? 'success' : 'error'}>{notice.text}</text>}
+        {notice && (
+          <text className={notice.kind === 'ok' ? 'success' : 'error'}>{notice.text}</text>
+        )}
 
         <view className="card">
           <text className="h2">{t('settings.preferences')}</text>
@@ -209,7 +250,7 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
                     recipe_types: general.recipe_types,
                     cuisine_variety_weight: general.cuisine_variety_weight,
                   }),
-                t('settings.preferences_saved'),
+                t('settings.preferences_saved')
               )
             }
             disabled={busy}
@@ -226,7 +267,12 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
           />
           <Button
             label={t('settings.save_profile')}
-            onTap={() => run(() => updateProfile(description ?? general.description), t('settings.profile_saved'))}
+            onTap={() =>
+              run(
+                () => updateProfile(description ?? general.description),
+                t('settings.profile_saved')
+              )
+            }
             variant="secondary"
             disabled={busy}
           />
@@ -264,9 +310,52 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
               )}
             </view>
           ))}
-          <Button label={t('settings.logout')} onTap={signOut} variant="secondary" disabled={busy} />
+          <Button
+            label={t('settings.logout')}
+            onTap={signOut}
+            variant="secondary"
+            disabled={busy}
+          />
+        </view>
+
+        <view className="card">
+          <text className="h2">{t('settings.danger')}</text>
+          <text className="body">{t('settings.delete_hint')}</text>
+          <Button
+            label={t('settings.delete')}
+            onTap={openDelete}
+            variant="danger"
+            disabled={busy}
+          />
         </view>
       </view>
+
+      <Sheet open={deleting} onClose={() => !busy && setDeleting(false)}>
+        <text className="h2">{t('settings.delete_confirm_title')}</text>
+        <text className="body">{t('settings.delete_confirm_hint')}</text>
+        <TextField
+          label={t('login.password')}
+          value=""
+          onChange={setDeletePassword}
+          type="password"
+          confirmType="go"
+          onConfirm={confirmDelete}
+        />
+        {deleteError && <text className="error">{deleteError}</text>}
+        <Button
+          label={t('settings.delete_confirm')}
+          onTap={confirmDelete}
+          variant="danger"
+          disabled={busy || !deletePassword}
+          block
+        />
+        <Button
+          label={t('common.cancel')}
+          onTap={() => setDeleting(false)}
+          variant="ghost"
+          disabled={busy}
+        />
+      </Sheet>
     </scroll-view>
   )
 }

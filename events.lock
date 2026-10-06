@@ -16,6 +16,7 @@ event imkitchen-identity/Password::ResetRequested { user_id: String, email: Stri
 event imkitchen-identity/User::Activated unit
 event imkitchen-identity/User::AdConsentGranted unit
 event imkitchen-identity/User::AdConsentRevoked unit
+event imkitchen-identity/User::Deleted unit
 event imkitchen-identity/User::EmailChanged { value: String }
 event imkitchen-identity/User::LoggedIn { access_id: String, lang: String, timezone: String, user_agent: String }
 event imkitchen-identity/User::Logout { access_id: String }
@@ -84,7 +85,7 @@ view imkitchen-core/recipe/Recipe rev=3 { id: String, owner_id: String, recipe_t
 view imkitchen-core/recipe/RecipeShareState rev=1 { id: String, cursor: String, aggregate_version: u16 }
 view imkitchen-core/recipe/favorite/Favorite rev=1 { id: String, saved: bool, cursor: String, aggregate_version: u16 }
 view imkitchen-core/shopping/Shopping rev=3 { user_id: String, checked: HashSet<String>, ingredients: HashSet<String>, recipes: Vec<String>, statuses: HashMap<String, RecipeStatus>, generated_at: u64, cursor: String, aggregate_version: u16 }
-view imkitchen-identity/User rev=2 { id: String, role: Role, state: State, ad_consent: bool, cursor: String, aggregate_version: u16 } with State enum { Active, Suspended }
+view imkitchen-identity/User rev=3 { id: String, role: Role, state: State, ad_consent: bool, deleted: bool, cursor: String, aggregate_version: u16 } with State enum { Active, Suspended }
 view imkitchen-identity/meal_preferences/MealPreferences rev=2 { id: String, household_size: u16, dietary_restrictions: Vec<DietaryRestriction>, cuisine_variety_weight: f32, recipe_types: Vec<RecipeType>, cursor: String, aggregate_version: u16 }
 view imkitchen-identity/password/Password rev=1 { id: String, user_id: String, completed: bool, expire_at: u64, cursor: String, aggregate_version: u16 }
 view imkitchen-identity/user_profile/UserProfile rev=1 { id: String, description: String, cursor: String, aggregate_version: u16 }

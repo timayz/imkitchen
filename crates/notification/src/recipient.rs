@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use evento::{Executor, Projection, Snapshot, metadata::Event};
 use imkitchen_db::notification_recipient::NotificationRecipient;
-use imkitchen_identity::types::user::{self, LoggedIn, Registered};
+use imkitchen_identity::types::user::{self, Deleted, LoggedIn, Registered};
 use sea_query::{Expr, ExprTrait, OnConflict, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
@@ -37,6 +37,7 @@ pub fn create_projection<E: Executor>() -> Projection<E, Recipient> {
     Projection::new::<user::User>()
         .handler(handle_registered())
         .handler(handle_logged_in())
+        .handler(handle_deleted())
 }
 
 impl evento::ProjectionAggregate for Recipient {
@@ -146,6 +147,15 @@ async fn handle_registered(event: Event<Registered>, data: &mut Recipient) -> an
 async fn handle_logged_in(event: Event<LoggedIn>, data: &mut Recipient) -> anyhow::Result<()> {
     data.lang = event.data.lang.to_owned();
     data.timezone = event.data.timezone.to_owned();
+
+    Ok(())
+}
+
+/// No address left to write to: later notifications for this user are dropped
+/// by the senders' empty-recipient check.
+#[evento::handler]
+async fn handle_deleted(_event: Event<Deleted>, data: &mut Recipient) -> anyhow::Result<()> {
+    data.email = String::new();
 
     Ok(())
 }

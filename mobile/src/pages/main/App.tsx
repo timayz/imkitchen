@@ -71,7 +71,7 @@ export function App() {
   return (
     <view className="screen shell">
       <view className="shell__body">
-        {tab === 'kitchen' && <KitchenTab refreshKey={refreshKey} />}
+        {tab === 'kitchen' && <KitchenTab refreshKey={refreshKey} onAddRecipes={() => selectTab('recipes')} />}
         {tab === 'groceries' && <GroceriesTab refreshKey={refreshKey} />}
         {tab === 'recipes' && <RecipesTab refreshKey={refreshKey} />}
         {tab === 'settings' && <SettingsTab refreshKey={refreshKey} />}

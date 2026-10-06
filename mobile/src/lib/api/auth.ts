@@ -29,6 +29,15 @@ export function login(email: string, password: string): Promise<SessionResponse>
   })
 }
 
+/** Creates the account and signs this device in (201 with a session). */
+export function register(email: string, password: string): Promise<SessionResponse> {
+  return request<SessionResponse>('/api/v1/auth/register', {
+    method: 'POST',
+    body: { email, password },
+    anonymous: true,
+  })
+}
+
 export function logout(): Promise<void> {
   return request<void>('/api/v1/auth/logout', { method: 'POST' })
 }

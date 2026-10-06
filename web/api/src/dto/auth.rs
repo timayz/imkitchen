@@ -9,6 +9,14 @@ pub struct LoginRequest {
     pub password: String,
 }
 
+/// Same shape as a login: the app confirms the password locally and the
+/// server signs the new account in straight away.
+#[derive(Deserialize)]
+pub struct RegisterRequest {
+    pub email: String,
+    pub password: String,
+}
+
 #[derive(Serialize)]
 pub struct Token {
     pub token: String,
