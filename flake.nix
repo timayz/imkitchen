@@ -40,7 +40,8 @@
           withWebkit = false;
         };
 
-        # Android SDK for the Sparkling (Lynx) native shell in ./android.
+        # Android SDK for the Sparkling (Lynx) native mobile app in ./mobile
+        # (Android shell in ./mobile/android).
         # Versions follow the sparkling-app-template: compileSdk/targetSdk 34
         # (also what `sparkling doctor` checks); build-tools 30.0.3 is what
         # AGP 7.4.2 insists on installing, 33.0.1 provides an aapt2 new enough
@@ -61,7 +62,7 @@
         androidSdk = androidComposition.androidsdk;
         androidHome = "${androidSdk}/libexec/android-sdk";
         androidAapt2BuildTools = "33.0.1";
-        avdName = "yeirn-api34";
+        avdName = "imkitchen-api34";
       in
       {
         devShells.default = with pkgs; mkShell {

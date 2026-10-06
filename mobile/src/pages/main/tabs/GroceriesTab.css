@@ -1,0 +1,39 @@
+.groc__header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.groc__empty {
+  align-items: center;
+  text-align: center;
+}
+
+.groc__progress {
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--color-line-2);
+  overflow: hidden;
+}
+
+.groc__progress-fill {
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--color-herb-500);
+}
+
+.aisle--done {
+  opacity: 0.75;
+}
+
+.aisle__meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.aisle__done {
+  color: var(--color-herb-500);
+  font-weight: 700;
+  font-size: 16px;
+}

@@ -1,0 +1,42 @@
+{
+  "name": "imkitchen-mobile",
+  "version": "1.0.0",
+  "description": "imkitchen native mobile app (Sparkling / Lynx)",
+  "type": "module",
+  "dependencies": {
+    "@lynx-js/react": "0.116.5",
+    "sparkling-keep-awake": "file:methods/keep-awake",
+    "sparkling-media": "2.0.1",
+    "sparkling-navigation": "2.0.1",
+    "sparkling-storage": "2.0.1"
+  },
+  "devDependencies": {
+    "@lynx-js/qrcode-rsbuild-plugin": "0.4.7",
+    "@lynx-js/react-rsbuild-plugin": "0.12.10",
+    "@lynx-js/rspeedy": "0.13.6",
+    "@lynx-js/types": "3.6.0",
+    "@testing-library/jest-dom": "6.9.1",
+    "@types/react": "18.3.31",
+    "@vitest/coverage-v8": "4.1.11",
+    "jsdom": "28.1.0",
+    "prettier": "3.9.9",
+    "sparkling-app-cli": "2.0.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  },
+  "engines": {
+    "node": "^22 || ^24"
+  },
+  "private": true,
+  "scripts": {
+    "dev": "sparkling-app-cli dev",
+    "build": "sparkling-app-cli build --copy",
+    "autolink": "sparkling-app-cli autolink",
+    "doctor": "sparkling-app-cli doctor",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "run:android": "sparkling-app-cli run:android",
+    "run:ios": "sparkling-app-cli run:ios --copy",
+    "build:release": "IMKITCHEN_API_URL=https://imkitchen.app sparkling-app-cli build --copy"
+  }
+}

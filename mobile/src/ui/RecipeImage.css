@@ -1,0 +1,33 @@
+.rimg {
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.rimg--thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-md);
+}
+
+.rimg--hero {
+  width: 100%;
+  height: 220px;
+  border-radius: var(--radius-xl);
+}
+
+.rimg__img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.rimg__emoji {
+  font-size: 28px;
+}
+
+.rimg__emoji--hero {
+  font-size: 88px;
+}

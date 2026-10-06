@@ -1,0 +1,28 @@
+.tabs {
+  display: flex;
+  flex-direction: row;
+  background-color: var(--color-paper);
+  border-top: 1px solid var(--color-line);
+}
+
+.tab {
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0 12px;
+  gap: 2px;
+}
+
+.tab__glyph {
+  font-size: 20px;
+}
+
+.tab__label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-ink-3);
+}
+
+.tab__label--active {
+  color: var(--color-primary-600);
+}

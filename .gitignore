@@ -35,5 +35,23 @@ playwright-report/
 test-results/
 tests/fixtures/.auth/*.json
 
+# Native mobile app (Sparkling / Lynx) under mobile/
+mobile/node_modules/
+mobile/dist/
+mobile/coverage/
+mobile/.sparkling/
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/local.properties
+mobile/methods/*/android/build/
+mobile/methods/*/android/.gradle/
+mobile/android/app/src/main/assets/
+mobile/ios/Pods/
+mobile/ios/LynxResources/*
+!mobile/ios/LynxResources/.gitkeep
+mobile/ios/SparklingGo/SparklingGo/Resources/Assets/
+.temp-templates/
+
 # Docker
 .docker/traefik/certs/

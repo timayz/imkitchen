@@ -1,0 +1,15 @@
+.rec__actions {
+  gap: 10px;
+}
+
+.rec__chips {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.rec__toggles {
+  flex-wrap: wrap;
+  gap: 8px;
+}

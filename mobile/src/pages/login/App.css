@@ -1,0 +1,16 @@
+.login {
+  padding-top: 80px;
+  gap: 24px;
+}
+
+.login__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login__brand {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-primary-600);
+}

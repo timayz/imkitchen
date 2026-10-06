@@ -1,0 +1,46 @@
+.btn {
+  align-self: flex-start;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  padding: 12px 20px;
+}
+
+.btn--block {
+  align-self: stretch;
+}
+
+.btn--primary {
+  background-color: var(--color-primary-500);
+}
+
+.btn--secondary {
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line);
+}
+
+.btn--ghost {
+  background-color: transparent;
+  padding: 8px 4px;
+}
+
+.btn--disabled {
+  opacity: 0.5;
+}
+
+.btn__text {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.btn__text--primary {
+  color: var(--color-paper);
+}
+
+.btn__text--secondary {
+  color: var(--color-ink);
+}
+
+.btn__text--ghost {
+  color: var(--color-primary-600);
+}

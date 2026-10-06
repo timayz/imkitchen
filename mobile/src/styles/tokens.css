@@ -1,0 +1,53 @@
+/*
+ * Design tokens lifted from the web app's tailwind.css `@theme` block so the
+ * native app reads as the same product. Keep the two in sync.
+ */
+:root {
+  /* Primary — Tangerine */
+  --color-primary-50: #fff7ed;
+  --color-primary-100: #fde3cf;
+  --color-primary-200: #fbc89f;
+  --color-primary-500: #ef6c1e;
+  --color-primary-600: #d5541a;
+  --color-primary-700: #b03d14;
+  --color-primary-800: #7a2d05;
+
+  /* Herb — green accent */
+  --color-herb-100: #d8ebdb;
+  --color-herb-500: #2f7d4f;
+  --color-herb-700: #1b4d2e;
+
+  /* Ink — warm text */
+  --color-ink: #1b140c;
+  --color-ink-2: #4a3f33;
+  --color-ink-3: #8a7e70;
+
+  /* Surfaces */
+  --color-cream: #fbf5e9;
+  --color-cream-2: #f3ead6;
+  --color-paper: #ffffff;
+
+  /* Lines */
+  --color-line: #e8dfc8;
+  --color-line-2: #ebe3d1;
+
+  /* Meal types */
+  --color-meal-main: #ef6c1e;
+  --color-meal-main-soft: #fde3cf;
+  --color-meal-main-ink: #7a2d05;
+  --color-meal-entree: #3b6fb0;
+  --color-meal-entree-soft: #dde9f5;
+  --color-meal-entree-ink: #1e3a5f;
+  --color-meal-dessert: #c4428d;
+  --color-meal-dessert-soft: #f6dbeb;
+  --color-meal-dessert-ink: #6b1f49;
+  --color-meal-side: #2f7d4f;
+  --color-meal-side-soft: #d8ebdb;
+  --color-meal-side-ink: #1b4d2e;
+
+  /* Radii (rem → px at 16px base) */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+}

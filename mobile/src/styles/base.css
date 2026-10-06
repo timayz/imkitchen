@@ -1,0 +1,234 @@
+@import './tokens.css';
+
+.screen {
+  min-height: 100vh;
+  background-color: var(--color-cream);
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.body {
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--color-ink-2);
+}
+
+.muted {
+  font-size: 13px;
+  color: var(--color-ink-3);
+}
+
+.error {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-primary-700);
+}
+
+.success {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-herb-500);
+}
+
+.card {
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.link {
+  font-size: 14px;
+  color: var(--color-primary-600);
+  font-weight: 600;
+}
+
+.badge {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.badge--premium {
+  background-color: var(--color-primary-100);
+  color: var(--color-primary-800);
+}
+
+.badge--chef {
+  background-color: var(--color-herb-100);
+  color: var(--color-herb-700);
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Aisle sections + ingredient rows (groceries tab, cooking ingredients) */
+.aisle {
+  background-color: var(--color-paper);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-line-2);
+  overflow: hidden;
+}
+
+.aisle__head {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--color-line-2);
+}
+
+.aisle__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  align-items: center;
+  justify-content: center;
+}
+
+.aisle__emoji {
+  font-size: 18px;
+}
+
+.aisle__label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.ing {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--color-line-2);
+}
+
+.ing__box {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-line);
+  background-color: var(--color-cream);
+  align-items: center;
+  justify-content: center;
+}
+
+.ing__box--on {
+  background-color: var(--color-herb-500);
+  border-color: var(--color-herb-500);
+}
+
+.ing__check {
+  color: var(--color-paper);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ing__name {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.ing__name--on {
+  color: var(--color-ink-3);
+  text-decoration: line-through;
+}
+
+.ing__qty {
+  font-size: 12px;
+  color: var(--color-ink-3);
+}
+
+
+.cook__eyebrow {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}
+
+/* Container top bar (close/back button), shared by pushed screens */
+.cook__close {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  background-color: var(--color-paper);
+  align-items: center;
+  justify-content: center;
+}
+
+.cook__close-text {
+  font-size: 14px;
+  color: var(--color-ink);
+}
+
+.cook--center {
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Pills (hero cards, detail) */
+.hero__pills {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pill {
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.pill__text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.kitchen__prep {
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  background-color: #fef9c3;
+  border: 1px solid #fde047;
+}
+
+.kitchen__prep-text {
+  font-size: 13px;
+  color: #854d0e;
+}
