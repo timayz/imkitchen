@@ -59,7 +59,8 @@
 .set-hero__name {
   font-size: 17px;
   line-height: 22px;
-  font-weight: 700;
+  font-family: 'Fraunces';
+  font-weight: 400;
   color: var(--color-ink);
 }
 

@@ -92,7 +92,9 @@
 .rdet__h1 {
   font-size: 30px;
   line-height: 36px;
-  font-weight: 700;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.6px;
   color: var(--color-ink);
 }
 

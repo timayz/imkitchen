@@ -34,7 +34,9 @@
 .cook__name {
   font-size: 22px;
   line-height: 26px;
-  font-weight: 700;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.5px;
   color: var(--color-ink);
   text-overflow: ellipsis;
 }

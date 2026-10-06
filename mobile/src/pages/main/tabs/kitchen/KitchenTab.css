@@ -167,7 +167,9 @@
 .kt-hero__title {
   font-size: 24px;
   line-height: 28px;
-  font-weight: 700;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.5px;
   color: var(--color-ink);
 }
 
@@ -285,7 +287,8 @@
 .kt-row__name {
   font-size: 15px;
   line-height: 20px;
-  font-weight: 600;
+  font-family: 'Fraunces';
+  font-weight: 400;
   color: var(--color-ink);
   text-overflow: ellipsis;
 }
@@ -355,7 +358,9 @@
 .kt-empty__title {
   font-size: 22px;
   line-height: 26px;
-  font-weight: 700;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.5px;
   color: var(--color-ink);
   text-align: center;
 }

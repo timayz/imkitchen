@@ -25,7 +25,8 @@
 .rcard__name {
   font-size: 15px;
   line-height: 20px;
-  font-weight: 600;
+  font-family: 'Fraunces';
+  font-weight: 400;
   color: var(--color-ink);
   text-overflow: ellipsis;
 }

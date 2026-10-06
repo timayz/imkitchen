@@ -1,6 +1,8 @@
 .gen__eyebrow {
   font-size: 22px;
-  font-weight: 700;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.5px;
   color: var(--color-ink);
 }
 

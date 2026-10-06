@@ -35,6 +35,9 @@ const lynxConfig = defineConfig({
   },
   output: {
     assetPrefix: 'asset:///',
+    // Lynx loads custom fonts from url()/data: only, so the Fraunces subset
+    // referenced by src/styles/fonts.css is inlined as base64 whatever its size.
+    dataUriLimit: { font: Number.MAX_SAFE_INTEGER },
     filename: {
       bundle: '[name].lynx.bundle',
     },

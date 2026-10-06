@@ -68,7 +68,9 @@
 
 .auth__wordmark {
   font-size: 22px;
-  font-weight: 700;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.5px;
   color: var(--color-ink);
 }
 
@@ -81,7 +83,9 @@
 .auth__title {
   font-size: 34px;
   line-height: 40px;
-  font-weight: 700;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.7px;
   color: var(--color-ink);
 }
 
