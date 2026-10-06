@@ -10,7 +10,7 @@ import { BottomTabs, type Tab } from '../../ui/BottomTabs.js'
 import { GroceriesTab } from './tabs/GroceriesTab.js'
 import { KitchenTab } from './tabs/kitchen/KitchenTab.js'
 import { RecipesTab } from './tabs/recipes/RecipesTab.js'
-import { SettingsTab } from './tabs/SettingsTab.js'
+import { SettingsTab } from './tabs/settings/SettingsTab.js'
 
 export type TabKey = 'kitchen' | 'groceries' | 'recipes' | 'settings'
 

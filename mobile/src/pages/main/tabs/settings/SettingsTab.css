@@ -1,0 +1,390 @@
+/* Header */
+.set-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Profile hero: white card with a tinted band on top (the kitchen hero's shape) */
+.set-hero {
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.set-hero__band {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background-color: var(--color-primary-100);
+}
+
+.set-hero__band--plain {
+  background-color: var(--color-cream-2);
+}
+
+.set-hero__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary-500);
+  align-items: center;
+  justify-content: center;
+}
+
+.set-hero__avatar--plain {
+  background-color: var(--color-paper);
+}
+
+.set-hero__initial {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-paper);
+}
+
+.set-hero__initial--plain {
+  color: var(--color-ink);
+}
+
+.set-hero__id {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.set-hero__name {
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.set-hero__email {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-ink-2);
+}
+
+.set-hero__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px 16px;
+}
+
+.set-hero__desc {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-ink-2);
+}
+
+.set-hero__edit {
+  align-self: flex-start;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-paper);
+}
+
+.set-hero__edit-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.set-hero__edit-chevron {
+  font-size: 18px;
+  line-height: 18px;
+  color: var(--color-ink-3);
+}
+
+/* First run: pick-a-username note inside the hero */
+.set-note {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.set-note__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background-color: var(--color-primary-100);
+  align-items: center;
+  justify-content: center;
+}
+
+.set-note__glyph {
+  font-size: 16px;
+}
+
+.set-note__text {
+  flex: 1;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-ink-2);
+}
+
+.set-note__strong {
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+/* Section rule (the kitchen/recipes eyebrow + line) */
+.set-section {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.set-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  color: var(--color-ink-3);
+}
+
+.set-section__line {
+  flex: 1;
+  height: 1px;
+  background-color: var(--color-line);
+}
+
+/* Grouped rows */
+.set-group {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.set-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 12px 14px 12px 12px;
+  border-bottom: 1px solid var(--color-line-2);
+}
+
+.set-row--last {
+  border-bottom-width: 0;
+}
+
+.set-row--card {
+  margin-top: 4px;
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-lg);
+}
+
+.set-row__tile {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+}
+
+.set-row__tile--entree {
+  background-color: var(--color-meal-entree-soft);
+}
+
+.set-row__tile--herb {
+  background-color: var(--color-herb-100);
+}
+
+.set-row__tile--dessert {
+  background-color: var(--color-meal-dessert-soft);
+}
+
+.set-row__tile--condiment {
+  background-color: #fbeacb;
+}
+
+.set-row__tile--cream {
+  background-color: var(--color-cream-2);
+}
+
+.set-row__tile--main {
+  background-color: var(--color-meal-main-soft);
+}
+
+.set-row__emoji {
+  font-size: 20px;
+  color: var(--color-ink);
+}
+
+.set-row__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.set-row__title {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.set-row__title--danger {
+  color: var(--color-primary-700);
+}
+
+.set-row__meta {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-ink-3);
+}
+
+.set-row__chevron {
+  font-size: 22px;
+  line-height: 22px;
+  color: var(--color-ink-3);
+}
+
+.set-row__glyph {
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.set-footer {
+  text-align: center;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-ink-3);
+}
+
+/* Sheets */
+.set-chips {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.set-meter {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.set-meter__seg {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--color-line);
+}
+
+.set-meter__seg--on {
+  background-color: var(--color-herb-500);
+}
+
+.set-locked {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-cream-2);
+}
+
+.set-locked__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.set-locked__label {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--color-ink-3);
+}
+
+.set-locked__value {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.set-locked__meta {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-ink-3);
+}
+
+.set-locked__glyph {
+  font-size: 16px;
+}
+
+.set-counter {
+  align-self: flex-end;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-ink-3);
+}
+
+.set-chip {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background-color: var(--color-herb-100);
+}
+
+.set-chip__text {
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 700;
+  color: var(--color-herb-700);
+}
+
+.set-smallbtn {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-paper);
+  align-items: center;
+  justify-content: center;
+}
+
+.set-smallbtn__text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.set-delete__icon {
+  align-self: flex-start;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary-100);
+  align-items: center;
+  justify-content: center;
+}
+
+.set-delete__emoji {
+  font-size: 22px;
+}

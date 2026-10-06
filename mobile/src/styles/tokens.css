@@ -20,7 +20,8 @@
   /* Ink — warm text */
   --color-ink: #1b140c;
   --color-ink-2: #4a3f33;
-  --color-ink-3: #8a7e70;
+  /* Darker than the web's #8a7e70: 12px captions on cream need 4.5:1. */
+  --color-ink-3: #6f6354;
 
   /* Surfaces */
   --color-cream: #fbf5e9;
