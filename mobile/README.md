@@ -39,8 +39,8 @@ deliberately and re-run `npm run autolink` afterwards.
 typecheck + vitest + bundles, an Android debug APK on Ubuntu, and the iOS
 simulator build on a GitHub macOS runner (`pod install`, then `xcodebuild`
 with code signing off). The iOS job uploads the `Podfile.lock` it resolved
-and the full `xcodebuild` log as the `ios-build` artifact; there is no
-committed `Podfile.lock` yet, commit the uploaded one once a run is green.
+and the full `xcodebuild` log as the `ios-build` artifact; after a Podfile
+change, commit the uploaded lock.
 
 iOS stays on Lynx 3.6.0: the `Sparkling` 2.0.1 pod depends on
 `Lynx/Framework (= 3.6.0)` exactly, which CocoaPods cannot override the way
