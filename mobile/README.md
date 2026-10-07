@@ -17,6 +17,9 @@ in the app (store payment policies); users subscribe on the website.
 | `src/pages/<name>/` | One Lynx entry per screen container; `main` hosts the tab bar |
 | `src/lib/api/` | Typed fetch client and per-area API modules |
 | `src/lib/` | Config, auth store, navigation helpers, i18n, theme |
+| `src/lib/cache.ts`, `src/lib/use-resource.ts` | Offline cache: every screen renders its last server response from the local store, then refreshes |
+| `src/lib/offline/` | Offline write queue (`queue.ts`, `ops.ts`) and the offline flag; kitchen changes work without a connection |
+| `methods/db/` | `sparkling-db`, the SQLite document store behind the cache and the queue (Android) |
 | `src/styles/tokens.css` | Design tokens mirrored from the web app's `tailwind.css` |
 | `scripts/icons.mjs` | Renders launcher, splash and store icons from `static/icons/icon-maskable.svg` (`npm run icons`) |
 | `scripts/nav-icons.mjs` | Renders the tab bar icons from the web nav's SVG paths into `src/assets/icons/*.png` (`npm run icons`) |

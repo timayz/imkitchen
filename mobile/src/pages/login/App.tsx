@@ -2,7 +2,7 @@ import { useCallback, useState } from '@lynx-js/react'
 
 import '../../styles/base.css'
 import '../../styles/auth.css'
-import { ApiError } from '../../lib/api/client.js'
+import { errorMessage } from '../../lib/api/client.js'
 import { login, register } from '../../lib/api/auth.js'
 import { saveSession } from '../../lib/auth/session.js'
 import { t } from '../../lib/i18n/index.js'
@@ -39,7 +39,7 @@ export function App() {
       await saveSession({ token: session.token, expiresAt: session.expires_at })
       await replace('main')
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('error.network'))
+      setError(errorMessage(err))
     } finally {
       setBusy(false)
     }

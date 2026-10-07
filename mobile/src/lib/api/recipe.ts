@@ -1,10 +1,4 @@
-export type RecipeType =
-  | 'Appetizer'
-  | 'MainCourse'
-  | 'Dessert'
-  | 'Accompaniment'
-  | 'Beverage'
-  | 'Condiment'
+export type RecipeType = 'Appetizer' | 'MainCourse' | 'Dessert' | 'Accompaniment' | 'Beverage' | 'Condiment'
 
 export type DietaryRestriction = 'Vegetarian' | 'Vegan' | 'GlutenFree' | 'DairyFree' | 'NutFree'
 
@@ -21,7 +15,7 @@ export interface Ingredient {
   category: string | null
   /** Already formatted: `250 g`, `1.5 L`, `4`. */
   quantity_label: string
-  /** What `POST /groceries/toggle` expects. */
+  /** What `PUT /groceries/check` expects. */
   key: string
 }
 

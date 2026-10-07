@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from '@lynx-js/react'
 
-import { ApiError } from '../../../../lib/api/client.js'
+import { errorMessage } from '../../../../lib/api/client.js'
 import { logout, me, type Me } from '../../../../lib/api/auth.js'
 import {
   type General,
@@ -43,7 +43,7 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
   const [username, setUsernameInput] = useState('')
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  const message = (err: unknown) => (err instanceof ApiError ? err.message : t('error.network'))
+  const message = (err: unknown) => errorMessage(err)
 
   const load = useCallback(() => {
     Promise.all([me(), getGeneral(), getSessions()])

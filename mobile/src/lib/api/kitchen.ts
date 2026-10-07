@@ -108,9 +108,10 @@ export function getCooking(id: string): Promise<CookingScreen> {
   return request<CookingScreen>(`/api/v1/kitchen/recipes/${encodeURIComponent(id)}/cook`)
 }
 
-export function step(id: string, direction: 'next' | 'prev'): Promise<CookingScreen> {
-  return request<CookingScreen>(`/api/v1/kitchen/recipes/${encodeURIComponent(id)}/step`, {
-    method: 'POST',
-    body: { direction },
+/** Absolute cooking cursor (idempotent): what the offline queue replays. */
+export function setStatus(id: string, status: Status): Promise<CookingScreen> {
+  return request<CookingScreen>(`/api/v1/kitchen/recipes/${encodeURIComponent(id)}/status`, {
+    method: 'PUT',
+    body: status,
   })
 }

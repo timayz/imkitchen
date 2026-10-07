@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from '@lynx-js/react'
 
 import '../../styles/base.css'
-import { ApiError } from '../../lib/api/client.js'
+import { errorMessage } from '../../lib/api/client.js'
 import type { RecipeType } from '../../lib/api/recipe.js'
 import { type Cook, type CookParams, type SortBy, type Summary, getCook } from '../../lib/api/recipes.js'
 import { avatar } from '../../lib/avatar.js'
@@ -52,7 +52,7 @@ export function App() {
       search: f.search.trim() || undefined,
       sort_by: f.sort_by,
     }),
-    [],
+    []
   )
 
   // Every filter change refetches the profile too; it is one request either way.
@@ -71,7 +71,7 @@ export function App() {
         })
         .catch((err: unknown) => {
           if (gen !== generation.current) return
-          const message = err instanceof ApiError ? err.message : t('error.network')
+          const message = errorMessage(err)
           // Without a profile the whole screen is the error; afterwards it shows inline.
           setState((prev) => (prev.kind === 'ready' ? prev : { kind: 'error', message }))
           setError(message)
@@ -80,7 +80,7 @@ export function App() {
           if (gen === generation.current) setLoading(false)
         })
     },
-    [params, username],
+    [params, username]
   )
 
   // Debounced on the search text, immediate on everything else.
@@ -104,7 +104,7 @@ export function App() {
       setCursor(cook.recipes.page_info.has_next_page ? cook.recipes.page_info.end_cursor : null)
     } catch (err) {
       if (gen !== generation.current) return
-      setError(err instanceof ApiError ? err.message : t('error.network'))
+      setError(errorMessage(err))
     } finally {
       if (gen === generation.current) setLoadingMore(false)
     }

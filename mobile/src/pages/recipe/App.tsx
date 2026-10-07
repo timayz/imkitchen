@@ -2,120 +2,107 @@ import { useCallback, useEffect, useState } from '@lynx-js/react'
 
 import '../../styles/base.css'
 import './App.css'
-import { ApiError } from '../../lib/api/client.js'
+import { errorMessage } from '../../lib/api/client.js'
 import { type Me, me } from '../../lib/api/auth.js'
 import {
   type Detail,
+  type Page,
   type Summary,
-  addRecipeToList,
   deleteRecipe,
   getRecipe,
   getSimilar,
-  saveRecipe,
   shareRecipe,
-  unsaveRecipe,
   unshareRecipe,
   waitForRecipe,
 } from '../../lib/api/recipes.js'
 import { course, minutes } from '../../lib/course.js'
 import { t } from '../../lib/i18n/index.js'
 import { back, openExternal, pageParams, push } from '../../lib/nav.js'
+import { enqueue } from '../../lib/offline/queue.js'
+import { useResource } from '../../lib/use-resource.js'
 import { Button } from '../../ui/Button.js'
+import { OfflineBanner } from '../../ui/OfflineBanner.js'
 import { RecipeCard } from '../../ui/RecipeCard.js'
 import { RecipeImage } from '../../ui/RecipeImage.js'
 import { Sheet } from '../../ui/Sheet.js'
 import { Spinner } from '../../ui/Spinner.js'
 
-type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; recipe: Detail }
-
 /** Recipe detail: `recipe.lynx.bundle?id=<id or slug>`. */
 export function App() {
   const id = pageParams().id ?? ''
-  const [state, setState] = useState<State>({ kind: 'loading' })
-  const [similar, setSimilar] = useState<Summary[]>([])
-  const [user, setUser] = useState<Me | null>(null)
+  // Cached locally; saving and adding to the list go through the offline queue.
+  const recipe = useResource<Detail>(id ? `recipe:${id}` : null, () => getRecipe(id), [id])
+  const similarPage = useResource<Page<Summary>>(id ? `similar:${id}` : null, () => getSimilar(id), [id])
+  const { data: user } = useResource<Me>('me', me, [])
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const fail = (err: unknown) =>
-    setState({ kind: 'error', message: err instanceof ApiError ? err.message : t('error.network') })
-
-  const load = useCallback(() => {
-    getRecipe(id)
-      .then((recipe) => {
-        setState({ kind: 'ready', recipe })
-        getSimilar(recipe.id)
-          .then((page) => setSimilar(page.edges.map((e) => e.node)))
-          .catch(() => {})
-      })
-      .catch(fail)
-  }, [id])
-
-  useEffect(() => {
-    load()
-    me()
-      .then(setUser)
-      .catch(() => {})
-  }, [load])
+  const r = recipe.data
+  const similar = similarPage.data?.edges.map((e) => e.node) ?? []
 
   // Returning from the editor: show what was saved.
   useEffect(() => {
     const emitter = lynx.getJSModule('GlobalEventEmitter')
-    emitter.addListener('onShow', load)
-    return () => emitter.removeListener('onShow', load)
-  }, [load])
+    const onShow = () => {
+      recipe.refresh()
+      similarPage.refresh()
+    }
+    emitter.addListener('onShow', onShow)
+    return () => emitter.removeListener('onShow', onShow)
+  }, [recipe.refresh, similarPage.refresh])
 
+  /** A network-only action: sharing. */
   const run = useCallback(
-    async (action: () => Promise<void>, patch?: (r: Detail) => Detail) => {
+    async (action: () => Promise<void>) => {
       if (busy) return
       setBusy(true)
       setNotice(null)
       try {
         await action()
-        if (patch) setState((prev) => (prev.kind === 'ready' ? { kind: 'ready', recipe: patch(prev.recipe) } : prev))
+        recipe.refresh()
       } catch (err) {
-        setNotice(err instanceof ApiError ? err.message : t('error.network'))
+        setNotice(errorMessage(err))
       } finally {
         setBusy(false)
       }
     },
-    [busy],
+    [busy, recipe.refresh]
   )
 
   const remove = useCallback(async () => {
-    if (state.kind !== 'ready') return
+    if (!r) return
     setConfirmDelete(false)
     setBusy(true)
     try {
-      await deleteRecipe(state.recipe.id)
-      await waitForRecipe(state.recipe.id, false)
+      await deleteRecipe(r.id)
+      await waitForRecipe(r.id, false)
       back()
     } catch (err) {
-      setNotice(err instanceof ApiError ? err.message : t('error.network'))
+      setNotice(errorMessage(err))
       setBusy(false)
     }
-  }, [state])
+  }, [r])
 
-  if (state.kind === 'loading') {
+  if (!r) {
+    if (recipe.error) {
+      return (
+        <view className="screen rdet--center">
+          <view className="card">
+            <text className="error">{recipe.error}</text>
+            <Button label={t('common.retry')} onTap={recipe.refresh} variant="secondary" />
+            <Button label={t('common.close')} onTap={back} variant="ghost" />
+          </view>
+        </view>
+      )
+    }
     return (
       <view className="screen rdet--center">
         <Spinner size="lg" />
       </view>
     )
   }
-  if (state.kind === 'error') {
-    return (
-      <view className="screen rdet--center">
-        <view className="card">
-          <text className="error">{state.message}</text>
-          <Button label={t('common.close')} onTap={back} variant="secondary" />
-        </view>
-      </view>
-    )
-  }
 
-  const r = state.recipe
   const c = course(r.recipe_type)
   const isChef = user?.is_chef === true
   const owner = r.owner_name
@@ -123,6 +110,7 @@ export function App() {
 
   return (
     <view className="screen">
+      {recipe.offline && <OfflineBanner onRetry={recipe.refresh} />}
       <scroll-view className="rdet__scroll" scroll-orientation="vertical">
         {/* Full-bleed hero: course-tinted photo, floating back button, badges at the foot */}
         <view className="rdet__hero">
@@ -209,12 +197,7 @@ export function App() {
           <view className="rdet__actions">
             <Button
               label={r.in_shopping ? t('recipes.in_list') : t('recipes.add_to_list')}
-              onTap={() =>
-                run(
-                  () => addRecipeToList(r.id),
-                  (x) => ({ ...x, in_shopping: true }),
-                )
-              }
+              onTap={() => void enqueue({ kind: 'list', id: r.id, in_list: true })}
               variant={r.in_shopping ? 'secondary' : 'primary'}
               disabled={busy || r.in_shopping}
               block
@@ -222,12 +205,7 @@ export function App() {
             {!r.is_owner && (
               <Button
                 label={r.saved ? t('recipes.saved_btn') : t('recipes.save')}
-                onTap={() =>
-                  run(
-                    () => (r.saved ? unsaveRecipe(r.id) : saveRecipe(r.id)),
-                    (x) => ({ ...x, saved: !x.saved }),
-                  )
-                }
+                onTap={() => void enqueue({ kind: 'saved', id: r.id, saved: !r.saved })}
                 variant="secondary"
                 disabled={busy}
                 block
@@ -242,13 +220,7 @@ export function App() {
                   <view
                     className={busy ? 'rdet__secondary rdet__secondary--disabled' : 'rdet__secondary'}
                     bindtap={
-                      busy
-                        ? undefined
-                        : () =>
-                            run(
-                              () => (r.is_shared ? unshareRecipe(r.id) : shareRecipe(r.id)),
-                              (x) => ({ ...x, is_shared: !x.is_shared }),
-                            )
+                      busy ? undefined : () => run(() => (r.is_shared ? unshareRecipe(r.id) : shareRecipe(r.id)))
                     }
                   >
                     <text className="rdet__secondary-text">
