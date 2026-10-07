@@ -10,7 +10,7 @@ use imkitchen_types::recipe::{
 use serde_json::{Value, json};
 use tower::ServiceExt;
 
-use common::{TestApp, json, wait_until};
+use common::{TestApp, json};
 
 struct Session {
     token: String,
@@ -110,23 +110,13 @@ async fn create_recipe(app: &TestApp, user_id: &str, name: &str) -> anyhow::Resu
             user_id,
         )
         .await?;
-    wait_until(|| async {
-        app.state
-            .core
-            .recipe
-            .find_user(&id)
-            .await
-            .ok()
-            .flatten()
-            .filter(|r| r.name == name)
-    })
-    .await;
+    app.drain().await?;
     Ok(id)
 }
 
 #[tokio::test]
 async fn my_library_lists_own_recipes_and_detail_resolves_slug() -> anyhow::Result<()> {
-    let app = TestApp::with_recipes().await?;
+    let app = TestApp::new().await?;
     let me = sign_in(&app, "chef@imkitchen.test", "ua-chef").await?;
     let id = create_recipe(&app, &me.user_id, "Lemon Tart").await?;
 
@@ -169,7 +159,7 @@ async fn my_library_lists_own_recipes_and_detail_resolves_slug() -> anyhow::Resu
 
 #[tokio::test]
 async fn sharing_saving_and_shopping_flow() -> anyhow::Result<()> {
-    let app = TestApp::with_recipes().await?;
+    let app = TestApp::new().await?;
     let chef = sign_in(&app, "chef@imkitchen.test", "ua-chef").await?;
     let guest = sign_in(&app, "guest@imkitchen.test", "ua-guest").await?;
     let id = create_recipe(&app, &chef.user_id, "Pavlova").await?;
@@ -224,17 +214,7 @@ async fn sharing_saving_and_shopping_flow() -> anyhow::Result<()> {
     )
     .await?;
     assert_eq!(status, StatusCode::NO_CONTENT);
-    wait_until(|| async {
-        app.state
-            .core
-            .recipe
-            .find_user(&id)
-            .await
-            .ok()
-            .flatten()
-            .filter(|r| r.is_shared)
-    })
-    .await;
+    app.drain().await?;
 
     // Now the guest sees it in the community, can save it and add it to the list.
     let (_, body) = call(&app, &guest, "GET", "/api/v1/recipes", None).await?;
@@ -305,17 +285,7 @@ async fn sharing_saving_and_shopping_flow() -> anyhow::Result<()> {
     )
     .await?;
     assert_eq!(status, StatusCode::NO_CONTENT);
-    wait_until(|| async {
-        app.state
-            .core
-            .recipe
-            .find_user(&id)
-            .await
-            .ok()
-            .flatten()
-            .filter(|r| !r.is_shared)
-    })
-    .await;
+    app.drain().await?;
     let (status, _) = call(&app, &guest, "GET", &format!("/api/v1/recipes/{id}"), None).await?;
     assert_eq!(status, StatusCode::NOT_FOUND);
 
@@ -324,7 +294,7 @@ async fn sharing_saving_and_shopping_flow() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn delete_is_async_and_exists_reports_it() -> anyhow::Result<()> {
-    let app = TestApp::with_recipes().await?;
+    let app = TestApp::new().await?;
     let me = sign_in(&app, "chef@imkitchen.test", "ua-chef").await?;
     let id = create_recipe(&app, &me.user_id, "Gone Soon").await?;
 
@@ -341,19 +311,16 @@ async fn delete_is_async_and_exists_reports_it() -> anyhow::Result<()> {
     let (status, _) = call(&app, &me, "DELETE", &format!("/api/v1/recipes/{id}"), None).await?;
     assert_eq!(status, StatusCode::ACCEPTED);
 
-    wait_until(|| async {
-        let (_, body) = call(
-            &app,
-            &me,
-            "GET",
-            &format!("/api/v1/recipes/{id}/exists"),
-            None,
-        )
-        .await
-        .ok()?;
-        (body["exists"] == false).then_some(())
-    })
-    .await;
+    app.drain().await?;
+    let (_, body) = call(
+        &app,
+        &me,
+        "GET",
+        &format!("/api/v1/recipes/{id}/exists"),
+        None,
+    )
+    .await?;
+    assert_eq!(body["exists"], false);
 
     Ok(())
 }

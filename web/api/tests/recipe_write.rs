@@ -10,7 +10,7 @@ use imkitchen_identity::RegisterInput;
 use serde_json::{Value, json};
 use tower::ServiceExt;
 
-use common::{TestApp, json, wait_until};
+use common::{TestApp, json};
 
 const UA: &str = "imkitchen-android (Android; Pixel 8; test-install)";
 
@@ -101,7 +101,7 @@ fn png_bytes() -> Vec<u8> {
 
 #[tokio::test]
 async fn create_edit_update_round_trip() -> anyhow::Result<()> {
-    let app = TestApp::with_recipes().await?;
+    let app = TestApp::new().await?;
     let token = sign_in(&app).await?;
 
     let (status, body) = call(&app, &token, "POST", "/api/v1/recipes", None).await?;
@@ -196,7 +196,7 @@ async fn create_edit_update_round_trip() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn import_batch_reports_errors_and_last_id() -> anyhow::Result<()> {
-    let app = TestApp::with_recipes().await?;
+    let app = TestApp::new().await?;
     let token = sign_in(&app).await?;
 
     let mut broken = recipe_input("x");
@@ -218,19 +218,16 @@ async fn import_batch_reports_errors_and_last_id() -> anyhow::Result<()> {
     assert_eq!(body["errors"].as_array().unwrap().len(), 1);
     assert_eq!(body["errors"][0]["name"], "x");
 
-    wait_until(|| async {
-        let (_, body) = call(
-            &app,
-            &token,
-            "GET",
-            &format!("/api/v1/recipes/{last_id}/exists"),
-            None,
-        )
-        .await
-        .ok()?;
-        (body["exists"] == true).then_some(())
-    })
-    .await;
+    app.drain().await?;
+    let (_, body) = call(
+        &app,
+        &token,
+        "GET",
+        &format!("/api/v1/recipes/{last_id}/exists"),
+        None,
+    )
+    .await?;
+    assert_eq!(body["exists"], true);
     let (_, body) = call(&app, &token, "GET", "/api/v1/recipes?mine=true", None).await?;
     assert_eq!(body["page"]["edges"].as_array().unwrap().len(), 2);
 
@@ -239,7 +236,7 @@ async fn import_batch_reports_errors_and_last_id() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn thumbnail_accepts_json_and_multipart_and_rejects_other_types() -> anyhow::Result<()> {
-    let app = TestApp::with_recipes().await?;
+    let app = TestApp::new().await?;
     let token = sign_in(&app).await?;
     let (_, body) = call(&app, &token, "POST", "/api/v1/recipes", None).await?;
     let id = body["id"].as_str().unwrap().to_owned();

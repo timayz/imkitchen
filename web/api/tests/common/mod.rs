@@ -1,7 +1,8 @@
 //! Test harness: a real `AppState` over a throwaway SQLite database, the same
 //! wiring `src/cli/server.rs` uses minus the background subscriptions. Tests
-//! that need a projection (recipe lists, thumbnails…) start the relevant
-//! subscription themselves, like `web/admin/tests/thumbnail.rs` does.
+//! that need a projection (recipe lists, the grocery list…) call
+//! [`TestApp::drain`] after writing: it runs the read models to completion
+//! with `run_once`, so the next read is deterministic and nothing is polled.
 
 use std::str::FromStr;
 
@@ -14,10 +15,6 @@ pub struct TestApp {
     pub state: AppState,
     #[allow(dead_code)]
     pub pool: SqlitePool,
-    /// Background subscriptions started by [`TestApp::with_recipes`]; dropped
-    /// with the app.
-    #[allow(dead_code)]
-    subscriptions: Vec<evento::subscription::Subscription>,
     // Dropped last: deleting the directory while the pool is open is fine on
     // Linux but keeping it explicit documents the lifetime.
     _dir: TempDir,
@@ -74,63 +71,61 @@ impl TestApp {
         Ok(Self {
             state,
             pool,
-            subscriptions: vec![],
             _dir: dir,
         })
     }
 
-    /// Starts the recipe and shopping read models (same wiring as
-    /// `src/cli/server.rs`), needed by anything that lists recipes or
-    /// builds the candidate pool. Writes become visible after a short delay:
-    /// poll with [`wait_until`].
+    /// Drains the recipe and shopping read models (same wiring as
+    /// `src/cli/server.rs`), in dependency order: the shopping tables are
+    /// built from the recipe projections, which are built from the recipe
+    /// stream. `run_once` processes everything committed before the call and
+    /// returns, so after this every read reflects every write made so far.
+    ///
+    /// Cursors are persisted per subscription key, so repeated drains only
+    /// process what is new. Never start the same subscriptions in the
+    /// background as well: a worker on the same key would take ownership away
+    /// from the drain.
     #[allow(dead_code)]
-    pub async fn with_recipes() -> anyhow::Result<Self> {
-        let mut app = Self::new().await?;
-        let executor = &app.state.inner.executor;
-        let pool = app.pool.clone();
+    pub async fn drain(&self) -> anyhow::Result<()> {
+        let executor = &self.state.inner.executor;
+        let pool = self.pool.clone();
 
-        app.subscriptions.push(
-            imkitchen_core::recipe::subscription()
-                .data((pool.clone(), pool.clone()))
-                .start(executor)
-                .await?,
-        );
-        app.subscriptions.push(
-            imkitchen_core::recipe::query::user::create_projection()
-                .data((pool.clone(), pool.clone()))
-                .subscription("recipe-query")
-                .any_routing_key()
-                .start(executor)
-                .await?,
-        );
-        app.subscriptions.push(
-            imkitchen_core::recipe::query::user_fts::subscription()
-                .data(pool.clone())
-                .any_routing_key()
-                .start(executor)
-                .await?,
-        );
-        app.subscriptions.push(
-            imkitchen_core::recipe::query::user_stat::subscription()
-                .data(pool.clone())
-                .any_routing_key()
-                .start(executor)
-                .await?,
-        );
-        app.subscriptions.push(
-            imkitchen_core::shopping::pool::subscription()
-                .data(pool.clone())
-                .start(executor)
-                .await?,
-        );
-        app.subscriptions.push(
-            imkitchen_core::shopping::subscription()
-                .data(pool.clone())
-                .start(executor)
-                .await?,
-        );
+        imkitchen_core::recipe::subscription()
+            .data((pool.clone(), pool.clone()))
+            .no_retry()
+            .run_once(executor)
+            .await?;
+        imkitchen_core::recipe::query::user::create_projection()
+            .data((pool.clone(), pool.clone()))
+            .subscription("recipe-query")
+            .any_routing_key()
+            .no_retry()
+            .run_once(executor)
+            .await?;
+        imkitchen_core::recipe::query::user_fts::subscription()
+            .data(pool.clone())
+            .any_routing_key()
+            .no_retry()
+            .run_once(executor)
+            .await?;
+        imkitchen_core::recipe::query::user_stat::subscription()
+            .data(pool.clone())
+            .any_routing_key()
+            .no_retry()
+            .run_once(executor)
+            .await?;
+        imkitchen_core::shopping::pool::subscription()
+            .data(pool.clone())
+            .no_retry()
+            .run_once(executor)
+            .await?;
+        imkitchen_core::shopping::subscription()
+            .data(pool.clone())
+            .no_retry()
+            .run_once(executor)
+            .await?;
 
-        Ok(app)
+        Ok(())
     }
 
     /// The API router with state applied, ready for `tower::ServiceExt::oneshot`.
@@ -154,20 +149,4 @@ pub async fn json(response: axum::response::Response) -> serde_json::Value {
             String::from_utf8_lossy(&bytes)
         )
     })
-}
-
-/// Polls `check` every 50 ms until it returns `Some`, for at most 5 s.
-#[allow(dead_code)]
-pub async fn wait_until<T, F, Fut>(mut check: F) -> T
-where
-    F: FnMut() -> Fut,
-    Fut: std::future::Future<Output = Option<T>>,
-{
-    for _ in 0..100 {
-        if let Some(value) = check().await {
-            return value;
-        }
-        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-    }
-    panic!("condition not met within 5s");
 }

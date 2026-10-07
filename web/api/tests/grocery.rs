@@ -10,7 +10,7 @@ use imkitchen_types::recipe::{
 use serde_json::{Value, json};
 use tower::ServiceExt;
 
-use common::{TestApp, json, wait_until};
+use common::{TestApp, json};
 
 const UA: &str = "imkitchen-android (Android; Pixel 8; test-install)";
 
@@ -139,37 +139,32 @@ async fn add_omelette(app: &TestApp, user_id: &str) -> anyhow::Result<()> {
         .load(user_id)
         .await?
         .household_size;
-    // The recipe projections are async: retry until they have caught up.
-    wait_until(|| async {
-        app.state
-            .core
-            .shopping
-            .add_recipe(&id, household, user_id)
-            .await
-            .ok()
-    })
-    .await;
+    // `add_recipe` validates against the recipe projections.
+    app.drain().await?;
+    app.state
+        .core
+        .shopping
+        .add_recipe(&id, household, user_id)
+        .await?;
+    // The ingredient table behind the list is projected from the aggregate.
+    app.drain().await?;
     Ok(())
 }
 
-/// The groceries once the shopping aggregate has picked up the omelette.
-async fn groceries(app: &TestApp, token: &str) -> Value {
-    wait_until(|| async {
-        let (_, body) = call(app, token, "GET", "/api/v1/groceries", None)
-            .await
-            .ok()?;
-        (body["total_items"] == 3).then_some(body)
-    })
-    .await
+/// The groceries with the omelette on the list.
+async fn groceries(app: &TestApp, token: &str) -> anyhow::Result<Value> {
+    let (_, body) = call(app, token, "GET", "/api/v1/groceries", None).await?;
+    assert_eq!(body["total_items"], 3, "{body}");
+    Ok(body)
 }
 
 #[tokio::test]
 async fn groceries_group_by_aisle_and_toggle() -> anyhow::Result<()> {
-    let app = TestApp::with_recipes().await?;
+    let app = TestApp::new().await?;
     let (token, user_id) = sign_in(&app).await?;
     add_omelette(&app, &user_id).await?;
 
-    let body = groceries(&app, &token).await;
+    let body = groceries(&app, &token).await?;
     assert_eq!(body["recipe_count"], 1);
     assert_eq!(body["checked_items"], 0);
     let aisles = body["aisles"].as_array().unwrap();
@@ -188,21 +183,16 @@ async fn groceries_group_by_aisle_and_toggle() -> anyhow::Result<()> {
     let key = butter["key"].as_str().unwrap().to_owned();
     assert!(butter["quantity_label"].as_str().unwrap().ends_with(" g"));
 
-    // Check it off. The ingredient table behind the aggregate is projected
-    // asynchronously: retry until the toggle is accepted.
-    wait_until(|| async {
-        let (status, _) = call(
-            &app,
-            &token,
-            "POST",
-            "/api/v1/groceries/toggle",
-            Some(json!({ "key": key.clone() })),
-        )
-        .await
-        .ok()?;
-        (status == StatusCode::NO_CONTENT).then_some(())
-    })
-    .await;
+    // Check it off.
+    let (status, _) = call(
+        &app,
+        &token,
+        "POST",
+        "/api/v1/groceries/toggle",
+        Some(json!({ "key": key.clone() })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::NO_CONTENT);
 
     let (_, body) = call(&app, &token, "GET", "/api/v1/groceries", None).await?;
     assert_eq!(body["checked_items"], 1);
@@ -233,10 +223,10 @@ async fn groceries_group_by_aisle_and_toggle() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn groceries_follow_the_user_aisle_order() -> anyhow::Result<()> {
-    let app = TestApp::with_recipes().await?;
+    let app = TestApp::new().await?;
     let (token, user_id) = sign_in(&app).await?;
     add_omelette(&app, &user_id).await?;
-    groceries(&app, &token).await;
+    groceries(&app, &token).await?;
 
     let (status, _) = call(
         &app,
@@ -258,11 +248,11 @@ async fn groceries_follow_the_user_aisle_order() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn check_is_absolute_and_idempotent() -> anyhow::Result<()> {
-    let app = TestApp::with_recipes().await?;
+    let app = TestApp::new().await?;
     let (token, user_id) = sign_in(&app).await?;
     add_omelette(&app, &user_id).await?;
 
-    let body = groceries(&app, &token).await;
+    let body = groceries(&app, &token).await?;
     let key = body["aisles"][0]["items"][0]["key"]
         .as_str()
         .unwrap()
@@ -283,13 +273,8 @@ async fn check_is_absolute_and_idempotent() -> anyhow::Result<()> {
         }
     };
 
-    // The ingredient table behind the aggregate is projected asynchronously:
-    // retry until the check is accepted.
-    wait_until(|| async {
-        let (status, _) = check(true).await.ok()?;
-        (status == StatusCode::NO_CONTENT).then_some(())
-    })
-    .await;
+    let (status, _) = check(true).await?;
+    assert_eq!(status, StatusCode::NO_CONTENT);
     // Replaying the same change (an offline queue retrying) keeps it checked.
     let (status, _) = check(true).await?;
     assert_eq!(status, StatusCode::NO_CONTENT);
