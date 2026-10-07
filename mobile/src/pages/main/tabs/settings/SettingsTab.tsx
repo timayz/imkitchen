@@ -12,16 +12,18 @@ import {
   requestAccountPasswordReset,
   revokeSession,
   setUsername,
+  updateAisleOrder,
   updatePreferences,
   updateProfile,
 } from '../../../../lib/api/settings.js'
 import { clearSession } from '../../../../lib/auth/session.js'
-import { course } from '../../../../lib/course.js'
+import { aisle, course } from '../../../../lib/course.js'
 import { t } from '../../../../lib/i18n/index.js'
 import { replace } from '../../../../lib/nav.js'
 import { Button } from '../../../../ui/Button.js'
 import { Spinner } from '../../../../ui/Spinner.js'
 import { TextField } from '../../../../ui/TextField.js'
+import { AislesSheet } from './AislesSheet.js'
 import { DeleteSheet } from './DeleteSheet.js'
 import { DevicesSheet } from './DevicesSheet.js'
 import { PreferencesSheet } from './PreferencesSheet.js'
@@ -33,7 +35,7 @@ type State =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; user: Me; general: General; sessions: Session[] }
 
-type Open = 'preferences' | 'profile' | 'devices' | 'delete' | null
+type Open = 'preferences' | 'aisles' | 'profile' | 'devices' | 'delete' | null
 
 export function SettingsTab({ refreshKey }: { refreshKey: number }) {
   const [state, setState] = useState<State>({ kind: 'loading' })
@@ -85,6 +87,16 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
         patchGeneral(draft)
       },
       t('settings.preferences_saved'),
+      { close: true }
+    )
+
+  const saveAisles = (order: string[]) =>
+    run(
+      async () => {
+        await updateAisleOrder(order)
+        patchGeneral({ aisle_order: order })
+      },
+      t('settings.aisles_saved'),
       { close: true }
     )
 
@@ -158,6 +170,7 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
   const diets = general.dietary_restrictions.map((d) => t(`diet.${d}` as const))
   const courses = [course('MainCourse'), ...general.recipe_types.map(course)].map((c) => c.label)
   const pct = Math.round(general.cuisine_variety_weight * 100)
+  const aisles = general.aisle_order.slice(0, 3).map((c) => aisle(`shopping_${c}`).label)
 
   return (
     <scroll-view className="tab-scroll" scroll-orientation="vertical">
@@ -265,6 +278,13 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
             title={t('settings.variety')}
             meta={t('settings.variety_meta', { pct })}
             onTap={() => setOpen('preferences')}
+          />
+          <Row
+            emoji="🛒"
+            tone="main"
+            title={t('settings.aisles')}
+            meta={t('settings.aisles_meta', { aisles: aisles.join(' › ') })}
+            onTap={() => setOpen('aisles')}
             last
           />
         </view>
@@ -322,6 +342,13 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
         }}
         onClose={() => setOpen(null)}
         onSave={savePreferences}
+      />
+      <AislesSheet
+        open={open === 'aisles'}
+        busy={busy}
+        value={general.aisle_order}
+        onClose={() => setOpen(null)}
+        onSave={saveAisles}
       />
       <ProfileSheet
         open={open === 'profile'}

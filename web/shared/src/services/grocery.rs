@@ -3,7 +3,7 @@
 use std::collections::{HashMap, HashSet};
 
 use imkitchen_core::shopping::{SetCheckedInput, ToggleInput};
-use imkitchen_types::recipe::Ingredient;
+use imkitchen_types::recipe::{Ingredient, IngredientCategory};
 
 use crate::AppState;
 
@@ -29,8 +29,14 @@ pub struct GroceryView {
     pub progress_pct: usize,
 }
 
-pub fn grocery_view(ingredients: &[Ingredient], checked: HashSet<String>) -> GroceryView {
-    let categories: Vec<(String, Vec<Ingredient>)> = to_categories(ingredients);
+/// `order` is the user's aisle order ([`IngredientCategory::complete_aisle_order`]
+/// guarantees it is complete); ingredients without a category come last.
+pub fn grocery_view(
+    ingredients: &[Ingredient],
+    checked: HashSet<String>,
+    order: &[IngredientCategory],
+) -> GroceryView {
+    let categories: Vec<(String, Vec<Ingredient>)> = to_categories(ingredients, order);
 
     let total_items: usize = categories.iter().map(|(_, items)| items.len()).sum();
     // Count only keys still on the list: the aggregate keeps checks for
@@ -70,7 +76,7 @@ pub fn grocery_view(ingredients: &[Ingredient], checked: HashSet<String>) -> Gro
     }
 }
 
-/// Choose where the right desktop column starts. Aisles keep their route order;
+/// Choose where the right desktop column starts. Aisles keep the user's order;
 /// the split is the contiguous point that most evenly divides the total item
 /// count between the two columns. E.g. counts `[2, 54, 6, 4, 39, 2, 1]` split
 /// after index 2 → `[2, 54]` (56) and `[6, 4, 39, 2, 1]` (52). Both columns are
@@ -97,33 +103,41 @@ pub fn balanced_split(aisles: &[AisleSection]) -> usize {
     best_split
 }
 
-fn to_categories(ingredients: &[Ingredient]) -> Vec<(String, Vec<Ingredient>)> {
-    let mut categories = HashMap::new();
+/// The aisle key of an ingredient without a category.
+pub const UNKNOWN_AISLE: &str = "shopping_Unknown";
+
+fn to_categories(
+    ingredients: &[Ingredient],
+    order: &[IngredientCategory],
+) -> Vec<(String, Vec<Ingredient>)> {
+    let mut categories: HashMap<String, Vec<Ingredient>> = HashMap::new();
     let mut ingredients = ingredients.to_vec();
     ingredients.sort_by_key(|i| i.name.to_owned());
 
     for ingredient in ingredients.iter() {
-        match &ingredient.category {
-            Some(c) => {
-                let entry = categories.entry(format!("shopping_{c}")).or_insert(vec![]);
-                entry.push(ingredient.clone());
-            }
-            _ => {
-                let entry = categories
-                    .entry("shopping_Unknown".to_owned())
-                    .or_insert(vec![]);
-                entry.push(ingredient.clone());
-            }
+        let key = match &ingredient.category {
+            Some(c) => c.aisle_key(),
+            None => UNKNOWN_AISLE.to_owned(),
         };
+        categories.entry(key).or_default().push(ingredient.clone());
     }
 
     let mut categories = categories
         .into_iter()
         .collect::<Vec<(String, Vec<Ingredient>)>>();
 
-    categories.sort_by_key(|(k, _)| k.to_owned());
+    categories.sort_by_key(|(k, _)| aisle_rank(k, order));
 
     categories
+}
+
+/// Position of an aisle key in the user's order; unknown keys (including
+/// [`UNKNOWN_AISLE`]) sort last.
+fn aisle_rank(key: &str, order: &[IngredientCategory]) -> usize {
+    order
+        .iter()
+        .position(|c| c.aisle_key() == key)
+        .unwrap_or(usize::MAX)
 }
 
 /// The groceries page data: the list's recipe count plus the aisle view.
@@ -135,14 +149,13 @@ pub struct Groceries {
 /// Reads straight from the aggregate (immediately consistent) so a render
 /// right after a change never shows the previous list.
 pub async fn load(app: &AppState, user_id: &str) -> anyhow::Result<Groceries> {
-    let household_size = app
-        .identity
-        .meal_preferences
-        .load(user_id)
-        .await?
-        .household_size;
-    let state = app.core.shopping.state(user_id, household_size).await?;
-    let view = grocery_view(&state.ingredients, state.checked);
+    let preferences = app.identity.meal_preferences.load(user_id).await?;
+    let state = app
+        .core
+        .shopping
+        .state(user_id, preferences.household_size)
+        .await?;
+    let view = grocery_view(&state.ingredients, state.checked, &preferences.aisle_order);
     Ok(Groceries {
         recipe_count: state.recipe_ids.len(),
         view,
@@ -175,7 +188,63 @@ pub async fn set_checked(
 
 #[cfg(test)]
 mod tests {
-    use super::{AisleSection, balanced_split};
+    use std::collections::HashSet;
+
+    use imkitchen_types::recipe::{Ingredient, IngredientCategory};
+
+    use super::{AisleSection, UNKNOWN_AISLE, balanced_split, grocery_view};
+
+    fn ingredient(name: &str, category: Option<IngredientCategory>) -> Ingredient {
+        Ingredient {
+            name: name.to_owned(),
+            quantity: 1,
+            unit: None,
+            category,
+        }
+    }
+
+    fn aisle_names(order: &[IngredientCategory]) -> Vec<String> {
+        use IngredientCategory::*;
+        let ingredients = vec![
+            ingredient("Salt", None),
+            ingredient("Milk", Some(DairyAndEggs)),
+            ingredient("Bread", Some(Bakery)),
+            ingredient("Apples", Some(FruitsAndVegetables)),
+        ];
+        grocery_view(&ingredients, HashSet::new(), order)
+            .aisles
+            .into_iter()
+            .map(|a| a.name)
+            .collect()
+    }
+
+    #[test]
+    fn aisles_follow_the_given_order_with_unknown_last() {
+        use IngredientCategory::*;
+        let order = IngredientCategory::complete_aisle_order(&[Bakery, DairyAndEggs]);
+        assert_eq!(
+            aisle_names(&order),
+            vec![
+                "shopping_Bakery",
+                "shopping_DairyAndEggs",
+                "shopping_FruitsAndVegetables",
+                UNKNOWN_AISLE,
+            ]
+        );
+    }
+
+    #[test]
+    fn default_order_is_the_store_walk() {
+        assert_eq!(
+            aisle_names(IngredientCategory::DEFAULT_AISLE_ORDER),
+            vec![
+                "shopping_FruitsAndVegetables",
+                "shopping_DairyAndEggs",
+                "shopping_Bakery",
+                UNKNOWN_AISLE,
+            ]
+        );
+    }
 
     fn aisle(total: usize) -> AisleSection {
         AisleSection {

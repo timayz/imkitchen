@@ -223,6 +223,48 @@ impl RecipeType {
     }
 }
 
+impl IngredientCategory {
+    /// Store-walk order shown to users who never reordered their aisles.
+    /// Deliberately not declaration order: that one is frozen by bitcode
+    /// (see `events.lock`) and was never meant for display.
+    pub const DEFAULT_AISLE_ORDER: &'static [IngredientCategory] = &[
+        IngredientCategory::FruitsAndVegetables,
+        IngredientCategory::Butcher,
+        IngredientCategory::Seafood,
+        IngredientCategory::DairyAndEggs,
+        IngredientCategory::Bakery,
+        IngredientCategory::Grocery,
+        IngredientCategory::Frozen,
+        IngredientCategory::Refrigerated,
+        IngredientCategory::SnacksAndConfectionery,
+    ];
+
+    /// Turns a possibly partial or repeated list into a full aisle order:
+    /// the first occurrence of each entry in `partial` keeps its place, then
+    /// every missing variant follows in default order. The result always
+    /// lists every variant exactly once, so an order stored before a variant
+    /// existed still shows the new aisle.
+    pub fn complete_aisle_order(partial: &[IngredientCategory]) -> Vec<IngredientCategory> {
+        let mut order: Vec<IngredientCategory> = Vec::with_capacity(Self::VARIANTS.len());
+        for category in partial
+            .iter()
+            .chain(Self::DEFAULT_AISLE_ORDER)
+            .chain(Self::VARIANTS)
+        {
+            if !order.contains(category) {
+                order.push(category.clone());
+            }
+        }
+        order
+    }
+
+    /// `shopping_<Variant>`: the aisle key used by the groceries page, the API
+    /// and the i18n label.
+    pub fn aisle_key(&self) -> String {
+        format!("shopping_{self}")
+    }
+}
+
 impl DietaryRestriction {
     pub fn exists_in<'a>(
         &self,
@@ -316,7 +358,54 @@ pub enum Recipe {
 
 #[cfg(test)]
 mod tests {
-    use super::{ThumbnailResized, ThumbnailUploaded};
+    use super::{IngredientCategory, ThumbnailResized, ThumbnailUploaded};
+    use strum::VariantArray;
+
+    #[test]
+    fn default_aisle_order_lists_every_category_once() {
+        let mut default = IngredientCategory::DEFAULT_AISLE_ORDER.to_vec();
+        let mut all = IngredientCategory::VARIANTS.to_vec();
+        let key = |c: &IngredientCategory| c.to_string();
+        default.sort_by_key(key);
+        all.sort_by_key(key);
+        assert_eq!(default, all);
+    }
+
+    #[test]
+    fn complete_aisle_order_keeps_given_order_then_appends_the_rest() {
+        use IngredientCategory::*;
+        let order = IngredientCategory::complete_aisle_order(&[Bakery, Frozen, Bakery]);
+        assert_eq!(
+            order,
+            vec![
+                Bakery,
+                Frozen,
+                FruitsAndVegetables,
+                Butcher,
+                Seafood,
+                DairyAndEggs,
+                Grocery,
+                Refrigerated,
+                SnacksAndConfectionery,
+            ]
+        );
+    }
+
+    #[test]
+    fn complete_aisle_order_of_nothing_is_the_default() {
+        assert_eq!(
+            IngredientCategory::complete_aisle_order(&[]),
+            IngredientCategory::DEFAULT_AISLE_ORDER.to_vec()
+        );
+    }
+
+    #[test]
+    fn aisle_key_is_the_i18n_key() {
+        assert_eq!(
+            IngredientCategory::DairyAndEggs.aisle_key(),
+            "shopping_DairyAndEggs"
+        );
+    }
 
     // The m0009 data migration strips image bytes out of existing thumbnail
     // event blobs with pure SQL, relying on the fact that the new byte-free

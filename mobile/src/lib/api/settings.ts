@@ -9,6 +9,8 @@ export interface General {
   recipe_types: RecipeType[]
   /** 0.1 – 1.0 */
   cuisine_variety_weight: number
+  /** Every aisle (`IngredientCategory` names), in grocery-list order. */
+  aisle_order: string[]
 }
 
 export interface Preferences {
@@ -31,6 +33,11 @@ export function getGeneral(): Promise<General> {
 
 export function updatePreferences(p: Preferences): Promise<void> {
   return request<void>('/api/v1/settings/preferences', { method: 'PUT', body: p })
+}
+
+/** A partial or repeated list is fine: the server completes it in default order. */
+export function updateAisleOrder(aisles: string[]): Promise<void> {
+  return request<void>('/api/v1/settings/aisles', { method: 'PUT', body: { aisles } })
 }
 
 export function updateProfile(description: string): Promise<void> {

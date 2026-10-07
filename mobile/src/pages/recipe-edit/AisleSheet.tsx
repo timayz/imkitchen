@@ -1,21 +1,8 @@
-import { aisle } from '../../lib/course.js'
+import { AISLE_CATEGORIES, aisle } from '../../lib/course.js'
 import { t } from '../../lib/i18n/index.js'
 import { Button } from '../../ui/Button.js'
 import { Sheet } from '../../ui/Sheet.js'
 import './AisleSheet.css'
-
-/** Grocery categories as the API names them (`shopping_<Category>` keys the aisle styles). */
-export const CATEGORIES = [
-  'FruitsAndVegetables',
-  'Butcher',
-  'Seafood',
-  'DairyAndEggs',
-  'Bakery',
-  'Grocery',
-  'Frozen',
-  'Refrigerated',
-  'SnacksAndConfectionery',
-]
 
 export interface AisleSheetProps {
   open: boolean
@@ -37,7 +24,7 @@ export function AisleSheet({ open, name, value, onPick, onClose }: AisleSheetPro
         </text>
       </view>
       <view className="aisle__grid">
-        {CATEGORIES.map((cat) => {
+        {AISLE_CATEGORIES.map((cat) => {
           const s = aisle(`shopping_${cat}`)
           const on = value === cat
           return (
