@@ -10,7 +10,7 @@ use imkitchen_types::recipe::{
 use serde_json::{Value, json};
 use tower::ServiceExt;
 
-use common::{TestApp, json, wait_until};
+use common::{TestApp, json};
 
 const UA: &str = "imkitchen-android (Android; Pixel 8; test-install)";
 
@@ -128,6 +128,7 @@ async fn create_recipe(app: &TestApp, user_id: &str) -> anyhow::Result<String> {
             user_id,
         )
         .await?;
+    app.drain().await?;
     Ok(id)
 }
 
@@ -156,7 +157,7 @@ async fn kitchen_requires_auth() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn cooks_a_recipe_from_the_list_step_by_step() -> anyhow::Result<()> {
-    let app = TestApp::with_recipes().await?;
+    let app = TestApp::new().await?;
     let session = sign_in(&app).await?;
     let recipe_id = create_recipe(&app, &session.user_id).await?;
 
@@ -169,26 +170,17 @@ async fn cooks_a_recipe_from_the_list_step_by_step() -> anyhow::Result<()> {
         .await?
         .household_size;
 
-    // `add_recipe` validates against the recipe projections, which are async:
-    // retry until they have caught up.
-    wait_until(|| async {
-        app.state
-            .core
-            .shopping
-            .add_recipe(&recipe_id, household, &session.user_id)
-            .await
-            .ok()
-    })
-    .await;
+    app.state
+        .core
+        .shopping
+        .add_recipe(&recipe_id, household, &session.user_id)
+        .await?;
+    app.drain().await?;
 
     // The list reads the aggregate, but entries come from the recipe projection.
-    let body = wait_until(|| async {
-        let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None)
-            .await
-            .ok()?;
-        (body["kind"] == "list" && body["entries"].as_array()?.len() == 1).then_some(body)
-    })
-    .await;
+    let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
+    assert_eq!(body["kind"], "list");
+    assert_eq!(body["entries"].as_array().unwrap().len(), 1);
     assert_eq!(body["total_count"], 1);
     assert_eq!(body["completed_count"], 0);
     assert_eq!(body["entries"][0]["name"], "Shakshuka");
@@ -287,13 +279,9 @@ async fn cooks_a_recipe_from_the_list_step_by_step() -> anyhow::Result<()> {
     .await?;
     assert_eq!(status, StatusCode::NOT_FOUND);
 
-    let body = wait_until(|| async {
-        let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None)
-            .await
-            .ok()?;
-        (body["kind"] == "onboarding_menu").then_some(body)
-    })
-    .await;
+    app.drain().await?;
+    let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
+    assert_eq!(body["kind"], "onboarding_menu");
     assert_eq!(body["main_count"], 1);
     assert_eq!(body["recipes"][0]["name"], "Shakshuka");
 
@@ -302,17 +290,12 @@ async fn cooks_a_recipe_from_the_list_step_by_step() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn generate_fills_the_list_from_the_pool() -> anyhow::Result<()> {
-    let app = TestApp::with_recipes().await?;
+    let app = TestApp::new().await?;
     let session = sign_in(&app).await?;
     create_recipe(&app, &session.user_id).await?;
 
-    wait_until(|| async {
-        let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None)
-            .await
-            .ok()?;
-        (body["kind"] == "onboarding_menu").then_some(())
-    })
-    .await;
+    let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
+    assert_eq!(body["kind"], "onboarding_menu");
 
     let (status, body) = call(
         &app,
@@ -325,22 +308,19 @@ async fn generate_fills_the_list_from_the_pool() -> anyhow::Result<()> {
     assert_eq!(status, StatusCode::OK, "{body}");
 
     // The list itself is read from the aggregate, but its entries come from
-    // the recipe projection, which may still be catching up: until it has,
-    // the overview has nothing to cook and still reads as onboarding.
-    wait_until(|| async {
-        let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None)
-            .await
-            .ok()?;
-        (body["kind"] == "list" && body["total_count"].as_u64()? >= 1).then_some(())
-    })
-    .await;
+    // the recipe projection: drain it, or the overview has nothing to cook
+    // and still reads as onboarding.
+    app.drain().await?;
+    let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
+    assert_eq!(body["kind"], "list");
+    assert!(body["total_count"].as_u64().unwrap() >= 1, "{body}");
 
     Ok(())
 }
 
 #[tokio::test]
 async fn status_is_set_absolutely() -> anyhow::Result<()> {
-    let app = TestApp::with_recipes().await?;
+    let app = TestApp::new().await?;
     let session = sign_in(&app).await?;
     let recipe_id = create_recipe(&app, &session.user_id).await?;
     let household = app
@@ -350,22 +330,15 @@ async fn status_is_set_absolutely() -> anyhow::Result<()> {
         .load(&session.user_id)
         .await?
         .household_size;
-    wait_until(|| async {
-        app.state
-            .core
-            .shopping
-            .add_recipe(&recipe_id, household, &session.user_id)
-            .await
-            .ok()
-    })
-    .await;
-    wait_until(|| async {
-        let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None)
-            .await
-            .ok()?;
-        (body["kind"] == "list" && body["entries"].as_array()?.len() == 1).then_some(())
-    })
-    .await;
+    app.state
+        .core
+        .shopping
+        .add_recipe(&recipe_id, household, &session.user_id)
+        .await?;
+    app.drain().await?;
+    let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
+    assert_eq!(body["kind"], "list");
+    assert_eq!(body["entries"].as_array().unwrap().len(), 1);
 
     let set = |body: Value| {
         let app = &app;
@@ -435,7 +408,7 @@ async fn status_is_set_absolutely() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn a_list_whose_recipes_were_deleted_is_onboarding_again() -> anyhow::Result<()> {
-    let app = TestApp::with_recipes().await?;
+    let app = TestApp::new().await?;
     let session = sign_in(&app).await?;
     let recipe_id = create_recipe(&app, &session.user_id).await?;
     let household = app
@@ -445,22 +418,14 @@ async fn a_list_whose_recipes_were_deleted_is_onboarding_again() -> anyhow::Resu
         .load(&session.user_id)
         .await?
         .household_size;
-    wait_until(|| async {
-        app.state
-            .core
-            .shopping
-            .add_recipe(&recipe_id, household, &session.user_id)
-            .await
-            .ok()
-    })
-    .await;
-    wait_until(|| async {
-        let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None)
-            .await
-            .ok()?;
-        (body["kind"] == "list").then_some(())
-    })
-    .await;
+    app.state
+        .core
+        .shopping
+        .add_recipe(&recipe_id, household, &session.user_id)
+        .await?;
+    app.drain().await?;
+    let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
+    assert_eq!(body["kind"], "list");
 
     // Delete the only recipe: whatever the list still holds, there is nothing
     // to cook, so the kitchen is back to an onboarding screen (never a list
@@ -475,13 +440,12 @@ async fn a_list_whose_recipes_were_deleted_is_onboarding_again() -> anyhow::Resu
     .await?;
     assert_eq!(status, StatusCode::ACCEPTED);
 
-    wait_until(|| async {
-        let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None)
-            .await
-            .ok()?;
-        (body["kind"] == "onboarding_recipe" || body["kind"] == "onboarding_menu").then_some(())
-    })
-    .await;
+    app.drain().await?;
+    let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
+    assert!(
+        body["kind"] == "onboarding_recipe" || body["kind"] == "onboarding_menu",
+        "{body}"
+    );
 
     Ok(())
 }
