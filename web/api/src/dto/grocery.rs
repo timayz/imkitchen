@@ -63,3 +63,10 @@ pub struct ToggleRequest {
     /// The ingredient `key` from `GET /groceries`.
     pub key: String,
 }
+
+#[derive(Deserialize, Debug)]
+pub struct CheckRequest {
+    /// The ingredient `key` from `GET /groceries`.
+    pub key: String,
+    pub checked: bool,
+}

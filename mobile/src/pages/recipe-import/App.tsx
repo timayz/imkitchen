@@ -1,7 +1,7 @@
 import { useCallback, useState } from '@lynx-js/react'
 
 import '../../styles/base.css'
-import { ApiError } from '../../lib/api/client.js'
+import { errorMessage } from '../../lib/api/client.js'
 import { type RecipeInput, importRecipes } from '../../lib/api/recipe-edit.js'
 import { waitForRecipe } from '../../lib/api/recipes.js'
 import { t } from '../../lib/i18n/index.js'
@@ -9,7 +9,8 @@ import { back } from '../../lib/nav.js'
 import { Button } from '../../ui/Button.js'
 import { TextField } from '../../ui/TextField.js'
 
-type Result = { kind: 'ok'; imported: number; errors: { name: string; error: string }[] } | { kind: 'error'; text: string }
+type Result =
+  { kind: 'ok'; imported: number; errors: { name: string; error: string }[] } | { kind: 'error'; text: string }
 
 /**
  * Import up to 20 recipes from JSON (the same shape the web import takes):
@@ -41,7 +42,7 @@ export function App() {
       if (outcome.last_id) await waitForRecipe(outcome.last_id, true)
       setResult({ kind: 'ok', imported: recipes.length - outcome.errors.length, errors: outcome.errors })
     } catch (err) {
-      setResult({ kind: 'error', text: err instanceof ApiError ? err.message : t('error.network') })
+      setResult({ kind: 'error', text: errorMessage(err) })
     } finally {
       setBusy(false)
     }
@@ -57,7 +58,13 @@ export function App() {
           <text className="h2">{t('import.title')}</text>
         </view>
         <text className="body">{t('import.hint')}</text>
-        <TextField label={t('import.json')} value="" onChange={setText} placeholder='[{"recipe_type":"MainCourse","name":"…"}]' maxlength={200000} />
+        <TextField
+          label={t('import.json')}
+          value=""
+          onChange={setText}
+          placeholder='[{"recipe_type":"MainCourse","name":"…"}]'
+          maxlength={200000}
+        />
         <Button label={t('import.submit')} onTap={run} disabled={busy || text.trim() === ''} block />
         {result?.kind === 'error' && <text className="error">{result.text}</text>}
         {result?.kind === 'ok' && (

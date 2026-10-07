@@ -1,26 +1,27 @@
 import { useCallback, useEffect, useRef, useState } from '@lynx-js/react'
 
-import { ApiError } from '../../../../lib/api/client.js'
+import { errorMessage } from '../../../../lib/api/client.js'
 import {
+  type Dish,
   type Entry,
   type KitchenList,
   type Overview,
   generate,
   getDish,
   getKitchen,
-  removeFromList,
 } from '../../../../lib/api/kitchen.js'
 import type { Recipe, RecipeType, Status } from '../../../../lib/api/recipe.js'
+import { readDoc, revalidate, writeDoc } from '../../../../lib/cache.js'
 import { course, minutes } from '../../../../lib/course.js'
 import { t } from '../../../../lib/i18n/index.js'
 import { openExternal, push } from '../../../../lib/nav.js'
+import { enqueue } from '../../../../lib/offline/queue.js'
+import { useResource } from '../../../../lib/use-resource.js'
 import { Button } from '../../../../ui/Button.js'
 import { Sheet } from '../../../../ui/Sheet.js'
 import { Spinner } from '../../../../ui/Spinner.js'
 import { GenerateSheet } from './GenerateSheet.js'
 import './KitchenTab.css'
-
-type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; overview: Overview }
 
 export interface KitchenTabProps {
   /** Bumped by the shell when the tab is (re)selected or the app resumes. */
@@ -30,99 +31,92 @@ export interface KitchenTabProps {
 }
 
 export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
-  const [state, setState] = useState<State>({ kind: 'loading' })
+  // Cached locally: renders at once and refreshes in the background.
+  const { data, error, refresh } = useResource<Overview>('kitchen', getKitchen, [refreshKey])
+  // What the tab shows: the cached/fresh overview, or it with another recipe
+  // of the list in focus (a local choice the server does not keep).
+  const [overview, setOverview] = useState<Overview | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [sheet, setSheet] = useState(false)
   const [menu, setMenu] = useState(false)
   const [busy, setBusy] = useState(false)
 
-  const fail = (err: unknown) =>
-    setState({
-      kind: 'error',
-      message: err instanceof ApiError ? err.message : t('error.network'),
-    })
-
-  const load = useCallback(() => {
-    getKitchen()
-      .then((overview) => setState({ kind: 'ready', overview }))
-      .catch(fail)
-  }, [])
-
   useEffect(() => {
-    load()
-  }, [load, refreshKey])
+    if (data) setOverview(data)
+  }, [data])
 
   const onGenerate = useCallback(async (count: number) => {
     setBusy(true)
+    setNotice(null)
     try {
-      const overview = await generate(count)
-      setState({ kind: 'ready', overview })
+      const next = await generate(count)
+      await writeDoc('kitchen', next)
       setSheet(false)
     } catch (err) {
-      fail(err)
+      setNotice(errorMessage(err))
     } finally {
       setBusy(false)
     }
   }, [])
 
-  const onRemove = useCallback(
-    async (id: string) => {
-      setBusy(true)
-      try {
-        await removeFromList(id)
-        load()
-      } catch (err) {
-        fail(err)
-      } finally {
-        setBusy(false)
-      }
-    },
-    [load],
-  )
+  // Removing goes through the offline queue: the cached list drops the entry
+  // at once and the server learns about it when reachable.
+  const onRemove = useCallback((id: string) => {
+    setNotice(null)
+    void enqueue({ kind: 'list', id, in_list: false })
+  }, [])
 
   const onFocus = useCallback(async (id: string) => {
     setBusy(true)
+    setNotice(null)
     try {
-      const dish = await getDish(id)
-      setState((prev) => {
-        if (prev.kind !== 'ready' || prev.overview.kind !== 'list') return prev
-        const overview: KitchenList = {
-          ...prev.overview,
-          entries: dish.entries,
-          focused: dish.recipe,
-          focused_status: dish.status,
-          steps: dish.steps,
-          cook_external: dish.cook_external,
-          external_url: dish.external_url,
+      let dish: Dish | null
+      try {
+        dish = await revalidate<Dish>(`dish:${id}`, () => getDish(id))
+      } catch (err) {
+        // Offline: the dish seen before is good enough.
+        dish = await readDoc<Dish>(`dish:${id}`)
+        if (!dish) {
+          setNotice(errorMessage(err))
+          return
         }
-        return { kind: 'ready', overview }
+      }
+      const focused = dish
+      setOverview((prev) => {
+        if (!prev || prev.kind !== 'list') return prev
+        const next: KitchenList = {
+          ...prev,
+          entries: focused.entries,
+          focused: focused.recipe,
+          focused_status: focused.status,
+          steps: focused.steps,
+          cook_external: focused.cook_external,
+          external_url: focused.external_url,
+        }
+        return next
       })
-    } catch (err) {
-      fail(err)
     } finally {
       setBusy(false)
     }
   }, [])
 
-  if (state.kind === 'loading') {
+  if (!overview) {
+    if (error) {
+      return (
+        <view className="content">
+          <view className="card">
+            <text className="error">{error}</text>
+            <Button label={t('common.retry')} onTap={refresh} variant="secondary" />
+          </view>
+        </view>
+      )
+    }
     return (
       <view className="content content--center">
         <Spinner size="lg" />
       </view>
     )
   }
-
-  if (state.kind === 'error') {
-    return (
-      <view className="content">
-        <view className="card">
-          <text className="error">{state.message}</text>
-          <Button label={t('common.retry')} onTap={load} variant="secondary" />
-        </view>
-      </view>
-    )
-  }
-
-  const { overview } = state
 
   if (overview.kind === 'onboarding_recipe') {
     return (
@@ -210,6 +204,7 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
   return (
     <scroll-view className="tab-scroll" scroll-orientation="vertical">
       <view className="content">
+        {notice && <text className="error">{notice}</text>}
         {focused === null ? (
           <>
             <Header caption={t('kitchen.empty_caption')} />
@@ -293,7 +288,7 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
                 label={t('kitchen.remove')}
                 onTap={() => {
                   setMenu(false)
-                  void onRemove(focused.id)
+                  onRemove(focused.id)
                 }}
                 variant="danger"
                 disabled={busy}

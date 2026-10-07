@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from '@lynx-js/react'
 import '../../styles/base.css'
 import '../../styles/auth.css'
 import './App.css'
-import { ApiError } from '../../lib/api/client.js'
+import { ApiError, errorMessage } from '../../lib/api/client.js'
 import { checkPasswordReset, confirmPasswordReset, requestPasswordReset } from '../../lib/api/auth.js'
 import { t } from '../../lib/i18n/index.js'
 import { back, pageParams, replace } from '../../lib/nav.js'
@@ -46,7 +46,7 @@ export function App() {
           return
         }
         // Offline: show the form anyway, the submit will say so again.
-        setError(err instanceof ApiError ? err.message : t('error.network'))
+        setError(errorMessage(err))
         setStep('new')
       })
   }, [fromLink, linkId])
@@ -69,12 +69,12 @@ export function App() {
         if (again) setNotice(t('reset.sent_again'))
         else go('sent')
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : t('error.network'))
+        setError(errorMessage(err))
       } finally {
         setBusy(false)
       }
     },
-    [busy, email, go],
+    [busy, email, go]
   )
 
   const submitNew = useCallback(async () => {
@@ -90,7 +90,7 @@ export function App() {
       go('done')
     } catch (err) {
       if (linkIsDead(err)) go('expired')
-      else setError(err instanceof ApiError ? err.message : t('error.network'))
+      else setError(errorMessage(err))
     } finally {
       setBusy(false)
     }

@@ -27,6 +27,7 @@ export function getGroceries(): Promise<Groceries> {
   return request<Groceries>('/api/v1/groceries')
 }
 
-export function toggleGrocery(key: string): Promise<void> {
-  return request<void>('/api/v1/groceries/toggle', { method: 'POST', body: { key } })
+/** Absolute (idempotent): what the offline queue replays. */
+export function setGroceryChecked(key: string, checked: boolean): Promise<void> {
+  return request<void>('/api/v1/groceries/check', { method: 'PUT', body: { key, checked } })
 }

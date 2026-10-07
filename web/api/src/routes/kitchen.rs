@@ -3,12 +3,13 @@ use axum::{
     extract::{Path, State},
     http::StatusCode,
 };
+use imkitchen_types::shopping::RecipeStatus;
 use imkitchen_web_shared::{AppState, services::kitchen};
 
 use crate::{
     ApiError, ApiJson, ApiResult,
     auth::ApiUser,
-    dto::kitchen::{CookingScreen, Dish, GenerateRequest, Overview, StepRequest},
+    dto::kitchen::{CookingScreen, Dish, GenerateRequest, Overview, SetStatusRequest, StepRequest},
 };
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -72,6 +73,22 @@ pub async fn step(
     ApiJson(input): ApiJson<StepRequest>,
 ) -> ApiResult<CookingScreen> {
     let view = kitchen::step(&app, &user.id, &id, input.direction.as_str())
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    Ok(Json(CookingScreen::from(view)))
+}
+
+/// Absolute (idempotent) form of `step` for clients that replay queued
+/// changes.
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn set_status(
+    State(app): State<AppState>,
+    user: ApiUser,
+    Path((id,)): Path<(String,)>,
+    ApiJson(input): ApiJson<SetStatusRequest>,
+) -> ApiResult<CookingScreen> {
+    let status = RecipeStatus::try_from(input).map_err(|e| ApiError::Validation(e.to_owned()))?;
+    let view = kitchen::set_status(&app, &user.id, &id, status)
         .await?
         .ok_or(ApiError::NotFound)?;
     Ok(Json(CookingScreen::from(view)))

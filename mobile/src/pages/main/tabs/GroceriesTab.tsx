@@ -1,52 +1,17 @@
-import { useCallback, useEffect, useState } from '@lynx-js/react'
+import { useCallback, useEffect, useRef, useState } from '@lynx-js/react'
 
-import { ApiError } from '../../../lib/api/client.js'
-import { type Groceries, type GroceryAisle, getGroceries, toggleGrocery } from '../../../lib/api/groceries.js'
+import { type Groceries, type GroceryAisle, getGroceries } from '../../../lib/api/groceries.js'
 import { aisle } from '../../../lib/course.js'
 import { t } from '../../../lib/i18n/index.js'
+import { enqueue } from '../../../lib/offline/queue.js'
+import { useResource } from '../../../lib/use-resource.js'
 import { Button } from '../../../ui/Button.js'
 import { Spinner } from '../../../ui/Spinner.js'
 import './GroceriesTab.css'
 
-type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; groceries: Groceries }
-
 type Filter = 'all' | 'todo' | 'done'
 
 const SCROLL_ID = 'groc-scroll'
-
-/** Recomputes the counters after flipping one item locally. */
-function flip(groceries: Groceries, key: string): Groceries {
-  let delta = 0
-  const aisles = groceries.aisles.map((a) => {
-    const items = a.items.map((i) => {
-      if (i.key !== key) return i
-      delta = i.checked ? -1 : 1
-      return { ...i, checked: !i.checked }
-    })
-    const checked = items.filter((i) => i.checked).length
-    return {
-      ...a,
-      items,
-      checked,
-      done: a.total > 0 && checked === a.total,
-      pct: a.total > 0 ? Math.floor((checked * 100) / a.total) : 0,
-    }
-  })
-  const checked_items = groceries.checked_items + delta
-  return {
-    ...groceries,
-    aisles,
-    checked_items,
-    progress_pct: groceries.total_items > 0 ? Math.floor((checked_items * 100) / groceries.total_items) : 0,
-  }
-}
-
-/** Aisles start folded once every item is in the cart. */
-function foldedAisles(groceries: Groceries): Record<string, boolean> {
-  const closed: Record<string, boolean> = {}
-  for (const a of groceries.aisles) if (a.done) closed[a.key] = true
-  return closed
-}
 
 export interface GroceriesTabProps {
   /** Bumped by the shell when the tab is (re)selected or the app resumes. */
@@ -56,49 +21,48 @@ export interface GroceriesTabProps {
 }
 
 export function GroceriesTab({ refreshKey, onAddRecipes }: GroceriesTabProps) {
-  const [state, setState] = useState<State>({ kind: 'loading' })
+  // Cached locally: renders at once, refreshes in the background, and keeps
+  // working offline (checks go through the offline queue).
+  const { data: g, error, refresh } = useResource<Groceries>('groceries', getGroceries, [refreshKey])
   const [filter, setFilter] = useState<Filter>('all')
   const [closed, setClosed] = useState<Record<string, boolean>>({})
+  const wasDone = useRef<Record<string, boolean> | null>(null)
 
-  const load = useCallback(() => {
-    getGroceries()
-      .then((groceries) => {
-        setClosed(foldedAisles(groceries))
-        setState({ kind: 'ready', groceries })
-      })
-      .catch((err: unknown) =>
-        setState({
-          kind: 'error',
-          message: err instanceof ApiError ? err.message : t('error.network'),
-        }),
-      )
-  }, [])
-
+  // Aisles start folded once every item is in the cart; one that just became
+  // complete folds up, one that reopens unfolds.
   useEffect(() => {
-    load()
-  }, [load, refreshKey])
+    if (!g) return
+    const prev = wasDone.current
+    const done: Record<string, boolean> = {}
+    g.aisles.forEach((a) => {
+      done[a.key] = a.done
+    })
+    wasDone.current = done
+    setClosed((c) => {
+      const out = { ...c }
+      g.aisles.forEach((a) => {
+        const was = prev ? (prev[a.key] ?? false) : false
+        if (a.done && !was) out[a.key] = true
+        if (!a.done && was) delete out[a.key]
+      })
+      return out
+    })
+  }, [g])
 
   const toggle = useCallback(
     (key: string) => {
-      // Optimistic: flip locally, reconcile with the server afterwards.
-      setState((prev) => {
-        if (prev.kind !== 'ready') return prev
-        const next = flip(prev.groceries, key)
-        // An aisle that just became complete folds up; one that reopens unfolds.
-        setClosed((c) => {
-          const out = { ...c }
-          next.aisles.forEach((a, i) => {
-            const was = prev.groceries.aisles[i]?.done ?? false
-            if (a.done && !was) out[a.key] = true
-            if (!a.done && was) delete out[a.key]
-          })
-          return out
+      if (!g) return
+      let checked: boolean | null = null
+      g.aisles.forEach((a) => {
+        a.items.forEach((i) => {
+          if (i.key === key) checked = i.checked
         })
-        return { kind: 'ready', groceries: next }
       })
-      toggleGrocery(key).catch(() => load())
+      if (checked === null) return
+      // Optimistic: the queue patches the cached list and sends the change.
+      void enqueue({ kind: 'grocery', key, checked: !checked })
     },
-    [load],
+    [g]
   )
 
   const toggleOpen = useCallback((key: string) => {
@@ -119,25 +83,23 @@ export function GroceriesTab({ refreshKey, onAddRecipes }: GroceriesTabProps) {
       .exec()
   }, [])
 
-  if (state.kind === 'loading') {
+  if (!g) {
+    if (error) {
+      return (
+        <view className="content">
+          <view className="card">
+            <text className="error">{error}</text>
+            <Button label={t('common.retry')} onTap={refresh} variant="secondary" />
+          </view>
+        </view>
+      )
+    }
     return (
       <view className="content content--center">
         <Spinner size="lg" />
       </view>
     )
   }
-  if (state.kind === 'error') {
-    return (
-      <view className="content">
-        <view className="card">
-          <text className="error">{state.message}</text>
-          <Button label={t('common.retry')} onTap={load} variant="secondary" />
-        </view>
-      </view>
-    )
-  }
-
-  const g = state.groceries
 
   if (g.aisles.length === 0) {
     return (

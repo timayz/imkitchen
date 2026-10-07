@@ -23,8 +23,9 @@ end
 def sparkling_methods_dep
   # BEGIN SPARKLING AUTOLINK
   pod 'ios', :path => '../node_modules/sparkling-keep-awake'
-  pod 'ios', :path => '../node_modules/sparkling-media'
+  pod 'ios', :path => '../node_modules/sparkling-db'
   pod 'Sparkling-Router', :path => '../node_modules/sparkling-navigation/ios'
+  pod 'ios', :path => '../node_modules/sparkling-media'
   pod 'Sparkling-Storage', :path => '../node_modules/sparkling-storage/ios'
   # END SPARKLING AUTOLINK
 end

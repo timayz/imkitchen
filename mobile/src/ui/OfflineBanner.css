@@ -1,0 +1,29 @@
+.offline {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background-color: var(--color-cream-2);
+  border-bottom: 1px solid var(--color-line);
+  padding: 8px 16px;
+}
+
+.offline__text {
+  flex: 1;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-ink-2);
+}
+
+.offline__retry {
+  margin-left: 12px;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  background-color: var(--color-paper);
+}
+
+.offline__retry-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink);
+}

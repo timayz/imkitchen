@@ -561,6 +561,42 @@ pub async fn step(
     Ok(Some(build_cooking_screen(app, recipe, status).await))
 }
 
+/// Set the cooking cursor to an absolute position and return the resulting
+/// screen. `Cooking(n)` must point at an existing instruction. Nothing is
+/// written when the status is unchanged, so a retried call is harmless.
+pub async fn set_status(
+    app: &AppState,
+    user_id: &str,
+    recipe_id: &str,
+    status: RecipeStatus,
+) -> imkitchen_core::Result<Option<CookingScreen>> {
+    let list = load_list(app, user_id).await?;
+    let Some((recipe, current)) = find_list_recipe(app, &list, recipe_id).await? else {
+        return Ok(None);
+    };
+
+    if let RecipeStatus::Cooking(pos) = status
+        && pos as usize >= recipe.instructions.len()
+    {
+        return Err(imkitchen_core::Error::User("step out of range".to_owned()));
+    }
+
+    if status != current {
+        app.core
+            .shopping
+            .change_recipe_status(
+                ChangeRecipeStatus {
+                    recipe_id: recipe_id.to_owned(),
+                    status: status.clone(),
+                },
+                user_id,
+            )
+            .await?;
+    }
+
+    Ok(Some(build_cooking_screen(app, recipe, status).await))
+}
+
 /// Replace the list with freshly picked recipes. The list is read back from
 /// the aggregate, so the next overview is already up to date — no polling.
 pub async fn generate(app: &AppState, user_id: &str, count: u8) -> imkitchen_core::Result<()> {

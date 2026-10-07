@@ -10,7 +10,8 @@ struct SparklingAutolinkModule {
 let sparklingAutolinkBundleId = "app.imkitchen.android"
 let sparklingAutolinkModules: [SparklingAutolinkModule] = [
     SparklingAutolinkModule(name: "sparkling-keep-awake", iosModuleName: "", className: ""),
-    SparklingAutolinkModule(name: "sparkling-media", iosModuleName: "", className: ""),
+    SparklingAutolinkModule(name: "sparkling-db", iosModuleName: "", className: ""),
     SparklingAutolinkModule(name: "sparkling-navigation", iosModuleName: "Router", className: "RouterMethod"),
+    SparklingAutolinkModule(name: "sparkling-media", iosModuleName: "", className: ""),
     SparklingAutolinkModule(name: "sparkling-storage", iosModuleName: "SPKStorage", className: "StorageMethod")
 ]

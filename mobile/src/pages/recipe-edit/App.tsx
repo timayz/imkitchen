@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from '@lynx-js/react'
 
 import '../../styles/base.css'
 import './App.css'
-import { ApiError } from '../../lib/api/client.js'
+import { ApiError, errorMessage } from '../../lib/api/client.js'
 import type { DietaryRestriction, Instruction, RecipeType } from '../../lib/api/recipe.js'
 import {
   type IngredientInput,
@@ -118,7 +118,7 @@ export function App() {
       getRecipe(id)
         .then((r) => setPhoto({ thumbnail_url: r.thumbnail_url, blur_placeholder: r.blur_placeholder }))
         .catch(() => {}),
-    [id],
+    [id]
   )
 
   useEffect(() => {
@@ -134,9 +134,7 @@ export function App() {
         setSaved(JSON.stringify(toInput(loaded)))
         setState({ kind: 'ready' })
       })
-      .catch((err: unknown) =>
-        setState({ kind: 'error', message: err instanceof ApiError ? err.message : t('error.network') }),
-      )
+      .catch((err: unknown) => setState({ kind: 'error', message: errorMessage(err) }))
     void loadPhoto()
   }, [id, loadPhoto])
 
@@ -157,7 +155,7 @@ export function App() {
       setNotice({ kind: 'ok', text: t('edit.saved') })
       return true
     } catch (err) {
-      setNotice({ kind: 'error', text: err instanceof ApiError ? err.message : t('error.network') })
+      setNotice({ kind: 'error', text: errorMessage(err) })
       return false
     } finally {
       setBusy(false)
