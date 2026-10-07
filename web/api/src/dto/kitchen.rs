@@ -124,7 +124,7 @@ pub enum Overview {
 #[derive(Serialize, Debug)]
 pub struct List {
     pub entries: Vec<Entry>,
-    pub focused: Option<Recipe>,
+    pub focused: Recipe,
     pub focused_status: Status,
     pub completed_count: usize,
     pub total_count: usize,
@@ -160,13 +160,13 @@ impl From<kitchen::Overview> for Overview {
 impl From<KitchenList> for List {
     fn from(list: KitchenList) -> Self {
         let external_url = if list.cook_external {
-            list.focused.as_ref().and_then(|r| r.origin.to_owned())
+            list.focused.origin.to_owned()
         } else {
             None
         };
         Self {
             entries: list.entries.iter().map(Entry::from).collect(),
-            focused: list.focused.as_ref().map(Recipe::from),
+            focused: Recipe::from(&list.focused),
             focused_status: Status::from(&list.focused_status),
             completed_count: list.completed_count,
             total_count: list.total_count,

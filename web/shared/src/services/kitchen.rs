@@ -303,7 +303,8 @@ pub async fn find_list_recipe(
 pub enum Overview {
     /// No recipes at all yet: explain how to add one.
     OnboardingRecipe,
-    /// Recipes exist but the list is empty: invite to generate.
+    /// Recipes exist but the list has nothing to cook (empty, or every
+    /// recipe in it was deleted): invite to generate.
     OnboardingMenu(OnboardingMenu),
     /// The list, with the next recipe to cook in focus.
     List(Box<KitchenList>),
@@ -322,7 +323,7 @@ pub struct KitchenList {
     /// main → side → dessert → drink → sauce).
     pub entries: Vec<ListEntry>,
     /// The recipe to cook next: the first one in the list not yet cooked.
-    pub focused: Option<UserView>,
+    pub focused: UserView,
     pub focused_status: RecipeStatus,
     pub completed_count: usize,
     pub total_count: usize,
@@ -337,82 +338,49 @@ pub struct KitchenList {
 pub async fn overview(app: &AppState, user_id: &str) -> anyhow::Result<Overview> {
     let list = load_list(app, user_id).await?;
 
-    if list.state.recipe_ids.is_empty() {
-        let main_courses = app
-            .core
-            .shopping
-            .sample_recipes(user_id, RecipeType::MainCourse)
-            .await?;
-
-        if main_courses.is_empty() {
-            return Ok(Overview::OnboardingRecipe);
-        }
-
-        let appetizers = app
-            .core
-            .shopping
-            .sample_recipes(user_id, RecipeType::Appetizer)
-            .await?;
-        let accompaniments = app
-            .core
-            .shopping
-            .sample_recipes(user_id, RecipeType::Accompaniment)
-            .await?;
-        let desserts = app
-            .core
-            .shopping
-            .sample_recipes(user_id, RecipeType::Dessert)
-            .await?;
-
-        return Ok(Overview::OnboardingMenu(OnboardingMenu {
-            main_count: main_courses.len(),
-            appetizer_count: appetizers.len(),
-            accompaniment_count: accompaniments.len(),
-            dessert_count: desserts.len(),
-            recipes: main_courses,
-        }));
-    }
-
-    let cards = app
-        .core
-        .recipe
-        .filter_by_ids(list.state.recipe_ids.clone())
-        .await?;
+    let cards = if list.state.recipe_ids.is_empty() {
+        vec![]
+    } else {
+        app.core
+            .recipe
+            .filter_by_ids(list.state.recipe_ids.clone())
+            .await?
+    };
     let entries = list_entries(&list.state, cards);
+
+    // The recipe to cook next: the first uncooked entry whose recipe still
+    // resolves, else the first one that does. A list whose recipes were all
+    // deleted has nothing to show and counts as empty.
+    let mut next = None;
+    for entry in entries
+        .iter()
+        .filter(|e| !e.is_completed())
+        .chain(entries.iter())
+    {
+        if let Some(recipe) = app.core.recipe.find_user(&entry.id).await? {
+            next = Some((entry.clone(), recipe));
+            break;
+        }
+    }
+    let Some((focused_entry, mut focused)) = next else {
+        return onboarding(app, user_id).await;
+    };
 
     let total_count = entries.len();
     let completed_count = entries.iter().filter(|e| e.is_completed()).count();
 
-    let focused_entry = entries
-        .iter()
-        .find(|e| !e.is_completed())
-        .or_else(|| entries.first())
-        .cloned();
-
-    let mut focused = None;
-    let mut focused_status = RecipeStatus::Idle;
-    let mut steps: StepView = (vec![], vec![], None);
-
-    if let Some(entry) = &focused_entry {
-        focused = app.core.recipe.find_user(&entry.id).await?;
-        focused_status = entry.status.clone();
-        if let Some(recipe) = focused.as_mut() {
-            scale_ingredients(recipe, list.household_size);
-            steps = split_instructions(recipe, &focused_status, true);
-        }
-    }
+    let focused_status = focused_entry.status.clone();
+    scale_ingredients(&mut focused, list.household_size);
+    let steps = split_instructions(&focused, &focused_status, true);
 
     let prep_ahead: Vec<ListEntry> = entries
         .iter()
         .filter(|e| !e.advance_prep.trim().is_empty() && !e.is_completed())
-        .filter(|e| focused_entry.as_ref().is_none_or(|f| f.id != e.id))
+        .filter(|e| e.id != focused_entry.id)
         .cloned()
         .collect();
 
-    let cook_external = match focused.as_ref() {
-        Some(recipe) => cook_is_external(app, recipe, &steps.2).await,
-        None => false,
-    };
+    let cook_external = cook_is_external(app, &focused, &steps.2).await;
 
     Ok(Overview::List(Box::new(KitchenList {
         entries,
@@ -424,6 +392,44 @@ pub async fn overview(app: &AppState, user_id: &str) -> anyhow::Result<Overview>
         steps,
         cook_external,
     })))
+}
+
+/// The kitchen home when the list has nothing to cook: which onboarding
+/// screen depends on whether the pool has a main course to generate from.
+async fn onboarding(app: &AppState, user_id: &str) -> anyhow::Result<Overview> {
+    let main_courses = app
+        .core
+        .shopping
+        .sample_recipes(user_id, RecipeType::MainCourse)
+        .await?;
+
+    if main_courses.is_empty() {
+        return Ok(Overview::OnboardingRecipe);
+    }
+
+    let appetizers = app
+        .core
+        .shopping
+        .sample_recipes(user_id, RecipeType::Appetizer)
+        .await?;
+    let accompaniments = app
+        .core
+        .shopping
+        .sample_recipes(user_id, RecipeType::Accompaniment)
+        .await?;
+    let desserts = app
+        .core
+        .shopping
+        .sample_recipes(user_id, RecipeType::Dessert)
+        .await?;
+
+    Ok(Overview::OnboardingMenu(OnboardingMenu {
+        main_count: main_courses.len(),
+        appetizer_count: appetizers.len(),
+        accompaniment_count: accompaniments.len(),
+        dessert_count: desserts.len(),
+        recipes: main_courses,
+    }))
 }
 
 /// The kitchen with another recipe of the list in focus.

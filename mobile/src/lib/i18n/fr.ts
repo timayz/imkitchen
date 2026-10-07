@@ -117,8 +117,6 @@ export const fr: Record<MessageKey, string> = {
   'kitchen.empty_caption': 'Votre liste est vide',
   'kitchen.browse_recipes': 'Parcourir mes recettes',
   'kitchen.add_by_hand': 'Ajouter des recettes à la main',
-  'kitchen.feature_pairs': 'Associe chaque plat à un accompagnement',
-  'kitchen.feature_household': 'Respecte la taille de votre foyer',
   'kitchen.step_recipes': 'Étape 1 · Recettes enregistrées',
   'kitchen.step_list': 'Étape 2 · Construire la liste',
   'kitchen.count_mains': 'plats',

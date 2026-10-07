@@ -41,6 +41,7 @@ export interface Sample {
 export interface KitchenList {
   kind: 'list'
   entries: Entry[]
+  /** Always set by the server; `null` only in a list rewritten offline. */
   focused: Recipe | null
   focused_status: Status
   completed_count: number

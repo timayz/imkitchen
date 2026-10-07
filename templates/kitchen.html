@@ -10,28 +10,6 @@
 
 <!-- Main Content -->
 <div class="container mx-auto px-4 py-6">
-  {% if focused.is_none() %}
-  {# ── Empty state — recipes in the list could not be found ── #}
-  <div class="max-w-2xl mx-auto">
-    <div class="bg-paper rounded-xl shadow-md p-12 text-center">
-      <div class="text-6xl mb-6">👨‍🍳</div>
-      <h2 class="text-2xl font-bold font-serif mb-4">{{ "Nothing to cook yet"|t }}</h2>
-      <p class="text-ink-2 mb-8">
-        {{ "Generate a list from your recipes or add a few by hand, then cook them one by one."|t }}
-      </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/kitchen/generate{% endif %}" ts-target="body" ts-swap="append"
-          class="px-6 py-3 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-600 transition">
-          ✨ {{ "Generate recipes"|t }}
-        </button>
-        <a href="{{ "/recipes"|demo_href }}"
-          class="px-6 py-3 bg-paper border border-line text-ink font-semibold rounded-xl hover:bg-cream-2 transition">
-          ➕ {{ "Add recipes"|t }}
-        </a>
-      </div>
-    </div>
-  </div>
-  {% else %}
   {# ── Populated Home — the next thing to cook, then the whole list ── #}
   <header class="mb-4 flex items-start justify-between gap-3">
     <div class="min-w-0">
@@ -63,9 +41,7 @@
   <div class="{% if has_aside %}grid lg:grid-cols-3 gap-6{% endif %}">
     <!-- Main column: hero + the list -->
     <div class="{% if has_aside %}lg:col-span-2 {% endif %}min-w-0">
-      {% if let Some(slot_recipe) = focused %}
-        {% include "partials/kitchen-dish.html" %}
-      {% endif %}
+      {% include "partials/kitchen-dish.html" %}
     </div>
 
     {% if has_aside %}
@@ -85,6 +61,5 @@
     </aside>
     {% endif %}
   </div>
-  {% endif %}
 </div>
 {% endblock %}
