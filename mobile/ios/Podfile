@@ -56,8 +56,8 @@ def sparkling_kit
   pod 'SnapKit'
   pod 'Mantle', '~> 2.2.0'
   
-  pod 'SDWebImage','5.15.5'
-  pod 'SDWebImageWebPCoder', '0.11.0'
+  pod 'SDWebImage','5.21.7'
+  pod 'SDWebImageWebPCoder', '0.15.0'
   
 end
 
