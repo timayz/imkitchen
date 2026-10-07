@@ -173,6 +173,7 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
               {extra > 0 && <text className="kt-sample kt-sample--more">{t('kitchen.more', { n: extra })}</text>}
             </view>
             <Button label={`✨ ${t('kitchen.generate')}`} onTap={() => setSheet(true)} variant="ink" block />
+            <Button label={t('kitchen.add_by_hand')} onTap={onAddRecipes} variant="ghost" block />
           </view>
           <view className="kt-note">
             <view className="kt-note__icon">
