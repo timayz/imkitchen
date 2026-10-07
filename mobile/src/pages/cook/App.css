@@ -1,0 +1,76 @@
+/* The scroll-view must be flex-sized inside .screen (which only sets a
+   min-height); as a direct `.screen` it would grow with its content and
+   never scroll. Same structure as the recipe details page. */
+.cook__scroll {
+  flex: 1;
+}
+
+/* Profile card: avatar + handle, the description, then the stat strip */
+.cook__profile {
+  gap: 14px;
+}
+
+.cook__avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  align-items: center;
+  justify-content: center;
+}
+
+.cook__avatar-text {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.cook__identity {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cook__name {
+  font-size: 22px;
+  line-height: 26px;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  color: var(--color-ink);
+  text-overflow: ellipsis;
+}
+
+.cook__stats {
+  display: flex;
+  flex-direction: row;
+  border-top: 1px solid var(--color-line-2);
+  padding-top: 14px;
+}
+
+.cook__stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.cook__stat--divider {
+  border-right: 1px solid var(--color-line-2);
+}
+
+.cook__stat-value {
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.cook__stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--color-ink-3);
+}

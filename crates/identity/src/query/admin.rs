@@ -13,8 +13,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use strum::{AsRefStr, Display, EnumString, VariantArray};
 
 use crate::types::user::{
-    Activated, EmailChanged, MadeAdmin, Registered, Role, RoleChanged, State, Suspended, User,
-    UsernameChanged,
+    Activated, Deleted, EmailChanged, MadeAdmin, Registered, Role, RoleChanged, State, Suspended,
+    User, UsernameChanged,
 };
 use imkitchen_billing::types::subscription::{
     LifePremiumToggled, StripePaymentIntentSucceeded, Subscription,
@@ -63,6 +63,10 @@ pub struct AdminView {
     pub subscription_expire_at: u64,
     #[cursor(by_recently_joined, UserAdmin::CreatedAt, 2)]
     pub created_at: u64,
+    /// Not a column: set by [`Deleted`] so the next snapshot removes the row
+    /// (and, through the `user_admin_delete` trigger, its FTS entry).
+    #[sqlx(default)]
+    pub deleted: bool,
 }
 
 impl AdminView {
@@ -234,6 +238,7 @@ pub fn create_projection<E: Executor>() -> Projection<E, AdminView> {
         .handler(handle_payment_intent_succeeded())
         .handler(handle_username_changed())
         .handler(handle_email_changed())
+        .handler(handle_deleted())
 }
 
 impl<E: Executor> Snapshot<E> for AdminView {
@@ -371,6 +376,13 @@ async fn handle_actived(_event: Event<Activated>, data: &mut AdminView) -> anyho
 #[evento::handler]
 async fn handle_susended(_event: Event<Suspended>, data: &mut AdminView) -> anyhow::Result<()> {
     data.state.0 = State::Suspended;
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_deleted(_event: Event<Deleted>, data: &mut AdminView) -> anyhow::Result<()> {
+    data.deleted = true;
 
     Ok(())
 }

@@ -9,7 +9,8 @@ use strum::VariantArray;
 
 use imkitchen_web_shared::AppState;
 use imkitchen_web_shared::auth::AuthUser;
-use imkitchen_web_shared::template::{Template, ToastErrorTemplate, ToastSuccessTemplate, filters};
+use imkitchen_web_shared::services::settings;
+use imkitchen_web_shared::template::{Template, ToastSuccessTemplate, filters};
 
 #[derive(askama::Template)]
 #[template(path = "settings-general.html")]
@@ -47,26 +48,17 @@ pub async fn page(
     State(app): State<AppState>,
     user: AuthUser,
 ) -> impl IntoResponse {
-    let preferences = imkitchen_web_shared::try_page_response!(
-        app.identity.meal_preferences.load(&user.id),
-        template
-    );
-
-    let profile = imkitchen_web_shared::try_page_response!(
-        app.identity.user_profile.load(&user.id),
-        template
-    );
-
-    let email =
-        imkitchen_web_shared::try_page_response!(app.identity.find_email(&user.id), template);
+    let general =
+        imkitchen_web_shared::try_page_response!(settings::general(&app, &user.id), template);
+    let preferences = general.preferences;
 
     template.render(MealPreferencesTemplate {
         household_size: preferences.household_size,
         dietary_restrictions: preferences.dietary_restrictions.to_vec(),
         recipe_types: preferences.recipe_types.to_vec(),
         cuisine_variety_weight: preferences.cuisine_variety_weight,
-        email: email.unwrap_or_default(),
-        description: profile.description,
+        email: general.email,
+        description: general.description,
         user,
         ..Default::default()
     })
@@ -122,20 +114,8 @@ pub async fn set_username_action(
     State(app): State<AppState>,
     Form(input): Form<SetUsernameActionInput>,
 ) -> impl IntoResponse {
-    if user.username.is_some() {
-        return (
-            [("ts-swap", "skip")],
-            template.render(ToastErrorTemplate {
-                original: None,
-                message: "Username has already been set.",
-                description: None,
-            }),
-        )
-            .into_response();
-    }
-
     imkitchen_web_shared::try_response!(
-        app.identity.set_username(&user.id, input.username),
+        settings::set_username(&app, &user, input.username),
         template
     );
 

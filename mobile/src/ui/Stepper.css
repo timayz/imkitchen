@@ -1,0 +1,35 @@
+.stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stepper__row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.stepper__btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  background-color: var(--color-paper);
+  align-items: center;
+  justify-content: center;
+}
+
+.stepper__glyph {
+  font-size: 20px;
+  color: var(--color-ink);
+}
+
+.stepper__value {
+  min-width: 70px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-ink);
+}

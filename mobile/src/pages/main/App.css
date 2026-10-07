@@ -1,0 +1,17 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+}
+
+.shell__loading {
+  align-items: center;
+  justify-content: center;
+}
+
+.shell__body {
+  flex: 1;
+}
+
+.tab-scroll {
+  height: 100%;
+}

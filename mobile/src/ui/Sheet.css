@@ -1,0 +1,28 @@
+.sheet__backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(27, 20, 12, 0.45);
+  justify-content: flex-end;
+}
+
+.sheet {
+  background-color: var(--color-paper);
+  border-top-left-radius: var(--radius-xl);
+  border-top-right-radius: var(--radius-xl);
+  padding: 8px 20px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sheet__handle {
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background-color: var(--color-line);
+  margin-bottom: 4px;
+}

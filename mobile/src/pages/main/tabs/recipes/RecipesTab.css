@@ -1,0 +1,85 @@
+/* Header: title block + the tangerine add button (the kitchen tab's regenerate button) */
+.rec__header {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rec__header-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rec__add {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary-500);
+  align-items: center;
+  justify-content: center;
+}
+
+.rec__add-glyph {
+  font-size: 26px;
+  line-height: 28px;
+  font-weight: 700;
+  color: var(--color-paper);
+}
+
+/* Chef: share-all note */
+.rec__note {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-herb-100);
+}
+
+.rec__note--private {
+  background-color: var(--color-cream-2);
+}
+
+.rec__note-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background-color: var(--color-paper);
+  align-items: center;
+  justify-content: center;
+}
+
+.rec__note-glyph {
+  font-size: 16px;
+}
+
+.rec__note-text {
+  flex: 1;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-herb-700);
+}
+
+.rec__note-text--private {
+  color: var(--color-ink-2);
+}
+
+.rec__note-btn {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background-color: var(--color-paper);
+  align-items: center;
+  justify-content: center;
+}
+
+.rec__note-btn-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-ink);
+}

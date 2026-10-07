@@ -4,7 +4,7 @@ use axum::{
     response::IntoResponse,
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
-use imkitchen_web_shared::{AppState, auth::AuthUser, template::Template};
+use imkitchen_web_shared::{AppState, auth::AuthUser, services::recipe, template::Template};
 
 #[tracing::instrument(skip_all)]
 pub async fn get(
@@ -53,20 +53,9 @@ pub async fn upload(
     };
     let content_type = field.content_type().unwrap_or("").to_string();
 
-    // Filter by content type
-    let allowed_types = ["image/png", "image/jpeg", "image/webp"];
-    if !allowed_types.contains(&content_type.as_str()) {
-        return imkitchen_web_shared::try_response!(sync:
-            Err(imkitchen_core::Error::User(format!("Invalid file type: {content_type}"))),
-            template
-        );
-    }
-
     let data = imkitchen_web_shared::try_response!(anyhow: field.bytes(), template);
     imkitchen_web_shared::try_response!(
-        app.core
-            .recipe
-            .upload_thumbnail(&id, data.to_vec(), &user.id),
+        recipe::upload_thumbnail(&app, &user.id, &id, &content_type, data.to_vec()),
         template
     );
     let encoded = STANDARD.encode(&data);

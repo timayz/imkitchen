@@ -128,6 +128,11 @@ async fn handle_subscription_cancelled<E: Executor>(
         }
     };
 
+    // Account deletion cancels the subscription and blanks the address.
+    if recipient.email.is_empty() {
+        return Ok(());
+    }
+
     let template = Template::new(&recipient.lang);
 
     let html = template.to_string(SubscriptionCancelledHtmlTemplate {

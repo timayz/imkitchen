@@ -19,12 +19,12 @@ use sea_query::{
     Alias, Asterisk, Expr, ExprTrait, Func, OnConflict, Query, SimpleExpr, SqliteQueryBuilder,
 };
 use sea_query_sqlx::SqlxBinder;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{SqlitePool, prelude::FromRow};
 use strum::{Display, EnumString};
 use webp::Encoder;
 
-#[derive(Default, Debug, Deserialize, EnumString, Display, Clone)]
+#[derive(Default, Debug, Deserialize, Serialize, EnumString, Display, Clone)]
 pub enum SortBy {
     #[default]
     RecentlyAdded,

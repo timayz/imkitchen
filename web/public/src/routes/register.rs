@@ -34,7 +34,7 @@ pub struct ActionInput {
 pub async fn action(
     template: Template,
     State(app): State<AppState>,
-    Form(mut input): Form<ActionInput>,
+    Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
     if input.password != input.confirm_password {
         return (
@@ -48,25 +48,18 @@ pub async fn action(
             .into_response();
     }
 
-    if input.email == app.config.root.email {
-        input.password = app.config.root.password;
-    }
-
-    let id = imkitchen_web_shared::try_response!(
-        app.identity.register(RegisterInput {
-            email: input.email.to_owned(),
-            password: input.password.to_owned(),
-            lang: template.preferred_language_iso.to_owned(),
-            timezone: template.timezone.to_owned(),
-        },),
+    imkitchen_web_shared::try_response!(
+        imkitchen_web_shared::services::auth::register(
+            &app,
+            RegisterInput {
+                email: input.email,
+                password: input.password,
+                lang: template.preferred_language_iso.to_owned(),
+                timezone: template.timezone.to_owned(),
+            },
+        ),
         template
     );
-
-    if input.email != app.config.root.email {
-        return Redirect::to("/login").into_response();
-    }
-
-    imkitchen_web_shared::try_response!(app.identity.made_admin(&id), template);
 
     Redirect::to("/login").into_response()
 }

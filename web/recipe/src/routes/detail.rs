@@ -2,11 +2,11 @@ use axum::{
     extract::{Path, State},
     response::{IntoResponse, Redirect},
 };
-use evento::cursor::{Args, ReadResult};
+use evento::cursor::ReadResult;
 use imkitchen_core::recipe::{
     favorite,
     query::{
-        user::{RecipesQuery, SortBy, UserView, UserViewList},
+        user::{UserView, UserViewList},
         user_stat::UserStatView,
     },
 };
@@ -16,6 +16,7 @@ use serde_json::json;
 use imkitchen_web_shared::{
     AppState,
     auth::{AuthUser, RequireChef},
+    services::recipe::{self, ShareError},
     template::{NotFoundTemplate, Status, Template, filters},
 };
 
@@ -193,16 +194,7 @@ pub async fn page(
     Path((slug,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    // Resolve the path segment as a slug; fall back to treating it as a raw
-    // recipe id so legacy/id-shaped links under `/r/` keep working.
-    let id = match imkitchen_web_shared::try_page_response!(
-        app.core.recipe.find_id_by_slug(&slug),
-        template
-    ) {
-        Some(id) => id,
-        None => slug.clone(),
-    };
-    let recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.user(&id), template);
+    let id = imkitchen_web_shared::try_page_response!(recipe::resolve_id(&app, &slug), template);
 
     // Public recipes are viewable by anyone. Anonymous visitors get a demo
     // "guest" identity and the page renders in demo mode — links point into
@@ -210,9 +202,12 @@ pub async fn page(
     let is_anonymous = user.is_none();
     let user = user.unwrap_or_else(AuthUser::demo);
 
-    if recipe.owner_id != user.id && !recipe.is_shared {
+    let Some(detail) = imkitchen_web_shared::try_page_response!(
+        recipe::detail(&app, &user.id, is_anonymous, &id),
+        template
+    ) else {
         return template.render(NotFoundTemplate).into_response();
-    }
+    };
 
     let template = if is_anonymous {
         template.demo()
@@ -220,47 +215,20 @@ pub async fn page(
         template
     };
 
-    let stat = imkitchen_web_shared::try_page_response!(
-        app.core.recipe.find_user_stat(&recipe.owner_id),
-        template
-    )
-    .unwrap_or_default();
-
-    let favorite = imkitchen_web_shared::try_page_response!(
-        app.core.recipe.favorite.load(&recipe.id, &user.id),
-        template
-    )
-    .to_owned();
-
-    let owner_profile = imkitchen_web_shared::try_page_response!(
-        app.identity.user_profile.load(&recipe.owner_id),
-        template
-    );
-
-    // Whether this recipe is already in the viewer's shopping list. Skipped for
-    // anonymous/demo visitors, who can't have a personal list.
-    let in_shopping = if is_anonymous {
-        false
-    } else {
-        imkitchen_web_shared::try_page_response!(app.core.shopping.load(&user.id), template)
-            .map(|s| s.recipes.contains(&recipe.id))
-            .unwrap_or(false)
-    };
-
     let username = user.username();
     // Structured data for search engines — only on the canonical public page
     // (signed-in or guest), not the demo tour.
-    let json_ld = recipe_json_ld(&recipe, &app.config.server.url);
+    let json_ld = recipe_json_ld(&detail.recipe, &app.config.server.url);
 
     template
         .render(DetailTemplate {
             user,
-            recipe,
-            stat,
-            favorite,
+            recipe: detail.recipe,
+            stat: detail.stat,
+            favorite: detail.favorite,
             username: username.as_str(),
-            owner_description: owner_profile.description,
-            in_shopping,
+            owner_description: detail.owner_description,
+            in_shopping: detail.in_shopping,
             json_ld,
             ..Default::default()
         })
@@ -277,22 +245,15 @@ pub async fn similar(
     Path((slug,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    // Resolve slug → id with the same id-fallback as `page` so legacy links work.
-    let id = match imkitchen_web_shared::try_page_response!(
-        app.core.recipe.find_id_by_slug(&slug),
-        template
-    ) {
-        Some(id) => id,
-        None => slug.clone(),
-    };
-    let recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.user(&id), template);
+    let id = imkitchen_web_shared::try_page_response!(recipe::resolve_id(&app, &slug), template);
+    let view = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.user(&id), template);
 
     // Mirror the page's visibility + demo handling: only shared recipes (or the
     // owner's own) are viewable, and anonymous visitors render in demo mode.
     let is_anonymous = user.is_none();
     let user = user.unwrap_or_else(AuthUser::demo);
 
-    if recipe.owner_id != user.id && !recipe.is_shared {
+    if !recipe::viewable(&view, &user.id) {
         return template.render(NotFoundTemplate).into_response();
     }
 
@@ -302,84 +263,8 @@ pub async fn similar(
         template
     };
 
-    let exclude_ids = vec![recipe.id.to_owned()];
-
-    let mut similar_recipes = imkitchen_web_shared::try_page_response!(
-        app.core.recipe.filter_user(RecipesQuery {
-            exclude_ids: Some(exclude_ids.to_vec()),
-            user_id: None,
-            recipe_type: Some(recipe.recipe_type.0.to_owned()),
-            is_shared: Some(true),
-            has_thumbnail: None,
-            dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
-            dietary_where_any: false,
-            in_meal_plan: None,
-            sort_by: SortBy::Random,
-            args: Args::forward(10, None),
-            search: None,
-        }),
-        template
-    );
-
-    if similar_recipes.edges.len() < 10 {
-        let mut similar_ids = similar_recipes
-            .edges
-            .iter()
-            .map(|n| n.node.id.to_owned())
-            .collect::<Vec<_>>();
-        similar_ids.extend(exclude_ids.to_vec());
-
-        let more_recipes = imkitchen_web_shared::try_page_response!(
-            app.core.recipe.filter_user(RecipesQuery {
-                exclude_ids: Some(similar_ids),
-                user_id: None,
-                recipe_type: Some(recipe.recipe_type.0.to_owned()),
-                is_shared: Some(true),
-                has_thumbnail: None,
-                dietary_restrictions: recipe.dietary_restrictions.0.to_vec(),
-                dietary_where_any: true,
-                in_meal_plan: None,
-                sort_by: SortBy::Random,
-                args: Args::forward(10, None),
-                search: None,
-            }),
-            template
-        );
-
-        similar_recipes.edges.extend(more_recipes.edges);
-    }
-
-    if similar_recipes.edges.len() < 10 {
-        let mut similar_ids = similar_recipes
-            .edges
-            .iter()
-            .map(|n| n.node.id.to_owned())
-            .collect::<Vec<_>>();
-        similar_ids.extend(exclude_ids);
-
-        let more_recipes = imkitchen_web_shared::try_page_response!(
-            app.core.recipe.filter_user(RecipesQuery {
-                exclude_ids: Some(similar_ids),
-                user_id: None,
-                recipe_type: Some(recipe.recipe_type.0.to_owned()),
-                is_shared: Some(true),
-                has_thumbnail: None,
-                dietary_restrictions: vec![],
-                dietary_where_any: false,
-                in_meal_plan: None,
-                sort_by: SortBy::Random,
-                args: Args::forward(10, None),
-                search: None,
-            }),
-            template
-        );
-
-        similar_recipes.edges.extend(more_recipes.edges);
-    }
-
-    // Fallback tiers can overshoot the target; keep at most 10 (exact matches,
-    // which are collected first, take precedence).
-    similar_recipes.edges.truncate(10);
+    let similar_recipes =
+        imkitchen_web_shared::try_page_response!(recipe::similar(&app, &view), template);
 
     template
         .render(SimilarTemplate { similar_recipes })
@@ -393,18 +278,19 @@ pub async fn share_to_community_action(
     RequireChef(user): RequireChef,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let Some(ref username) = user.username else {
-        return (
-            [("ts-swap", "skip")],
-            template.render(SetUsernameModalTemplate),
-        )
-            .into_response();
-    };
-
-    imkitchen_web_shared::try_response!(
-        app.core.recipe.share_to_community(&id, &user.id, username),
-        template
-    );
+    match recipe::share(&app, &user.id, user.username.as_deref(), &id).await {
+        Ok(()) => {}
+        Err(ShareError::UsernameRequired) => {
+            return (
+                [("ts-swap", "skip")],
+                template.render(SetUsernameModalTemplate),
+            )
+                .into_response();
+        }
+        Err(ShareError::Core(err)) => {
+            imkitchen_web_shared::try_response!(sync: Err::<(), _>(err), template);
+        }
+    }
 
     template
         .render(CommunityDetailShareButtonTemplate {
@@ -421,7 +307,7 @@ pub async fn make_private_action(
     RequireChef(user): RequireChef,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    imkitchen_web_shared::try_response!(app.core.recipe.make_private(&id, &user.id), template);
+    imkitchen_web_shared::try_response!(recipe::unshare(&app, &user.id, &id), template);
 
     template
         .render(CommunityDetailShareButtonTemplate {
@@ -438,7 +324,7 @@ pub async fn delete_action(
     AuthUser(user): AuthUser,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    imkitchen_web_shared::try_response!(app.core.recipe.delete(&id, &user.id), template);
+    imkitchen_web_shared::try_response!(recipe::delete(&app, &user.id, &id), template);
 
     template
         .render(DeleteButtonTemplate {
@@ -490,22 +376,7 @@ pub async fn save(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe =
-        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id),template);
-
-    if !recipe.is_shared {
-        imkitchen_web_shared::try_response!(sync:
-            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
-        ), template);
-    }
-
-    imkitchen_web_shared::try_response!(
-        app.core
-            .recipe
-            .favorite
-            .save(&id, recipe.owner_id, &user.id),
-        template
-    );
+    imkitchen_web_shared::try_response!(recipe::save(&app, &user.id, &id), template);
 
     (
         [("ts-swap", "skip")],
@@ -520,7 +391,7 @@ pub async fn unsave(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    imkitchen_web_shared::try_response!(app.core.recipe.favorite.unsave(&id, &user.id), template);
+    imkitchen_web_shared::try_response!(recipe::unsave(&app, &user.id, &id), template);
 
     (
         [("ts-swap", "skip")],
@@ -544,26 +415,7 @@ pub async fn add_to_shopping(
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    let recipe =
-        imkitchen_web_shared::try_response!(anyhow_opt: app.core.recipe.user(&id), template);
-
-    if recipe.owner_id != user.id && !recipe.is_shared {
-        imkitchen_web_shared::try_response!(sync:
-            Err(imkitchen_core::Error::NotFound("recipe".to_owned())
-        ), template);
-    }
-
-    let preferences = imkitchen_web_shared::try_response!(anyhow:
-        app.identity.meal_preferences.load(&user.id),
-        template
-    );
-
-    imkitchen_web_shared::try_response!(
-        app.core
-            .shopping
-            .add_recipe(&id, preferences.household_size, &user.id),
-        template
-    );
+    imkitchen_web_shared::try_response!(recipe::add_to_shopping(&app, &user.id, &id), template);
 
     (
         [("ts-swap", "skip")],

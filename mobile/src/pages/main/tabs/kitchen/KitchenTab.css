@@ -1,0 +1,492 @@
+/* Header */
+.kt-header {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kt-header__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kt-regen {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary-500);
+  align-items: center;
+  justify-content: center;
+}
+
+.kt-regen__glyph {
+  font-size: 20px;
+}
+
+/* Progress strip: one segment per meal in the round */
+.kt-progress {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
+
+.kt-progress__seg {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--color-line);
+}
+
+.kt-progress__seg--on {
+  background-color: var(--color-herb-500);
+}
+
+.kt-done {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-herb-100);
+}
+
+.kt-done__text {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--color-herb-700);
+}
+
+/* Shared small pieces */
+.kt-center {
+  text-align: center;
+}
+
+.kt-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  color: var(--color-ink-3);
+}
+
+.kt-section {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.kt-section__line {
+  flex: 1;
+  height: 1px;
+  background-color: var(--color-line);
+}
+
+.kt-chip {
+  align-self: flex-start;
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+
+.kt-chip--herb {
+  background-color: var(--color-herb-100);
+}
+
+.kt-chip--main {
+  background-color: var(--color-meal-main-soft);
+}
+
+.kt-chip__text {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.kt-chip__text--herb {
+  color: var(--color-herb-700);
+}
+
+.kt-chip__text--main {
+  color: var(--color-meal-main-ink);
+}
+
+/* Hero: white card with a course-tinted band on top */
+.kt-hero {
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+.kt-hero__band {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+}
+
+.kt-hero__tile {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background-color: var(--color-paper);
+  align-items: center;
+  justify-content: center;
+}
+
+.kt-hero__tile-emoji {
+  font-size: 18px;
+}
+
+.kt-hero__band-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kt-hero__course {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+}
+
+.kt-hero__meta {
+  font-size: 13px;
+}
+
+.kt-hero__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px 18px;
+}
+
+.kt-hero__title {
+  font-size: 24px;
+  line-height: 28px;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  color: var(--color-ink);
+}
+
+.kt-hero__desc {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-ink-2);
+}
+
+.kt-hero__actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.kt-cta {
+  flex: 1;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background-color: var(--color-ink);
+}
+
+.kt-cta__text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-cream);
+}
+
+.kt-iconbtn {
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  background-color: var(--color-paper);
+}
+
+.kt-iconbtn__glyph {
+  font-size: 18px;
+  color: var(--color-ink);
+}
+
+/* List rows with swipe-to-remove */
+.kt-swipe {
+  position: relative;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.kt-swipe__action {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 88px;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  background-color: var(--color-primary-700);
+}
+
+.kt-swipe__glyph {
+  font-size: 18px;
+}
+
+.kt-swipe__text {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-paper);
+}
+
+.kt-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 10px;
+  background-color: var(--color-paper);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line-2);
+}
+
+.kt-row--snap {
+  transition: transform 0.15s ease-out;
+}
+
+.kt-row--done {
+  opacity: 0.62;
+}
+
+.kt-row__tile {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+}
+
+.kt-row__emoji {
+  font-size: 20px;
+}
+
+.kt-row__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kt-row__name {
+  font-size: 15px;
+  line-height: 20px;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  color: var(--color-ink);
+  text-overflow: ellipsis;
+}
+
+.kt-row__name--done {
+  text-decoration: line-through;
+}
+
+.kt-row__meta {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-ink-3);
+}
+
+.kt-row__chevron {
+  font-size: 22px;
+  line-height: 22px;
+  color: var(--color-ink-3);
+}
+
+/* Prep ahead */
+.kt-prep {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background-color: #fef3c7;
+  border: 1px solid #f5d77a;
+}
+
+.kt-prep__title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #78350f;
+}
+
+.kt-prep__text {
+  font-size: 13px;
+  line-height: 18px;
+  color: #78350f;
+}
+
+.kt-prep__name {
+  font-weight: 600;
+}
+
+/* Empty state and first-run */
+.kt-empty {
+  align-items: center;
+  padding: 32px 24px 20px;
+}
+
+.kt-empty__art {
+  width: 112px;
+  height: 112px;
+  border-radius: 999px;
+  background-color: var(--color-meal-main-soft);
+  align-items: center;
+  justify-content: center;
+}
+
+.kt-empty__emoji {
+  font-size: 52px;
+}
+
+.kt-empty__title {
+  font-size: 22px;
+  line-height: 26px;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  color: var(--color-ink);
+  text-align: center;
+}
+
+.kt-features {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.kt-feature {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-cream-2);
+}
+
+.kt-feature__icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background-color: var(--color-paper);
+  align-items: center;
+  justify-content: center;
+}
+
+.kt-feature__glyph {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-meal-entree-ink);
+}
+
+.kt-feature__glyph--herb {
+  color: var(--color-herb-700);
+}
+
+.kt-feature__text {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+/* Onboarding: collection summary */
+.kt-counts {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.kt-count {
+  flex: 1;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 4px;
+  border-radius: var(--radius-md);
+}
+
+.kt-count__n {
+  font-size: 22px;
+  line-height: 24px;
+  font-weight: 700;
+}
+
+.kt-count__label {
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.kt-samples {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.kt-sample {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-ink-2);
+  background-color: var(--color-cream);
+  border-radius: 999px;
+  padding: 5px 10px;
+}
+
+.kt-sample--more {
+  background-color: var(--color-cream-2);
+  color: var(--color-ink-3);
+}
+
+.kt-note {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-cream-2);
+}
+
+.kt-note__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background-color: var(--color-paper);
+  align-items: center;
+  justify-content: center;
+}
+
+.kt-note__glyph {
+  font-size: 16px;
+}
+
+.kt-note__text {
+  flex: 1;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-ink-2);
+}
+
+.kt-note__strong {
+  font-weight: 700;
+  color: var(--color-ink);
+}
