@@ -2,7 +2,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use imkitchen_core::shopping::ToggleInput;
+use imkitchen_core::shopping::{SetCheckedInput, ToggleInput};
 use imkitchen_types::recipe::Ingredient;
 
 use crate::AppState;
@@ -154,6 +154,21 @@ pub async fn toggle(app: &AppState, user_id: &str, key: String) -> imkitchen_cor
     app.core
         .shopping
         .toggle(ToggleInput { name: key }, user_id)
+        .await?;
+    Ok(())
+}
+
+/// Set one ingredient's checked state by its [`Ingredient::key`]. Absolute,
+/// so a client that retries (an offline queue) cannot flip it back.
+pub async fn set_checked(
+    app: &AppState,
+    user_id: &str,
+    key: String,
+    checked: bool,
+) -> imkitchen_core::Result<()> {
+    app.core
+        .shopping
+        .set_checked(SetCheckedInput { name: key, checked }, user_id)
         .await?;
     Ok(())
 }

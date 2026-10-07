@@ -1,5 +1,6 @@
 use imkitchen_core::shopping::PoolRecipe;
 use imkitchen_types::recipe::{Instruction, RecipeType};
+use imkitchen_types::shopping::RecipeStatus;
 use imkitchen_web_shared::services::kitchen::{
     self, CookingScreen as CookingScreenView, Dish as DishView, IngredientAisle, KitchenList,
     ListEntry, OnboardingMenu as OnboardingMenuView, StepView,
@@ -275,6 +276,36 @@ impl Direction {
         match self {
             Direction::Next => "next",
             Direction::Prev => "prev",
+        }
+    }
+}
+
+/// Absolute cooking cursor, in the same shape as the `Status` the API
+/// returns, so a client can echo back what it read.
+#[derive(Deserialize, Debug)]
+pub struct SetStatusRequest {
+    pub status: StatusKind,
+    /// Zero-based instruction index, required while `cooking`.
+    pub step: Option<u8>,
+}
+
+#[derive(Deserialize, Debug, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
+pub enum StatusKind {
+    Idle,
+    Cooking,
+    Completed,
+}
+
+impl TryFrom<SetStatusRequest> for RecipeStatus {
+    type Error = &'static str;
+
+    fn try_from(input: SetStatusRequest) -> Result<Self, Self::Error> {
+        match (input.status, input.step) {
+            (StatusKind::Idle, _) => Ok(RecipeStatus::Idle),
+            (StatusKind::Completed, _) => Ok(RecipeStatus::Completed),
+            (StatusKind::Cooking, Some(step)) => Ok(RecipeStatus::Cooking(step)),
+            (StatusKind::Cooking, None) => Err("step is required while cooking"),
         }
     }
 }

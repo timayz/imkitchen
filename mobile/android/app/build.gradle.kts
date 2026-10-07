@@ -84,8 +84,9 @@ dependencies {
     // BEGIN SPARKLING AUTOLINK
     listOf(
         project(":sparkling-keep-awake"),
-        project(":sparkling-media"),
+        project(":sparkling-db"),
         project(":sparkling-navigation"),
+        project(":sparkling-media"),
         project(":sparkling-storage")
     ).forEach { dep -> add("implementation", dep) }
     // END SPARKLING AUTOLINK

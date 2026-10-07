@@ -1,0 +1,18 @@
+{
+  "name": "sparkling-db",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {},
+  "files": [
+    "index.ts",
+    "android/build.gradle.kts",
+    "android/src"
+  ],
+  "dependencies": {
+    "sparkling-method": "2.0.1"
+  },
+  "description": "imkitchen: SQLite document store for the offline cache and write queue",
+  "main": "index.ts",
+  "types": "index.ts",
+  "type": "module"
+}

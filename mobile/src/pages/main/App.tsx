@@ -6,7 +6,10 @@ import { setUnauthorizedHandler } from '../../lib/api/client.js'
 import { loadSession } from '../../lib/auth/session.js'
 import { t } from '../../lib/i18n/index.js'
 import { pageParams, replace } from '../../lib/nav.js'
+import { drain, pendingCount, subscribePending } from '../../lib/offline/queue.js'
+import { isOfflineNow, subscribeOffline } from '../../lib/offline/status.js'
 import { BottomTabs, type Tab } from '../../ui/BottomTabs.js'
+import { OfflineBanner } from '../../ui/OfflineBanner.js'
 import { Spinner } from '../../ui/Spinner.js'
 import groceriesIcon from '../../assets/icons/groceries.png'
 import kitchenIcon from '../../assets/icons/kitchen.png'
@@ -19,9 +22,13 @@ import { SettingsTab } from './tabs/settings/SettingsTab.js'
 
 export type TabKey = 'kitchen' | 'groceries' | 'recipes' | 'settings'
 
+/** How often to retry sending queued changes while some are waiting. */
+const DRAIN_INTERVAL_MS = 30_000
+
 /**
  * The app shell: one native container hosting the four tabs. Pushed screens
- * (recipe detail, cooking…) are separate bundles.
+ * (recipe detail, cooking…) are separate bundles. The shell also owns the
+ * offline banner and keeps draining the offline queue.
  */
 export function App() {
   const [ready, setReady] = useState(false)
@@ -29,7 +36,12 @@ export function App() {
   // Tabs refetch when selected again and when the container comes back to
   // the foreground (e.g. returning from the cooking screen).
   const [refreshKey, setRefreshKey] = useState(0)
-  const bump = () => setRefreshKey((k) => k + 1)
+  const [offline, setOffline] = useState(isOfflineNow())
+  const [pending, setPending] = useState(0)
+  const bump = () => {
+    setRefreshKey((k) => k + 1)
+    void drain()
+  }
 
   useEffect(() => {
     const emitter = lynx.getJSModule('GlobalEventEmitter')
@@ -41,6 +53,28 @@ export function App() {
       emitter.removeListener('onEnterForeground', onShow)
     }
   }, [])
+
+  // Queued changes are sent on launch, whenever the server becomes reachable
+  // again, and on a timer while any are still waiting.
+  useEffect(() => {
+    const unsubscribeOffline = subscribeOffline((next) => {
+      setOffline(next)
+      if (!next) void drain()
+    })
+    const unsubscribePending = subscribePending(setPending)
+    void pendingCount().then(setPending)
+    void drain()
+    return () => {
+      unsubscribeOffline()
+      unsubscribePending()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (pending === 0) return
+    const handle = setInterval(() => void drain(), DRAIN_INTERVAL_MS)
+    return () => clearInterval(handle)
+  }, [pending])
 
   const selectTab = (next: TabKey) => {
     if (next === tab) bump()
@@ -76,6 +110,7 @@ export function App() {
 
   return (
     <view className="screen shell">
+      {(offline || pending > 0) && <OfflineBanner pending={pending} onRetry={bump} />}
       <view className="shell__body">
         {tab === 'kitchen' && <KitchenTab refreshKey={refreshKey} onAddRecipes={() => selectTab('recipes')} />}
         {tab === 'groceries' && <GroceriesTab refreshKey={refreshKey} onAddRecipes={() => selectTab('recipes')} />}

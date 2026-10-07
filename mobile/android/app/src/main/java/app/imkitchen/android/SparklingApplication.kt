@@ -24,6 +24,11 @@ import com.tiktok.sparkling.method.storage.getItem.StorageGetItemMethod
 import com.tiktok.sparkling.method.storage.removeItem.StorageRemoveItemMethod
 import com.tiktok.sparkling.method.storage.setItem.StorageSetItemMethod
 import app.imkitchen.keepawake.KeepAwakeSetEnabledMethod
+import app.imkitchen.db.DbClearMethod
+import app.imkitchen.db.DbGetMethod
+import app.imkitchen.db.DbListMethod
+import app.imkitchen.db.DbPutMethod
+import app.imkitchen.db.DbRemoveMethod
 import com.tiktok.sparkling.method.media.choosemedia.ChooseMediaMethod
 import com.tiktok.sparkling.method.media.downloadfile.DownloadFileMethod
 import com.tiktok.sparkling.method.media.savedataurl.SaveDataURLMethod
@@ -89,6 +94,12 @@ class SparklingApplication : Application() {
         SparklingBridgeManager.registerIDLMethod(StorageRemoveItemMethod::class.java)
         // methods/keep-awake (cooking screen)
         SparklingBridgeManager.registerIDLMethod(KeepAwakeSetEnabledMethod::class.java)
+        // methods/db (SQLite document store: offline cache + write queue)
+        SparklingBridgeManager.registerIDLMethod(DbGetMethod::class.java)
+        SparklingBridgeManager.registerIDLMethod(DbPutMethod::class.java)
+        SparklingBridgeManager.registerIDLMethod(DbRemoveMethod::class.java)
+        SparklingBridgeManager.registerIDLMethod(DbListMethod::class.java)
+        SparklingBridgeManager.registerIDLMethod(DbClearMethod::class.java)
         // sparkling-media (recipe photo picker)
         SparklingBridgeManager.registerIDLMethod(ChooseMediaMethod::class.java)
         SparklingBridgeManager.registerIDLMethod(UploadImageMethod::class.java)

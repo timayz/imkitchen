@@ -5,6 +5,7 @@
   "type": "module",
   "dependencies": {
     "@lynx-js/react": "0.126.2",
+    "sparkling-db": "file:methods/db",
     "sparkling-keep-awake": "file:methods/keep-awake",
     "sparkling-media": "2.0.1",
     "sparkling-navigation": "2.0.1",

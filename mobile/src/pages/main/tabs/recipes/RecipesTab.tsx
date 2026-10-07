@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from '@lynx-js/react'
+import { useCallback, useEffect, useState } from '@lynx-js/react'
 
-import { ApiError } from '../../../../lib/api/client.js'
+import { errorMessage, isOffline } from '../../../../lib/api/client.js'
 import { type Me, me } from '../../../../lib/api/auth.js'
 import type { RecipeType } from '../../../../lib/api/recipe.js'
 import {
+  type Browse,
   type BrowseParams,
   type SortBy,
   type Summary,
@@ -15,6 +16,7 @@ import {
 import { course } from '../../../../lib/course.js'
 import { t } from '../../../../lib/i18n/index.js'
 import { push } from '../../../../lib/nav.js'
+import { useResource } from '../../../../lib/use-resource.js'
 import { Button } from '../../../../ui/Button.js'
 import { Chip } from '../../../../ui/Chip.js'
 import { RecipeCard } from '../../../../ui/RecipeCard.js'
@@ -42,91 +44,77 @@ const DEFAULT_FILTERS: Filters = {
   no_image: false,
 }
 
+function params(f: Filters, after?: string): BrowseParams {
+  return {
+    after,
+    recipe_type: f.recipe_type,
+    search: f.search.trim() || undefined,
+    sort_by: f.sort_by,
+    mine: f.mine,
+    in_meal_plan: f.in_meal_plan,
+    no_image: f.no_image,
+  }
+}
+
+/** The first page of a filter set is cached; searches are not. */
+function cacheKey(f: Filters): string | null {
+  if (f.search.trim() !== '') return null
+  return `recipes:browse:${JSON.stringify(params(f))}`
+}
+
 export function RecipesTab({ refreshKey }: { refreshKey: number }) {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS)
+  // Debounced on the search text, immediate on everything else.
+  const [applied, setApplied] = useState<Filters>(DEFAULT_FILTERS)
   // Bumped to remount the (uncontrolled) search input when filters are cleared.
   const [searchKey, setSearchKey] = useState(0)
-  const [items, setItems] = useState<Summary[]>([])
+  const first = useResource<Browse>(cacheKey(applied), () => browse(params(applied)), [applied, refreshKey])
+  const { data: user } = useResource<Me>('me', me, [])
+  // Pages after the first are network-only and reset with the first page.
+  const [extra, setExtra] = useState<Summary[]>([])
   const [cursor, setCursor] = useState<string | null>(null)
-  const [hasShared, setHasShared] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [user, setUser] = useState<Me | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [sortOpen, setSortOpen] = useState(false)
-  const generation = useRef(0)
-
-  const params = useCallback(
-    (f: Filters, after?: string): BrowseParams => ({
-      after,
-      recipe_type: f.recipe_type,
-      search: f.search.trim() || undefined,
-      sort_by: f.sort_by,
-      mine: f.mine,
-      in_meal_plan: f.in_meal_plan,
-      no_image: f.no_image,
-    }),
-    []
-  )
-
-  const load = useCallback(
-    (f: Filters) => {
-      const gen = ++generation.current
-      setLoading(true)
-      setLoadingMore(false)
-      setError(null)
-      browse(params(f))
-        .then((result) => {
-          if (gen !== generation.current) return
-          setItems(result.page.edges.map((e) => e.node))
-          setCursor(result.page.page_info.has_next_page ? result.page.page_info.end_cursor : null)
-          setHasShared(result.has_shared)
-        })
-        .catch((err: unknown) => {
-          if (gen !== generation.current) return
-          setError(err instanceof ApiError ? err.message : t('error.network'))
-        })
-        .finally(() => {
-          if (gen === generation.current) setLoading(false)
-        })
-    },
-    [params]
-  )
 
   useEffect(() => {
-    me()
-      .then(setUser)
-      .catch(() => {})
-  }, [])
-
-  // Debounced on the search text, immediate on everything else.
-  useEffect(() => {
-    const handle = setTimeout(() => load(filters), filters.search ? 300 : 0)
+    const handle = setTimeout(() => setApplied(filters), filters.search ? 300 : 0)
     return () => clearTimeout(handle)
-  }, [filters, load, refreshKey])
+  }, [filters])
+
+  const page = first.data
+  useEffect(() => {
+    setExtra([])
+    setCursor(page?.page.page_info.has_next_page ? page.page.page_info.end_cursor : null)
+  }, [page])
+
+  const items = [...(page?.page.edges.map((e) => e.node) ?? []), ...extra]
+  const hasShared = page?.has_shared ?? false
+  const loading = first.loading
+  const error = first.error ?? notice
 
   // Infinite scroll: fired by the scroll-view when the bottom comes within
-  // `lower-threshold` px, like the web's "visible" sentinel. A page fetched for
-  // a filter set that has since changed is dropped (same generation guard as
-  // `load`) so it never gets appended to the wrong list.
+  // `lower-threshold` px, like the web's "visible" sentinel. A page fetched
+  // for a filter set that has since changed is dropped so it never gets
+  // appended to the wrong list.
   const loadMore = useCallback(async () => {
     if (!cursor || loading || loadingMore) return
-    const gen = generation.current
+    const before = page
     setLoadingMore(true)
     try {
-      const result = await browse(params(filters, cursor))
-      if (gen !== generation.current) return
-      setItems((prev) => [...prev, ...result.page.edges.map((e) => e.node)])
+      const result = await browse(params(applied, cursor))
+      if (before !== page) return
+      setExtra((prev) => [...prev, ...result.page.edges.map((e) => e.node)])
       setCursor(result.page.page_info.has_next_page ? result.page.page_info.end_cursor : null)
     } catch (err) {
-      if (gen !== generation.current) return
-      setError(err instanceof ApiError ? err.message : t('error.network'))
+      // Offline: keep the cursor, the next scroll tries again.
+      if (!isOffline(err)) setNotice(errorMessage(err))
     } finally {
-      if (gen === generation.current) setLoadingMore(false)
+      setLoadingMore(false)
     }
-  }, [cursor, filters, loading, loadingMore, params])
+  }, [cursor, loading, loadingMore, page, applied])
 
   const newRecipe = useCallback(async () => {
     if (busy) return
@@ -136,7 +124,7 @@ export function RecipesTab({ refreshKey }: { refreshKey: number }) {
       setAddOpen(false)
       await push('recipe-edit', { id })
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('error.network'))
+      setNotice(errorMessage(err))
     } finally {
       setBusy(false)
     }
@@ -153,14 +141,13 @@ export function RecipesTab({ refreshKey }: { refreshKey: number }) {
     try {
       if (hasShared) await unshareAll()
       else await shareAll()
-      setHasShared(!hasShared)
-      load(filters)
+      first.refresh()
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('error.network'))
+      setNotice(errorMessage(err))
     } finally {
       setBusy(false)
     }
-  }, [busy, filters, hasShared, load])
+  }, [busy, hasShared, first.refresh])
 
   const set = (patch: Partial<Filters>) => setFilters((f) => ({ ...f, ...patch }))
   const clear = () => {

@@ -1,0 +1,38 @@
+{
+  "name": "sparkling-db",
+  "platforms": ["android"],
+  "version": "1.0.0",
+  "description": "SQLite document store (offline cache and write queue)",
+  "methods": {
+    "get": {
+      "description": "Read one document",
+      "parameters": { "collection": "string", "key": "string" },
+      "returns": { "value": "string" }
+    },
+    "put": {
+      "description": "Write one document (upsert)",
+      "parameters": { "collection": "string", "key": "string", "value": "string" },
+      "returns": { "ok": "boolean" }
+    },
+    "remove": {
+      "description": "Delete one document",
+      "parameters": { "collection": "string", "key": "string" },
+      "returns": { "ok": "boolean" }
+    },
+    "list": {
+      "description": "List the documents of a collection, ordered by key",
+      "parameters": { "collection": "string", "prefix": "string" },
+      "returns": { "json": "string" }
+    },
+    "clear": {
+      "description": "Delete a collection, or everything",
+      "parameters": { "collection": "string" },
+      "returns": { "ok": "boolean" }
+    }
+  },
+  "android": {
+    "packageName": "app.imkitchen.db",
+    "className": "DbGetMethod",
+    "buildGradle": "android/build.gradle.kts"
+  }
+}

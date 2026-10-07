@@ -2,86 +2,89 @@ import { useCallback, useEffect, useRef, useState } from '@lynx-js/react'
 
 import '../../styles/base.css'
 import './App.css'
-import { ApiError } from '../../lib/api/client.js'
-import { type CookingScreen, getCooking, step } from '../../lib/api/kitchen.js'
+import { type CookingScreen, getCooking } from '../../lib/api/kitchen.js'
+import { nextStatus } from '../../lib/cooking.js'
 import { aisle, course } from '../../lib/course.js'
 import { t } from '../../lib/i18n/index.js'
 import { setKeepAwake } from '../../lib/keep-awake.js'
 import { back, openExternal, pageParams } from '../../lib/nav.js'
+import { enqueue } from '../../lib/offline/queue.js'
+import { useResource } from '../../lib/use-resource.js'
 import { Button } from '../../ui/Button.js'
+import { OfflineBanner } from '../../ui/OfflineBanner.js'
 import { Spinner } from '../../ui/Spinner.js'
-
-type State =
-  | { kind: 'loading' }
-  | { kind: 'error'; message: string }
-  | { kind: 'ready'; screen: CookingScreen }
 
 /**
  * Cooking mode: the ingredient list first, then one instruction per step with
  * an optional timer. Its own native container (`cooking.lynx.bundle?id=…`),
  * so the back gesture returns to the kitchen and the screen stays awake only
- * while it is up.
+ * while it is up. The screen is cached locally and steps go through the
+ * offline queue, so cooking keeps working without a connection.
  */
 export function App() {
   const id = pageParams().id ?? ''
-  const [state, setState] = useState<State>({ kind: 'loading' })
-  const [busy, setBusy] = useState(false)
+  const {
+    data: screen,
+    stale,
+    offline,
+    error,
+    refresh,
+  } = useResource<CookingScreen>(id ? `cooking:${id}` : null, () => getCooking(id), [id])
   const [checked, setChecked] = useState<Record<string, boolean>>({})
-
-  const fail = (err: unknown) =>
-    setState({ kind: 'error', message: err instanceof ApiError ? err.message : t('error.network') })
+  const redirected = useRef(false)
+  const moving = useRef(false)
 
   useEffect(() => {
     setKeepAwake(true)
-    getCooking(id)
-      .then((screen) => {
-        if (screen.external_url && !screen.origin_embeddable) {
-          openExternal(screen.external_url)
-          back()
-          return
-        }
-        setState({ kind: 'ready', screen })
-      })
-      .catch(fail)
     return () => setKeepAwake(false)
-  }, [id])
+  }, [])
+
+  // Nothing to show in-app: open the original instead. Only on fresh data, so
+  // an offline launch never bounces out to the browser.
+  useEffect(() => {
+    if (!screen || stale || redirected.current) return
+    if (screen.external_url && !screen.origin_embeddable) {
+      redirected.current = true
+      openExternal(screen.external_url)
+      back()
+    }
+  }, [screen, stale])
 
   const move = useCallback(
-    async (direction: 'next' | 'prev') => {
-      if (busy) return
-      setBusy(true)
-      try {
-        const screen = await step(id, direction)
-        setState({ kind: 'ready', screen })
-      } catch (err) {
-        fail(err)
-      } finally {
-        setBusy(false)
-      }
+    (direction: 'next' | 'prev') => {
+      if (!screen || moving.current) return
+      moving.current = true
+      const status = nextStatus(direction, screen.status, screen.recipe.instructions.length)
+      // The queue patches the cached screen (re-rendering it) and sends the
+      // absolute status when the server is reachable.
+      void enqueue({ kind: 'status', id, status }).finally(() => {
+        moving.current = false
+      })
     },
-    [busy, id],
+    [screen, id]
   )
 
-  if (state.kind === 'loading') {
+  if (!screen) {
+    if (error) {
+      return (
+        <view className="screen cook cook--center">
+          <view className="card">
+            <text className="error">{error}</text>
+            <Button label={t('common.retry')} onTap={refresh} variant="secondary" />
+            <Button label={t('common.close')} onTap={back} variant="ghost" />
+          </view>
+        </view>
+      )
+    }
     return (
       <view className="screen cook cook--center">
         <Spinner size="lg" />
       </view>
     )
   }
-  if (state.kind === 'error') {
-    return (
-      <view className="screen cook cook--center">
-        <view className="card">
-          <text className="error">{state.message}</text>
-          <Button label={t('common.close')} onTap={back} variant="secondary" />
-        </view>
-      </view>
-    )
-  }
 
-  const { screen } = state
   const { recipe } = screen
+
   const c = course(recipe.recipe_type)
   const current = screen.steps.current
   const total = recipe.instructions.length
@@ -103,6 +106,7 @@ export function App() {
         </view>
         <view className="cook__spacer" />
       </view>
+      {offline && <OfflineBanner onRetry={refresh} />}
 
       {screen.origin_embeddable && recipe.origin ? (
         <webview
