@@ -365,6 +365,32 @@
   text-align: center;
 }
 
+/* Onboarding: pagination dots under the welcome card, and the "ways to add" rows */
+.kt-dots {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.kt-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--color-line);
+}
+
+.kt-dot--on {
+  width: 24px;
+  background-color: var(--color-primary-500);
+}
+
+.kt-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 /* Onboarding: collection summary */
 .kt-counts {
   display: flex;

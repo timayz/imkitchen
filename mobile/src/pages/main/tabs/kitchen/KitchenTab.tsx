@@ -11,6 +11,7 @@ import {
   getKitchen,
 } from '../../../../lib/api/kitchen.js'
 import type { Recipe, RecipeType, Status } from '../../../../lib/api/recipe.js'
+import { createDraft } from '../../../../lib/api/recipes.js'
 import { readDoc, revalidate, writeDoc } from '../../../../lib/cache.js'
 import { course, minutes } from '../../../../lib/course.js'
 import { t } from '../../../../lib/i18n/index.js'
@@ -18,6 +19,7 @@ import { openExternal, push } from '../../../../lib/nav.js'
 import { enqueue } from '../../../../lib/offline/queue.js'
 import { useResource } from '../../../../lib/use-resource.js'
 import { Button } from '../../../../ui/Button.js'
+import { OptionRow } from '../../../../ui/OptionRow.js'
 import { Sheet } from '../../../../ui/Sheet.js'
 import { Spinner } from '../../../../ui/Spinner.js'
 import { GenerateSheet } from './GenerateSheet.js'
@@ -64,6 +66,25 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
   const onRemove = useCallback((id: string) => {
     setNotice(null)
     void enqueue({ kind: 'list', id, in_list: false })
+  }, [])
+
+  // Onboarding shortcuts: the same actions as the Recipes tab's + button.
+  const onWrite = useCallback(async () => {
+    if (busy) return
+    setBusy(true)
+    setNotice(null)
+    try {
+      const { id } = await createDraft()
+      await push('recipe-edit', { id })
+    } catch (err) {
+      setNotice(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }, [busy])
+
+  const onImport = useCallback(() => {
+    void push('recipe-import')
   }, [])
 
   const onFocus = useCallback(async (id: string) => {
@@ -122,13 +143,46 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
     return (
       <scroll-view className="tab-scroll" scroll-orientation="vertical">
         <view className="content">
+          {notice && <text className="error">{notice}</text>}
+          <view className="kt-header__text">
+            <text className="h1">{t('kitchen.hi_chef')}</text>
+            <text className="muted">{t('kitchen.step_add_recipe')}</text>
+          </view>
           <view className="card kt-empty">
             <view className="kt-empty__art">
               <text className="kt-empty__emoji">👨‍🍳</text>
             </view>
             <text className="kt-empty__title">{t('kitchen.onboarding_recipe_title')}</text>
             <text className="body kt-center">{t('kitchen.onboarding_recipe_hint')}</text>
-            <Button label={t('kitchen.add_recipes')} onTap={onAddRecipes} variant="ink" block />
+            <Button label={t('kitchen.add_first_recipe')} onTap={onAddRecipes} variant="ink" block />
+            <view className="kt-dots">
+              <view className="kt-dot kt-dot--on" />
+              <view className="kt-dot" />
+            </view>
+          </view>
+          <text className="kt-eyebrow">{t('kitchen.three_ways')}</text>
+          <view className="kt-options">
+            <OptionRow
+              emoji="✍️"
+              tint="#d8ebdb"
+              title={t('recipes.new')}
+              hint={t('recipes.new_hint')}
+              onTap={busy ? undefined : onWrite}
+            />
+            <OptionRow
+              emoji="🔗"
+              tint="#dde9f5"
+              title={t('recipes.import_link')}
+              hint={t('recipes.import_hint')}
+              onTap={onImport}
+            />
+            <OptionRow
+              emoji="👥"
+              tint="#fde3cf"
+              title={t('kitchen.browse_community')}
+              hint={t('kitchen.browse_community_hint')}
+              onTap={onAddRecipes}
+            />
           </view>
         </view>
       </scroll-view>
