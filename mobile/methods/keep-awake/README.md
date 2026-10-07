@@ -7,6 +7,9 @@ Kotlin method are hand-written against the generated `AbsSetEnabledMethodIDL`.
 
 - Android: `KeepAwakeSetEnabledMethod` toggles `FLAG_KEEP_SCREEN_ON` on the
   top Sparkling activity. Registered in `SparklingApplication.kt`.
-- iOS: not implemented yet (`isIdleTimerDisabled`); the app ignores failures.
+- iOS: `KeepAwakeSetEnabledMethod` (`ios/Sources`) toggles the process-wide
+  `UIApplication.isIdleTimerDisabled`; the cooking screen turns it back off
+  when it unmounts. Auto-registered (direct `PipeMethod` subclass); pod
+  `ios/Sparkling-KeepAwake.podspec`. Built by the `Mobile` workflow only.
 
 Linked into the app with `npm install ./methods/keep-awake` + `npm run autolink`.

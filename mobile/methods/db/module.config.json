@@ -1,6 +1,6 @@
 {
   "name": "sparkling-db",
-  "platforms": ["android"],
+  "platforms": ["android", "ios"],
   "version": "1.0.0",
   "description": "SQLite document store (offline cache and write queue)",
   "methods": {
@@ -34,5 +34,11 @@
     "packageName": "app.imkitchen.db",
     "className": "DbGetMethod",
     "buildGradle": "android/build.gradle.kts"
+  },
+  "ios": {
+    "moduleName": "Db",
+    "className": "DbGetMethod",
+    "podspecPath": "ios/Sparkling-Db.podspec",
+    "swiftVersion": "5.0"
   }
 }
