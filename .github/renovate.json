@@ -11,6 +11,13 @@
       ],
       "groupName": "all non-major",
       "groupSlug": "all-minor-patch"
+    },
+    {
+      "description": "Sparkling publishes -test.N builds to Maven Central; they are prereleases, not releases",
+      "matchPackagePatterns": [
+        "^com\\.tiktok\\.sparkling"
+      ],
+      "allowedVersions": "!/-test\\./"
     }
   ]
 }
