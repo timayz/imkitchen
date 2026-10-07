@@ -41,10 +41,10 @@ gradle.settingsEvaluated {
 
 // BEGIN SPARKLING AUTOLINK
 val sparklingAutolinkProjects = listOf<Pair<String, java.io.File>>(
-  "sparkling-keep-awake" to file("../node_modules/sparkling-keep-awake/android"),
   "sparkling-db" to file("../node_modules/sparkling-db/android"),
-  "sparkling-navigation" to file("../node_modules/sparkling-navigation/android"),
+  "sparkling-keep-awake" to file("../node_modules/sparkling-keep-awake/android"),
   "sparkling-media" to file("../node_modules/sparkling-media/android"),
+  "sparkling-navigation" to file("../node_modules/sparkling-navigation/android"),
   "sparkling-storage" to file("../node_modules/sparkling-storage/android")
 )
 sparklingAutolinkProjects.forEach { (name, dir) ->
