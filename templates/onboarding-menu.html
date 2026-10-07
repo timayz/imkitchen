@@ -11,7 +11,7 @@
 
   {# ── Emoji meal-flow header ──────────────────────────────────────── #}
   <div class="flex items-center justify-center gap-2.5 pt-2 pb-1">
-    <span class="w-11 h-11 rounded-xl bg-meal-main-soft flex items-center justify-center text-xl -rotate-6 shadow-sm">📅</span>
+    <span class="w-11 h-11 rounded-xl bg-meal-main-soft flex items-center justify-center text-xl -rotate-6 shadow-sm">📖</span>
     <svg class="w-3.5 h-3.5 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
     <span class="w-11 h-11 rounded-xl bg-meal-side-soft flex items-center justify-center text-xl shadow-sm">🍽️</span>
     <svg class="w-3.5 h-3.5 text-ink-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
@@ -178,6 +178,10 @@
   <p class="text-[11.5px] text-ink-3 text-center mt-2">
     {{ "Takes about 2 seconds · Edit or regenerate any time"|t }}
   </p>
+  <a href="/recipes"
+    class="flex items-center justify-center gap-2 w-full px-5 py-3 mt-2.5 bg-paper border border-line text-ink rounded-xl text-sm font-semibold hover:bg-cream-2 transition">
+    ➕ {{ "Add recipes by hand"|t }}
+  </a>
 
   {# ── Tip card ─────────────────────────────────────────────────── #}
   <div class="mt-5 p-3.5 rounded-2xl bg-yellow-50 border border-yellow-100 flex gap-3">
