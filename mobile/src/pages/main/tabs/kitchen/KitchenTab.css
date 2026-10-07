@@ -14,6 +14,15 @@
   gap: 6px;
 }
 
+/* Title + hint stacked at the top of the onboarding screens. Not
+   .kt-header__text: its flex: 1 is for the header row and collapses the
+   block to nothing inside the page column. */
+.kt-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .kt-regen {
   width: 44px;
   height: 44px;
@@ -363,6 +372,32 @@
   letter-spacing: -0.5px;
   color: var(--color-ink);
   text-align: center;
+}
+
+/* Onboarding: pagination dots under the welcome card, and the "ways to add" rows */
+.kt-dots {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.kt-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--color-line);
+}
+
+.kt-dot--on {
+  width: 24px;
+  background-color: var(--color-primary-500);
+}
+
+.kt-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* Onboarding: collection summary */
