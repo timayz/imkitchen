@@ -84,12 +84,10 @@ async fn empty_list_has_no_aisles() -> anyhow::Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-async fn groceries_group_by_aisle_and_toggle() -> anyhow::Result<()> {
-    let app = TestApp::with_recipes().await?;
-    let (token, user_id) = sign_in(&app).await?;
-
-    let id = app.state.core.recipe.create(&user_id, None).await?;
+/// An omelette (3 ingredients, 2 aisles) added to the user's list through the
+/// real commands.
+async fn add_omelette(app: &TestApp, user_id: &str) -> anyhow::Result<()> {
+    let id = app.state.core.recipe.create(user_id, None).await?;
     app.state
         .core
         .recipe
@@ -131,14 +129,14 @@ async fn groceries_group_by_aisle_and_toggle() -> anyhow::Result<()> {
                 accepts_accompaniment: false,
                 advance_prep: String::new(),
             },
-            &user_id,
+            user_id,
         )
         .await?;
     let household = app
         .state
         .identity
         .meal_preferences
-        .load(&user_id)
+        .load(user_id)
         .await?
         .household_size;
     // The recipe projections are async: retry until they have caught up.
@@ -146,20 +144,32 @@ async fn groceries_group_by_aisle_and_toggle() -> anyhow::Result<()> {
         app.state
             .core
             .shopping
-            .add_recipe(&id, household, &user_id)
+            .add_recipe(&id, household, user_id)
             .await
             .ok()
     })
     .await;
+    Ok(())
+}
 
-    // Ingredients are projected into the shopping aggregate asynchronously.
-    let body = wait_until(|| async {
-        let (_, body) = call(&app, &token, "GET", "/api/v1/groceries", None)
+/// The groceries once the shopping aggregate has picked up the omelette.
+async fn groceries(app: &TestApp, token: &str) -> Value {
+    wait_until(|| async {
+        let (_, body) = call(app, token, "GET", "/api/v1/groceries", None)
             .await
             .ok()?;
         (body["total_items"] == 3).then_some(body)
     })
-    .await;
+    .await
+}
+
+#[tokio::test]
+async fn groceries_group_by_aisle_and_toggle() -> anyhow::Result<()> {
+    let app = TestApp::with_recipes().await?;
+    let (token, user_id) = sign_in(&app).await?;
+    add_omelette(&app, &user_id).await?;
+
+    let body = groceries(&app, &token).await;
     assert_eq!(body["recipe_count"], 1);
     assert_eq!(body["checked_items"], 0);
     let aisles = body["aisles"].as_array().unwrap();
@@ -216,6 +226,90 @@ async fn groceries_group_by_aisle_and_toggle() -> anyhow::Result<()> {
     .await?;
     let (_, body) = call(&app, &token, "GET", "/api/v1/groceries", None).await?;
     assert_eq!(body["checked_items"], 0);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn check_is_absolute_and_idempotent() -> anyhow::Result<()> {
+    let app = TestApp::with_recipes().await?;
+    let (token, user_id) = sign_in(&app).await?;
+    add_omelette(&app, &user_id).await?;
+
+    let body = groceries(&app, &token).await;
+    let key = body["aisles"][0]["items"][0]["key"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let check = |checked: bool| {
+        let app = &app;
+        let token = &token;
+        let key = key.clone();
+        async move {
+            call(
+                app,
+                token,
+                "PUT",
+                "/api/v1/groceries/check",
+                Some(json!({ "key": key, "checked": checked })),
+            )
+            .await
+        }
+    };
+
+    // The ingredient table behind the aggregate is projected asynchronously:
+    // retry until the check is accepted.
+    wait_until(|| async {
+        let (status, _) = check(true).await.ok()?;
+        (status == StatusCode::NO_CONTENT).then_some(())
+    })
+    .await;
+    // Replaying the same change (an offline queue retrying) keeps it checked.
+    let (status, _) = check(true).await?;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, body) = call(&app, &token, "GET", "/api/v1/groceries", None).await?;
+    assert_eq!(body["checked_items"], 1);
+
+    let (status, _) = check(false).await?;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, _) = check(false).await?;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, body) = call(&app, &token, "GET", "/api/v1/groceries", None).await?;
+    assert_eq!(body["checked_items"], 0);
+
+    // The toggle still flips.
+    let (status, _) = call(
+        &app,
+        &token,
+        "POST",
+        "/api/v1/groceries/toggle",
+        Some(json!({ "key": key.clone() })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, body) = call(&app, &token, "GET", "/api/v1/groceries", None).await?;
+    assert_eq!(body["checked_items"], 1);
+
+    let (status, body) = call(
+        &app,
+        &token,
+        "PUT",
+        "/api/v1/groceries/check",
+        Some(json!({ "key": "nope-", "checked": true })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(body["error"]["code"], "user");
+
+    let (status, _) = call(
+        &app,
+        &token,
+        "PUT",
+        "/api/v1/groceries/check",
+        Some(json!({ "key": key })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
 
     Ok(())
 }

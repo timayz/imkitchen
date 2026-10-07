@@ -1,4 +1,5 @@
 mod add;
+mod check;
 mod generate;
 mod merge;
 mod pick;
@@ -8,6 +9,7 @@ mod status;
 mod toogle;
 
 use bitcode::{Decode, Encode};
+pub use check::SetCheckedInput;
 pub use generate::GenerateList;
 pub use pick::{PoolRecipe, Randomize};
 pub use state::ShoppingState;

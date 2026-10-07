@@ -337,3 +337,98 @@ async fn generate_fills_the_list_from_the_pool() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn status_is_set_absolutely() -> anyhow::Result<()> {
+    let app = TestApp::with_recipes().await?;
+    let session = sign_in(&app).await?;
+    let recipe_id = create_recipe(&app, &session.user_id).await?;
+    let household = app
+        .state
+        .identity
+        .meal_preferences
+        .load(&session.user_id)
+        .await?
+        .household_size;
+    wait_until(|| async {
+        app.state
+            .core
+            .shopping
+            .add_recipe(&recipe_id, household, &session.user_id)
+            .await
+            .ok()
+    })
+    .await;
+    wait_until(|| async {
+        let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None)
+            .await
+            .ok()?;
+        (body["kind"] == "list" && body["entries"].as_array()?.len() == 1).then_some(())
+    })
+    .await;
+
+    let set = |body: Value| {
+        let app = &app;
+        let session = &session;
+        let recipe_id = recipe_id.clone();
+        async move {
+            call(
+                app,
+                session,
+                "PUT",
+                &format!("/api/v1/kitchen/recipes/{recipe_id}/status"),
+                Some(body),
+            )
+            .await
+        }
+    };
+
+    // Jump straight to the second step; replaying it changes nothing.
+    let (status, body) = set(json!({ "status": "cooking", "step": 1 })).await?;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(body["status"], json!({ "status": "cooking", "step": 1 }));
+    assert_eq!(body["steps"]["current"]["index"], 1);
+    assert_eq!(body["show_ingredients"], false);
+    let (status, again) = set(json!({ "status": "cooking", "step": 1 })).await?;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(again, body);
+
+    let (_, body) = set(json!({ "status": "completed" })).await?;
+    assert_eq!(
+        body["status"],
+        json!({ "status": "completed", "step": null })
+    );
+    assert_eq!(body["steps"]["current"]["index"], 2);
+    assert!(body["steps"]["coming"].as_array().unwrap().is_empty());
+
+    // The kitchen reflects it (the aggregate is read synchronously).
+    let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
+    assert_eq!(body["completed_count"], 1);
+
+    let (_, body) = set(json!({ "status": "idle" })).await?;
+    assert_eq!(body["status"]["status"], "idle");
+    assert_eq!(body["show_ingredients"], true);
+
+    let (status, body) = set(json!({ "status": "cooking", "step": 99 })).await?;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(body["error"]["code"], "user");
+
+    let (status, body) = set(json!({ "status": "cooking" })).await?;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(body["error"]["code"], "validation");
+
+    let (status, _) = set(json!({ "status": "sideways" })).await?;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    let (status, _) = call(
+        &app,
+        &session,
+        "PUT",
+        "/api/v1/kitchen/recipes/01UNKNOWN/status",
+        Some(json!({ "status": "idle" })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    Ok(())
+}
