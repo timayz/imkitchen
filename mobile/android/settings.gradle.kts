@@ -27,6 +27,18 @@ include(":app")
 include(":sparkling-method")
 project(":sparkling-method").projectDir = file("sparkling-method")
 
+// The published method packages still ship AGP 7 / Kotlin 1.8 build scripts
+// (`kotlinOptions`, compileSdk 34, the Kotlin Gradle plugin that AGP 9's DSL
+// rejects). Keep their sources in node_modules but build them with the
+// scripts under methods/<name>/, which read the sources from there.
+// `sparkling autolink` re-appends its block at the end of this file on every
+// run, so the override is applied once the whole script has been evaluated.
+gradle.settingsEvaluated {
+    listOf("sparkling-media", "sparkling-navigation", "sparkling-storage").forEach { name ->
+        project(":$name").projectDir = file("methods/$name")
+    }
+}
+
 // BEGIN SPARKLING AUTOLINK
 val sparklingAutolinkProjects = listOf<Pair<String, java.io.File>>(
   "sparkling-keep-awake" to file("../node_modules/sparkling-keep-awake/android"),
@@ -39,11 +51,3 @@ sparklingAutolinkProjects.forEach { (name, dir) ->
     project(":$name").projectDir = dir
 }
 // END SPARKLING AUTOLINK
-
-// The published method packages still ship AGP 7 / Kotlin 1.8 build scripts
-// (`kotlinOptions`, compileSdk 34, the Kotlin Gradle plugin that AGP 9's DSL
-// rejects). Keep their sources in node_modules but build them with the
-// scripts under methods/<name>/, which read the sources from there.
-listOf("sparkling-media", "sparkling-navigation", "sparkling-storage").forEach { name ->
-    project(":$name").projectDir = file("methods/$name")
-}
