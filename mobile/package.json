@@ -17,7 +17,7 @@
     "@lynx-js/rspeedy": "0.18.0",
     "@lynx-js/types": "3.9.0",
     "@rsbuild/core": "2.2.12",
-    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/jest-dom": "7.0.1",
     "@types/react": "18.3.31",
     "@vitest/coverage-v8": "4.1.11",
     "jsdom": "28.1.0",
