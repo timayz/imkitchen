@@ -60,9 +60,9 @@ android {
         androidTestImplementation(libs.androidx.junit)
         androidTestImplementation(libs.androidx.espresso.core)
 
-        implementation("com.tiktok.sparkling:sparkling:2.0.1")
-        implementation("com.tiktok.sparkling:sparkling-method:2.0.1")
-        implementation("com.squareup.okhttp3:okhttp:4.9.0")
+        implementation("com.tiktok.sparkling:sparkling:2.1.0-test.1")
+        implementation("com.tiktok.sparkling:sparkling-method:2.1.0-test.1")
+        implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
         implementation(libs.fresco)
         implementation(libs.fresco.animated.gif)

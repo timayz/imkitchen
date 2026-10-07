@@ -21,6 +21,6 @@ android {
 }
 
 dependencies {
-    implementation("com.tiktok.sparkling:sparkling:2.0.1")
-    implementation("com.tiktok.sparkling:sparkling-method:2.0.1")
+    implementation("com.tiktok.sparkling:sparkling:2.1.0-test.1")
+    implementation("com.tiktok.sparkling:sparkling-method:2.1.0-test.1")
 }
