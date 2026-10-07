@@ -33,6 +33,7 @@ event imkitchen-types/Favorite::Saved { recipe_id: String, recipe_owner: String 
 event imkitchen-types/Favorite::Unsaved { recipe_id: String }
 event imkitchen-types/MealPlan::DaysGenerated { start: u64, slots: Vec<Slot>, household_size: u16 }
 event imkitchen-types/MealPlan::SlotRecipeStatusChanged { date: u64, recipe_id: String, status: DaySlotStatus }
+event imkitchen-types/MealPreferences::AisleOrderChanged { aisles: Vec<IngredientCategory> }
 event imkitchen-types/MealPreferences::Changed { household_size: u16, dietary_restrictions: Vec<DietaryRestriction>, cuisine_variety_weight: f32 }
 event imkitchen-types/MealPreferences::RecipeTypesChanged { recipe_types: Vec<RecipeType> }
 event imkitchen-types/Recipe::AdvancePrepChanged { advance_prep: String }
@@ -86,6 +87,6 @@ view imkitchen-core/recipe/RecipeShareState rev=1 { id: String, cursor: String, 
 view imkitchen-core/recipe/favorite/Favorite rev=1 { id: String, saved: bool, cursor: String, aggregate_version: u16 }
 view imkitchen-core/shopping/Shopping rev=3 { user_id: String, checked: HashSet<String>, ingredients: HashSet<String>, recipes: Vec<String>, statuses: HashMap<String, RecipeStatus>, generated_at: u64, cursor: String, aggregate_version: u16 }
 view imkitchen-identity/User rev=3 { id: String, role: Role, state: State, ad_consent: bool, deleted: bool, cursor: String, aggregate_version: u16 } with State enum { Active, Suspended }
-view imkitchen-identity/meal_preferences/MealPreferences rev=2 { id: String, household_size: u16, dietary_restrictions: Vec<DietaryRestriction>, cuisine_variety_weight: f32, recipe_types: Vec<RecipeType>, cursor: String, aggregate_version: u16 }
+view imkitchen-identity/meal_preferences/MealPreferences rev=3 { id: String, household_size: u16, dietary_restrictions: Vec<DietaryRestriction>, cuisine_variety_weight: f32, recipe_types: Vec<RecipeType>, aisle_order: Vec<IngredientCategory>, cursor: String, aggregate_version: u16 }
 view imkitchen-identity/password/Password rev=1 { id: String, user_id: String, completed: bool, expire_at: u64, cursor: String, aggregate_version: u16 }
 view imkitchen-identity/user_profile/UserProfile rev=1 { id: String, description: String, cursor: String, aggregate_version: u16 }

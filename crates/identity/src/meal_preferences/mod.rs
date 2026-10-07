@@ -1,3 +1,4 @@
+mod set_aisle_order;
 mod update;
 
 use bitcode::{Decode, Encode};
@@ -5,8 +6,8 @@ use std::ops::Deref;
 pub use update::*;
 
 use evento::{Executor, Projection, metadata::Event};
-use imkitchen_types::meal_preferences::{self, Changed, RecipeTypesChanged};
-use imkitchen_types::recipe::{DietaryRestriction, RecipeType};
+use imkitchen_types::meal_preferences::{self, AisleOrderChanged, Changed, RecipeTypesChanged};
+use imkitchen_types::recipe::{DietaryRestriction, IngredientCategory, RecipeType};
 
 #[derive(Clone)]
 pub struct Module<E: Executor>(pub(crate) imkitchen_core::State<E>);
@@ -27,16 +28,24 @@ impl<E: Executor> Module<E> {
             .load(&id)
             .execute(&self.executor)
             .await
-            .map(|r| {
-                r.unwrap_or_else(|| MealPreferences {
+            .map(|r| match r {
+                Some(mut row) => {
+                    // Rows rebuilt from streams older than `aisle_order` hold an
+                    // empty vec, and a stored order predates any variant added
+                    // since: always hand out every aisle.
+                    row.aisle_order = IngredientCategory::complete_aisle_order(&row.aisle_order);
+                    row
+                }
+                None => MealPreferences {
                     id,
                     household_size: 4,
                     dietary_restrictions: vec![],
                     cuisine_variety_weight: 1.0,
                     recipe_types: RecipeType::default_meal_plan_types(),
+                    aisle_order: IngredientCategory::DEFAULT_AISLE_ORDER.to_vec(),
                     cursor: Default::default(),
                     aggregate_version: Default::default(),
-                })
+                },
             })
     }
 }
@@ -52,6 +61,7 @@ pub struct MealPreferences {
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub cuisine_variety_weight: f32,
     pub recipe_types: Vec<RecipeType>,
+    pub aisle_order: Vec<IngredientCategory>,
 }
 
 fn create_projection<E: Executor>() -> Projection<E, MealPreferences> {
@@ -61,9 +71,11 @@ fn create_projection<E: Executor>() -> Projection<E, MealPreferences> {
         // events rather than failing to bitcode-decode into the new struct shape.
         // 1 → 2: evento's `#[projection]` macro grew the `aggregate_version`
         // field, changing the bitcode layout again.
-        .revision(2)
+        // 2 → 3: `aisle_order` added.
+        .revision(3)
         .handler(handle_updated())
         .handler(handle_recipe_types_changed())
+        .handler(handle_aisle_order_changed())
         .strict()
 }
 
@@ -85,6 +97,11 @@ async fn handle_updated(event: Event<Changed>, data: &mut MealPreferences) -> an
     // `RecipeTypesChanged` right after `Changed` — higher version, same
     // timestamp, so replayed second — and the user's real selection wins.
     data.recipe_types = RecipeType::default_meal_plan_types();
+    // Unlike `recipe_types`, nothing re-commits the aisle order on each save:
+    // only seed it, never reset a custom one on replay.
+    if data.aisle_order.is_empty() {
+        data.aisle_order = IngredientCategory::DEFAULT_AISLE_ORDER.to_vec();
+    }
 
     Ok(())
 }
@@ -96,6 +113,17 @@ async fn handle_recipe_types_changed(
 ) -> anyhow::Result<()> {
     data.id = event.aggregate_id.to_owned();
     data.recipe_types = event.data.recipe_types;
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_aisle_order_changed(
+    event: Event<AisleOrderChanged>,
+    data: &mut MealPreferences,
+) -> anyhow::Result<()> {
+    data.id = event.aggregate_id.to_owned();
+    data.aisle_order = event.data.aisles;
 
     Ok(())
 }

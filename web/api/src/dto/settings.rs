@@ -1,5 +1,5 @@
 use imkitchen_identity::login::Login;
-use imkitchen_types::recipe::{DietaryRestriction, RecipeType};
+use imkitchen_types::recipe::{DietaryRestriction, IngredientCategory, RecipeType};
 use imkitchen_web_shared::services::settings::General as GeneralView;
 use serde::{Deserialize, Serialize};
 
@@ -13,6 +13,8 @@ pub struct General {
     pub recipe_types: Vec<RecipeType>,
     /// 0.1 – 1.0
     pub cuisine_variety_weight: f32,
+    /// Every aisle, in the order the groceries list shows them.
+    pub aisle_order: Vec<IngredientCategory>,
 }
 
 impl From<GeneralView> for General {
@@ -24,8 +26,16 @@ impl From<GeneralView> for General {
             dietary_restrictions: g.preferences.dietary_restrictions,
             recipe_types: g.preferences.recipe_types,
             cuisine_variety_weight: g.preferences.cuisine_variety_weight,
+            aisle_order: g.preferences.aisle_order,
         }
     }
+}
+
+/// A partial or repeated list is fine: the server completes it.
+#[derive(Deserialize, Debug)]
+pub struct AisleOrderRequest {
+    #[serde(default)]
+    pub aisles: Vec<IngredientCategory>,
 }
 
 #[derive(Deserialize, Debug)]

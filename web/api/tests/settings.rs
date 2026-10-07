@@ -76,6 +76,9 @@ async fn general_settings_round_trip() -> anyhow::Result<()> {
     assert_eq!(body["email"], "chef@imkitchen.test");
     assert_eq!(body["household_size"], 4);
     assert_eq!(body["description"], "");
+    let aisles = body["aisle_order"].as_array().unwrap();
+    assert_eq!(aisles.len(), 9);
+    assert_eq!(aisles[0], "FruitsAndVegetables");
 
     let (status, _) = call(
         &app,
@@ -108,6 +111,38 @@ async fn general_settings_round_trip() -> anyhow::Result<()> {
     assert_eq!(body["dietary_restrictions"], json!(["Vegan"]));
     assert_eq!(body["recipe_types"], json!(["Dessert"]));
     assert_eq!(body["description"], "Home cook.");
+
+    // The aisle order is its own call; a partial, repeated list is completed.
+    let (status, _) = call(
+        &app,
+        &token,
+        ua,
+        "PUT",
+        "/api/v1/settings/aisles",
+        Some(json!({ "aisles": ["Bakery", "Bakery", "Frozen"] })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, body) = call(&app, &token, ua, "GET", "/api/v1/settings/general", None).await?;
+    let aisles = body["aisle_order"].as_array().unwrap();
+    assert_eq!(aisles.len(), 9);
+    assert_eq!(aisles[0], "Bakery");
+    assert_eq!(aisles[1], "Frozen");
+    assert_eq!(aisles[2], "FruitsAndVegetables");
+    // The other preferences are untouched by it.
+    assert_eq!(body["household_size"], 2);
+
+    // An unknown aisle is rejected.
+    let (status, body) = call(
+        &app,
+        &token,
+        ua,
+        "PUT",
+        "/api/v1/settings/aisles",
+        Some(json!({ "aisles": ["Nope"] })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
 
     // Out-of-range weight is rejected with the envelope.
     let (status, body) = call(

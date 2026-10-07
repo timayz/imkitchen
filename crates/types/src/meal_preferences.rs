@@ -1,4 +1,4 @@
-use crate::recipe::{DietaryRestriction, RecipeType};
+use crate::recipe::{DietaryRestriction, IngredientCategory, RecipeType};
 
 #[evento::aggregate]
 pub enum MealPreferences {
@@ -13,4 +13,8 @@ pub enum MealPreferences {
     /// schema-evolving, so extending `Changed` would break decoding of every
     /// event already in the log.
     RecipeTypesChanged { recipe_types: Vec<RecipeType> },
+
+    /// The order aisles appear in on the groceries page. Its own variant for
+    /// the same reason as `RecipeTypesChanged`.
+    AisleOrderChanged { aisles: Vec<IngredientCategory> },
 }
