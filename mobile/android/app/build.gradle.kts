@@ -75,6 +75,19 @@ dependencies {
     implementation("com.tiktok.sparkling:sparkling-method:2.0.1")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
+    // Sparkling 2.0.1 only declares Lynx 3.6.0 transitively; pin the engine
+    // explicitly so the whole org.lynxsdk.lynx graph resolves to the version
+    // in gradle/libs.versions.toml (Gradle picks the highest requested).
+    implementation(libs.lynx)
+    implementation(libs.lynx.jssdk)
+    implementation(libs.lynx.trace)
+    implementation(libs.primjs)
+    implementation(libs.lynx.service.image)
+    implementation(libs.lynx.service.log)
+    implementation(libs.lynx.service.http)
+    implementation(libs.lynx.service.devtool)
+    implementation(libs.lynx.devtool)
+
     implementation(libs.fresco)
     implementation(libs.fresco.animated.gif)
     implementation(libs.fresco.animated.webp)
