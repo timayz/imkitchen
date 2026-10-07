@@ -1,0 +1,156 @@
+/* Shared by the login and reset screens: hero with the brand mark over soft shapes, paper card, bottom switch row. */
+/* Flex-sized scroll-view inside .screen, like the cook and recipe screens. */
+.auth__scroll {
+  flex: 1;
+}
+
+.auth {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Soft shapes behind the header; herb on the register, sent and done screens, tangerine elsewhere. */
+.auth__blob {
+  position: absolute;
+  top: -140px;
+  right: -120px;
+  width: 320px;
+  height: 320px;
+  border-radius: 160px;
+  background-color: var(--color-primary-100);
+}
+
+.auth__blob--herb {
+  background-color: var(--color-herb-100);
+}
+
+.auth__dot {
+  position: absolute;
+  top: 150px;
+  left: -60px;
+  width: 120px;
+  height: 120px;
+  border-radius: 60px;
+  background-color: var(--color-primary-100);
+}
+
+.auth__dot--herb {
+  background-color: var(--color-herb-100);
+}
+
+.auth__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 0 24px 28px;
+}
+
+.auth__brand {
+  gap: 10px;
+}
+
+.auth__mark {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary-500);
+  align-items: center;
+  justify-content: center;
+}
+
+.auth__mark-glyph {
+  font-size: 20px;
+  line-height: 24px;
+}
+
+.auth__wordmark {
+  font-size: 22px;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  color: var(--color-ink);
+}
+
+.auth__titles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth__title {
+  font-size: 34px;
+  line-height: 40px;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.7px;
+  color: var(--color-ink);
+}
+
+.auth__card {
+  margin: 0 20px;
+  padding: 24px 20px;
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.auth__banner {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+}
+
+.auth__banner--error {
+  background-color: var(--color-primary-100);
+}
+
+.auth__banner--notice {
+  background-color: var(--color-herb-100);
+}
+
+.auth__banner-glyph {
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--color-paper);
+  background-color: var(--color-primary-700);
+}
+
+.auth__banner-glyph--notice {
+  background-color: var(--color-herb-500);
+}
+
+.auth__banner-text {
+  flex: 1;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+}
+
+.auth__banner-text--error {
+  color: var(--color-primary-800);
+}
+
+.auth__banner-text--notice {
+  color: var(--color-herb-700);
+}
+
+.auth__switch {
+  margin-top: auto;
+  padding: 24px 20px 44px;
+  justify-content: center;
+  gap: 4px;
+}

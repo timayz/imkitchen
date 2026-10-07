@@ -1,0 +1,21 @@
+.switch {
+  width: 48px;
+  height: 28px;
+  padding: 2px;
+  border-radius: 999px;
+  background-color: var(--color-line);
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.switch--on {
+  background-color: var(--color-herb-500);
+  align-items: flex-end;
+}
+
+.switch__knob {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background-color: var(--color-paper);
+}

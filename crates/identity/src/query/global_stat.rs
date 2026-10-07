@@ -11,7 +11,7 @@ use sea_query_sqlx::SqlxBinder;
 use sqlx::{SqlitePool, prelude::FromRow};
 use time::UtcDateTime;
 
-use crate::types::user::{Activated, Registered, Suspended};
+use crate::types::user::{Activated, Deleted, Registered, Suspended};
 use imkitchen_billing::types::subscription::{LifePremiumToggled, StripePaymentIntentSucceeded};
 
 static GLOBAL_TIMESTAMP: u64 = 949115824;
@@ -98,8 +98,13 @@ impl<E: Executor> crate::Module<E> {
     }
 }
 
-async fn update_total(pool: &SqlitePool, timestamp: u64) -> anyhow::Result<()> {
+async fn update_total(pool: &SqlitePool, timestamp: u64, add: bool) -> anyhow::Result<()> {
     let month = to_month_string(timestamp)?;
+    let (default_value, expr) = if add {
+        (1, Expr::col(UserGlobalStat::Total).add(1))
+    } else {
+        (0, Expr::col(UserGlobalStat::Total).sub(1))
+    };
     let statement = Query::insert()
         .into_table(UserGlobalStat::Table)
         .columns([
@@ -107,13 +112,10 @@ async fn update_total(pool: &SqlitePool, timestamp: u64) -> anyhow::Result<()> {
             UserGlobalStat::Total,
             UserGlobalStat::CreatedAt,
         ])
-        .values([month.into(), 1.into(), timestamp.into()])?
+        .values([month.into(), default_value.into(), timestamp.into()])?
         .on_conflict(
             OnConflict::column(UserGlobalStat::Month)
-                .value(
-                    UserGlobalStat::Total,
-                    Expr::col(UserGlobalStat::Total).add(1),
-                )
+                .value(UserGlobalStat::Total, expr)
                 .to_owned(),
         )
         .to_owned();
@@ -192,6 +194,7 @@ pub fn subscription<E: Executor>() -> SubscriptionBuilder<E> {
         .handler(handle_activated())
         .handler(handle_life_premium_toggled())
         .handler(handle_registered())
+        .handler(handle_deleted())
         .handler(handle_stripe_payment_intent_succeeded())
 }
 
@@ -202,8 +205,22 @@ async fn handle_registered<E: Executor>(
 ) -> anyhow::Result<()> {
     let pool = context.extract::<SqlitePool>();
 
-    update_total(&pool, GLOBAL_TIMESTAMP).await?;
-    update_total(&pool, event.timestamp).await?;
+    update_total(&pool, GLOBAL_TIMESTAMP, true).await?;
+    update_total(&pool, event.timestamp, true).await?;
+
+    Ok(())
+}
+
+/// Only the all-time total shrinks: the month counters record how many
+/// accounts were created in that month, which deletion does not change.
+#[evento::subscription]
+async fn handle_deleted<E: Executor>(
+    context: &Context<'_, E>,
+    _event: Event<Deleted>,
+) -> anyhow::Result<()> {
+    let pool = context.extract::<SqlitePool>();
+
+    update_total(&pool, GLOBAL_TIMESTAMP, false).await?;
 
     Ok(())
 }

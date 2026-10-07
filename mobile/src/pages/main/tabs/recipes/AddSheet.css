@@ -1,0 +1,54 @@
+.add__options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.add__option {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  background-color: var(--color-cream);
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-lg);
+}
+
+.add__tile {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  align-items: center;
+  justify-content: center;
+}
+
+.add__emoji {
+  font-size: 22px;
+}
+
+.add__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.add__title {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.add__hint {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-ink-3);
+}
+
+.add__chevron {
+  font-size: 22px;
+  line-height: 22px;
+  color: var(--color-ink-3);
+}

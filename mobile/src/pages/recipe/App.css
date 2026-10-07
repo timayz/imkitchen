@@ -1,0 +1,373 @@
+.rdet--center {
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.rdet__scroll {
+  flex: 1;
+}
+
+/* Hero: the cover image with the back button and badges floating over it */
+.rdet__hero {
+  position: relative;
+  height: 300px;
+}
+
+.rdet__hero-bar {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.rdet__round {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line);
+  align-items: center;
+  justify-content: center;
+}
+
+.rdet__round-glyph {
+  font-size: 18px;
+  line-height: 20px;
+  color: var(--color-ink);
+}
+
+.rdet__badges {
+  position: absolute;
+  left: 20px;
+  bottom: 18px;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.rdet__badge {
+  padding: 7px 12px;
+  border-radius: 999px;
+}
+
+.rdet__badge--paper {
+  background-color: var(--color-paper);
+}
+
+.rdet__badge--shared {
+  background-color: var(--color-herb-100);
+}
+
+.rdet__badge--private {
+  background-color: var(--color-cream-2);
+}
+
+.rdet__badge-text {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.rdet__badge-text--shared {
+  font-weight: 600;
+  color: var(--color-herb-700);
+}
+
+.rdet__badge-text--private {
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+/* Title block */
+.rdet__title {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rdet__h1 {
+  font-size: 30px;
+  line-height: 36px;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.6px;
+  color: var(--color-ink);
+}
+
+.rdet__origin {
+  align-self: flex-start;
+  padding: 6px 0;
+}
+
+/* Author card (someone else's shared recipe) */
+.rdet__author {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+}
+
+.rdet__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 22px;
+  background-color: var(--color-herb-100);
+  align-items: center;
+  justify-content: center;
+}
+
+.rdet__avatar-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-herb-700);
+}
+
+.rdet__author-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rdet__author-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+/* Prep / Cook / Serves */
+.rdet__stats {
+  display: flex;
+  flex-direction: row;
+  padding: 14px 0;
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+}
+
+.rdet__stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.rdet__stat--divider {
+  border-right: 1px solid var(--color-line-2);
+}
+
+.rdet__stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.rdet__eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  color: var(--color-ink-3);
+}
+
+.pill--line {
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line);
+}
+
+/* Actions: the primary button on top, the owner's secondary row under it */
+.rdet__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rdet__row {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.rdet__secondary {
+  flex: 1;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line);
+  align-items: center;
+  justify-content: center;
+}
+
+.rdet__secondary--disabled {
+  opacity: 0.5;
+}
+
+.rdet__secondary-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.rdet__icon-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line);
+  align-items: center;
+  justify-content: center;
+}
+
+.rdet__icon-btn-glyph {
+  font-size: 18px;
+}
+
+/* Plan-ahead callout */
+.rdet__prep {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-primary-100);
+}
+
+.rdet__prep-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background-color: var(--color-paper);
+  align-items: center;
+  justify-content: center;
+}
+
+.rdet__prep-glyph {
+  font-size: 16px;
+}
+
+.rdet__prep-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rdet__prep-text {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-ink-2);
+}
+
+/* Ingredients */
+.rdet__card {
+  gap: 0;
+}
+
+.rdet__card-head {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 8px;
+}
+
+.rdet__count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-3);
+}
+
+.rdet__ing {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-line-2);
+}
+
+.rdet__ing--last {
+  border-bottom-width: 0;
+}
+
+.rdet__ing-name {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--color-ink);
+}
+
+.rdet__ing-qty {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+/* Instructions */
+.rdet__steps {
+  gap: 16px;
+}
+
+.rdet__step-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rdet__step {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.rdet__num {
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+  align-items: center;
+  justify-content: center;
+}
+
+.rdet__num-text {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.rdet__step-text {
+  flex: 1;
+  padding-top: 3px;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--color-ink-2);
+}
+
+.rdet__wait {
+  align-self: flex-start;
+  margin-left: 40px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background-color: var(--color-cream-2);
+}
+
+.rdet__wait-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+.rdet__similar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}

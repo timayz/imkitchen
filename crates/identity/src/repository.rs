@@ -131,6 +131,22 @@ pub async fn update(pool: &SqlitePool, input: UpdateInput) -> imkitchen_core::Re
     Ok(())
 }
 
+/// Removes the credentials row. The email becomes free to register again and
+/// password resets for it stop matching anything.
+pub(super) async fn delete(pool: &SqlitePool, id: String) -> imkitchen_core::Result<()> {
+    let statement = Query::delete()
+        .from_table(User::Table)
+        .and_where(Expr::col(User::Id).eq(id))
+        .to_owned();
+
+    let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
+    sqlx::query_with(sqlx::AssertSqlSafe(sql), values)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
 pub async fn is_username_exists(
     pool: &SqlitePool,
     username: impl Into<String>,

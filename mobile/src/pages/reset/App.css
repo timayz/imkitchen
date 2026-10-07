@@ -1,0 +1,102 @@
+/* Big status mark in the hero (envelope, check, clock). */
+.reset__mark {
+  width: 64px;
+  height: 64px;
+  border-radius: 32px;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-primary-700);
+}
+
+.reset__mark--herb {
+  background-color: var(--color-herb-500);
+}
+
+.reset__mark--big {
+  width: 96px;
+  height: 96px;
+  border-radius: 48px;
+  align-self: center;
+}
+
+.reset__mark-glyph {
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 700;
+  color: var(--color-paper);
+}
+
+.reset__mark-glyph--big {
+  font-size: 48px;
+  line-height: 56px;
+}
+
+/* The herb mark sits above the titles in the hero. */
+.reset__status {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reset__email {
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.reset__tips {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.reset__tips-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.reset__tip {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.reset__tip-dot {
+  width: 6px;
+  height: 6px;
+  margin-top: 7px;
+  border-radius: 3px;
+  background-color: var(--color-herb-500);
+}
+
+.reset__tip-text {
+  flex: 1;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-ink-2);
+}
+
+/* Done: everything centered in the space between the brand row and the button. */
+.reset__center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+  padding: 0 24px 60px;
+}
+
+.reset__center-text {
+  text-align: center;
+}
+
+.reset__footer {
+  padding: 0 20px 44px;
+}
+
+.reset__checking {
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+}

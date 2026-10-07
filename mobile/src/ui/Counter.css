@@ -1,0 +1,40 @@
+.counter {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background-color: var(--color-cream);
+  overflow: hidden;
+}
+
+.counter__btn {
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+}
+
+.counter__btn--off {
+  opacity: 0.35;
+}
+
+.counter__glyph {
+  font-size: 20px;
+  line-height: 24px;
+  color: var(--color-ink);
+}
+
+.counter__value {
+  min-width: 48px;
+  padding: 0 4px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.counter__value--muted {
+  font-weight: 600;
+  color: var(--color-ink-3);
+}

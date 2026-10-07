@@ -16,7 +16,18 @@ impl<E: Executor> super::Module<E> {
             crate::not_found!("shopping in toogle");
         };
 
-        if !shopping.ingredients.contains(&input.name) {
+        // The aggregate's `ingredients` is a snapshot taken when the list last
+        // changed; the `shopping_recipe` projection may have lagged behind it,
+        // or a recipe may have been edited since. Validate against the live
+        // recipe ingredients instead, which is what the groceries view shows.
+        let known = self
+            .filter_recipe_ingredients_by_ids(shopping.recipes.clone())
+            .await?
+            .iter()
+            .flat_map(|(_, ingredients)| ingredients)
+            .any(|ingredient| ingredient.key() == input.name);
+
+        if !known {
             crate::user!("ingredient not found");
         }
 

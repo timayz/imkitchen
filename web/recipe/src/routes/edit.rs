@@ -14,6 +14,7 @@ use strum::VariantArray;
 use imkitchen_web_shared::{
     AppState,
     auth::AuthUser,
+    services::recipe,
     template::{ForbiddenTemplate, Template, ToastSuccessTemplate, filters},
 };
 
@@ -84,11 +85,11 @@ pub async fn page(
     Path((id,)): Path<(String,)>,
     State(app): State<AppState>,
 ) -> impl IntoResponse {
-    let recipe = imkitchen_web_shared::try_page_response!(opt: app.core.recipe.user(&id), template);
-
-    if recipe.owner_id != user.id {
+    let Some(recipe) =
+        imkitchen_web_shared::try_page_response!(recipe::editable(&app, &user.id, &id), template)
+    else {
         return template.render(ForbiddenTemplate).into_response();
-    }
+    };
 
     let accepts_accompaniment = if recipe.accepts_accompaniment {
         "on"
@@ -181,7 +182,9 @@ pub async fn action(
     };
 
     imkitchen_web_shared::try_response!(
-        app.core.recipe.update(
+        recipe::update(
+            &app,
+            &user.id,
             UpdateInput {
                 id: id.to_owned(),
                 recipe_type: input.recipe_type,
@@ -197,7 +200,6 @@ pub async fn action(
                 accepts_accompaniment: input.accepts_accompaniment == "on",
                 advance_prep: input.advance_prep,
             },
-            &user.id
         ),
         template
     );

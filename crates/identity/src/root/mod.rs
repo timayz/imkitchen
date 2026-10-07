@@ -1,6 +1,6 @@
 use crate::types::user::{
-    self, Activated, AdConsentGranted, AdConsentRevoked, EmailChanged, LoggedIn, Logout, MadeAdmin,
-    Registered, Role, RoleChanged, State, Suspended, UsernameChanged,
+    self, Activated, AdConsentGranted, AdConsentRevoked, Deleted, EmailChanged, LoggedIn, Logout,
+    MadeAdmin, Registered, Role, RoleChanged, State, Suspended, UsernameChanged,
 };
 use bitcode::{Decode, Encode};
 use evento::{Executor, Projection, ProjectionAggregate, metadata::Event};
@@ -11,6 +11,7 @@ use crate::repository::{self};
 mod activate;
 mod change_email;
 mod change_role;
+mod delete_account;
 mod login;
 mod made_admin;
 mod register;
@@ -103,6 +104,9 @@ pub struct User {
     pub role: Role,
     pub state: State,
     pub ad_consent: bool,
+    /// Set by [`Deleted`]; the aggregate stays replayable but every command
+    /// treats it as gone.
+    pub deleted: bool,
 }
 
 pub fn create_projection<E: Executor>() -> Projection<E, User> {
@@ -114,15 +118,17 @@ pub fn create_projection<E: Executor>() -> Projection<E, User> {
         .handler(handle_role_changed())
         .handler(handle_ad_consent_granted())
         .handler(handle_ad_consent_revoked())
+        .handler(handle_deleted())
         .skip::<LoggedIn>()
         .skip::<Logout>()
         .skip::<UsernameChanged>()
         .skip::<EmailChanged>()
         .strict()
         // Bumped 1 → 2 when evento's `#[projection]` macro grew the
-        // `aggregate_version` field: invalidates old snapshots so they rebuild
-        // from events rather than failing to bitcode-decode into the new shape.
-        .revision(2)
+        // `aggregate_version` field, 2 → 3 for the `deleted` field: each bump
+        // invalidates old snapshots so they rebuild from events rather than
+        // failing to bitcode-decode into the new shape.
+        .revision(3)
 }
 
 impl ProjectionAggregate for User {
@@ -173,6 +179,13 @@ async fn handle_ad_consent_revoked(
     data: &mut User,
 ) -> anyhow::Result<()> {
     data.ad_consent = false;
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_deleted(_event: Event<Deleted>, data: &mut User) -> anyhow::Result<()> {
+    data.deleted = true;
 
     Ok(())
 }

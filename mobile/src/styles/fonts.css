@@ -1,0 +1,16 @@
+/*
+ * Fraunces is the serif the web app uses for every heading (`h1`–`h4` in
+ * tailwind.css). One static SemiBold instance, subset to Latin, is enough for
+ * the native app: Lynx `@font-face` ignores `font-weight`, so each weight would
+ * be a separate family anyway, and the file (SIL OFL, see
+ * ../assets/fonts/OFL.txt) is inlined as base64 by rspeedy
+ * (`output.dataUriLimit.font` in app.config.ts) because Lynx only loads custom
+ * fonts from `url()` (remote or data URI) or an absolute `local(file://…)`.
+ *
+ * Rules that use it set `font-weight: 400` so Android does not stack a
+ * synthetic bold on top of the SemiBold outlines.
+ */
+@font-face {
+  font-family: 'Fraunces';
+  src: url('../assets/fonts/Fraunces-SemiBold.ttf');
+}

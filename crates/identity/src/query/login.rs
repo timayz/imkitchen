@@ -7,8 +7,8 @@ use sqlx::{SqlitePool, prelude::FromRow};
 
 use crate::types::password::ResetCompleted;
 use crate::types::user::{
-    Activated, AdConsentGranted, AdConsentRevoked, EmailChanged, LoggedIn, Logout, MadeAdmin,
-    Registered, Role, RoleChanged, State, Suspended, User, UsernameChanged,
+    Activated, AdConsentGranted, AdConsentRevoked, Deleted, EmailChanged, LoggedIn, Logout,
+    MadeAdmin, Registered, Role, RoleChanged, State, Suspended, User, UsernameChanged,
 };
 use imkitchen_billing::types::subscription::{
     LifePremiumToggled, StripePaymentIntentSucceeded, Subscription,
@@ -108,6 +108,7 @@ pub fn create_projection<E: Executor>() -> Projection<E, LoginView> {
         .handler(handle_payment_intent_succeeded())
         .handler(handle_ad_consent_granted())
         .handler(handle_ad_consent_revoked())
+        .handler(handle_deleted())
         .revision(1)
 }
 
@@ -368,6 +369,17 @@ async fn handle_ad_consent_revoked(
     for login in data.logins.iter_mut() {
         login.ad_consent_at = 0;
     }
+
+    Ok(())
+}
+
+/// Ends every session (each device gets 401 on its next request) and drops
+/// the personal data the snapshot row holds.
+#[evento::handler]
+async fn handle_deleted(_event: Event<Deleted>, data: &mut LoginView) -> anyhow::Result<()> {
+    data.logins = vec![].into();
+    data.email = String::new();
+    data.username = None;
 
     Ok(())
 }

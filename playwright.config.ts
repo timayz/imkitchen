@@ -1,6 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
+ * Tests go through Traefik (`make up`), which terminates TLS with the mkcert
+ * certificate in .docker/traefik/certs and proxies to the dev server. The
+ * dev server itself (`cargo run serve`, port 3000 per config/default.toml)
+ * is what webServer waits for, so a missing Traefik fails fast on the first
+ * navigation instead of timing out on startup.
+ */
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'https://imkitchen.localhost';
+const devServerURL = 'http://localhost:3000';
+
+/**
  * Playwright configuration for imkitchen e2e and accessibility testing
  *
  * See https://playwright.dev/docs/test-configuration
@@ -30,7 +40,7 @@ export default defineConfig({
   /* Shared settings for all the projects below */
   use: {
     /* Base URL to use in actions like `await page.goto('/')` */
-    baseURL: 'http://localhost:8080',
+    baseURL,
 
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
@@ -78,7 +88,7 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'cargo run serve',
-    url: 'http://localhost:3000',
+    url: devServerURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },

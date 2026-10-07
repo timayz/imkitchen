@@ -1,5 +1,5 @@
 use bitcode::{Decode, Encode};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use strum::{AsRefStr, Display, EnumString, VariantArray};
 
 #[derive(
@@ -13,6 +13,7 @@ use strum::{AsRefStr, Display, EnumString, VariantArray};
     Debug,
     PartialEq,
     Deserialize,
+    Serialize,
     AsRefStr,
     sqlx::Type,
 )]
@@ -37,6 +38,7 @@ pub enum RecipeType {
     Debug,
     PartialEq,
     Deserialize,
+    Serialize,
     AsRefStr,
 )]
 pub enum IngredientUnit {
@@ -56,6 +58,7 @@ pub enum IngredientUnit {
     Debug,
     PartialEq,
     Deserialize,
+    Serialize,
     AsRefStr,
 )]
 pub enum IngredientCategory {
@@ -116,7 +119,7 @@ impl IngredientUnitFormat for Option<IngredientUnit> {
     }
 }
 
-#[derive(Encode, Decode, Clone, Deserialize, Debug, PartialEq)]
+#[derive(Encode, Decode, Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct Ingredient {
     pub name: String,
     pub quantity: u32,
@@ -137,7 +140,7 @@ impl Ingredient {
     }
 }
 
-#[derive(Encode, Decode, Clone, Deserialize, Debug, PartialEq)]
+#[derive(Encode, Decode, Clone, Deserialize, Serialize, Debug, PartialEq)]
 pub struct Instruction {
     pub description: String,
     pub time_next: u16,
@@ -154,6 +157,7 @@ pub struct Instruction {
     Default,
     PartialEq,
     Deserialize,
+    Serialize,
     AsRefStr,
     sqlx::Type,
 )]
@@ -181,6 +185,7 @@ pub enum CuisineType {
     Clone,
     Debug,
     Deserialize,
+    Serialize,
     AsRefStr,
 )]
 pub enum DietaryRestriction {

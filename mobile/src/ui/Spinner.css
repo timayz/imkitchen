@@ -1,0 +1,26 @@
+/* Same ring as the web's loader: 20px, 2px border, primary at 20% with a solid top edge. */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border-width: 2px;
+  border-style: solid;
+  border-color: rgba(239, 108, 30, 0.2);
+  border-top-color: var(--color-primary-500);
+  border-radius: 10px;
+  animation: spinner-spin 1s linear infinite;
+}
+
+.spinner--lg {
+  width: 28px;
+  height: 28px;
+  border-radius: 14px;
+}
+
+@keyframes spinner-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

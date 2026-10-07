@@ -2660,6 +2660,7 @@ dependencies = [
  "imkitchen-identity",
  "imkitchen-notification",
  "imkitchen-web-admin",
+ "imkitchen-web-api",
  "imkitchen-web-demo",
  "imkitchen-web-grocery",
  "imkitchen-web-kitchen",
@@ -2844,6 +2845,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "imkitchen-web-api"
+version = "1.9.4"
+dependencies = [
+ "anyhow",
+ "async-stripe",
+ "axum",
+ "base64 0.23.1",
+ "evento",
+ "http-body-util",
+ "image",
+ "imkitchen-billing",
+ "imkitchen-core",
+ "imkitchen-db",
+ "imkitchen-identity",
+ "imkitchen-types",
+ "imkitchen-web-shared",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "temp-dir",
+ "time",
+ "tokio",
+ "tower",
+ "tracing",
+]
+
+[[package]]
 name = "imkitchen-web-demo"
 version = "1.9.4"
 dependencies = [
@@ -2866,7 +2894,6 @@ version = "1.9.4"
 dependencies = [
  "askama",
  "axum",
- "imkitchen-core",
  "imkitchen-types",
  "imkitchen-web-shared",
  "serde",
@@ -2877,7 +2904,6 @@ dependencies = [
 name = "imkitchen-web-kitchen"
 version = "1.9.4"
 dependencies = [
- "anyhow",
  "askama",
  "axum",
  "axum-extra",
@@ -2971,6 +2997,7 @@ dependencies = [
  "imkitchen-core",
  "imkitchen-identity",
  "imkitchen-notification",
+ "imkitchen-types",
  "jsonwebtoken",
  "lightningcss",
  "mime_guess",

@@ -436,6 +436,8 @@ pub fn kitchen() -> KitchenTemplate {
             advance_prep: r.advance_prep.clone(),
             prep_time: r.prep_time,
             cook_time: r.cook_time,
+            thumbnail_version: r.thumbnail_version.clone(),
+            blur_placeholder: r.blur_placeholder.clone(),
         })
         .collect();
 

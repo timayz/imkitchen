@@ -1,0 +1,290 @@
+/*
+ * Aisles are direct children of the scroll view (after `.groc__top`) so the
+ * jump pills can target them with scrollTo({ index }). Each child carries its
+ * own horizontal margin instead of a padded wrapper.
+ */
+.groc__scroll {
+  padding-top: 20px;
+}
+
+.groc__top {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0 20px 16px;
+}
+
+.groc__aisle {
+  margin: 0 20px 16px;
+}
+
+.groc__tail {
+  height: 8px;
+}
+
+.groc__center {
+  text-align: center;
+}
+
+/* Header */
+.groc__header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.groc__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  color: var(--color-ink-3);
+}
+
+/* Progress card */
+.groc__progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line-2);
+  border-radius: var(--radius-xl);
+}
+
+.groc__progress-title {
+  font-size: 22px;
+  line-height: 26px;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  color: var(--color-ink);
+}
+
+.groc__bar {
+  height: 6px;
+  margin-top: 8px;
+  border-radius: 999px;
+  background-color: var(--color-line-2);
+  overflow: hidden;
+}
+
+.groc__bar-fill {
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--color-herb-500);
+}
+
+/* Segmented filter: All / To buy / In cart */
+.groc__seg {
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-cream-2);
+}
+
+.groc__seg-item {
+  flex: 1;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.groc__seg-item--on {
+  background-color: var(--color-ink);
+}
+
+.groc__seg-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+.groc__seg-text--on {
+  color: var(--color-cream);
+}
+
+/* Everything bought */
+.groc__done {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-herb-100);
+}
+
+.groc__done-text {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: var(--color-herb-700);
+}
+
+/* Jump pills, one per aisle */
+.groc__jumps {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.groc__jump {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-paper);
+}
+
+.groc__jump-emoji {
+  font-size: 15px;
+}
+
+.groc__jump-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.groc__jump-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-herb-100);
+}
+
+.groc__jump-count-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-herb-700);
+}
+
+.groc__none {
+  padding: 16px 0;
+}
+
+/* Aisle card additions over base.css `.aisle` */
+.aisle--done {
+  opacity: 0.72;
+}
+
+.aisle__head--closed {
+  border-bottom-width: 0;
+}
+
+.aisle__meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.aisle__sub {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-ink-3);
+}
+
+.aisle__done-chip {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background-color: var(--color-herb-100);
+}
+
+.aisle__done-chip-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-herb-700);
+}
+
+.aisle__chevron {
+  font-size: 22px;
+  line-height: 22px;
+  color: var(--color-ink-3);
+  transform: rotate(90deg);
+}
+
+.aisle__chevron--closed {
+  transform: rotate(0deg);
+}
+
+/* Empty state */
+.groc__empty {
+  align-items: center;
+  padding: 32px 24px 20px;
+}
+
+.groc__empty-art {
+  width: 112px;
+  height: 112px;
+  border-radius: 999px;
+  background-color: var(--color-herb-100);
+  align-items: center;
+  justify-content: center;
+}
+
+.groc__empty-emoji {
+  font-size: 52px;
+}
+
+.groc__empty-title {
+  font-size: 22px;
+  line-height: 26px;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  color: var(--color-ink);
+  text-align: center;
+}
+
+.groc__features {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.groc__feature {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-cream-2);
+}
+
+.groc__feature-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background-color: var(--color-paper);
+  align-items: center;
+  justify-content: center;
+}
+
+.groc__feature-glyph {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.groc__feature-glyph--entree {
+  color: var(--color-meal-entree-ink);
+}
+
+.groc__feature-glyph--herb {
+  color: var(--color-herb-700);
+}
+
+.groc__feature-text {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-ink-2);
+}

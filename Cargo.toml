@@ -70,6 +70,7 @@ reqwest = { version = "0.13", default-features = false, features = ["rustls"] }
 woothee = "0.13"
 flate2 = "1.1"
 brotli = "9.0"
+http-body-util = "0.1"
 
 [package]
 name = "imkitchen"
@@ -107,6 +108,7 @@ imkitchen-web-settings = { path = "web/settings", version = "1.9.4" }
 imkitchen-web-public = { path = "web/public", version = "1.9.4" }
 imkitchen-web-admin = { path = "web/admin", version = "1.9.4" }
 imkitchen-web-demo = { path = "web/demo", version = "1.9.4" }
+imkitchen-web-api = { path = "web/api", version = "1.9.4" }
 
 [dev-dependencies]
 evento-lock = { workspace = true }

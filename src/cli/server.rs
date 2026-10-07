@@ -239,6 +239,14 @@ pub async fn serve(
             50 * 1024 * 1024,
         )); // 50MB
 
+    // Thumbnail uploads from the native app: own 20 MB limit, same pattern.
+    let api_upload = imkitchen_web_api::upload_routes()
+        .with_state(app_state.clone())
+        .layer(DefaultBodyLimit::disable())
+        .layer(tower_http::limit::RequestBodyLimitLayer::new(
+            20 * 1024 * 1024,
+        ));
+
     let app = axum::Router::new()
         .route("/health", get(imkitchen_web_public::routes::health::health))
         .route(
@@ -254,6 +262,7 @@ pub async fn serve(
         .merge(imkitchen_web_public::routes())
         .merge(imkitchen_web_admin::routes())
         .merge(imkitchen_web_demo::routes())
+        .merge(imkitchen_web_api::routes())
         .fallback(fallback)
         .nest_service(
             "/static",
@@ -263,6 +272,7 @@ pub async fn serve(
         .layer(DefaultBodyLimit::disable())
         .layer(tower_http::limit::RequestBodyLimitLayer::new(1024 * 1024)) // 1MB
         .merge(admin_upload)
+        .merge(api_upload)
         .layer(axum::middleware::from_fn(
             imkitchen_web_shared::middleware::cache_control_middleware,
         ))

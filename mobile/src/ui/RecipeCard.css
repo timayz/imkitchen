@@ -1,0 +1,62 @@
+.rcard {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 10px;
+  background-color: var(--color-paper);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line-2);
+}
+
+.rcard__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rcard__course {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.rcard__name {
+  font-size: 15px;
+  line-height: 20px;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  color: var(--color-ink);
+  text-overflow: ellipsis;
+}
+
+.rcard__meta {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-ink-3);
+}
+
+.rcard__shared {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-herb-700);
+  background-color: var(--color-herb-100);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.rcard__private {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-ink-2);
+  background-color: var(--color-cream-2);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.rcard__chevron {
+  font-size: 22px;
+  line-height: 22px;
+  color: var(--color-ink-3);
+}
