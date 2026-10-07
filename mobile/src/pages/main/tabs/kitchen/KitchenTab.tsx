@@ -191,22 +191,22 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
   }
 
   const list = overview
+  // The server always focuses a recipe; `null` only comes from a list
+  // rewritten offline when the focused recipe was removed. The rows still
+  // render, the hero returns with the next refresh (or a tap on a row).
   const focused = list.focused
   const remaining = list.entries.filter((e) => e.status.status !== 'completed').length
   const allCooked = list.total_count > 0 && list.completed_count === list.total_count
-  const others =
-    focused === null
-      ? []
-      : [
-          ...list.entries.filter((e) => e.status.status !== 'completed'),
-          ...list.entries.filter((e) => e.status.status === 'completed'),
-        ].filter((e) => e.id !== focused.id)
+  const others = [
+    ...list.entries.filter((e) => e.status.status !== 'completed'),
+    ...list.entries.filter((e) => e.status.status === 'completed'),
+  ].filter((e) => e.id !== focused?.id)
 
   return (
     <scroll-view className="tab-scroll" scroll-orientation="vertical">
       <view className="content">
         {notice && <text className="error">{notice}</text>}
-        {focused === null ? (
+        {list.entries.length === 0 ? (
           <>
             <Header caption={t('kitchen.empty_caption')} />
             <Progress done={0} total={5} />
@@ -218,20 +218,6 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
               <text className="body kt-center">{t('kitchen.nothing_hint')}</text>
               <Button label={`✨ ${t('kitchen.generate')}`} onTap={() => setSheet(true)} variant="ink" block />
               <Button label={t('kitchen.browse_recipes')} onTap={onAddRecipes} variant="ghost" />
-            </view>
-            <view className="kt-features">
-              <view className="kt-feature">
-                <view className="kt-feature__icon">
-                  <text className="kt-feature__glyph kt-feature__glyph--herb">✓</text>
-                </view>
-                <text className="kt-feature__text">{t('kitchen.feature_pairs')}</text>
-              </view>
-              <view className="kt-feature">
-                <view className="kt-feature__icon">
-                  <text className="kt-feature__glyph">👥</text>
-                </view>
-                <text className="kt-feature__text">{t('kitchen.feature_household')}</text>
-              </view>
             </view>
           </>
         ) : (
@@ -249,14 +235,16 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
                 <text className="kt-done__text">✓ {t('kitchen.all_cooked')}</text>
               </view>
             )}
-            <Hero
-              recipe={focused}
-              status={list.focused_status}
-              cookExternal={list.cook_external}
-              externalUrl={list.external_url}
-              busy={busy}
-              onMore={() => setMenu(true)}
-            />
+            {focused !== null && (
+              <Hero
+                recipe={focused}
+                status={list.focused_status}
+                cookExternal={list.cook_external}
+                externalUrl={list.external_url}
+                busy={busy}
+                onMore={() => setMenu(true)}
+              />
+            )}
             <view className="kt-section">
               <text className="kt-eyebrow">
                 {t('kitchen.your_list')} · {others.length}
@@ -283,20 +271,22 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
                 ))}
               </view>
             )}
-            <Sheet open={menu} onClose={() => setMenu(false)}>
-              <text className="h2">{focused.name}</text>
-              <Button
-                label={t('kitchen.remove')}
-                onTap={() => {
-                  setMenu(false)
-                  onRemove(focused.id)
-                }}
-                variant="danger"
-                disabled={busy}
-                block
-              />
-              <Button label={t('common.cancel')} onTap={() => setMenu(false)} variant="ghost" />
-            </Sheet>
+            {focused !== null && (
+              <Sheet open={menu} onClose={() => setMenu(false)}>
+                <text className="h2">{focused.name}</text>
+                <Button
+                  label={t('kitchen.remove')}
+                  onTap={() => {
+                    setMenu(false)
+                    onRemove(focused.id)
+                  }}
+                  variant="danger"
+                  disabled={busy}
+                  block
+                />
+                <Button label={t('common.cancel')} onTap={() => setMenu(false)} variant="ghost" />
+              </Sheet>
+            )}
           </>
         )}
       </view>

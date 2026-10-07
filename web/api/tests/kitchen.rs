@@ -323,15 +323,15 @@ async fn generate_fills_the_list_from_the_pool() -> anyhow::Result<()> {
     )
     .await?;
     assert_eq!(status, StatusCode::OK, "{body}");
-    assert_eq!(body["kind"], "list");
 
     // The list itself is read from the aggregate, but its entries come from
-    // the recipe projection, which may still be catching up.
+    // the recipe projection, which may still be catching up: until it has,
+    // the overview has nothing to cook and still reads as onboarding.
     wait_until(|| async {
         let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None)
             .await
             .ok()?;
-        (body["total_count"].as_u64()? >= 1).then_some(())
+        (body["kind"] == "list" && body["total_count"].as_u64()? >= 1).then_some(())
     })
     .await;
 
@@ -429,6 +429,59 @@ async fn status_is_set_absolutely() -> anyhow::Result<()> {
     )
     .await?;
     assert_eq!(status, StatusCode::NOT_FOUND);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn a_list_whose_recipes_were_deleted_is_onboarding_again() -> anyhow::Result<()> {
+    let app = TestApp::with_recipes().await?;
+    let session = sign_in(&app).await?;
+    let recipe_id = create_recipe(&app, &session.user_id).await?;
+    let household = app
+        .state
+        .identity
+        .meal_preferences
+        .load(&session.user_id)
+        .await?
+        .household_size;
+    wait_until(|| async {
+        app.state
+            .core
+            .shopping
+            .add_recipe(&recipe_id, household, &session.user_id)
+            .await
+            .ok()
+    })
+    .await;
+    wait_until(|| async {
+        let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None)
+            .await
+            .ok()?;
+        (body["kind"] == "list").then_some(())
+    })
+    .await;
+
+    // Delete the only recipe: whatever the list still holds, there is nothing
+    // to cook, so the kitchen is back to an onboarding screen (never a list
+    // without a focused recipe).
+    let (status, _) = call(
+        &app,
+        &session,
+        "DELETE",
+        &format!("/api/v1/recipes/{recipe_id}"),
+        None,
+    )
+    .await?;
+    assert_eq!(status, StatusCode::ACCEPTED);
+
+    wait_until(|| async {
+        let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None)
+            .await
+            .ok()?;
+        (body["kind"] == "onboarding_recipe" || body["kind"] == "onboarding_menu").then_some(())
+    })
+    .await;
 
     Ok(())
 }

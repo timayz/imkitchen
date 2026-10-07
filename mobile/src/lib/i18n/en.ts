@@ -115,8 +115,6 @@ export const en = {
   'kitchen.empty_caption': 'Your list is empty',
   'kitchen.browse_recipes': 'Browse my recipes',
   'kitchen.add_by_hand': 'Add recipes by hand',
-  'kitchen.feature_pairs': 'Pairs every main with a side',
-  'kitchen.feature_household': 'Respects your household size',
   'kitchen.step_recipes': 'Step 1 · Recipes saved',
   'kitchen.step_list': 'Step 2 · Build list',
   'kitchen.count_mains': 'mains',

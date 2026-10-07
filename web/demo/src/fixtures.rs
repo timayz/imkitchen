@@ -448,7 +448,7 @@ pub fn kitchen() -> KitchenTemplate {
         .find(|e| !e.is_completed())
         .cloned()
         .expect("demo list has an uncooked recipe");
-    let focused = find_recipe(&focused_entry.id);
+    let slot_recipe = find_recipe(&focused_entry.id).expect("demo list recipe exists");
 
     let prep_ahead: Vec<ListEntry> = entries
         .iter()
@@ -457,14 +457,18 @@ pub fn kitchen() -> KitchenTemplate {
         .collect();
 
     KitchenTemplate {
+        current_path: "kitchen".to_owned(),
         user: demo_user(),
         entries,
-        focused,
+        slot_recipe,
         focused_status: focused_entry.status,
         completed_count,
         total_count,
         prep_ahead,
-        ..Default::default()
+        completed_instructions: vec![],
+        coming_instructions: vec![],
+        current_instruction: None,
+        cook_external: false,
     }
 }
 
