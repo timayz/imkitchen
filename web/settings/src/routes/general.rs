@@ -3,7 +3,7 @@ use axum::response::IntoResponse;
 use axum_extra::extract::Form;
 use imkitchen_identity::meal_preferences::UpdateInput;
 use imkitchen_identity::user_profile;
-use imkitchen_types::recipe::{DietaryRestriction, RecipeType};
+use imkitchen_types::recipe::{DietaryRestriction, IngredientCategory, RecipeType};
 use serde::Deserialize;
 use strum::VariantArray;
 
@@ -21,6 +21,7 @@ pub struct MealPreferencesTemplate {
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub recipe_types: Vec<RecipeType>,
     pub cuisine_variety_weight: f32,
+    pub aisle_order: Vec<IngredientCategory>,
     pub email: String,
     pub description: String,
     pub user: AuthUser,
@@ -35,6 +36,7 @@ impl Default for MealPreferencesTemplate {
             dietary_restrictions: Vec::default(),
             recipe_types: RecipeType::default_meal_plan_types(),
             cuisine_variety_weight: 1.0,
+            aisle_order: IngredientCategory::DEFAULT_AISLE_ORDER.to_vec(),
             email: String::new(),
             description: String::new(),
             user: AuthUser::default(),
@@ -57,6 +59,7 @@ pub async fn page(
         dietary_restrictions: preferences.dietary_restrictions.to_vec(),
         recipe_types: preferences.recipe_types.to_vec(),
         cuisine_variety_weight: preferences.cuisine_variety_weight,
+        aisle_order: preferences.aisle_order,
         email: general.email,
         description: general.description,
         user,
@@ -98,6 +101,36 @@ pub async fn action(
         .render(ToastSuccessTemplate {
             original: None,
             message: "Meal preferences updated successfully",
+            description: None,
+        })
+        .into_response()
+}
+
+#[derive(Deserialize, Debug)]
+pub struct AisleOrderActionInput {
+    /// Hidden inputs in row order; repeated field, hence `axum_extra`'s `Form`.
+    #[serde(default)]
+    pub aisles: Vec<IngredientCategory>,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn set_aisle_order_action(
+    template: Template,
+    State(app): State<AppState>,
+    user: AuthUser,
+    Form(input): Form<AisleOrderActionInput>,
+) -> impl IntoResponse {
+    imkitchen_web_shared::try_response!(
+        app.identity
+            .meal_preferences
+            .set_aisle_order(&user.id, input.aisles),
+        template
+    );
+
+    template
+        .render(ToastSuccessTemplate {
+            original: None,
+            message: "Aisle order updated successfully",
             description: None,
         })
         .into_response()

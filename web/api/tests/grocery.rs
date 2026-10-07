@@ -174,10 +174,11 @@ async fn groceries_group_by_aisle_and_toggle() -> anyhow::Result<()> {
     assert_eq!(body["checked_items"], 0);
     let aisles = body["aisles"].as_array().unwrap();
     assert_eq!(aisles.len(), 2);
-    assert_eq!(aisles[0]["key"], "shopping_DairyAndEggs");
-    assert_eq!(aisles[0]["total"], 2);
-    assert_eq!(aisles[1]["key"], "shopping_FruitsAndVegetables");
-    let butter = aisles[0]["items"]
+    // The default aisle order walks the shop: produce before dairy.
+    assert_eq!(aisles[0]["key"], "shopping_FruitsAndVegetables");
+    assert_eq!(aisles[1]["key"], "shopping_DairyAndEggs");
+    assert_eq!(aisles[1]["total"], 2);
+    let butter = aisles[1]["items"]
         .as_array()
         .unwrap()
         .iter()
@@ -205,9 +206,9 @@ async fn groceries_group_by_aisle_and_toggle() -> anyhow::Result<()> {
 
     let (_, body) = call(&app, &token, "GET", "/api/v1/groceries", None).await?;
     assert_eq!(body["checked_items"], 1);
-    assert_eq!(body["aisles"][0]["checked"], 1);
-    assert_eq!(body["aisles"][0]["done"], false);
-    let butter = body["aisles"][0]["items"]
+    assert_eq!(body["aisles"][1]["checked"], 1);
+    assert_eq!(body["aisles"][1]["done"], false);
+    let butter = body["aisles"][1]["items"]
         .as_array()
         .unwrap()
         .iter()
@@ -226,6 +227,31 @@ async fn groceries_group_by_aisle_and_toggle() -> anyhow::Result<()> {
     .await?;
     let (_, body) = call(&app, &token, "GET", "/api/v1/groceries", None).await?;
     assert_eq!(body["checked_items"], 0);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn groceries_follow_the_user_aisle_order() -> anyhow::Result<()> {
+    let app = TestApp::with_recipes().await?;
+    let (token, user_id) = sign_in(&app).await?;
+    add_omelette(&app, &user_id).await?;
+    groceries(&app, &token).await;
+
+    let (status, _) = call(
+        &app,
+        &token,
+        "PUT",
+        "/api/v1/settings/aisles",
+        Some(json!({ "aisles": ["DairyAndEggs"] })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    let (_, body) = call(&app, &token, "GET", "/api/v1/groceries", None).await?;
+    let aisles = body["aisles"].as_array().unwrap();
+    assert_eq!(aisles[0]["key"], "shopping_DairyAndEggs");
+    assert_eq!(aisles[1]["key"], "shopping_FruitsAndVegetables");
 
     Ok(())
 }

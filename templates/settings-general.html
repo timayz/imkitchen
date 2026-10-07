@@ -34,6 +34,41 @@
   </div>
 </section>
 
+{# ── Aisle order ───────────────────────────────────────────────── #}
+<section>
+  <div class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-2 px-1">
+    {{ "Aisle order"|t }}
+  </div>
+  <form method="post" action="/settings/general/aisles" ts-req="" ts-swap="skip" autocomplete="off"
+    class="bg-paper rounded-2xl border border-line-2 shadow-sm overflow-hidden">
+    <ol id="aisle-order" data-default="{% for cat in IngredientCategory::DEFAULT_AISLE_ORDER %}{{ cat }}{% if !loop.last %},{% endif %}{% endfor %}">
+      {% for cat in aisle_order %}
+      <li data-aisle="{{ cat }}" class="flex items-center gap-3 px-4 md:px-5 py-2.5 border-b border-line-2">
+        <input type="hidden" name="aisles" value="{{ cat }}" />
+        <span class="w-6 text-[11px] font-mono text-ink-3 aisle-index">{{ loop.index }}</span>
+        <span class="flex-1 min-w-0 text-sm font-semibold text-ink">{{ cat.aisle_key().as_str()|t }}</span>
+        <button type="button" onclick="ikAisleMove(this, -1)" aria-label="{{ "Move up"|t }}" title="{{ "Move up"|t }}"
+          class="aisle-up w-9 h-9 rounded-xl border border-line bg-paper text-ink text-base font-semibold flex items-center justify-center hover:bg-cream transition disabled:opacity-30 disabled:cursor-not-allowed">↑</button>
+        <button type="button" onclick="ikAisleMove(this, 1)" aria-label="{{ "Move down"|t }}" title="{{ "Move down"|t }}"
+          class="aisle-down w-9 h-9 rounded-xl border border-line bg-paper text-ink text-base font-semibold flex items-center justify-center hover:bg-cream transition disabled:opacity-30 disabled:cursor-not-allowed">↓</button>
+      </li>
+      {% endfor %}
+    </ol>
+    <p class="text-[12px] text-ink-3 px-4 md:px-5 py-3">
+      {{ "Aisles appear on your grocery list in this order. Items without an aisle always come last."|t }}
+    </p>
+    <div class="flex items-center justify-between gap-3 px-4 md:px-5 pb-4">
+      <button type="button" onclick="ikAisleReset()"
+        class="text-[13px] font-semibold text-ink-2 hover:text-ink underline-offset-2 hover:underline transition">
+        {{ "Reset to default"|t }}
+      </button>
+      <button type="submit" class="inline-flex items-center justify-center gap-2 px-5 h-11 bg-ink text-cream font-semibold rounded-xl text-sm hover:opacity-90 shadow-sm transition">
+        {{ "Save aisle order"|t }}
+      </button>
+    </div>
+  </form>
+</section>
+
 <form method="post" action="/settings/general" ts-req="" ts-swap="skip" class="space-y-5 md:space-y-6" autocomplete="off">
 
   {# ── Courses ───────────────────────────────────────────────── #}
@@ -154,6 +189,35 @@
     if (v > max) v = max;
     input.value = v;
   }
+
+  // Aisle order: rows move in the DOM, and the hidden inputs move with them,
+  // so the form submits the rows in their visible order.
+  function ikAisleSync() {
+    var rows = document.querySelectorAll('#aisle-order > li');
+    rows.forEach(function (li, i) {
+      li.querySelector('.aisle-index').textContent = i + 1;
+      li.querySelector('.aisle-up').disabled = i === 0;
+      li.querySelector('.aisle-down').disabled = i === rows.length - 1;
+    });
+  }
+  function ikAisleMove(btn, delta) {
+    var li = btn.closest('li');
+    var ol = li.parentElement;
+    var sib = delta < 0 ? li.previousElementSibling : li.nextElementSibling;
+    if (!sib) return;
+    if (delta < 0) ol.insertBefore(li, sib); else ol.insertBefore(sib, li);
+    ikAisleSync();
+    btn.focus();
+  }
+  function ikAisleReset() {
+    var ol = document.getElementById('aisle-order');
+    ol.dataset.default.split(',').forEach(function (key) {
+      var li = ol.querySelector('li[data-aisle="' + key + '"]');
+      if (li) ol.appendChild(li);
+    });
+    ikAisleSync();
+  }
+  ikAisleSync();
 </script>
 
 {% endblock %}

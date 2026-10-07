@@ -10,7 +10,8 @@ use crate::{
     ApiError, ApiJson, ApiResult,
     auth::{ApiClaims, ApiLocale, ApiUser},
     dto::settings::{
-        DeleteAccountRequest, General, PreferencesRequest, ProfileRequest, Session, UsernameRequest,
+        AisleOrderRequest, DeleteAccountRequest, General, PreferencesRequest, ProfileRequest,
+        Session, UsernameRequest,
     },
 };
 
@@ -37,6 +38,19 @@ pub async fn preferences(
                 recipe_types: input.recipe_types,
             },
         )
+        .await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn aisle_order(
+    State(app): State<AppState>,
+    user: ApiUser,
+    ApiJson(input): ApiJson<AisleOrderRequest>,
+) -> Result<StatusCode, ApiError> {
+    app.identity
+        .meal_preferences
+        .set_aisle_order(&user.id, input.aisles)
         .await?;
     Ok(StatusCode::NO_CONTENT)
 }

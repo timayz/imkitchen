@@ -47,6 +47,23 @@ const AISLES: Record<string, Omit<AisleStyle, 'label'>> = {
   shopping_SnacksAndConfectionery: { emoji: '🍬', hex: '#c4428d', soft: '#f6dbeb' },
 }
 
+/**
+ * Every grocery category as the API names it, in the store-walk order the
+ * server uses when a user never reordered their aisles (mirror of
+ * `IngredientCategory::DEFAULT_AISLE_ORDER`).
+ */
+export const AISLE_CATEGORIES: readonly string[] = [
+  'FruitsAndVegetables',
+  'Butcher',
+  'Seafood',
+  'DairyAndEggs',
+  'Bakery',
+  'Grocery',
+  'Frozen',
+  'Refrigerated',
+  'SnacksAndConfectionery',
+]
+
 export function aisle(key: string): AisleStyle {
   const base = AISLES[key] ?? { emoji: '🛒', hex: '#8a7e70', soft: '#f3ead6' }
   return { ...base, label: t(`aisle.${key}` as never) ?? key }

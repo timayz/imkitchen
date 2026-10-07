@@ -110,6 +110,10 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             "/settings/profile",
             axum::routing::put(routes::settings::profile),
         )
+        .route(
+            "/settings/aisles",
+            axum::routing::put(routes::settings::aisle_order),
+        )
         .route("/settings/username", post(routes::settings::username))
         .route(
             "/settings/account",

@@ -558,7 +558,11 @@ pub fn groceries() -> GroceriesTemplate {
         .into_iter()
         .flatten()
         .collect();
-    let view = grocery_view(&ingredients, checked);
+    let view = grocery_view(
+        &ingredients,
+        checked,
+        IngredientCategory::DEFAULT_AISLE_ORDER,
+    );
 
     GroceriesTemplate {
         user: demo_user(),
