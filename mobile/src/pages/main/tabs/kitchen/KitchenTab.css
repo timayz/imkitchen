@@ -365,48 +365,6 @@
   text-align: center;
 }
 
-.kt-features {
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-}
-
-.kt-feature {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 14px;
-  border-radius: var(--radius-lg);
-  background-color: var(--color-cream-2);
-}
-
-.kt-feature__icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 9px;
-  background-color: var(--color-paper);
-  align-items: center;
-  justify-content: center;
-}
-
-.kt-feature__glyph {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--color-meal-entree-ink);
-}
-
-.kt-feature__glyph--herb {
-  color: var(--color-herb-700);
-}
-
-.kt-feature__text {
-  font-size: 13px;
-  line-height: 18px;
-  font-weight: 600;
-  color: var(--color-ink);
-}
-
 /* Onboarding: collection summary */
 .kt-counts {
   display: flex;

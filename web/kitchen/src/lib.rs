@@ -55,7 +55,7 @@ pub struct KitchenTemplate {
     /// main → side → dessert → drink → sauce).
     pub entries: Vec<ListEntry>,
     /// The recipe to cook next: the first one in the list not yet cooked.
-    pub focused: Option<UserView>,
+    pub slot_recipe: UserView,
     pub focused_status: RecipeStatus,
     pub completed_count: usize,
     pub total_count: usize,
@@ -67,25 +67,6 @@ pub struct KitchenTemplate {
     /// When true, the "Start cooking" button links to the recipe's original URL
     /// (external) instead of the in-app cooking screen.
     pub cook_external: bool,
-}
-
-impl Default for KitchenTemplate {
-    fn default() -> Self {
-        Self {
-            current_path: "kitchen".to_owned(),
-            user: AuthUser::default(),
-            entries: vec![],
-            focused: None,
-            focused_status: RecipeStatus::Idle,
-            completed_count: 0,
-            total_count: 0,
-            prep_ahead: vec![],
-            coming_instructions: vec![],
-            completed_instructions: vec![],
-            current_instruction: None,
-            cook_external: false,
-        }
-    }
 }
 
 #[tracing::instrument(skip_all, fields(user = tracing::field::Empty))]
@@ -144,9 +125,10 @@ pub async fn page(
     (
         jar,
         template.render(KitchenTemplate {
+            current_path: "kitchen".to_owned(),
             user,
             entries: list.entries,
-            focused: list.focused,
+            slot_recipe: list.focused,
             focused_status: list.focused_status,
             completed_count: list.completed_count,
             total_count: list.total_count,
@@ -155,7 +137,6 @@ pub async fn page(
             coming_instructions,
             current_instruction,
             cook_external: list.cook_external,
-            ..Default::default()
         }),
     )
         .into_response()
