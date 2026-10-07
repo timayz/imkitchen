@@ -5,12 +5,12 @@
 // every module resolves the one and only copy of sparkling-method.
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
 }
 
 android {
     namespace = "app.imkitchen.android.sparklingmethod"
-    compileSdk = 34
+    compileSdk = 37
+    buildToolsVersion = "37.0.0"
 
     defaultConfig {
         minSdk = 24
@@ -20,11 +20,8 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
 }
 
 dependencies {
-    api("com.tiktok.sparkling:sparkling-method:2.1.0-test.1")
+    api("com.tiktok.sparkling:sparkling-method:2.0.1")
 }

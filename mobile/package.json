@@ -15,6 +15,7 @@
     "@lynx-js/react-rsbuild-plugin": "0.20.3",
     "@lynx-js/rspeedy": "0.18.0",
     "@lynx-js/types": "3.9.0",
+    "@rsbuild/core": "2.2.9",
     "@testing-library/jest-dom": "6.9.1",
     "@types/react": "18.3.31",
     "@vitest/coverage-v8": "4.1.11",
