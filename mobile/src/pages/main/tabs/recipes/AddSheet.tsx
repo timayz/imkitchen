@@ -1,5 +1,6 @@
 import { t } from '../../../../lib/i18n/index.js'
 import { Button } from '../../../../ui/Button.js'
+import { OptionRow } from '../../../../ui/OptionRow.js'
 import { Sheet } from '../../../../ui/Sheet.js'
 import './AddSheet.css'
 
@@ -17,16 +18,18 @@ export function AddSheet({ open, busy, onClose, onNew, onImport }: AddSheetProps
     <Sheet open={open} onClose={onClose}>
       <text className="h2">{t('recipes.add')}</text>
       <view className="add__options">
-        <Option
+        <OptionRow
           emoji="✍️"
           tint="#fde3cf"
+          tone="cream"
           title={t('recipes.new')}
           hint={t('recipes.new_hint')}
           onTap={busy ? undefined : onNew}
         />
-        <Option
+        <OptionRow
           emoji="🔗"
           tint="#dde9f5"
+          tone="cream"
           title={t('recipes.import_link')}
           hint={t('recipes.import_hint')}
           onTap={busy ? undefined : onImport}
@@ -34,28 +37,5 @@ export function AddSheet({ open, busy, onClose, onNew, onImport }: AddSheetProps
       </view>
       <Button label={t('common.cancel')} onTap={onClose} variant="ghost" />
     </Sheet>
-  )
-}
-
-interface OptionProps {
-  emoji: string
-  tint: string
-  title: string
-  hint: string
-  onTap?: () => void
-}
-
-function Option({ emoji, tint, title, hint, onTap }: OptionProps) {
-  return (
-    <view className="add__option" bindtap={onTap}>
-      <view className="add__tile" style={{ backgroundColor: tint }}>
-        <text className="add__emoji">{emoji}</text>
-      </view>
-      <view className="add__text">
-        <text className="add__title">{title}</text>
-        <text className="add__hint">{hint}</text>
-      </view>
-      <text className="add__chevron">›</text>
-    </view>
   )
 }
