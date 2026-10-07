@@ -14,6 +14,15 @@
   gap: 6px;
 }
 
+/* Title + hint stacked at the top of the onboarding screens. Not
+   .kt-header__text: its flex: 1 is for the header row and collapses the
+   block to nothing inside the page column. */
+.kt-intro {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .kt-regen {
   width: 44px;
   height: 44px;

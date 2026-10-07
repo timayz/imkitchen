@@ -144,7 +144,7 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
       <scroll-view className="tab-scroll" scroll-orientation="vertical">
         <view className="content">
           {notice && <text className="error">{notice}</text>}
-          <view className="kt-header__text">
+          <view className="kt-intro">
             <text className="h1">{t('kitchen.hi_chef')}</text>
             <text className="muted">{t('kitchen.step_add_recipe')}</text>
           </view>
@@ -199,7 +199,7 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
             <Chip tone="herb" text={`✓ ${t('kitchen.step_recipes')}`} />
             <Chip tone="main" text={t('kitchen.step_list')} />
           </view>
-          <view className="kt-header__text">
+          <view className="kt-intro">
             <text className="h1">{t('kitchen.onboarding_menu_title')}</text>
             <text className="body">{t('kitchen.onboarding_menu_hint')}</text>
           </view>
