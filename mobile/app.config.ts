@@ -60,7 +60,7 @@ const config: AppConfig = {
       packageName: 'app.imkitchen.android',
     },
     ios: {
-      bundleIdentifier: 'app.imkitchen.android',
+      bundleIdentifier: 'app.imkitchen.ios',
     },
   },
   paths: {
