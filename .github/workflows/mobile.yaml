@@ -3,7 +3,9 @@ name: Mobile
 # Builds the native app shells. There is no Mac in the dev environment, so the
 # `ios` job is the only place the iOS shell is compiled: it runs `pod install`
 # against mobile/ios/Podfile and builds the simulator app with code signing
-# off, and uploads the Podfile.lock it resolved plus the full build log.
+# off, and uploads the Podfile.lock it resolved plus the full build log. It
+# then boots a simulator, launches the app, checks it is still running after
+# the splash and uploads light/dark screenshots plus the app logs.
 
 on:
   pull_request:
@@ -90,6 +92,10 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
       - run: npm ci
       - name: Bundle the Lynx pages
+        # The simulator shares the Mac's network, so localhost is the dev
+        # server there (10.0.2.2 is the Android emulator's alias for it).
+        env:
+          IMKITCHEN_API_URL: http://localhost:3000
         run: npm run build
       - uses: ruby/setup-ruby@v1
         with:
@@ -138,4 +144,62 @@ jobs:
           path: |
             mobile/ios/Podfile.lock
             mobile/ios/build.log
+          if-no-files-found: ignore
+      - name: Simulator smoke test + screenshots
+        working-directory: mobile/ios
+        # Without a session the main bundle swaps itself for the login bundle,
+        # so a cold launch renders the login screen with no backend at all. A
+        # crash on launch (missing pod, bad bundle, QuickJS error) shows up as
+        # the app process being gone once the splash is over.
+        run: |
+          set -euo pipefail
+          app=build/Build/Products/Debug-iphonesimulator/SparklingGo.app
+          test -d "$app"
+          mkdir -p smoke
+          # A pre-provisioned iPhone on the newest iOS runtime the image ships,
+          # plain model first ("iPhone 16" over "iPhone 16 Pro Max"). The device
+          # type list is no good here: its last iPhone-family entry is the
+          # iPod touch, which no current runtime supports.
+          udid=$(xcrun simctl list devices available -j | jq -r '
+            .devices | to_entries
+            | map(select(.key | test("SimRuntime\\.iOS-")))
+            | sort_by(.key | capture("iOS-(?<v>[0-9-]+)").v | split("-") | map(tonumber)) | last
+            | .value | map(select(.name | startswith("iPhone")))
+            | (map(select(.name | test("^iPhone [0-9]+$"))) + .) | first | .udid')
+          test -n "$udid" && [ "$udid" != null ]
+          xcrun simctl list devices | grep "$udid"
+          trap '
+            xcrun simctl terminate "$udid" app.imkitchen.ios 2>/dev/null || true
+            xcrun simctl spawn "$udid" log show --style compact --last 5m \
+              --predicate "process == \"SparklingGo\"" > smoke/system.log 2>&1 || true
+            xcrun simctl shutdown "$udid" 2>/dev/null || true
+          ' EXIT
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl status_bar "$udid" override \
+            --time 9:41 --batteryLevel 100 --batteryState charged --cellularBars 4 --wifiBars 3
+          xcrun simctl install "$udid" "$app"
+          xcrun simctl ui "$udid" appearance light
+          xcrun simctl launch --console-pty "$udid" app.imkitchen.ios > smoke/app.log 2>&1 &
+          sleep 30
+          pgrep -xq SparklingGo || { echo "::error::SparklingGo exited within 30 s of launch (see the ios-smoke artifact)"; exit 1; }
+          xcrun simctl io "$udid" screenshot smoke/login-light.png
+          xcrun simctl ui "$udid" appearance dark
+          sleep 3
+          xcrun simctl io "$udid" screenshot smoke/login-dark.png
+          pgrep -xq SparklingGo || { echo "::error::SparklingGo exited while switching to dark mode"; exit 1; }
+          # A page that throws in main-thread.js, or asks for a UI the host has
+          # not registered, keeps the process alive and renders nothing, so the
+          # checks above cannot see it. Collect those for the artifact. They are
+          # warnings until the iOS host renders the login screen at all; make
+          # this step exit 1 once it does, so regressions cannot land.
+          perl -ne 'while (/(main-thread\.js exception: [^"\\]+|LynxCreateUIException:[^"\\]+)/g) { print "$1\n" }' \
+            smoke/app.log | tr -d '\r' | sed 's/ *backtrace:.*//; s/ *$//' | grep -v '^$' | sort -u \
+            > smoke/lynx-errors.log || true
+          while read -r line; do echo "::warning::iOS page error: $line"; done < smoke/lynx-errors.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-smoke
+          path: mobile/ios/smoke
           if-no-files-found: ignore

@@ -42,6 +42,32 @@ with code signing off). The iOS job uploads the `Podfile.lock` it resolved
 and the full `xcodebuild` log as the `ios-build` artifact; after a Podfile
 change, commit the uploaded lock.
 
+The same job then boots a simulator (an iPhone on the newest iOS runtime the
+runner's Xcode ships), installs the app and launches it. The step fails
+if the process is gone 30 s later, which is how a missing pod, a broken
+bundle or a QuickJS compile error surfaces. It uploads the `ios-smoke`
+artifact: `login-light.png` and `login-dark.png` (a cold launch without a
+session swaps to the login bundle, so no backend is needed), `app.log`
+(stdout/stderr), `system.log` (unified log filtered to the app) and
+`lynx-errors.log`. The iOS bundle is built with
+`IMKITCHEN_API_URL=http://localhost:3000`, since the simulator shares the
+Mac's network.
+
+As of the first green run the iOS shell launches but renders nothing, so the
+screenshots show the spinner and `lynx-errors.log` is not empty. Two causes,
+both iOS-only:
+
+- `lynx.__globalProps` is null (Android's host populates it). Every read of
+  it throws in `main-thread.js` before the page renders: `queryItems` in
+  `src/lib/nav.ts`, `language` in `src/lib/i18n/index.ts` and the inset reads
+  in the pages.
+- `LynxCreateUIException: input ui not found`. The host has no `<input>`:
+  Android registers `LynxInputComponent.kt` and iOS has no equivalent yet.
+
+Page errors are warnings for now because of that. Once the login screen
+renders on iOS, make the step exit non-zero when `lynx-errors.log` is
+non-empty, so a regression cannot land.
+
 The iOS job caches `ios/Pods` and the derived data under `ios/build`, both
 keyed on `Podfile.lock`, and builds arm64 only (the runner's native simulator
 architecture). Cold: about 14 min; warm: about 2 min, the app target alone

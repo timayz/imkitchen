@@ -9,6 +9,7 @@ import type { AppConfig } from 'sparkling-app-cli'
  * unless told otherwise, so a stray build can never hit production:
  *   - Android emulator: http://10.0.2.2:3000 (the default)
  *   - USB device:       `adb reverse tcp:3000 tcp:3000` + http://localhost:3000
+ *   - iOS simulator:    http://localhost:3000 (shares the Mac's network; CI sets it)
  *   - release:          `npm run build:release` (sets https://imkitchen.app)
  * Override with `IMKITCHEN_API_URL=…`.
  */
