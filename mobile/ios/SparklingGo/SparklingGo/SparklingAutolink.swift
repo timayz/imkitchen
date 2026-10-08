@@ -7,7 +7,7 @@ struct SparklingAutolinkModule {
     let className: String?
 }
 
-let sparklingAutolinkBundleId = "app.imkitchen.android"
+let sparklingAutolinkBundleId = "app.imkitchen.ios"
 let sparklingAutolinkModules: [SparklingAutolinkModule] = [
     SparklingAutolinkModule(name: "sparkling-db", iosModuleName: "Db", className: "DbGetMethod"),
     SparklingAutolinkModule(name: "sparkling-keep-awake", iosModuleName: "KeepAwake", className: "KeepAwakeSetEnabledMethod"),
