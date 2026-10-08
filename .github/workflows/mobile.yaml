@@ -3,7 +3,9 @@ name: Mobile
 # Builds the native app shells. There is no Mac in the dev environment, so the
 # `ios` job is the only place the iOS shell is compiled: it runs `pod install`
 # against mobile/ios/Podfile and builds the simulator app with code signing
-# off, and uploads the Podfile.lock it resolved plus the full build log.
+# off, and uploads the Podfile.lock it resolved plus the full build log. It
+# then boots a simulator, launches the app, checks it is still running after
+# the splash and uploads light/dark screenshots plus the app logs.
 
 on:
   pull_request:
@@ -90,6 +92,10 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
       - run: npm ci
       - name: Bundle the Lynx pages
+        # The simulator shares the Mac's network, so localhost is the dev
+        # server there (10.0.2.2 is the Android emulator's alias for it).
+        env:
+          IMKITCHEN_API_URL: http://localhost:3000
         run: npm run build
       - uses: ruby/setup-ruby@v1
         with:
@@ -138,4 +144,46 @@ jobs:
           path: |
             mobile/ios/Podfile.lock
             mobile/ios/build.log
+          if-no-files-found: ignore
+      - name: Simulator smoke test + screenshots
+        working-directory: mobile/ios
+        # Without a session the main bundle swaps itself for the login bundle,
+        # so a cold launch renders the login screen with no backend at all. A
+        # crash on launch (missing pod, bad bundle, QuickJS error) shows up as
+        # the app process being gone once the splash is over.
+        run: |
+          set -euo pipefail
+          app=build/Build/Products/Debug-iphonesimulator/SparklingGo.app
+          test -d "$app"
+          mkdir -p smoke
+          # Newest iPhone the installed Xcode knows, on its newest iOS runtime.
+          devtype=$(xcrun simctl list devicetypes -j \
+            | jq -r '[.devicetypes[] | select(.productFamily == "iPhone") | .identifier] | last')
+          echo "device type: $devtype"
+          udid=$(xcrun simctl create smoke "$devtype")
+          trap '
+            xcrun simctl terminate "$udid" app.imkitchen.ios 2>/dev/null || true
+            xcrun simctl spawn "$udid" log show --style compact --last 5m \
+              --predicate "process == \"SparklingGo\"" > smoke/system.log 2>&1 || true
+            xcrun simctl shutdown "$udid" 2>/dev/null || true
+          ' EXIT
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl status_bar "$udid" override \
+            --time 9:41 --batteryLevel 100 --batteryState charged --cellularBars 4 --wifiBars 3
+          xcrun simctl install "$udid" "$app"
+          xcrun simctl ui "$udid" appearance light
+          xcrun simctl launch --console-pty "$udid" app.imkitchen.ios > smoke/app.log 2>&1 &
+          sleep 30
+          pgrep -xq SparklingGo || { echo "::error::SparklingGo exited within 30 s of launch (see the ios-smoke artifact)"; exit 1; }
+          xcrun simctl io "$udid" screenshot smoke/login-light.png
+          xcrun simctl ui "$udid" appearance dark
+          sleep 3
+          xcrun simctl io "$udid" screenshot smoke/login-dark.png
+          pgrep -xq SparklingGo || { echo "::error::SparklingGo exited while switching to dark mode"; exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-smoke
+          path: mobile/ios/smoke
           if-no-files-found: ignore
