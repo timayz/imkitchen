@@ -96,11 +96,28 @@ jobs:
           ruby-version: "3.4"
           bundler-cache: true
           working-directory: mobile
+      # Both caches are keyed on Podfile.lock: the pods are the expensive part
+      # of the build, and a cache hit is never re-saved, so app-only changes
+      # restore the last pods build and only recompile the app target.
+      # `pod install` leaves untouched pods alone (`incremental_installation`
+      # in the Podfile), which keeps the derived data valid across runs.
+      - uses: actions/cache@v4
+        with:
+          path: mobile/ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('mobile/ios/Podfile.lock') }}
+      - uses: actions/cache@v4
+        with:
+          path: mobile/ios/build
+          key: ${{ runner.os }}-deriveddata-${{ hashFiles('mobile/ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-deriveddata-
       - name: pod install
         working-directory: mobile/ios
         run: bundle exec pod install
       - name: Build
         working-directory: mobile/ios
+        # arm64 only: that is the runner's native simulator architecture, and a
+        # generic destination would otherwise compile every pod for x86_64 too.
         run: |
           set -o pipefail
           if command -v xcbeautify >/dev/null; then filter="xcbeautify --renderer github-actions"; else filter="cat"; fi
@@ -111,6 +128,7 @@ jobs:
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
             build 2>&1 | tee build.log | $filter
       - uses: actions/upload-artifact@v4
