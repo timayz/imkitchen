@@ -22,18 +22,44 @@ end
 
 def sparkling_methods_dep
   # BEGIN SPARKLING AUTOLINK
-  pod 'ios', :path => '../node_modules/sparkling-keep-awake'
-  pod 'ios', :path => '../node_modules/sparkling-db'
-  pod 'Sparkling-Router', :path => '../node_modules/sparkling-navigation/ios'
+  pod 'Sparkling-Db', :path => '../node_modules/sparkling-db/ios'
+  pod 'Sparkling-KeepAwake', :path => '../node_modules/sparkling-keep-awake/ios'
   pod 'ios', :path => '../node_modules/sparkling-media'
+  pod 'Sparkling-Router', :path => '../node_modules/sparkling-navigation/ios'
   pod 'Sparkling-Storage', :path => '../node_modules/sparkling-storage/ios'
   # END SPARKLING AUTOLINK
+end
+
+# `sparkling autolink` rewrites the block above on every run. The published
+# sparkling-media package has no `ios` section in its module.config.json, so
+# autolink emits a pod named after the fallback directory (`ios`) pointing at
+# the package root, where there is no podspec. Correct that line here instead
+# of hand-editing the generated block (same approach as the
+# `gradle.settingsEvaluated` override in ../android/settings.gradle.kts).
+SPARKLING_AUTOLINK_FIXES = {
+  '../node_modules/sparkling-media' => { :name => 'Sparkling-Media', :path => '../node_modules/sparkling-media/ios' },
+}
+
+def sparkling_methods_dep_fixed
+  original = method(:pod)
+  define_singleton_method(:pod) do |name, *requirements|
+    options = requirements.last.is_a?(Hash) ? requirements.pop : {}
+    if (fix = SPARKLING_AUTOLINK_FIXES[options[:path]])
+      name = fix[:name]
+      options = options.merge(:path => fix[:path])
+    end
+    requirements << options unless options.empty?
+    original.call(name, *requirements)
+  end
+  sparkling_methods_dep
+ensure
+  singleton_class.send(:remove_method, :pod)
 end
 
 def sparkling_kit
   pod 'Sparkling', SPARKLING_VERSION
   sparkling_methods
-  sparkling_methods_dep
+  sparkling_methods_dep_fixed
   
   pod 'Lynx', '3.6.0', :subspecs => [
     'Framework',
@@ -57,8 +83,8 @@ def sparkling_kit
   pod 'SnapKit'
   pod 'Mantle', '~> 2.2.0'
   
-  pod 'SDWebImage','5.21.7'
-  pod 'SDWebImageWebPCoder', '0.15.0'
+  pod 'SDWebImage', '5.15.5'
+  pod 'SDWebImageWebPCoder', '0.11.0'
   
 end
 

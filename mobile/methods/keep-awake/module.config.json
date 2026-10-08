@@ -1,6 +1,6 @@
 {
   "name": "sparkling-keep-awake",
-  "platforms": ["android"],
+  "platforms": ["android", "ios"],
   "version": "1.0.0",
   "description": "Keep the screen on while cooking",
   "methods": {
@@ -14,5 +14,11 @@
     "packageName": "app.imkitchen.keepawake",
     "className": "KeepAwakeSetEnabledMethod",
     "buildGradle": "android/build.gradle.kts"
+  },
+  "ios": {
+    "moduleName": "KeepAwake",
+    "className": "KeepAwakeSetEnabledMethod",
+    "podspecPath": "ios/Sparkling-KeepAwake.podspec",
+    "swiftVersion": "5.0"
   }
 }
