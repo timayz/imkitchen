@@ -42,6 +42,13 @@ with code signing off). The iOS job uploads the `Podfile.lock` it resolved
 and the full `xcodebuild` log as the `ios-build` artifact; after a Podfile
 change, commit the uploaded lock.
 
+The iOS job caches `ios/Pods` and the derived data under `ios/build`, both
+keyed on `Podfile.lock`, and builds arm64 only (the runner's native simulator
+architecture). Cold: about 14 min; warm: about 2 min, the app target alone
+recompiles. GitHub scopes caches per ref, so the first run of a new PR is
+served from `main`'s caches once a merge has populated them, and a
+`workflow_dispatch` on a branch only sees caches saved on that branch.
+
 iOS stays on Lynx 3.6.0: the `Sparkling` 2.0.1 pod depends on
 `Lynx/Framework (= 3.6.0)` exactly, which CocoaPods cannot override the way
 Gradle lets Android pin 4.1.0 (`android/gradle/libs.versions.toml`). Both
