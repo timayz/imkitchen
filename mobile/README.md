@@ -138,7 +138,8 @@ domains entitlement.
   stderr. Gradle builds work; ignore that line.
 - The `--namespace` flag of `create-sparkling-app` 2.0.1 is ignored; the
   package was renamed by hand to `app.imkitchen.android` (Kotlin package,
-  Gradle `namespace`/`applicationId`, manifest, `app.config.ts`, iOS bundle id).
+  Gradle `namespace`/`applicationId`, manifest, `app.config.ts`); the iOS
+  shell uses `app.imkitchen.ios` (`app.config.ts`, Xcode project, autolink).
 - Lynx `fetch` has no cookie jar, does not follow redirects and has no
   `FormData`/`Blob`. The API is designed around that: Bearer token, JSON
   bodies, JSON 401s.
