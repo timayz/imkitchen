@@ -6,7 +6,9 @@
   "files": [
     "index.ts",
     "android/build.gradle.kts",
-    "android/src"
+    "android/src",
+    "ios/Sparkling-Db.podspec",
+    "ios/Sources"
   ],
   "dependencies": {
     "sparkling-method": "2.0.1"

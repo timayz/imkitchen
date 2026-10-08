@@ -22,7 +22,12 @@ crosses the bridge as a disposable `PiperData`:
 - Android: `DbStore.kt` (raw `SQLiteOpenHelper`, WAL, one background thread
   so calls are serialized and never block the bridge). The five `Db*Method`
   classes are registered in `SparklingApplication.kt`.
-- iOS: not implemented; `src/lib/db.ts` falls back to network-only when the
-  bridge answers "unregistered".
+- iOS: `ios/Sources/DbStore.swift` (raw `sqlite3`, WAL, one serial queue,
+  same table and semantics; the file lives in Application Support). The five
+  `Db*Method` classes in `DbMethods.swift` subclass `PipeMethod` directly and
+  are picked up by `MethodRegistry.autoRegisterGlobalMethods()`; the pod is
+  `ios/Sparkling-Db.podspec`. Built by the `Mobile` workflow only (no Mac).
+  When the bridge answers "unregistered", `src/lib/db.ts` falls back to
+  network-only.
 
 Linked into the app with `npm install ./methods/db` + `npm run autolink`.

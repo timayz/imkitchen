@@ -1,0 +1,141 @@
+name: Mobile
+
+# Builds the native app shells. There is no Mac in the dev environment, so the
+# `ios` job is the only place the iOS shell is compiled: it runs `pod install`
+# against mobile/ios/Podfile and builds the simulator app with code signing
+# off, and uploads the Podfile.lock it resolved plus the full build log.
+
+on:
+  pull_request:
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile.yaml"
+  push:
+    branches:
+      - main
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: mobile
+
+jobs:
+  js:
+    name: Typecheck, test, bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  android:
+    name: Android debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - name: Bundle the Lynx pages
+        run: npm run build
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platforms;android-37.0 build-tools;37.0.0 platform-tools
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: false
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build
+        working-directory: mobile/android
+        run: ./gradlew assembleDebug --console=plain
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-debug-apk
+          path: mobile/android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: ignore
+
+  ios:
+    name: iOS simulator build
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - name: Bundle the Lynx pages
+        run: npm run build
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+          working-directory: mobile
+      # Both caches are keyed on Podfile.lock: the pods are the expensive part
+      # of the build, and a cache hit is never re-saved, so app-only changes
+      # restore the last pods build and only recompile the app target.
+      # `pod install` leaves untouched pods alone (`incremental_installation`
+      # in the Podfile), which keeps the derived data valid across runs.
+      - uses: actions/cache@v4
+        with:
+          path: mobile/ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('mobile/ios/Podfile.lock') }}
+      - uses: actions/cache@v4
+        with:
+          path: mobile/ios/build
+          key: ${{ runner.os }}-deriveddata-${{ hashFiles('mobile/ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-deriveddata-
+      - name: pod install
+        working-directory: mobile/ios
+        run: bundle exec pod install
+      - name: Build
+        working-directory: mobile/ios
+        # arm64 only: that is the runner's native simulator architecture, and a
+        # generic destination would otherwise compile every pod for x86_64 too.
+        run: |
+          set -o pipefail
+          if command -v xcbeautify >/dev/null; then filter="xcbeautify --renderer github-actions"; else filter="cat"; fi
+          xcodebuild \
+            -workspace SparklingGo.xcworkspace \
+            -scheme SparklingGo \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
+            build 2>&1 | tee build.log | $filter
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-build
+          path: |
+            mobile/ios/Podfile.lock
+            mobile/ios/build.log
+          if-no-files-found: ignore
