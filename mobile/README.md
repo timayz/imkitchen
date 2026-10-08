@@ -42,8 +42,8 @@ with code signing off). The iOS job uploads the `Podfile.lock` it resolved
 and the full `xcodebuild` log as the `ios-build` artifact; after a Podfile
 change, commit the uploaded lock.
 
-The same job then boots a simulator (newest iPhone on the newest iOS runtime
-the runner's Xcode ships), installs the app and launches it. The step fails
+The same job then boots a simulator (an iPhone on the newest iOS runtime the
+runner's Xcode ships), installs the app and launches it. The step fails
 if the process is gone 30 s later, which is how a missing pod, a broken
 bundle or a QuickJS compile error surfaces. It uploads the `ios-smoke`
 artifact: `login-light.png` and `login-dark.png` (a cold launch without a
