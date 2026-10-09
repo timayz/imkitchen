@@ -57,6 +57,24 @@ pub struct PageQuery {
     pub sort_by: Option<String>,
 }
 
+impl PageQuery {
+    /// The role the list is filtered on. The filter form always submits
+    /// `role`, empty for "All Users", so an absent parameter means a fresh
+    /// page: that one defaults to [`Role::User`].
+    pub fn selected_role(&self) -> Option<Role> {
+        match self.role.as_deref() {
+            None => Some(Role::default()),
+            Some("") => None,
+            Some(value) => Role::from_str(value).ok(),
+        }
+    }
+
+    /// Whether `role` is the one the filter is on, for the `selected` marker.
+    pub fn is_role_selected(&self, role: &Role) -> bool {
+        self.selected_role().as_ref() == Some(role)
+    }
+}
+
 #[tracing::instrument(skip_all, fields(admin = admin.id))]
 pub async fn page(
     template: Template,
@@ -85,7 +103,7 @@ pub async fn page(
     let premium_percent = current_stat.premium_percent(&stat);
 
     let r_query = query.clone();
-    let role = Role::from_str(&query.role.unwrap_or("".to_owned())).ok();
+    let role = query.selected_role();
     let state = UserState::from_str(&query.state.unwrap_or("".to_owned())).ok();
     let sort_by = UserSortBy::from_str(&query.sort_by.unwrap_or("".to_owned()))
         .unwrap_or(UserSortBy::RecentlyJoined);
