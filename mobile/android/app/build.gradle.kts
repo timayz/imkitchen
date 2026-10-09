@@ -4,6 +4,10 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+// A Gradle property wins over the env var, so a CI secret can be overridden locally.
+fun prop(name: String, env: String): String? =
+    project.findProperty(name) as String? ?: System.getenv(env)
+
 android {
     namespace = "app.imkitchen.android"
     compileSdk = 37
@@ -22,8 +26,25 @@ android {
         }
     }
 
+    // Signing is manual: the keystore lives outside the repo and is named by
+    // `imkitchen.keystore` in ~/.gradle/gradle.properties, or by the matching
+    // IMKITCHEN_* env vars in CI. With none of them set the release build stays
+    // unsigned rather than falling back to a key nobody chose.
+    val keystore = prop("imkitchen.keystore", "IMKITCHEN_KEYSTORE")
+    signingConfigs {
+        if (keystore != null) {
+            create("release") {
+                storeFile = file(keystore)
+                storePassword = prop("imkitchen.keystore.password", "IMKITCHEN_KEYSTORE_PASSWORD")
+                keyAlias = prop("imkitchen.key.alias", "IMKITCHEN_KEY_ALIAS")
+                keyPassword = prop("imkitchen.key.password", "IMKITCHEN_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

@@ -203,3 +203,25 @@ domains entitlement.
 Signing is manual for now: keep the keystore outside the repo and point Gradle
 at it from `~/.gradle/gradle.properties`. Build with
 `npm run build:release && (cd android && SPARKLING_USE_NATIVE_ASSETS=true ./gradlew assembleRelease)`.
+
+`app/build.gradle.kts` reads four properties, each with an env-var fallback for
+CI secrets: `imkitchen.keystore` / `IMKITCHEN_KEYSTORE` (path),
+`imkitchen.keystore.password`, `imkitchen.key.alias`, `imkitchen.key.password`.
+Set none of them and the release build stays unsigned
+(`app-release-unsigned.apk`) rather than falling back to a key nobody chose, so
+nothing can accidentally ship under the wrong identity. With them set the
+output is a signed `app-release.apk`.
+
+To get an installable APK without a release key, pass the debug keystore on the
+command line -- handy for testing a release build, never for distribution
+(Play rejects the debug key, which is identical on every Android dev machine):
+
+```
+SPARKLING_USE_NATIVE_ASSETS=true ./gradlew assembleRelease \
+  -Pimkitchen.keystore="$HOME/.android/debug.keystore" \
+  -Pimkitchen.keystore.password=android \
+  -Pimkitchen.key.alias=androiddebugkey -Pimkitchen.key.password=android
+```
+
+`versionCode`/`versionName` are still the `1` / `1.0` placeholders and are not
+wired to the repo version.
