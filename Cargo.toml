@@ -129,6 +129,14 @@ strip = true
 
 [profile.dev]
 opt-level = 1
+# Backtraces keep file/line, but the ~1 GB of DWARF per test binary that full
+# debuginfo costs is gone. Use `--profile debugging` when a debugger needs more.
+debug = "line-tables-only"
 
 [profile.dev.package.'*']
 opt-level = 3
+debug = false
+
+[profile.debugging]
+inherits = "dev"
+debug = true
