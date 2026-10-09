@@ -1,8 +1,12 @@
 name: Mobile
 
-# Builds the native app shells. There is no Mac in the dev environment, so the
-# `ios` job is the only place the iOS shell is compiled: it runs `pod install`
-# against mobile/ios/Podfile and builds the simulator app with code signing
+# Builds the native app shells. The `android` and `ios` jobs are disabled on
+# pull requests and pushes and only run on a manual `workflow_dispatch`; `js`
+# still runs on every change under mobile/.
+#
+# There is no Mac in the dev environment, so the `ios` job is the only place
+# the iOS shell is compiled: it runs `pod install` against
+# mobile/ios/Podfile and builds the simulator app with code signing
 # off, and uploads the Podfile.lock it resolved plus the full build log. It
 # then boots a simulator, launches the app, checks it is still running after
 # the splash and uploads light/dark screenshots plus the app logs.
@@ -47,6 +51,9 @@ jobs:
 
   android:
     name: Android debug APK
+    # Disabled on pull requests and pushes: run the workflow by hand to build
+    # the shell.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -81,6 +88,9 @@ jobs:
 
   ios:
     name: iOS simulator build
+    # Disabled on pull requests and pushes: run the workflow by hand to build
+    # the shell and collect the simulator screenshots.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-15
     timeout-minutes: 60
     steps:
