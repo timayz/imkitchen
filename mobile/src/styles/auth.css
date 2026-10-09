@@ -6,7 +6,8 @@
 
 .auth {
   position: relative;
-  min-height: 100vh;
+  /* Definite, for the same reason as .screen: `.auth__scroll` is `flex: 1`. */
+  height: 100vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;

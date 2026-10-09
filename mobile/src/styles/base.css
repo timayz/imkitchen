@@ -2,7 +2,12 @@
 @import './fonts.css';
 
 .screen {
-  min-height: 100vh;
+  /* A definite height, not min-height: every page bounds its scroll-view with
+     `flex: 1` or `height: 100%`, and those resolve against this. With
+     min-height the root grows past the viewport as soon as the content is
+     taller than the screen, the scroll-view grows with it and nothing
+     scrolls -- see the cook profile page, fixed the same way in 4eafbb5b. */
+  height: 100vh;
   background-color: var(--color-cream);
   display: flex;
   flex-direction: column;
