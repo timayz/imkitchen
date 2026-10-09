@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from '@lynx-js/react'
+import { useCallback, useState } from '@lynx-js/react'
 
 import { errorMessage } from '../../../../lib/api/client.js'
 import { logout, me, type Me } from '../../../../lib/api/auth.js'
@@ -17,9 +17,11 @@ import {
   updateProfile,
 } from '../../../../lib/api/settings.js'
 import { clearSession } from '../../../../lib/auth/session.js'
+import { writeDoc } from '../../../../lib/cache.js'
 import { aisle, course } from '../../../../lib/course.js'
 import { t } from '../../../../lib/i18n/index.js'
 import { replace } from '../../../../lib/nav.js'
+import { useResource } from '../../../../lib/use-resource.js'
 import { Button } from '../../../../ui/Button.js'
 import { Spinner } from '../../../../ui/Spinner.js'
 import { TextField } from '../../../../ui/TextField.js'
@@ -30,15 +32,24 @@ import { PreferencesSheet } from './PreferencesSheet.js'
 import { ProfileSheet } from './ProfileSheet.js'
 import './SettingsTab.css'
 
-type State =
-  | { kind: 'loading' }
-  | { kind: 'error'; message: string }
-  | { kind: 'ready'; user: Me; general: General; sessions: Session[] }
+const GENERAL_KEY = 'settings:general'
 
 type Open = 'preferences' | 'aisles' | 'profile' | 'devices' | 'delete' | null
 
 export function SettingsTab({ refreshKey }: { refreshKey: number }) {
-  const [state, setState] = useState<State>({ kind: 'loading' })
+  // Cached locally: the tab renders at once every time it is selected and
+  // refreshes in the background.
+  const { data: user, error: userError, refresh: refreshUser } = useResource<Me>('me', me, [refreshKey])
+  const {
+    data: general,
+    error: generalError,
+    refresh: refreshGeneral,
+  } = useResource<General>(GENERAL_KEY, getGeneral, [refreshKey])
+  const {
+    data: sessions,
+    error: sessionsError,
+    refresh: refreshSessions,
+  } = useResource<Session[]>('settings:sessions', getSessions, [refreshKey])
   const [open, setOpen] = useState<Open>(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
@@ -47,15 +58,11 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
 
   const message = (err: unknown) => errorMessage(err)
 
-  const load = useCallback(() => {
-    Promise.all([me(), getGeneral(), getSessions()])
-      .then(([user, general, sessions]) => setState({ kind: 'ready', user, general, sessions }))
-      .catch((err: unknown) => setState({ kind: 'error', message: message(err) }))
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load, refreshKey])
+  const reload = useCallback(() => {
+    refreshUser()
+    refreshGeneral()
+    refreshSessions()
+  }, [refreshUser, refreshGeneral, refreshSessions])
 
   /** Runs one action, reports the outcome under the header and optionally closes the sheet. */
   const run = useCallback(
@@ -67,24 +74,26 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
         await action()
         setNotice({ kind: 'ok', text: ok })
         if (opts.close) setOpen(null)
-        if (opts.reload) load()
+        if (opts.reload) reload()
       } catch (err) {
         setNotice({ kind: 'error', text: message(err) })
       } finally {
         setBusy(false)
       }
     },
-    [busy, load]
+    [busy, reload]
   )
 
-  const patchGeneral = (p: Partial<General>) =>
-    setState((prev) => (prev.kind === 'ready' ? { ...prev, general: { ...prev.general, ...p } } : prev))
+  // A saved change lands in the cached document, which is what the tab reads.
+  const patchGeneral = async (p: Partial<General>) => {
+    if (general) await writeDoc(GENERAL_KEY, { ...general, ...p })
+  }
 
   const savePreferences = (draft: Preferences) =>
     run(
       async () => {
         await updatePreferences(draft)
-        patchGeneral(draft)
+        await patchGeneral(draft)
       },
       t('settings.preferences_saved'),
       { close: true }
@@ -94,7 +103,7 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
     run(
       async () => {
         await updateAisleOrder(order)
-        patchGeneral({ aisle_order: order })
+        await patchGeneral({ aisle_order: order })
       },
       t('settings.aisles_saved'),
       { close: true }
@@ -104,7 +113,7 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
     run(
       async () => {
         await updateProfile(description)
-        patchGeneral({ description })
+        await patchGeneral({ description })
       },
       t('settings.profile_saved'),
       { close: true }
@@ -147,25 +156,25 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
     [busy]
   )
 
-  if (state.kind === 'loading') {
+  if (!user || !general || !sessions) {
+    const error = userError ?? generalError ?? sessionsError
+    if (error) {
+      return (
+        <view className="content">
+          <view className="card">
+            <text className="error">{error}</text>
+            <Button label={t('common.retry')} onTap={reload} variant="secondary" />
+          </view>
+        </view>
+      )
+    }
     return (
       <view className="content content--center">
         <Spinner size="lg" />
       </view>
     )
   }
-  if (state.kind === 'error') {
-    return (
-      <view className="content">
-        <view className="card">
-          <text className="error">{state.message}</text>
-          <Button label={t('common.retry')} onTap={load} variant="secondary" />
-        </view>
-      </view>
-    )
-  }
 
-  const { user, general, sessions } = state
   const initial = (user.username ?? user.email).slice(0, 1).toUpperCase()
   const diets = general.dietary_restrictions.map((d) => t(`diet.${d}` as const))
   const courses = [course('MainCourse'), ...general.recipe_types.map(course)].map((c) => c.label)
