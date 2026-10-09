@@ -110,7 +110,7 @@ export function App() {
 
   return (
     <view className="screen shell">
-      {(offline || pending > 0) && <OfflineBanner pending={pending} onRetry={bump} />}
+      {offline && <OfflineBanner pending={pending} onRetry={bump} />}
       <view className="shell__body">
         {tab === 'kitchen' && <KitchenTab refreshKey={refreshKey} onAddRecipes={() => selectTab('recipes')} />}
         {tab === 'groceries' && <GroceriesTab refreshKey={refreshKey} onAddRecipes={() => selectTab('recipes')} />}
