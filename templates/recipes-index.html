@@ -194,8 +194,10 @@
         {{ "Saved"|t }}
       </label>
 
+      {% if user.is_chef() %}
       {# No-image toggle — narrows to recipes that still need a thumbnail.
-         Useful when chasing down own recipes to illustrate. #}
+         Chef/admin only: illustrating recipes is a catalog-maintenance task,
+         so plain users never see it. #}
       <label class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border text-xs font-semibold
         cursor-pointer transition
         bg-paper border-line-2 text-ink hover:bg-cream
@@ -206,6 +208,7 @@
         </svg>
         {{ "No image"|t }}
       </label>
+      {% endif %}
 
       {% if user.is_chef() %}
       {# Share All / Make All Private — chef-only bulk toggle. The button
