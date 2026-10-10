@@ -1,7 +1,7 @@
-import { useCallback, useState } from '@lynx-js/react'
+import { useCallback, useState } from '@lynx-js/react';
 
-import { errorMessage } from '../../../../lib/api/client.js'
-import { logout, me, type Me } from '../../../../lib/api/auth.js'
+import { errorMessage } from '../../../../lib/api/client.js';
+import { logout, me, type Me } from '../../../../lib/api/auth.js';
 import {
   type General,
   type Preferences,
@@ -15,149 +15,164 @@ import {
   updateAisleOrder,
   updatePreferences,
   updateProfile,
-} from '../../../../lib/api/settings.js'
-import { clearSession } from '../../../../lib/auth/session.js'
-import { writeDoc } from '../../../../lib/cache.js'
-import { aisle, course } from '../../../../lib/course.js'
-import { t } from '../../../../lib/i18n/index.js'
-import { replace } from '../../../../lib/nav.js'
-import { useResource } from '../../../../lib/use-resource.js'
-import { Button } from '../../../../ui/Button.js'
-import { Spinner } from '../../../../ui/Spinner.js'
-import { TextField } from '../../../../ui/TextField.js'
-import { AislesSheet } from './AislesSheet.js'
-import { DeleteSheet } from './DeleteSheet.js'
-import { DevicesSheet } from './DevicesSheet.js'
-import { PreferencesSheet } from './PreferencesSheet.js'
-import { ProfileSheet } from './ProfileSheet.js'
-import './SettingsTab.css'
+} from '../../../../lib/api/settings.js';
+import { resetTours } from '../../../../lib/api/tours.js';
+import { clearSession } from '../../../../lib/auth/session.js';
+import { writeDoc } from '../../../../lib/cache.js';
+import { aisle, course } from '../../../../lib/course.js';
+import { t } from '../../../../lib/i18n/index.js';
+import { replace } from '../../../../lib/nav.js';
+import { useResource } from '../../../../lib/use-resource.js';
+import { Button } from '../../../../ui/Button.js';
+import { Spinner } from '../../../../ui/Spinner.js';
+import { TextField } from '../../../../ui/TextField.js';
+import { AislesSheet } from './AislesSheet.js';
+import { DeleteSheet } from './DeleteSheet.js';
+import { DevicesSheet } from './DevicesSheet.js';
+import { PreferencesSheet } from './PreferencesSheet.js';
+import { ProfileSheet } from './ProfileSheet.js';
+import './SettingsTab.css';
 
-const GENERAL_KEY = 'settings:general'
+const GENERAL_KEY = 'settings:general';
 
-type Open = 'preferences' | 'aisles' | 'profile' | 'devices' | 'delete' | null
+type Open = 'preferences' | 'aisles' | 'profile' | 'devices' | 'delete' | null;
 
-export function SettingsTab({ refreshKey }: { refreshKey: number }) {
+export interface SettingsTabProps {
+  refreshKey: number;
+  /** The tours were reset: the shell refetches them so they play again. */
+  onToursReset?: () => void;
+}
+
+export function SettingsTab({ refreshKey, onToursReset }: SettingsTabProps) {
   // Cached locally: the tab renders at once every time it is selected and
   // refreshes in the background.
-  const { data: user, error: userError, refresh: refreshUser } = useResource<Me>('me', me, [refreshKey])
+  const {
+    data: user,
+    error: userError,
+    refresh: refreshUser,
+  } = useResource<Me>('me', me, [refreshKey]);
   const {
     data: general,
     error: generalError,
     refresh: refreshGeneral,
-  } = useResource<General>(GENERAL_KEY, getGeneral, [refreshKey])
+  } = useResource<General>(GENERAL_KEY, getGeneral, [refreshKey]);
   const {
     data: sessions,
     error: sessionsError,
     refresh: refreshSessions,
-  } = useResource<Session[]>('settings:sessions', getSessions, [refreshKey])
-  const [open, setOpen] = useState<Open>(null)
-  const [busy, setBusy] = useState(false)
-  const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
-  const [username, setUsernameInput] = useState('')
-  const [deleteError, setDeleteError] = useState<string | null>(null)
+  } = useResource<Session[]>('settings:sessions', getSessions, [refreshKey]);
+  const [open, setOpen] = useState<Open>(null);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [username, setUsernameInput] = useState('');
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const message = (err: unknown) => errorMessage(err)
+  const message = (err: unknown) => errorMessage(err);
 
   const reload = useCallback(() => {
-    refreshUser()
-    refreshGeneral()
-    refreshSessions()
-  }, [refreshUser, refreshGeneral, refreshSessions])
+    refreshUser();
+    refreshGeneral();
+    refreshSessions();
+  }, [refreshUser, refreshGeneral, refreshSessions]);
 
   /** Runs one action, reports the outcome under the header and optionally closes the sheet. */
   const run = useCallback(
-    async (action: () => Promise<void>, ok: string, opts: { reload?: boolean; close?: boolean } = {}) => {
-      if (busy) return
-      setBusy(true)
-      setNotice(null)
+    async (
+      action: () => Promise<void>,
+      ok: string,
+      opts: { reload?: boolean; close?: boolean } = {}
+    ) => {
+      if (busy) return;
+      setBusy(true);
+      setNotice(null);
       try {
-        await action()
-        setNotice({ kind: 'ok', text: ok })
-        if (opts.close) setOpen(null)
-        if (opts.reload) reload()
+        await action();
+        setNotice({ kind: 'ok', text: ok });
+        if (opts.close) setOpen(null);
+        if (opts.reload) reload();
       } catch (err) {
-        setNotice({ kind: 'error', text: message(err) })
+        setNotice({ kind: 'error', text: message(err) });
       } finally {
-        setBusy(false)
+        setBusy(false);
       }
     },
     [busy, reload]
-  )
+  );
 
   // A saved change lands in the cached document, which is what the tab reads.
   const patchGeneral = async (p: Partial<General>) => {
-    if (general) await writeDoc(GENERAL_KEY, { ...general, ...p })
-  }
+    if (general) await writeDoc(GENERAL_KEY, { ...general, ...p });
+  };
 
   const savePreferences = (draft: Preferences) =>
     run(
       async () => {
-        await updatePreferences(draft)
-        await patchGeneral(draft)
+        await updatePreferences(draft);
+        await patchGeneral(draft);
       },
       t('settings.preferences_saved'),
       { close: true }
-    )
+    );
 
   const saveAisles = (order: string[]) =>
     run(
       async () => {
-        await updateAisleOrder(order)
-        await patchGeneral({ aisle_order: order })
+        await updateAisleOrder(order);
+        await patchGeneral({ aisle_order: order });
       },
       t('settings.aisles_saved'),
       { close: true }
-    )
+    );
 
   const saveProfile = (description: string) =>
     run(
       async () => {
-        await updateProfile(description)
-        await patchGeneral({ description })
+        await updateProfile(description);
+        await patchGeneral({ description });
       },
       t('settings.profile_saved'),
       { close: true }
-    )
+    );
 
   const revokeOthers = (sessions: Session[]) =>
     run(
       async () => {
-        for (const s of sessions) if (!s.current) await revokeSession(s.id)
+        for (const s of sessions) if (!s.current) await revokeSession(s.id);
       },
       t('settings.revoked_others'),
       { reload: true }
-    )
+    );
 
   const signOut = useCallback(async () => {
     try {
-      await logout()
+      await logout();
     } catch {
       // The token is gone client-side either way.
     }
-    await clearSession()
-    await replace('login')
-  }, [])
+    await clearSession();
+    await replace('login');
+  }, []);
 
   const confirmDelete = useCallback(
     async (password: string) => {
-      if (busy) return
-      setBusy(true)
-      setDeleteError(null)
+      if (busy) return;
+      setBusy(true);
+      setDeleteError(null);
       try {
-        await deleteAccount(password)
+        await deleteAccount(password);
         // Every session is gone server-side; the 204 never trips the 401 handler.
-        await clearSession()
-        await replace('login')
+        await clearSession();
+        await replace('login');
       } catch (err) {
-        setDeleteError(message(err))
-        setBusy(false)
+        setDeleteError(message(err));
+        setBusy(false);
       }
     },
     [busy]
-  )
+  );
 
   if (!user || !general || !sessions) {
-    const error = userError ?? generalError ?? sessionsError
+    const error = userError ?? generalError ?? sessionsError;
     if (error) {
       return (
         <view className="content">
@@ -166,20 +181,20 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
             <Button label={t('common.retry')} onTap={reload} variant="secondary" />
           </view>
         </view>
-      )
+      );
     }
     return (
       <view className="content content--center">
         <Spinner size="lg" />
       </view>
-    )
+    );
   }
 
-  const initial = (user.username ?? user.email).slice(0, 1).toUpperCase()
-  const diets = general.dietary_restrictions.map((d) => t(`diet.${d}` as const))
-  const courses = [course('MainCourse'), ...general.recipe_types.map(course)].map((c) => c.label)
-  const pct = Math.round(general.cuisine_variety_weight * 100)
-  const aisles = general.aisle_order.slice(0, 3).map((c) => aisle(`shopping_${c}`).label)
+  const initial = (user.username ?? user.email).slice(0, 1).toUpperCase();
+  const diets = general.dietary_restrictions.map((d) => t(`diet.${d}` as const));
+  const courses = [course('MainCourse'), ...general.recipe_types.map(course)].map((c) => c.label);
+  const pct = Math.round(general.cuisine_variety_weight * 100);
+  const aisles = general.aisle_order.slice(0, 3).map((c) => aisle(`shopping_${c}`).label);
 
   return (
     <scroll-view className="tab-scroll" scroll-orientation="vertical">
@@ -189,7 +204,9 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
           <text className="h1">{t('settings.title')}</text>
         </view>
 
-        {notice && <text className={notice.kind === 'ok' ? 'success' : 'error'}>{notice.text}</text>}
+        {notice && (
+          <text className={notice.kind === 'ok' ? 'success' : 'error'}>{notice.text}</text>
+        )}
 
         {user.username ? (
           <view className="set-hero">
@@ -211,7 +228,9 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
                   {user.is_chef && <text className="badge badge--chef">{t('settings.chef')}</text>}
                 </view>
               )}
-              {general.description.length > 0 && <text className="set-hero__desc">{general.description}</text>}
+              {general.description.length > 0 && (
+                <text className="set-hero__desc">{general.description}</text>
+              )}
               <view className="set-hero__edit" bindtap={() => setOpen('profile')}>
                 <text className="set-hero__edit-text">{t('settings.edit_profile')}</text>
                 <text className="set-hero__edit-chevron">›</text>
@@ -248,7 +267,11 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
               />
               <Button
                 label={t('settings.username_set')}
-                onTap={() => run(() => setUsername(username.trim()), t('settings.username_done'), { reload: true })}
+                onTap={() =>
+                  run(() => setUsername(username.trim()), t('settings.username_done'), {
+                    reload: true,
+                  })
+                }
                 disabled={busy || username.trim().length < 3}
                 block
               />
@@ -259,11 +282,14 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
         <Section label={t('settings.preferences')} />
         <view className="set-group">
           <Row
+            id="set-household"
             emoji="👪"
             tone="entree"
             title={t('settings.household')}
             meta={
-              general.household_size === 1 ? t('settings.person') : t('settings.people', { n: general.household_size })
+              general.household_size === 1
+                ? t('settings.person')
+                : t('settings.people', { n: general.household_size })
             }
             onTap={() => setOpen('preferences')}
           />
@@ -275,6 +301,7 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
             onTap={() => setOpen('preferences')}
           />
           <Row
+            id="set-courses"
             emoji="🍰"
             tone="dessert"
             title={t('settings.courses')}
@@ -289,11 +316,25 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
             onTap={() => setOpen('preferences')}
           />
           <Row
+            id="set-aisles"
             emoji="🛒"
             tone="main"
             title={t('settings.aisles')}
             meta={t('settings.aisles_meta', { aisles: aisles.join(' › ') })}
             onTap={() => setOpen('aisles')}
+            last
+          />
+        </view>
+
+        <Section label={t('settings.tours')} />
+        <view className="set-group">
+          <Row
+            emoji="🧭"
+            tone="herb"
+            title={t('settings.replay_tours')}
+            meta={t('settings.replay_hint')}
+            trailing="↻"
+            onTap={() => run(resetTours, t('settings.tours_reset')).then(() => onToursReset?.())}
             last
           />
         </view>
@@ -312,7 +353,11 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
             emoji="📱"
             tone="entree"
             title={t('settings.sessions')}
-            meta={sessions.length <= 1 ? t('settings.devices_one') : t('settings.devices_many', { n: sessions.length })}
+            meta={
+              sessions.length <= 1
+                ? t('settings.devices_one')
+                : t('settings.devices_many', { n: sessions.length })
+            }
             onTap={() => setOpen('devices')}
           />
           <Row
@@ -380,13 +425,13 @@ export function SettingsTab({ refreshKey }: { refreshKey: number }) {
         busy={busy}
         error={deleteError}
         onClose={() => {
-          setDeleteError(null)
-          setOpen(null)
+          setDeleteError(null);
+          setOpen(null);
         }}
         onConfirm={confirmDelete}
       />
     </scroll-view>
-  )
+  );
 }
 
 function Section({ label }: { label: string }) {
@@ -395,25 +440,27 @@ function Section({ label }: { label: string }) {
       <text className="set-eyebrow">{label.toUpperCase()}</text>
       <view className="set-section__line" />
     </view>
-  )
+  );
 }
 
-type Tone = 'entree' | 'herb' | 'dessert' | 'condiment' | 'cream' | 'main'
+type Tone = 'entree' | 'herb' | 'dessert' | 'condiment' | 'cream' | 'main';
 
 interface RowProps {
-  emoji: string
-  tone: Tone
-  title: string
-  meta: string
+  /** Anchor for the guided tour. */
+  id?: string;
+  emoji: string;
+  tone: Tone;
+  title: string;
+  meta: string;
   /** Replaces the chevron: a glyph, or '' for nothing. */
-  trailing?: string
-  onTap: () => void
-  last?: boolean
+  trailing?: string;
+  onTap: () => void;
+  last?: boolean;
 }
 
-function Row({ emoji, tone, title, meta, trailing, onTap, last }: RowProps) {
+function Row({ id, emoji, tone, title, meta, trailing, onTap, last }: RowProps) {
   return (
-    <view className={last ? 'set-row set-row--last' : 'set-row'} bindtap={onTap}>
+    <view id={id} className={last ? 'set-row set-row--last' : 'set-row'} bindtap={onTap}>
       <view className={`set-row__tile set-row__tile--${tone}`}>
         <text className="set-row__emoji">{emoji}</text>
       </view>
@@ -427,5 +474,5 @@ function Row({ emoji, tone, title, meta, trailing, onTap, last }: RowProps) {
         trailing !== '' && <text className="set-row__glyph">{trailing}</text>
       )}
     </view>
-  )
+  );
 }

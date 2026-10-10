@@ -24,7 +24,8 @@ export const en = {
   'reset.remembered': 'Remembered it?',
   'reset.back_to_sign_in': 'Back to sign in',
   'reset.sent_title': 'Check your email',
-  'reset.sent_body': 'If an account exists for %{email}, a reset link is on its way. Open it on this phone to choose a new password.',
+  'reset.sent_body':
+    'If an account exists for %{email}, a reset link is on its way. Open it on this phone to choose a new password.',
   'reset.sent_again': 'Sent again. Give it a minute.',
   'reset.not_received': 'Didn’t get it?',
   'reset.tip_spam': 'Check your spam or junk folder.',
@@ -42,8 +43,10 @@ export const en = {
   'reset.done_body': 'You’re all set. Sign in with your new password to get back to your kitchen.',
   'reset.done_sign_in': 'Sign in',
   'reset.expired_title': 'This link has expired',
-  'reset.expired_body': 'Reset links only work once and for 15 minutes. Request a new one and we’ll email it right away.',
-  'reset.expired_note': 'Your password hasn’t changed. You can still sign in with your current one.',
+  'reset.expired_body':
+    'Reset links only work once and for 15 minutes. Request a new one and we’ll email it right away.',
+  'reset.expired_note':
+    'Your password hasn’t changed. You can still sign in with your current one.',
   'reset.request_again': 'Request a new link',
   'tabs.kitchen': 'Kitchen',
   'tabs.groceries': 'Groceries',
@@ -79,39 +82,23 @@ export const en = {
   'aisle.shopping_SnacksAndConfectionery': 'Snacks & Confectionery',
   'aisle.shopping_Unknown': 'Other',
   'kitchen.up_next': 'Up next',
-  'kitchen.cooked': '%{done}/%{total} cooked',
   'kitchen.all_cooked': 'Everything is cooked — regenerate or add recipes.',
-  'kitchen.regenerate': 'Regenerate recipes',
   'kitchen.generate': 'Generate recipes',
   'kitchen.your_list': 'Your list',
   'kitchen.start': 'Start cooking',
   'kitchen.continue': 'Continue cooking',
   'kitchen.again': 'Cook again',
-  'kitchen.see_recipe': 'See recipe',
   'kitchen.remove': 'Remove from list',
   'kitchen.cooking': 'Cooking',
   'kitchen.cooked_badge': 'Cooked',
-  'kitchen.focus': 'Focus',
   'kitchen.prep_ahead': 'Prep ahead',
-  'kitchen.prep_ahead_hint': 'Recipes in your list that need something done in advance.',
   'kitchen.nothing': 'Nothing to cook yet',
-  'kitchen.nothing_hint': 'Generate a list from your recipes or add a few by hand, then cook them one by one.',
-  'kitchen.onboarding_recipe_title': 'Welcome to the Kitchen',
-  'kitchen.onboarding_recipe_hint': 'Cooking Mode walks you through each meal, step by step. First, add a main course to start.',
-  'kitchen.hi_chef': 'Hi, chef.',
-  'kitchen.step_add_recipe': 'Step 1 of 2 · Add a recipe',
+  'kitchen.nothing_hint':
+    'Generate a list from your recipes or add a few by hand, then cook them one by one.',
   'kitchen.add_first_recipe': 'Add your first recipe',
-  'kitchen.three_ways': 'Three ways to add',
-  'kitchen.browse_community': 'Browse community',
-  'kitchen.browse_community_hint': 'Recipes shared by others',
-  'kitchen.onboarding_menu_title': 'Almost ready to cook',
-  'kitchen.onboarding_menu_hint': "You've saved recipes — great! Now build your recipe list so Cooking Mode knows what to prepare next.",
   'kitchen.collection': 'Your collection is ready',
-  'kitchen.main_courses': '%{n} main courses',
-  'kitchen.sides': '%{n} sides',
-  'kitchen.desserts': '%{n} desserts',
-  'kitchen.starters': '%{n} starters',
-  'kitchen.generate_hint': 'Each meal pairs a main course from your recipes and favourites with a starter, side and dessert according to your preferences.',
+  'kitchen.generate_hint':
+    'Each meal pairs a main course from your recipes and favourites with a starter, side and dessert according to your preferences.',
   'kitchen.how_many': 'How many meals?',
   'kitchen.meal': 'meal',
   'kitchen.meals': 'meals',
@@ -120,16 +107,6 @@ export const en = {
   'kitchen.empty_caption': 'Your list is empty',
   'kitchen.browse_recipes': 'Browse my recipes',
   'kitchen.add_by_hand': 'Add recipes by hand',
-  'kitchen.step_recipes': 'Step 1 · Recipes saved',
-  'kitchen.step_list': 'Step 2 · Build list',
-  'kitchen.count_mains': 'mains',
-  'kitchen.count_starters': 'starters',
-  'kitchen.count_sides': 'sides',
-  'kitchen.count_desserts': 'desserts',
-  'kitchen.sample_mains': 'A few of your mains',
-  'kitchen.more': '+%{n} more',
-  'kitchen.next_title': 'What happens next.',
-  'kitchen.next_hint': 'Each meal pairs a main from your recipes with a starter, side and dessert, following your dietary preferences. You can remove any of them afterwards.',
   'kitchen.replaces': 'Replaces the %{n} meals still on your list.',
   'kitchen.replaces_one': 'Replaces the meal still on your list.',
   'kitchen.servings': '%{n} servings',
@@ -167,7 +144,8 @@ export const en = {
   'groceries.feature_aisles': 'Sorted by aisle, the way the shop is laid out.',
   'groceries.feature_merged': 'Quantities are merged across recipes, so one line per ingredient.',
   'groceries.empty': 'Nothing to buy yet',
-  'groceries.empty_hint': 'Add recipes to your list and their ingredients show up here, aisle by aisle.',
+  'groceries.empty_hint':
+    'Add recipes to your list and their ingredients show up here, aisle by aisle.',
   'recipes.library': 'Library',
   'recipes.search': 'Search',
   'recipes.search_placeholder': 'Name, description or ingredient…',
@@ -211,7 +189,8 @@ export const en = {
   'recipes.make_private': 'Make private',
   'recipes.delete': 'Delete',
   'recipes.delete_title': 'Delete this recipe?',
-  'recipes.delete_hint': 'It will be removed from your library and from any list it is in. This cannot be undone.',
+  'recipes.delete_hint':
+    'It will be removed from your library and from any list it is in. This cannot be undone.',
   'recipes.ingredients': 'Ingredients',
   'recipes.instructions': 'Instructions',
   'recipes.similar': 'Similar recipes',
@@ -268,7 +247,8 @@ export const en = {
   'edit.save': 'Save recipe',
   'edit.saved': 'Recipe saved.',
   'edit.discard_title': 'Discard changes?',
-  'edit.discard_hint': 'You edited this recipe but have not saved. Leaving now throws those edits away.',
+  'edit.discard_hint':
+    'You edited this recipe but have not saved. Leaving now throws those edits away.',
   'edit.save_leave': 'Save and leave',
   'edit.discard': 'Discard changes',
   'edit.keep_editing': 'Keep editing',
@@ -308,7 +288,8 @@ export const en = {
   'settings.revoke': 'Sign out',
   'settings.revoked': 'Device signed out.',
   'settings.danger': 'Delete account',
-  'settings.delete_hint': 'Deletes your account, your recipes and your menu for good. The email address can be used again.',
+  'settings.delete_hint':
+    'Deletes your account, your recipes and your menu for good. The email address can be used again.',
   'settings.delete_confirm_title': 'Delete this account?',
   'settings.delete_confirm_hint': 'This cannot be undone. Enter your password to confirm.',
   'settings.delete_confirm': 'Delete for good',
@@ -329,11 +310,75 @@ export const en = {
   'settings.logout_hint': 'Of this device only',
   'settings.delete_meta': 'Recipes and menu gone for good',
   'settings.billing_note': 'imkitchen · Subscriptions are managed on the website',
-  'settings.sessions_hint': 'Sign out a device you no longer recognise. Signing out everywhere else keeps this one.',
+  'settings.sessions_hint':
+    'Sign out a device you no longer recognise. Signing out everywhere else keeps this one.',
   'settings.revoke_others': 'Sign out all other devices',
   'settings.revoked_others': 'Other devices signed out.',
   'settings.app_device': '%{model} · imkitchen app',
   'settings.unknown_device': 'Unknown device',
-} as const
+  'kitchen.empty_first_hint':
+    'Add a main course to your library and cook it from here, step by step.',
+  'kitchen.empty_ready_hint':
+    'Generate a list from your recipes, or pick them by hand. Cooking Mode takes it from there.',
+  'settings.tours': 'Guided tours',
+  'settings.replay_tours': 'Replay the tours',
+  'settings.replay_hint': 'Each tab shows its tour again the next time you open it',
+  'settings.tours_reset': 'The tours will play again from the start.',
+  'tour.step_of': 'Step %{n} of %{m}',
+  'tour.back': 'Back',
+  'tour.next': 'Next',
+  'tour.done': 'Done',
+  'tour.skip': 'Skip tour',
+  'tour.kitchen.welcome.title': 'Welcome to your Kitchen',
+  'tour.kitchen.welcome.body':
+    "This is home: the recipe you'll cook next and the whole list behind it. A quick look around takes a minute.",
+  'tour.kitchen.nav.title': 'Four places to be',
+  'tour.kitchen.nav.body':
+    'Kitchen, Recipes, Groceries and Settings. Everything starts with a recipe in your library, over here.',
+  'tour.kitchen.list.title': 'Your recipe list',
+  'tour.kitchen.list.body':
+    'The recipes you plan to cook live here, the next one on top. Cooking Mode walks you through each of them, step by step.',
+  'tour.kitchen.cta.title': 'Fill the list',
+  'tour.kitchen.cta.body':
+    'Add your first recipe to start. Once you have a few, generate a list from your collection in one tap, and regenerate whenever you like.',
+  'tour.recipes.search.title': 'Find anything',
+  'tour.recipes.search.body':
+    'Search your library and the community by name, description or ingredient.',
+  'tour.recipes.new.title': 'Add a recipe',
+  'tour.recipes.new.body':
+    'Write your own, with ingredients, steps and timing, or import recipes you already have. A draft opens right away.',
+  'tour.recipes.library.title': 'Your library',
+  'tour.recipes.library.body':
+    'Everything you wrote, imported or saved. Save a recipe shared by another cook and it joins your collection.',
+  'tour.cooking.up_next.title': 'Up next',
+  'tour.cooking.up_next.body':
+    "The recipe you'll cook next, with quantities already scaled to your household.",
+  'tour.cooking.start.title': 'Start cooking',
+  'tour.cooking.start.body':
+    'Cooking Mode takes you through the recipe one step at a time, timers included, and keeps the screen awake.',
+  'tour.cooking.recipe.title': 'See the full recipe',
+  'tour.cooking.recipe.body': 'Ingredients, steps and notes, plus editing and sharing.',
+  'tour.cooking.regenerate.title': 'Regenerate any time',
+  'tour.cooking.regenerate.body':
+    "Don't like the picks? Shuffle a new list from your collection, or add and remove recipes by hand.",
+  'tour.groceries.route.title': 'Your route',
+  'tour.groceries.route.body':
+    'One stop per aisle, in the order you walk your store. Tap an aisle to jump to it; change the order in Settings.',
+  'tour.groceries.aisle.title': 'Aisle by aisle',
+  'tour.groceries.aisle.body':
+    'Everything the recipes in your list need, grouped by aisle, with your progress so far.',
+  'tour.groceries.check.title': 'Check things off',
+  'tour.groceries.check.body':
+    'Tap an item as it lands in the cart. It stays checked on every device, even offline.',
+  'tour.settings.household.title': 'Your household',
+  'tour.settings.household.body':
+    'How many people you cook for. Every ingredient quantity scales to match.',
+  'tour.settings.courses.title': 'Courses and diet',
+  'tour.settings.courses.body':
+    'Pick which courses a generated meal includes and the ingredients to steer clear of.',
+  'tour.settings.aisles.title': 'Aisle order',
+  'tour.settings.aisles.body':
+    'Arrange the aisles the way your store is laid out and the groceries list follows.',
+} as const;
 
-export type MessageKey = keyof typeof en
+export type MessageKey = keyof typeof en;
