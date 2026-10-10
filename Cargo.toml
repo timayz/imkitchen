@@ -74,7 +74,7 @@ http-body-util = "0.1"
 
 [package]
 name = "imkitchen"
-version = "1.10.0"
+version = "1.11.0"
 edition.workspace = true
 
 [package.metadata.cargo-machete]
@@ -94,21 +94,21 @@ clap = { workspace = true }
 futures = { workspace = true }
 tower-http = { workspace = true }
 async-stripe = { workspace = true }
-imkitchen-core = { path = "crates/core", version = "1.10.0" }
-imkitchen-identity = { path = "crates/identity", version = "1.10.0" }
-imkitchen-billing = { path = "crates/billing", version = "1.10.0" }
-imkitchen-db = { path = "crates/db", version = "1.10.0" }
-imkitchen-audience = { path = "crates/audience", version = "1.10.0" }
-imkitchen-notification = { path = "crates/notification", version = "1.10.0" }
-imkitchen-web-shared = { path = "web/shared", version = "1.10.0" }
-imkitchen-web-kitchen = { path = "web/kitchen", version = "1.10.0" }
-imkitchen-web-grocery = { path = "web/grocery", version = "1.10.0" }
-imkitchen-web-recipe = { path = "web/recipe", version = "1.10.0" }
-imkitchen-web-settings = { path = "web/settings", version = "1.10.0" }
-imkitchen-web-public = { path = "web/public", version = "1.10.0" }
-imkitchen-web-admin = { path = "web/admin", version = "1.10.0" }
-imkitchen-web-demo = { path = "web/demo", version = "1.10.0" }
-imkitchen-web-api = { path = "web/api", version = "1.10.0" }
+imkitchen-core = { path = "crates/core", version = "1.11.0" }
+imkitchen-identity = { path = "crates/identity", version = "1.11.0" }
+imkitchen-billing = { path = "crates/billing", version = "1.11.0" }
+imkitchen-db = { path = "crates/db", version = "1.11.0" }
+imkitchen-audience = { path = "crates/audience", version = "1.11.0" }
+imkitchen-notification = { path = "crates/notification", version = "1.11.0" }
+imkitchen-web-shared = { path = "web/shared", version = "1.11.0" }
+imkitchen-web-kitchen = { path = "web/kitchen", version = "1.11.0" }
+imkitchen-web-grocery = { path = "web/grocery", version = "1.11.0" }
+imkitchen-web-recipe = { path = "web/recipe", version = "1.11.0" }
+imkitchen-web-settings = { path = "web/settings", version = "1.11.0" }
+imkitchen-web-public = { path = "web/public", version = "1.11.0" }
+imkitchen-web-admin = { path = "web/admin", version = "1.11.0" }
+imkitchen-web-demo = { path = "web/demo", version = "1.11.0" }
+imkitchen-web-api = { path = "web/api", version = "1.11.0" }
 
 [dev-dependencies]
 evento-lock = { workspace = true }
@@ -129,8 +129,6 @@ strip = true
 
 [profile.dev]
 opt-level = 1
-# Backtraces keep file/line, but the ~1 GB of DWARF per test binary that full
-# debuginfo costs is gone. Use `--profile debugging` when a debugger needs more.
 debug = "line-tables-only"
 
 [profile.dev.package.'*']
