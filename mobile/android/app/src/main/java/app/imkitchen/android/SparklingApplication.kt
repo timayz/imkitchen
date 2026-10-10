@@ -24,6 +24,8 @@ import com.tiktok.sparkling.method.storage.getItem.StorageGetItemMethod
 import com.tiktok.sparkling.method.storage.removeItem.StorageRemoveItemMethod
 import com.tiktok.sparkling.method.storage.setItem.StorageSetItemMethod
 import app.imkitchen.keepawake.KeepAwakeSetEnabledMethod
+import app.imkitchen.timeralarm.TimerAlarmCancelMethod
+import app.imkitchen.timeralarm.TimerAlarmScheduleMethod
 import app.imkitchen.db.DbClearMethod
 import app.imkitchen.db.DbGetMethod
 import app.imkitchen.db.DbListMethod
@@ -94,6 +96,9 @@ class SparklingApplication : Application() {
         SparklingBridgeManager.registerIDLMethod(StorageRemoveItemMethod::class.java)
         // methods/keep-awake (cooking screen)
         SparklingBridgeManager.registerIDLMethod(KeepAwakeSetEnabledMethod::class.java)
+        // methods/timer-alarm (cooking step timer rings through AlarmManager)
+        SparklingBridgeManager.registerIDLMethod(TimerAlarmScheduleMethod::class.java)
+        SparklingBridgeManager.registerIDLMethod(TimerAlarmCancelMethod::class.java)
         // methods/db (SQLite document store: offline cache + write queue)
         SparklingBridgeManager.registerIDLMethod(DbGetMethod::class.java)
         SparklingBridgeManager.registerIDLMethod(DbPutMethod::class.java)

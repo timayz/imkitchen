@@ -1,0 +1,20 @@
+{
+  "name": "sparkling-timer-alarm",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {},
+  "files": [
+    "index.ts",
+    "android/build.gradle.kts",
+    "android/src",
+    "ios/Sparkling-TimerAlarm.podspec",
+    "ios/Sources"
+  ],
+  "dependencies": {
+    "sparkling-method": "2.0.1"
+  },
+  "description": "imkitchen: ring a cooking timer even when the app is asleep",
+  "main": "index.ts",
+  "types": "index.ts",
+  "type": "module"
+}

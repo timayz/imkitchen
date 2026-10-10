@@ -191,6 +191,11 @@
   border-color: var(--color-primary-200);
 }
 
+.timer--done {
+  background-color: var(--color-primary-100);
+  border-color: var(--color-primary-500);
+}
+
 .timer__icon {
   width: 44px;
   height: 44px;

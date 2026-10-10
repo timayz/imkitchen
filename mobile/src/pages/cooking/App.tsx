@@ -4,11 +4,13 @@ import '../../styles/base.css'
 import './App.css'
 import { type CookingScreen, getCooking } from '../../lib/api/kitchen.js'
 import { nextStatus } from '../../lib/cooking.js'
+import { formatClock, remainingSeconds } from '../../lib/countdown.js'
 import { aisle, course } from '../../lib/course.js'
 import { t } from '../../lib/i18n/index.js'
 import { setKeepAwake } from '../../lib/keep-awake.js'
 import { back, openExternal, pageParams } from '../../lib/nav.js'
 import { enqueue } from '../../lib/offline/queue.js'
+import { cancelTimerAlarm, scheduleTimerAlarm } from '../../lib/timer-alarm.js'
 import { useResource } from '../../lib/use-resource.js'
 import { Button } from '../../ui/Button.js'
 import { OfflineBanner } from '../../ui/OfflineBanner.js'
@@ -179,7 +181,15 @@ export function App() {
             <text className="cook__instruction">{current.description}</text>
           </scroll-view>
           <view className="cook__footer">
-            {current.time_next > 0 && <Timer key={current.index} minutes={current.time_next} />}
+            {current.time_next > 0 && (
+              <Timer
+                key={current.index}
+                minutes={current.time_next}
+                alarmId={`cooking:${id}:${current.index}`}
+                title={recipe.name}
+                step={current.index + 1}
+              />
+            )}
             <view className="cook__nav">
               <view className="cook__btn cook__btn--paper" bindtap={() => move('prev')}>
                 <text className="cook__btn-text">{t('cooking.back')}</text>
@@ -209,44 +219,81 @@ export function App() {
   )
 }
 
-/** Countdown for the current step's `time_next`, start/pause on tap. */
-function Timer({ minutes }: { minutes: number }) {
-  const [seconds, setSeconds] = useState(minutes * 60)
-  const [running, setRunning] = useState(false)
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null)
+/**
+ * Countdown for the current step's `time_next`, start/pause on tap.
+ *
+ * It keeps a deadline instead of counting ticks (`lib/countdown.ts`), so a
+ * throttled or suspended JS thread shows the right time as soon as it runs
+ * again, and the ring itself is handed to the OS (`lib/timer-alarm.ts`): the
+ * step still rings when the screen is off or the app is asleep. The alarm id
+ * is per recipe + step and the component is keyed on the step, so pausing or
+ * moving on cancels it, while reaching zero leaves the notification alone.
+ */
+function Timer({ minutes, alarmId, title, step }: { minutes: number; alarmId: string; title: string; step: number }) {
+  const total = minutes * 60
+  const [deadline, setDeadline] = useState<number | null>(null)
+  const [remaining, setRemaining] = useState(total)
+  const rang = useRef(false)
+  const running = deadline !== null
+  const done = !running && remaining === 0
 
   useEffect(() => {
-    if (!running) return
-    timer.current = setInterval(() => {
-      setSeconds((s) => {
-        if (s <= 1) {
-          setRunning(false)
-          return 0
-        }
-        return s - 1
-      })
-    }, 1000)
-    return () => {
-      if (timer.current) clearInterval(timer.current)
+    if (deadline === null) return
+    const tick = () => {
+      const left = remainingSeconds(deadline, Date.now())
+      setRemaining(left)
+      if (left === 0) {
+        rang.current = true
+        setDeadline(null)
+      }
     }
-  }, [running])
+    tick()
+    const handle = setInterval(tick, 250)
+    // Timers stall in the background; catch up the moment the screen is back.
+    const emitter = lynx.getJSModule('GlobalEventEmitter')
+    emitter.addListener('onShow', tick)
+    emitter.addListener('onEnterForeground', tick)
+    return () => {
+      clearInterval(handle)
+      emitter.removeListener('onShow', tick)
+      emitter.removeListener('onEnterForeground', tick)
+    }
+  }, [deadline])
 
-  const mm = String(Math.floor(seconds / 60)).padStart(2, '0')
-  const ss = String(seconds % 60).padStart(2, '0')
+  useEffect(() => {
+    if (deadline === null) return
+    scheduleTimerAlarm({ id: alarmId, at: deadline, title, body: t('cooking.timer_notify', { n: step }) })
+    return () => {
+      // Pause or step change: drop the alarm. Ran out: the OS is ringing, keep it.
+      if (!rang.current) cancelTimerAlarm(alarmId)
+    }
+  }, [deadline, alarmId, title, step])
+
+  const toggle = () => {
+    if (deadline !== null) {
+      setRemaining(remainingSeconds(deadline, Date.now()))
+      setDeadline(null)
+    } else if (done) {
+      setRemaining(total)
+    } else {
+      rang.current = false
+      setDeadline(Date.now() + remaining * 1000)
+    }
+  }
+
+  const label = running ? t('cooking.timer_running') : done ? t('cooking.timer_done') : t('cooking.timer_ready')
 
   return (
-    <view className={running ? 'timer timer--running' : 'timer'}>
+    <view className={running ? 'timer timer--running' : done ? 'timer timer--done' : 'timer'}>
       <view className="timer__icon">
         <text className="timer__icon-text">⏲</text>
       </view>
       <view className="timer__body">
-        <text className="timer__label">{running ? t('cooking.timer_running') : t('cooking.timer_ready')}</text>
-        <text className="timer__display">
-          {mm}:{ss}
-        </text>
+        <text className="timer__label">{label}</text>
+        <text className="timer__display">{formatClock(remaining)}</text>
       </view>
-      <view className="timer__toggle" bindtap={() => setRunning((r) => !r)}>
-        <text className="timer__toggle-text">{running ? '❚❚' : '▶'}</text>
+      <view className="timer__toggle" bindtap={toggle}>
+        <text className="timer__toggle-text">{running ? '❚❚' : done ? '↺' : '▶'}</text>
       </view>
     </view>
   )

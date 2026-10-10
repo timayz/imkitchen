@@ -8,6 +8,7 @@ object SparklingAutolink {
         SparklingAutolinkModule(name = "sparkling-keep-awake", androidPackage = "app.imkitchen.keepawake", className = "KeepAwakeSetEnabledMethod"),
         SparklingAutolinkModule(name = "sparkling-media", androidPackage = "", className = ""),
         SparklingAutolinkModule(name = "sparkling-navigation", androidPackage = "com.tiktok.sparkling.methods.router", className = "RouterMethod"),
-        SparklingAutolinkModule(name = "sparkling-storage", androidPackage = "com.tiktok.sparkling.methods.storage", className = "StorageMethod")
+        SparklingAutolinkModule(name = "sparkling-storage", androidPackage = "com.tiktok.sparkling.methods.storage", className = "StorageMethod"),
+        SparklingAutolinkModule(name = "sparkling-timer-alarm", androidPackage = "app.imkitchen.timeralarm", className = "TimerAlarmScheduleMethod")
     )
 }

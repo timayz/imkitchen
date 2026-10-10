@@ -20,6 +20,7 @@ in the app (store payment policies); users subscribe on the website.
 | `src/lib/cache.ts`, `src/lib/use-resource.ts` | Offline cache: every screen renders its last server response from the local store, then refreshes |
 | `src/lib/offline/` | Offline write queue (`queue.ts`, `ops.ts`) and the offline flag; kitchen changes work without a connection |
 | `methods/db/` | `sparkling-db`, the SQLite document store behind the cache and the queue (Kotlin + Swift) |
+| `methods/keep-awake/`, `methods/timer-alarm/` | `sparkling-keep-awake` (screen stays on while cooking) and `sparkling-timer-alarm` (the step timer rings through AlarmManager / UNUserNotificationCenter, so it survives sleep and process death) |
 | `src/styles/tokens.css` | Design tokens mirrored from the web app's `tailwind.css` |
 | `scripts/icons.mjs` | Renders launcher, splash and store icons from `static/icons/icon-maskable.svg` (`npm run icons`) |
 | `scripts/nav-icons.mjs` | Renders the tab bar icons from the web nav's SVG paths into `src/assets/icons/*.png` (`npm run icons`) |
@@ -195,6 +196,12 @@ domains entitlement.
 - `sparkling-method-cli codegen` 2.0.1 emits broken TypeScript and Swift;
   `methods/keep-awake` keeps only its Kotlin abstract class and hand-writes
   the rest.
+- The cooking timer counts down from a deadline in JS but rings through the
+  OS (`methods/timer-alarm`): Android's exact-alarm permission is
+  `USE_EXACT_ALARM` (auto-granted, Play reserves it for alarm/timer features;
+  swap for `SCHEDULE_EXACT_ALARM` + a settings prompt if review objects) and
+  both platforms ask for notification permission on the first start of a
+  timer. Pausing or moving to the next step cancels the alarm.
 - Each bundle is its own JS runtime: nothing in memory survives a container
   push. The API client reloads the session from storage on first use.
 

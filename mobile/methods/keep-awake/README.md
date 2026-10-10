@@ -1,7 +1,7 @@
 # sparkling-keep-awake
 
-imkitchen's only custom Sparkling Method: keep the screen on while the cooking
-screen is up. Scaffolded with `sparkling-method-cli init` 2.0.1; the generated
+Custom Sparkling Method: keep the screen on while the cooking screen is up
+(see also `../db` and `../timer-alarm`). Scaffolded with `sparkling-method-cli init` 2.0.1; the generated
 TypeScript/Swift stubs were unusable (invalid syntax), so `index.ts` and the
 Kotlin method are hand-written against the generated `AbsSetEnabledMethodIDL`.
 

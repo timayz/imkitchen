@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="timer_alarm_channel_name">Minuteurs de cuisson</string>
+    <string name="timer_alarm_channel_description">Sonne à la fin du minuteur d\'une étape</string>
+</resources>
