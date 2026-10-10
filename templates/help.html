@@ -183,7 +183,7 @@
           <svg class="w-4 h-4 text-primary-800" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l1.9 4.5L18.5 9l-4.6 1.5L12 15l-1.9-4.5L5.5 9l4.6-1.5z"/></svg>
         </div>
         <h3 class="font-serif text-xl text-ink tracking-tight flex-1">{{ "Getting started"|t }}</h3>
-        <span class="font-mono text-[10px] text-ink-3">{{ "4 articles"|t }}</span>
+        <span class="font-mono text-[10px] text-ink-3">{{ "5 articles"|t }}</span>
       </div>
       <div class="px-5 pb-4">
         <details class="group border-t border-line-2 py-3.5" open>
@@ -206,6 +206,20 @@
             <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
           </summary>
           <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Four sections: Kitchen (your recipe list and what to cook next), Recipes (your library), Groceries (shopping list), Settings."|t }}</p>
+        </details>
+        <details class="group border-t border-line-2 py-3.5">
+          <summary class="flex items-center gap-2.5 cursor-pointer list-none">
+            <span class="text-sm font-medium text-ink flex-1 leading-snug">{{ "Taking a guided tour"|t }}</span>
+            <svg class="w-3.5 h-3.5 text-ink-3 group-open:rotate-90 transition" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 6l6 6-6 6"/></svg>
+          </summary>
+          <p class="text-sm text-ink-2 leading-relaxed mt-3">{{ "Each page walks you through what it does the first time you open it. Replay one any time:"|t }}</p>
+          <ul class="flex flex-wrap gap-2 mt-3">
+            <li><a href="/?tour=kitchen" class="inline-flex px-3 py-1.5 rounded-xl bg-cream-2 text-xs font-semibold text-ink hover:bg-cream transition">{{ "Kitchen"|t }}</a></li>
+            <li><a href="/recipes?tour=recipes" class="inline-flex px-3 py-1.5 rounded-xl bg-cream-2 text-xs font-semibold text-ink hover:bg-cream transition">{{ "Recipes"|t }}</a></li>
+            <li><a href="/?tour=cooking" class="inline-flex px-3 py-1.5 rounded-xl bg-cream-2 text-xs font-semibold text-ink hover:bg-cream transition">{{ "Cooking"|t }}</a></li>
+            <li><a href="/groceries?tour=groceries" class="inline-flex px-3 py-1.5 rounded-xl bg-cream-2 text-xs font-semibold text-ink hover:bg-cream transition">{{ "Groceries"|t }}</a></li>
+            <li><a href="/settings/general?tour=settings" class="inline-flex px-3 py-1.5 rounded-xl bg-cream-2 text-xs font-semibold text-ink hover:bg-cream transition">{{ "Settings"|t }}</a></li>
+          </ul>
         </details>
         {% if ""|premium_enabled %}
         <details class="group border-t border-line-2 py-3.5">

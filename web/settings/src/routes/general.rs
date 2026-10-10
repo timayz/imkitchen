@@ -9,7 +9,7 @@ use strum::VariantArray;
 
 use imkitchen_web_shared::AppState;
 use imkitchen_web_shared::auth::AuthUser;
-use imkitchen_web_shared::services::settings;
+use imkitchen_web_shared::services::{settings, tour};
 use imkitchen_web_shared::template::{Template, ToastSuccessTemplate, filters};
 
 #[derive(askama::Template)]
@@ -181,6 +181,25 @@ pub async fn update_profile_action(
         .render(ToastSuccessTemplate {
             original: None,
             message: "Profile updated successfully",
+            description: None,
+        })
+        .into_response()
+}
+
+/// Settings → "Replay the tours": every guided tour plays again from its
+/// first step the next time its page opens.
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn replay_tours_action(
+    template: Template,
+    State(app): State<AppState>,
+    user: AuthUser,
+) -> impl IntoResponse {
+    imkitchen_web_shared::try_response!(tour::reset(&app, &user.id), template);
+
+    template
+        .render(ToastSuccessTemplate {
+            original: None,
+            message: "The tours will play again from the start",
             description: None,
         })
         .into_response()

@@ -35,7 +35,7 @@
 </section>
 
 {# ── Aisle order ───────────────────────────────────────────────── #}
-<section>
+<section data-tour="settings-aisles">
   <div class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-2 px-1">
     {{ "Aisle order"|t }}
   </div>
@@ -72,7 +72,7 @@
 <form method="post" action="/settings/general" ts-req="" ts-swap="skip" class="space-y-5 md:space-y-6" autocomplete="off">
 
   {# ── Courses ───────────────────────────────────────────────── #}
-  <section>
+  <section data-tour="settings-courses">
     <div class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-2 px-1">
       {{ "Courses"|t }}
     </div>
@@ -130,7 +130,7 @@
   </section>
 
   {# ── Household ─────────────────────────────────────────────── #}
-  <section>
+  <section data-tour="settings-household">
     <div class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-2 px-1">
       {{ "Household"|t }}
     </div>
@@ -219,5 +219,23 @@
   }
   ikAisleSync();
 </script>
+
+{# ── Guided tours ──────────────────────────────────────────────── #}
+<section class="mt-5 md:mt-6">
+  <div class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-2 px-1">
+    {{ "Guided tours"|t }}
+  </div>
+  <form method="post" action="/settings/general/tours/reset" ts-req="" ts-swap="skip"
+    class="bg-paper rounded-2xl border border-line-2 shadow-sm p-5 md:p-6 flex flex-col sm:flex-row sm:items-center gap-4">
+    <div class="flex-1 min-w-0">
+      <div class="text-sm font-semibold text-ink">{{ "Replay the tours"|t }}</div>
+      <div class="text-xs text-ink-3 mt-0.5">{{ "Each page shows its guided tour again the next time you open it."|t }}</div>
+    </div>
+    <button type="submit"
+      class="px-4 py-2.5 rounded-xl border border-line bg-paper text-sm font-semibold text-ink hover:bg-cream-2 transition shrink-0">
+      {{ "Replay the tours"|t }}
+    </button>
+  </form>
+</section>
 
 {% endblock %}

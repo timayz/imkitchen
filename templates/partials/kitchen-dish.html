@@ -129,11 +129,11 @@
 </div>
 {% endmacro %}
 
-<div id="current-recipe-card" class="space-y-4">
+<div id="current-recipe-card" data-tour="kitchen-list" class="space-y-4">
 
   {# ── Hero Card — the focused recipe ───────────────────────── #}
   {% let total_time = slot_recipe.prep_time + slot_recipe.cook_time %}
-  <div class="relative overflow-hidden rounded-3xl border border-line-2 bg-linear-to-br {{ hero_bg_class }} p-5">
+  <div data-tour="kitchen-hero" class="relative overflow-hidden rounded-3xl border border-line-2 bg-linear-to-br {{ hero_bg_class }} p-5">
     <div class="absolute -right-10 -bottom-10 w-44 h-44 rounded-full opacity-20 {{ hero_blob_class }}"></div>
     <div class="relative">
       <div class="flex flex-wrap items-center gap-2 mb-3">
@@ -165,20 +165,20 @@
         {# ── Imported recipe with no in-app steps and an unframeable origin:
               start straight from the original source in a new tab. ── #}
         {% if let Some(origin) = slot_recipe.origin %}
-        <a href="{{ origin }}" target="_blank" rel="noopener noreferrer"
+        <a href="{{ origin }}" target="_blank" rel="noopener noreferrer" data-tour="kitchen-start"
           class="inline-flex items-center gap-2 px-4 py-2.5 bg-ink text-cream rounded-xl text-sm font-semibold shadow-sm hover:opacity-90 transition">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg>
           {{ "Start cooking"|t }}
         </a>
         {% endif %}
         {% else %}
-        <a href="{{ "/kitchen/"|demo_href }}{{ slot_recipe.id }}/cook"
+        <a href="{{ "/kitchen/"|demo_href }}{{ slot_recipe.id }}/cook" data-tour="kitchen-start"
           class="inline-flex items-center gap-2 px-4 py-2.5 bg-ink text-cream rounded-xl text-sm font-semibold shadow-sm hover:opacity-90 transition">
           <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg>
           {% if focused_status.is_cooking() %}{{ "Continue cooking"|t }}{% else if focused_status.is_completed() %}{{ "Cook again"|t }}{% else %}{{ "Start cooking"|t }}{% endif %}
         </a>
         {% endif %}
-        <a href="{{ "/r/"|demo_href }}{{ slot_recipe.slug }}"
+        <a href="{{ "/r/"|demo_href }}{{ slot_recipe.slug }}" data-tour="kitchen-see-recipe"
           class="inline-flex items-center gap-2 px-4 py-2.5 border border-line bg-paper/80 text-ink rounded-xl text-sm font-semibold hover:bg-paper transition">
           {{ "See recipe"|t }}
         </a>

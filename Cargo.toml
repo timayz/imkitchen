@@ -18,7 +18,7 @@ tower = "0.5"
 tower-http = { version = "0.7", features = ["fs", "trace", "limit", "compression-br", "compression-gzip"] }
 rust-i18n = "4.2"
 time-tz = "3.0.0-rc.5.0.0"
-askama = "0.16"
+askama = { version = "0.16", features = ["serde_json"] }
 world-tax = "0.5"
 sqlx = { version = "0.9", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
 sqlx_migrator = { version = "0.19", features = ["sqlite"] }

@@ -1,0 +1,121 @@
+{# ── Guided tours ──────────────────────────────────────────────────
+   Included by _user.html for signed-in (non-demo) renders. Emits the tour
+   catalog — copy through |t, anchors as CSS selectors — and the step card
+   markup; static/js/tour.js fetches the user's progress from /tours and
+   drives the overlay. Steps whose anchors are not on the page are skipped. #}
+<template id="tour-card">
+  <div class="tour-card w-[320px] max-w-[calc(100vw-1.5rem)] bg-paper rounded-2xl border border-line-2 shadow-lg p-4"
+    role="dialog" aria-modal="true" aria-labelledby="tour-title" tabindex="-1">
+    <div class="flex items-center justify-between gap-3 mb-2">
+      <span class="text-[10.5px] font-mono font-semibold tracking-widest uppercase text-ink-3" data-tour-count></span>
+      <button type="button" data-tour-skip class="text-xs font-semibold text-ink-3 hover:text-ink transition">{{ "Skip tour"|t }}</button>
+    </div>
+    <h3 id="tour-title" class="font-serif text-xl leading-tight tracking-tight text-ink" data-tour-title></h3>
+    <p class="text-[13.5px] text-ink-2 leading-relaxed mt-1.5" data-tour-body></p>
+    <div class="flex items-center justify-between gap-3 mt-4">
+      <div class="flex items-center gap-1" data-tour-dots>
+        <span data-tour-dot class="w-1.5 h-1.5 rounded-full bg-line transition-all"></span>
+        <span data-tour-dot-active class="w-5 h-1.5 rounded-full bg-primary-500 transition-all"></span>
+      </div>
+      <div class="flex gap-2">
+        <button type="button" data-tour-back class="px-3 py-2 rounded-xl border border-line text-sm font-semibold text-ink hover:bg-cream-2 transition">{{ "Back"|t }}</button>
+        <button type="button" data-tour-next class="px-4 py-2 rounded-xl bg-primary-500 text-white text-sm font-semibold shadow-sm hover:bg-primary-600 transition"></button>
+      </div>
+    </div>
+  </div>
+</template>
+<script type="application/json" id="tour-catalog">{
+  "labels": {
+    "step": {{ "Step"|t|json|safe }},
+    "of": {{ "of"|t|json|safe }},
+    "next": {{ "Next"|t|json|safe }},
+    "done": {{ "Done"|t|json|safe }}
+  },
+  "tours": {
+    "kitchen": {
+      "page": "/",
+      "requires": [],
+      "steps": [
+        { "key": "welcome", "targets": ["[data-tour~=kitchen-title]"],
+          "title": {{ "Welcome to your Kitchen"|t|json|safe }},
+          "body": {{ "This is home: the recipe you'll cook next and the whole list behind it. A quick look around takes a minute."|t|json|safe }} },
+        { "key": "nav", "targets": ["[data-tour~=nav-recipes]"],
+          "title": {{ "Four places to be"|t|json|safe }},
+          "body": {{ "Kitchen, Recipes, Groceries and Settings. Everything starts with a recipe in your library, over here."|t|json|safe }} },
+        { "key": "list", "targets": ["[data-tour~=kitchen-list]"],
+          "title": {{ "Your recipe list"|t|json|safe }},
+          "body": {{ "The recipes you plan to cook live here, the next one on top. Cooking Mode walks you through each of them, step by step."|t|json|safe }} },
+        { "key": "cta", "targets": ["[data-tour~=kitchen-cta]"],
+          "title": {{ "Fill the list"|t|json|safe }},
+          "body": {{ "Add your first recipe to start. Once you have a few, generate a list from your collection in one tap, and regenerate whenever you like."|t|json|safe }} }
+      ]
+    },
+    "recipes": {
+      "page": "/recipes",
+      "requires": [],
+      "steps": [
+        { "key": "search", "targets": ["[data-tour~=recipes-search]"],
+          "title": {{ "Find anything"|t|json|safe }},
+          "body": {{ "Search your library and the community by name, description or ingredient."|t|json|safe }} },
+        { "key": "import", "targets": ["[data-tour~=recipes-import]"],
+          "title": {{ "Bring your recipes along"|t|json|safe }},
+          "body": {{ "Import recipes you already have as JSON files, up to twenty at a time."|t|json|safe }} },
+        { "key": "new", "targets": ["[data-tour~=recipes-new]"],
+          "title": {{ "Write your own"|t|json|safe }},
+          "body": {{ "Ingredients, steps and timing. A draft opens right away; publish it when it's ready."|t|json|safe }} },
+        { "key": "library", "targets": ["#recipes-list"],
+          "title": {{ "Your library"|t|json|safe }},
+          "body": {{ "Everything you wrote, imported or saved. Save a recipe shared by another cook and it joins your collection."|t|json|safe }} }
+      ]
+    },
+    "cooking": {
+      "page": "/",
+      "requires": ["[data-tour~=kitchen-hero]"],
+      "steps": [
+        { "key": "up_next", "targets": ["[data-tour~=kitchen-hero]"],
+          "title": {{ "Up next"|t|json|safe }},
+          "body": {{ "The recipe you'll cook next, with quantities already scaled to your household."|t|json|safe }} },
+        { "key": "start", "targets": ["[data-tour~=kitchen-start]"],
+          "title": {{ "Start cooking"|t|json|safe }},
+          "body": {{ "Cooking Mode takes you through the recipe one step at a time, timers included, and keeps the screen awake."|t|json|safe }} },
+        { "key": "recipe", "targets": ["[data-tour~=kitchen-see-recipe]"],
+          "title": {{ "See the full recipe"|t|json|safe }},
+          "body": {{ "Ingredients, steps and notes, plus editing and sharing."|t|json|safe }} },
+        { "key": "regenerate", "targets": ["[data-tour~=kitchen-regenerate]"],
+          "title": {{ "Regenerate any time"|t|json|safe }},
+          "body": {{ "Don't like the picks? Shuffle a new list from your collection, or add and remove recipes by hand."|t|json|safe }} }
+      ]
+    },
+    "groceries": {
+      "page": "/groceries",
+      "requires": ["[data-tour~=groceries-aisle]"],
+      "steps": [
+        { "key": "route", "targets": ["[data-tour~=groceries-route]"],
+          "title": {{ "Your route"|t|json|safe }},
+          "body": {{ "One stop per aisle, in the order you walk your store. Tap an aisle to jump to it; change the order in Settings."|t|json|safe }} },
+        { "key": "aisle", "targets": ["[data-tour~=groceries-aisle]"],
+          "title": {{ "Aisle by aisle"|t|json|safe }},
+          "body": {{ "Everything the recipes in your list need, grouped by aisle, with your progress so far."|t|json|safe }} },
+        { "key": "check", "targets": ["[data-tour~=groceries-item]"],
+          "title": {{ "Check things off"|t|json|safe }},
+          "body": {{ "Tap an item as it lands in the cart. It stays checked on every device."|t|json|safe }} }
+      ]
+    },
+    "settings": {
+      "page": "/settings/general",
+      "requires": [],
+      "steps": [
+        { "key": "household", "targets": ["[data-tour~=settings-household]"],
+          "title": {{ "Your household"|t|json|safe }},
+          "body": {{ "How many people you cook for. Every ingredient quantity scales to match."|t|json|safe }} },
+        { "key": "courses", "targets": ["[data-tour~=settings-courses]"],
+          "title": {{ "Courses and diet"|t|json|safe }},
+          "body": {{ "Pick which courses a generated meal includes and the ingredients to steer clear of."|t|json|safe }} },
+        { "key": "aisles", "targets": ["[data-tour~=settings-aisles]"],
+          "title": {{ "Aisle order"|t|json|safe }},
+          "body": {{ "Arrange the aisles the way your store is laid out and the groceries list follows."|t|json|safe }} }
+      ]
+    }
+  }
+}</script>
+<script src={{ "/static/js/tour.js?v=" ~ env!("CARGO_PKG_VERSION") }} defer></script>

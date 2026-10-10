@@ -133,13 +133,14 @@ async fn create_recipe(app: &TestApp, user_id: &str) -> anyhow::Result<String> {
 }
 
 #[tokio::test]
-async fn empty_kitchen_is_onboarding_recipe() -> anyhow::Result<()> {
+async fn empty_kitchen_without_recipes_is_empty() -> anyhow::Result<()> {
     let app = TestApp::new().await?;
     let session = sign_in(&app).await?;
 
     let (status, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["kind"], "onboarding_recipe");
+    assert_eq!(body["kind"], "empty");
+    assert_eq!(body["has_recipes"], false);
 
     Ok(())
 }
@@ -258,7 +259,7 @@ async fn cooks_a_recipe_from_the_list_step_by_step() -> anyhow::Result<()> {
     let (status, _) = step("sideways").await?;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
 
-    // Remove it: the list is empty again, recipes still exist -> onboarding_menu.
+    // Remove it: the list is empty again, recipes still exist -> empty, generable.
     let (status, _) = call(
         &app,
         &session,
@@ -281,9 +282,8 @@ async fn cooks_a_recipe_from_the_list_step_by_step() -> anyhow::Result<()> {
 
     app.drain().await?;
     let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
-    assert_eq!(body["kind"], "onboarding_menu");
-    assert_eq!(body["main_count"], 1);
-    assert_eq!(body["recipes"][0]["name"], "Shakshuka");
+    assert_eq!(body["kind"], "empty");
+    assert_eq!(body["has_recipes"], true);
 
     Ok(())
 }
@@ -295,7 +295,8 @@ async fn generate_fills_the_list_from_the_pool() -> anyhow::Result<()> {
     create_recipe(&app, &session.user_id).await?;
 
     let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
-    assert_eq!(body["kind"], "onboarding_menu");
+    assert_eq!(body["kind"], "empty");
+    assert_eq!(body["has_recipes"], true);
 
     let (status, body) = call(
         &app,
@@ -309,7 +310,7 @@ async fn generate_fills_the_list_from_the_pool() -> anyhow::Result<()> {
 
     // The list itself is read from the aggregate, but its entries come from
     // the recipe projection: drain it, or the overview has nothing to cook
-    // and still reads as onboarding.
+    // and still reads as empty.
     app.drain().await?;
     let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
     assert_eq!(body["kind"], "list");
@@ -407,7 +408,7 @@ async fn status_is_set_absolutely() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
-async fn a_list_whose_recipes_were_deleted_is_onboarding_again() -> anyhow::Result<()> {
+async fn a_list_whose_recipes_were_deleted_is_empty_again() -> anyhow::Result<()> {
     let app = TestApp::new().await?;
     let session = sign_in(&app).await?;
     let recipe_id = create_recipe(&app, &session.user_id).await?;
@@ -428,7 +429,7 @@ async fn a_list_whose_recipes_were_deleted_is_onboarding_again() -> anyhow::Resu
     assert_eq!(body["kind"], "list");
 
     // Delete the only recipe: whatever the list still holds, there is nothing
-    // to cook, so the kitchen is back to an onboarding screen (never a list
+    // to cook, so the kitchen is back to the empty state (never a list
     // without a focused recipe).
     let (status, _) = call(
         &app,
@@ -442,10 +443,7 @@ async fn a_list_whose_recipes_were_deleted_is_onboarding_again() -> anyhow::Resu
 
     app.drain().await?;
     let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
-    assert!(
-        body["kind"] == "onboarding_recipe" || body["kind"] == "onboarding_menu",
-        "{body}"
-    );
+    assert_eq!(body["kind"], "empty", "{body}");
 
     Ok(())
 }

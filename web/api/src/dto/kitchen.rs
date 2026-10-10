@@ -1,9 +1,8 @@
-use imkitchen_core::shopping::PoolRecipe;
 use imkitchen_types::recipe::{Instruction, RecipeType};
 use imkitchen_types::shopping::RecipeStatus;
 use imkitchen_web_shared::services::kitchen::{
     self, CookingScreen as CookingScreenView, Dish as DishView, IngredientAisle, KitchenList,
-    ListEntry, OnboardingMenu as OnboardingMenuView, StepView,
+    ListEntry, StepView,
 };
 use serde::{Deserialize, Serialize};
 
@@ -87,36 +86,14 @@ impl From<&StepView> for Steps {
     }
 }
 
-#[derive(Serialize, Clone, Debug)]
-pub struct Sample {
-    pub id: String,
-    pub name: String,
-    pub accepts_accompaniment: bool,
-}
-
-impl From<&PoolRecipe> for Sample {
-    fn from(r: &PoolRecipe) -> Self {
-        Self {
-            id: r.id.to_owned(),
-            name: r.name.to_owned(),
-            accepts_accompaniment: r.accepts_accompaniment,
-        }
-    }
-}
-
 /// What the kitchen tab shows, tagged by `kind`.
 #[derive(Serialize, Debug)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Overview {
-    /// No recipes yet: explain how to add one.
-    OnboardingRecipe,
-    /// Recipes exist but the list is empty: invite to generate.
-    OnboardingMenu {
-        recipes: Vec<Sample>,
-        main_count: usize,
-        appetizer_count: usize,
-        accompaniment_count: usize,
-        dessert_count: usize,
+    /// Nothing to cook. `has_recipes` says whether generating is possible
+    /// (the pool has a main course) or the library is still empty.
+    Empty {
+        has_recipes: bool,
     },
     List(Box<List>),
 }
@@ -138,19 +115,8 @@ pub struct List {
 impl From<kitchen::Overview> for Overview {
     fn from(view: kitchen::Overview) -> Self {
         match view {
-            kitchen::Overview::OnboardingRecipe => Overview::OnboardingRecipe,
-            kitchen::Overview::OnboardingMenu(OnboardingMenuView {
-                recipes,
-                main_count,
-                appetizer_count,
-                accompaniment_count,
-                dessert_count,
-            }) => Overview::OnboardingMenu {
-                recipes: recipes.iter().map(Sample::from).collect(),
-                main_count,
-                appetizer_count,
-                accompaniment_count,
-                dessert_count,
+            kitchen::Overview::Empty(empty) => Overview::Empty {
+                has_recipes: empty.has_recipes,
             },
             kitchen::Overview::List(list) => Overview::List(Box::new(List::from(*list))),
         }

@@ -84,7 +84,7 @@
 {# One aisle card. `hidden` collapses it on mobile (only the active aisle shows;
    the route strip toggles the rest via JS). #}
 {% macro category_card(aisle, checked, demo, hidden) %}
-<section id="category-{{ aisle.name }}"
+<section id="category-{{ aisle.name }}" data-tour="groceries-aisle"
   style="--aisle: {% call aisle_hex(aisle.name) %}{% endcall %}"
   class="category-section bg-paper rounded-2xl border border-line-2 shadow-sm overflow-hidden{% if hidden %} hidden lg:block{% endif %}">
 
@@ -109,7 +109,7 @@
   {# Items — chunky checkbox row, checked uses herb green #}
   <div class="divide-y divide-line-2">
     {% for ingredient in aisle.items %}
-    <label class="group flex items-center gap-3 px-3 md:px-4 py-3 hover:bg-cream/30 cursor-pointer transition has-checked:bg-cream/50">
+    <label data-tour="groceries-item" class="group flex items-center gap-3 px-3 md:px-4 py-3 hover:bg-cream/30 cursor-pointer transition has-checked:bg-cream/50">
       <input{% if checked.contains(&ingredient.key()) %} checked{% endif %} type="checkbox"
         {% if !demo %}ts-trigger="change" ts-req="/groceries/toggle" ts-json="{{ ingredient.json_key() }}" ts-req-method="post" ts-swap="none"{% endif %}
         class="peer sr-only" autocomplete="off" />
@@ -179,7 +179,7 @@
     <div class="min-w-0">
 
       {# ── Aisle route map — emoji bubbles with shared accent ─── #}
-      <div class="bg-paper rounded-2xl border border-line-2 shadow-sm p-3 md:p-4 mb-4">
+      <div data-tour="groceries-route" class="bg-paper rounded-2xl border border-line-2 shadow-sm p-3 md:p-4 mb-4">
         <div class="flex items-baseline justify-between mb-3">
           <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">
             {{ "Your route"|t }}
