@@ -128,6 +128,11 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             "/settings/sessions/{acc}",
             axum::routing::delete(routes::settings::revoke_session),
         )
+        .route("/tours", get(routes::tour::tours))
+        .route("/tours/reset", post(routes::tour::reset))
+        .route("/tours/{id}/advance", post(routes::tour::advance))
+        .route("/tours/{id}/complete", post(routes::tour::complete))
+        .route("/tours/{id}/skip", post(routes::tour::skip))
         .fallback(routes::health::not_found)
         .layer(axum::middleware::map_response(no_store));
 

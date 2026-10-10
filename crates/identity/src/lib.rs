@@ -1,5 +1,6 @@
 pub mod meal_preferences;
 pub mod password;
+pub mod tour;
 pub mod types;
 pub mod user_profile;
 

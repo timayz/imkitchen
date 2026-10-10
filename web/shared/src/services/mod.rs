@@ -8,3 +8,4 @@ pub mod grocery;
 pub mod kitchen;
 pub mod recipe;
 pub mod settings;
+pub mod tour;

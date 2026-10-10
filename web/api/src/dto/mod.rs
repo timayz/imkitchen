@@ -7,6 +7,7 @@ pub mod grocery;
 pub mod kitchen;
 pub mod recipe;
 pub mod settings;
+pub mod tour;
 
 use serde::Serialize;
 use time::{OffsetDateTime, format_description::well_known::Rfc3339};

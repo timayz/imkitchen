@@ -28,6 +28,7 @@ pub struct Module<E: Executor> {
     pub meal_preferences: crate::meal_preferences::Module<E>,
     pub password: crate::password::Module<E>,
     pub user_profile: crate::user_profile::Module<E>,
+    pub tour: crate::tour::Module<E>,
 }
 
 impl<E: Executor> Deref for Module<E> {
@@ -47,6 +48,7 @@ impl<E: Executor> Module<E> {
             meal_preferences: crate::meal_preferences::Module(state.clone()),
             password: crate::password::Module(state.clone()),
             user_profile: crate::user_profile::Module(state.clone()),
+            tour: crate::tour::Module(state.clone()),
             state,
         }
     }
