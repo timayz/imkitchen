@@ -622,9 +622,10 @@ pub fn recipes(query: PageQuery) -> RecipesIndexTemplate {
         .as_deref()
         .and_then(|v| RecipeType::from_str(v).ok());
 
-    // Type chips, search and sort behave like the real page. The Mine / Saved /
-    // No-image filters never reach here — in demo they open the sign-up modal
-    // instead of submitting the form.
+    // Type chips, search and sort behave like the real page. The Mine / Saved
+    // filters never reach here — in demo they open the sign-up modal instead
+    // of submitting the form — and the chef-only No-image toggle is not
+    // rendered for the demo user at all.
     let mut matches: Vec<UserView> = catalog()
         .into_iter()
         .filter(|r| recipe_type.as_ref().is_none_or(|rt| &r.recipe_type.0 == rt))

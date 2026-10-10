@@ -241,11 +241,13 @@ export function RecipesTab({ refreshKey }: { refreshKey: number }) {
             active={filters.in_meal_plan}
             onTap={() => set({ in_meal_plan: !filters.in_meal_plan })}
           />
-          <Chip
-            label={t('recipes.no_image')}
-            active={filters.no_image}
-            onTap={() => set({ no_image: !filters.no_image })}
-          />
+          {user?.is_chef && (
+            <Chip
+              label={t('recipes.no_image')}
+              active={filters.no_image}
+              onTap={() => set({ no_image: !filters.no_image })}
+            />
+          )}
           <view className="rec__spacer" />
           <view className="rec__sort" bindtap={() => setSortOpen(true)}>
             <text className="rec__sort-text">{t(`sort.${filters.sort_by}` as const)} ▾</text>
