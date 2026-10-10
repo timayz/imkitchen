@@ -201,7 +201,15 @@ domains entitlement.
   `USE_EXACT_ALARM` (auto-granted, Play reserves it for alarm/timer features;
   swap for `SCHEDULE_EXACT_ALARM` + a settings prompt if review objects) and
   both platforms ask for notification permission on the first start of a
-  timer. Pausing or moving to the next step cancels the alarm.
+  timer. Pausing or moving to the next step cancels the alarm; closing the
+  screen does not, and the deadline is kept in native storage so the
+  countdown is restored when the step is reopened, even after process death.
+- `SplashActivity` is `singleTask` and finishes itself, so an icon or
+  notification tap while the app runs recreates it on top of the live
+  containers: it leaves at once when the task already exists. A
+  `SparklingActivity` recreated after the process was killed has lost its
+  context (the transfer station is in memory) and would show an empty
+  "Sparkling Page"; `SparklingApplication` restarts from the splash instead.
 - Each bundle is its own JS runtime: nothing in memory survives a container
   push. The API client reloads the session from storage on first use.
 

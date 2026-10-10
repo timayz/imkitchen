@@ -10,6 +10,7 @@ import { t } from '../../lib/i18n/index.js'
 import { setKeepAwake } from '../../lib/keep-awake.js'
 import { back, openExternal, pageParams } from '../../lib/nav.js'
 import { enqueue } from '../../lib/offline/queue.js'
+import { storageGet, storageRemove, storageSet } from '../../lib/storage.js'
 import { cancelTimerAlarm, scheduleTimerAlarm } from '../../lib/timer-alarm.js'
 import { useResource } from '../../lib/use-resource.js'
 import { Button } from '../../ui/Button.js'
@@ -56,6 +57,10 @@ export function App() {
     (direction: 'next' | 'prev') => {
       if (!screen || moving.current) return
       moving.current = true
+      // Leaving the step is what ends its timer; closing the screen does not,
+      // so a timer started here still rings and is restored when you return.
+      const step = screen.steps.current
+      if (step && step.time_next > 0) forgetTimer(timerId(id, step.index))
       const status = nextStatus(direction, screen.status, screen.recipe.instructions.length)
       // The queue patches the cached screen (re-rendering it) and sends the
       // absolute status when the server is reachable.
@@ -185,7 +190,7 @@ export function App() {
               <Timer
                 key={current.index}
                 minutes={current.time_next}
-                alarmId={`cooking:${id}:${current.index}`}
+                alarmId={timerId(id, current.index)}
                 title={recipe.name}
                 step={current.index + 1}
               />
@@ -219,15 +224,28 @@ export function App() {
   )
 }
 
+/** One alarm and one stored deadline per recipe + step. */
+function timerId(recipeId: string, step: number): string {
+  return `cooking:${recipeId}:${step}`
+}
+
+/** Drops a step's alarm and remembered deadline (no-op when there is none). */
+function forgetTimer(alarmId: string): void {
+  cancelTimerAlarm(alarmId)
+  void storageRemove(alarmId).catch(() => {})
+}
+
 /**
  * Countdown for the current step's `time_next`, start/pause on tap.
  *
  * It keeps a deadline instead of counting ticks (`lib/countdown.ts`), so a
  * throttled or suspended JS thread shows the right time as soon as it runs
  * again, and the ring itself is handed to the OS (`lib/timer-alarm.ts`): the
- * step still rings when the screen is off or the app is asleep. The alarm id
- * is per recipe + step and the component is keyed on the step, so pausing or
- * moving on cancels it, while reaching zero leaves the notification alone.
+ * step still rings when the screen is off or the app is asleep. The deadline
+ * is also written to native storage, so the countdown survives the process
+ * being killed and is picked up again when the step is reopened. Pausing
+ * cancels the alarm; moving to another step does too (see `move`); reaching
+ * zero leaves the notification alone.
  */
 function Timer({ minutes, alarmId, title, step }: { minutes: number; alarmId: string; title: string; step: number }) {
   const total = minutes * 60
@@ -236,6 +254,27 @@ function Timer({ minutes, alarmId, title, step }: { minutes: number; alarmId: st
   const rang = useRef(false)
   const running = deadline !== null
   const done = !running && remaining === 0
+
+  // A deadline left by an earlier visit: still ahead, resume; already past, it rang.
+  useEffect(() => {
+    let cancelled = false
+    void storageGet<number | string>(alarmId)
+      .then((stored) => {
+        if (cancelled || stored === null) return
+        const at = Number(stored)
+        if (!Number.isFinite(at) || at <= 0) return
+        if (at > Date.now()) {
+          start(at)
+        } else {
+          rang.current = true
+          setRemaining(0)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [alarmId])
 
   useEffect(() => {
     if (deadline === null) return
@@ -260,24 +299,23 @@ function Timer({ minutes, alarmId, title, step }: { minutes: number; alarmId: st
     }
   }, [deadline])
 
-  useEffect(() => {
-    if (deadline === null) return
-    scheduleTimerAlarm({ id: alarmId, at: deadline, title, body: t('cooking.timer_notify', { n: step }) })
-    return () => {
-      // Pause or step change: drop the alarm. Ran out: the OS is ringing, keep it.
-      if (!rang.current) cancelTimerAlarm(alarmId)
-    }
-  }, [deadline, alarmId, title, step])
+  const start = (at: number) => {
+    rang.current = false
+    setDeadline(at)
+    scheduleTimerAlarm({ id: alarmId, at, title, body: t('cooking.timer_notify', { n: step }) })
+    void storageSet(alarmId, at).catch(() => {})
+  }
 
   const toggle = () => {
     if (deadline !== null) {
       setRemaining(remainingSeconds(deadline, Date.now()))
       setDeadline(null)
+      forgetTimer(alarmId)
     } else if (done) {
       setRemaining(total)
+      forgetTimer(alarmId)
     } else {
-      rang.current = false
-      setDeadline(Date.now() + remaining * 1000)
+      start(Date.now() + remaining * 1000)
     }
   }
 

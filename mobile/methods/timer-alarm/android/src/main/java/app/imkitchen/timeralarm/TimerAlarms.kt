@@ -38,7 +38,11 @@ object TimerAlarms {
         val intent = pendingIntent(context, id, title, body)
         val exact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarms.canScheduleExactAlarms()
         if (exact) {
-            alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, intent)
+            // An alarm-clock alarm is the one kind the OS never defers: not
+            // by Doze, not by app standby buckets, not by OEM battery savers
+            // honouring the platform rules. `setExactAndAllowWhileIdle` is
+            // only "allowed" while idle and rang late on a dozing phone.
+            alarms.setAlarmClock(AlarmManager.AlarmClockInfo(at, launchIntent(context, id)), intent)
         } else {
             alarms.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, intent)
         }
@@ -58,15 +62,6 @@ object TimerAlarms {
         ensureChannel(context)
         val manager = NotificationManagerCompat.from(context)
         if (!manager.areNotificationsEnabled()) return
-        val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)?.let {
-            it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-            PendingIntent.getActivity(
-                context,
-                notificationId(id),
-                it,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-        }
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_timer_alarm)
             .setContentTitle(title)
@@ -78,8 +73,11 @@ object TimerAlarms {
             .setSound(alarmSound(), AudioManager.STREAM_ALARM)
             .setVibrate(VIBRATION)
             .setAutoCancel(true)
-            .setContentIntent(launch)
+            .setContentIntent(launchIntent(context, id))
             .build()
+        // Keep ringing until the notification is dismissed or the shade opened: a
+        // kitchen timer that plays its sound once and goes quiet is easy to miss.
+        notification.flags = notification.flags or android.app.Notification.FLAG_INSISTENT
         try {
             manager.notify(notificationId(id), notification)
         } catch (_: SecurityException) {
@@ -88,6 +86,18 @@ object TimerAlarms {
     }
 
     private val VIBRATION = longArrayOf(0, 500, 300, 500, 300, 500)
+
+    /** Brings the app's task back to the front (the splash activity leaves it as it is). */
+    private fun launchIntent(context: Context, id: String): PendingIntent? =
+        context.packageManager.getLaunchIntentForPackage(context.packageName)?.let {
+            it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            PendingIntent.getActivity(
+                context,
+                notificationId(id),
+                it,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
 
     private fun alarmSound(): Uri =
         RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)

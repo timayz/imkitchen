@@ -10,9 +10,11 @@ annotations; `sparkling-method-cli codegen` 2.0.1 emits broken stubs).
   ring at `at` (epoch milliseconds); the same `id` replaces a pending alarm.
 - `TimerAlarm.cancel({id})` → `{ok}`.
 
-Android (`app.imkitchen.timeralarm`): `AlarmManager.setExactAndAllowWhileIdle`
-→ `TimerAlarmReceiver` → a `cooking_timer` channel notification with the
-device's alarm ringtone (`TimerAlarms.kt`). The library manifest adds
+Android (`app.imkitchen.timeralarm`): `AlarmManager.setAlarmClock` (the one
+alarm kind Doze and app-standby never defer; `setExactAndAllowWhileIdle` rang
+late on a dozing phone) → `TimerAlarmReceiver` → a `cooking_timer` channel
+notification with the device's alarm ringtone, insistent until dismissed
+(`TimerAlarms.kt`). The library manifest adds
 `POST_NOTIFICATIONS` (asked at runtime on the first schedule),
 `SCHEDULE_EXACT_ALARM` up to API 32 and `USE_EXACT_ALARM` from API 33: the
 auto-granted exact-alarm permission that Play reserves for alarm/timer

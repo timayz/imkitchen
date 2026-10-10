@@ -3,7 +3,10 @@
 // LICENSE file in the root directory of this source tree.
 package app.imkitchen.android
 
+import android.app.Activity
 import android.app.Application
+import android.content.Intent
+import android.os.Bundle
 
 import com.facebook.drawee.backends.pipeline.Fresco
 import com.facebook.imagepipeline.core.ImagePipelineConfig
@@ -12,6 +15,8 @@ import com.facebook.imagepipeline.memory.PoolFactory
 import com.lynx.tasm.behavior.Behavior
 import com.lynx.tasm.behavior.LynxContext
 import com.lynx.tasm.behavior.ui.LynxUI
+import com.tiktok.sparkling.SparklingActivity
+import com.tiktok.sparkling.SparklingContextTransferStation
 import com.tiktok.sparkling.hybridkit.HybridKit
 import com.tiktok.sparkling.hybridkit.config.BaseInfoConfig
 import com.tiktok.sparkling.hybridkit.config.SparklingHybridConfig
@@ -44,6 +49,39 @@ class SparklingApplication : Application() {
         super.onCreate()
         initFresco()
         initSparkling()
+        registerActivityLifecycleCallbacks(RestartAfterProcessDeath())
+    }
+
+    /**
+     * A `SparklingActivity` finds its page through an in-memory transfer
+     * station keyed by an intent extra. When Android recreates the task's top
+     * activity after the process was killed in the background, the station is
+     * empty and the container renders a bare "Sparkling Page". Start over
+     * from the splash instead: it rebuilds the kitchen, and a cooking timer
+     * that was running is picked up again from storage when the step reopens.
+     */
+    private class RestartAfterProcessDeath : ActivityLifecycleCallbacks {
+        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
+            if (activity !is SparklingActivity || savedInstanceState == null) return
+            val id = activity.intent?.getStringExtra(CONTAINER_ID_EXTRA)
+            if (id != null && SparklingContextTransferStation.getSparklingContext(id) != null) return
+            activity.startActivity(
+                Intent(activity, SplashActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            )
+        }
+
+        override fun onActivityStarted(activity: Activity) {}
+        override fun onActivityResumed(activity: Activity) {}
+        override fun onActivityPaused(activity: Activity) {}
+        override fun onActivityStopped(activity: Activity) {}
+        override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+        override fun onActivityDestroyed(activity: Activity) {}
+
+        private companion object {
+            /** The extra `SparklingActivity.onCreate` reads (Sparkling 2.0.1). */
+            const val CONTAINER_ID_EXTRA = "SparklingContextContainerId"
+        }
     }
 
     private fun initFresco() {
