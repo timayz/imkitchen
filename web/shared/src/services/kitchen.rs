@@ -3,9 +3,7 @@
 //! crate renders these into templates, the API serializes them.
 
 use imkitchen_core::recipe::query::user::{RecipeCard, UserView};
-use imkitchen_core::shopping::{
-    ChangeRecipeStatus, GenerateList, PoolRecipe, Randomize, ShoppingState,
-};
+use imkitchen_core::shopping::{ChangeRecipeStatus, GenerateList, Randomize, ShoppingState};
 use imkitchen_types::recipe::{Ingredient, Instruction, RecipeType};
 use imkitchen_types::shopping::RecipeStatus;
 
@@ -301,21 +299,17 @@ pub async fn find_list_recipe(
 
 /// What the kitchen home shows.
 pub enum Overview {
-    /// No recipes at all yet: explain how to add one.
-    OnboardingRecipe,
-    /// Recipes exist but the list has nothing to cook (empty, or every
-    /// recipe in it was deleted): invite to generate.
-    OnboardingMenu(OnboardingMenu),
+    /// The list has nothing to cook: empty, or every recipe in it was
+    /// deleted. The guided tours explain what to do; the page only offers
+    /// the one action that applies.
+    Empty(Empty),
     /// The list, with the next recipe to cook in focus.
     List(Box<KitchenList>),
 }
 
-pub struct OnboardingMenu {
-    pub recipes: Vec<PoolRecipe>,
-    pub main_count: usize,
-    pub appetizer_count: usize,
-    pub accompaniment_count: usize,
-    pub dessert_count: usize,
+pub struct Empty {
+    /// At least one main course in the pool: generating is possible.
+    pub has_recipes: bool,
 }
 
 pub struct KitchenList {
@@ -363,7 +357,7 @@ pub async fn overview(app: &AppState, user_id: &str) -> anyhow::Result<Overview>
         }
     }
     let Some((focused_entry, mut focused)) = next else {
-        return onboarding(app, user_id).await;
+        return empty(app, user_id).await;
     };
 
     let total_count = entries.len();
@@ -394,41 +388,17 @@ pub async fn overview(app: &AppState, user_id: &str) -> anyhow::Result<Overview>
     })))
 }
 
-/// The kitchen home when the list has nothing to cook: which onboarding
-/// screen depends on whether the pool has a main course to generate from.
-async fn onboarding(app: &AppState, user_id: &str) -> anyhow::Result<Overview> {
+/// The kitchen home when the list has nothing to cook: whether the pool has
+/// a main course to generate from decides the action offered.
+async fn empty(app: &AppState, user_id: &str) -> anyhow::Result<Overview> {
     let main_courses = app
         .core
         .shopping
         .sample_recipes(user_id, RecipeType::MainCourse)
         .await?;
 
-    if main_courses.is_empty() {
-        return Ok(Overview::OnboardingRecipe);
-    }
-
-    let appetizers = app
-        .core
-        .shopping
-        .sample_recipes(user_id, RecipeType::Appetizer)
-        .await?;
-    let accompaniments = app
-        .core
-        .shopping
-        .sample_recipes(user_id, RecipeType::Accompaniment)
-        .await?;
-    let desserts = app
-        .core
-        .shopping
-        .sample_recipes(user_id, RecipeType::Dessert)
-        .await?;
-
-    Ok(Overview::OnboardingMenu(OnboardingMenu {
-        main_count: main_courses.len(),
-        appetizer_count: appetizers.len(),
-        accompaniment_count: accompaniments.len(),
-        dessert_count: desserts.len(),
-        recipes: main_courses,
+    Ok(Overview::Empty(Empty {
+        has_recipes: !main_courses.is_empty(),
     }))
 }
 

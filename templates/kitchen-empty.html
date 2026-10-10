@@ -1,0 +1,52 @@
+{% extends "_user.html" %}
+
+{% block title %}{{ "Kitchen"|t }} - imkitchen{% endblock %}
+
+{% block content %}
+{% if !user.is_premium() %}
+<div ts-trigger="load" ts-req="/settings/billing/check" ts-req-method="POST" ts-swap="skip"></div>
+{% endif %}
+
+<div class="container mx-auto px-4 py-6 max-w-xl">
+
+  <header class="mb-4">
+    <h1 data-tour="kitchen-title" class="font-serif text-2xl leading-tight tracking-tight text-ink">{{ "Kitchen"|t }}</h1>
+    <p class="text-sm text-ink-3 mt-0.5">{{ "Nothing to cook yet"|t }}</p>
+  </header>
+
+  {# One card, one action: the guided tour explains the rest. #}
+  <section data-tour="kitchen-list"
+    class="rounded-3xl border border-line-2 shadow-sm p-6 text-center bg-linear-to-b from-paper to-cream-2">
+    <div class="flex justify-center gap-1.5 mb-4">
+      <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm bg-meal-main-soft -rotate-4">🍳</span>
+      <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm bg-meal-side-soft">🥘</span>
+      <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm bg-meal-dessert-soft rotate-4">🍲</span>
+    </div>
+
+    {% if has_recipes %}
+    <h2 class="font-serif text-2xl leading-tight tracking-tight text-ink">{{ "Your collection is ready"|t }}</h2>
+    <p class="text-[13.5px] text-ink-2 leading-relaxed mt-2 mb-5 max-w-xs mx-auto">
+      {{ "Generate a list from your recipes, or pick them by hand. Cooking Mode takes it from there."|t }}
+    </p>
+    <button type="button" data-tour="kitchen-cta" ts-trigger="click" ts-req="/kitchen/generate" ts-target="body" ts-swap="append"
+      class="flex items-center justify-center gap-2 w-full px-5 py-3.5 bg-ink text-cream rounded-xl text-sm font-semibold shadow-sm hover:opacity-90 transition">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 3l1.9 4.5L18.5 9l-4.6 1.5L12 15l-1.9-4.5L5.5 9l4.6-1.5z"/></svg>
+      {{ "Generate your list"|t }}
+    </button>
+    <a href="/recipes"
+      class="flex items-center justify-center gap-2 w-full px-5 py-3 mt-2.5 bg-paper border border-line text-ink rounded-xl text-sm font-semibold hover:bg-cream-2 transition">
+      {{ "Add recipes by hand"|t }}
+    </a>
+    {% else %}
+    <h2 class="font-serif text-2xl leading-tight tracking-tight text-ink">{{ "Your list is empty"|t }}</h2>
+    <p class="text-[13.5px] text-ink-2 leading-relaxed mt-2 mb-5 max-w-xs mx-auto">
+      {{ "Add a main course to your library and cook it from here, step by step."|t }}
+    </p>
+    <a href="/recipes" data-tour="kitchen-cta"
+      class="flex items-center justify-center gap-2 w-full px-5 py-3.5 bg-primary-500 text-white rounded-xl text-sm font-semibold shadow-sm hover:bg-primary-600 transition">
+      {{ "Add your first recipe"|t }}
+    </a>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

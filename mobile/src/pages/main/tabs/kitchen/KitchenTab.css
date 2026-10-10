@@ -14,15 +14,6 @@
   gap: 6px;
 }
 
-/* Title + hint stacked at the top of the onboarding screens. Not
-   .kt-header__text: its flex: 1 is for the header row and collapses the
-   block to nothing inside the page column. */
-.kt-intro {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .kt-regen {
   width: 44px;
   height: 44px;
@@ -374,112 +365,6 @@
   text-align: center;
 }
 
-/* Onboarding: pagination dots under the welcome card, and the "ways to add" rows */
-.kt-dots {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
-}
-
-.kt-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background-color: var(--color-line);
-}
-
-.kt-dot--on {
-  width: 24px;
-  background-color: var(--color-primary-500);
-}
-
-.kt-options {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* Onboarding: collection summary */
-.kt-counts {
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-}
-
-.kt-count {
-  flex: 1;
-  align-items: center;
-  gap: 4px;
-  padding: 12px 4px;
-  border-radius: var(--radius-md);
-}
-
-.kt-count__n {
-  font-size: 22px;
-  line-height: 24px;
-  font-weight: 700;
-}
-
-.kt-count__label {
-  font-size: 11px;
-  line-height: 14px;
-  font-weight: 600;
-  text-align: center;
-}
-
-.kt-samples {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.kt-sample {
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--color-ink-2);
-  background-color: var(--color-cream);
-  border-radius: 999px;
-  padding: 5px 10px;
-}
-
-.kt-sample--more {
-  background-color: var(--color-cream-2);
-  color: var(--color-ink-3);
-}
-
-.kt-note {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: var(--radius-lg);
-  background-color: var(--color-cream-2);
-}
-
-.kt-note__icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background-color: var(--color-paper);
-  align-items: center;
-  justify-content: center;
-}
-
-.kt-note__glyph {
-  font-size: 16px;
-}
-
-.kt-note__text {
-  flex: 1;
-  font-size: 13px;
-  line-height: 18px;
-  color: var(--color-ink-2);
-}
-
-.kt-note__strong {
-  font-weight: 700;
-  color: var(--color-ink);
+.kt-empty__cta {
+  width: 100%;
 }

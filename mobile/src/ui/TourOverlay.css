@@ -1,0 +1,104 @@
+.tour {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.tour__dim {
+  position: absolute;
+  background-color: rgba(27, 20, 12, 0.62);
+}
+
+.tour__ring {
+  position: absolute;
+  border-width: 2px;
+  border-style: solid;
+  border-color: var(--color-primary-500);
+  border-radius: 14px;
+}
+
+.tour__card {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  background-color: var(--color-paper);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tour__top {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.tour__count {
+  font-size: 10px;
+  line-height: 14px;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  color: var(--color-ink-3);
+}
+
+.tour__skip {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: var(--color-ink-3);
+  padding: 4px 0;
+}
+
+.tour__title {
+  font-size: 20px;
+  line-height: 24px;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.4px;
+  color: var(--color-ink);
+}
+
+.tour__body {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--color-ink-2);
+}
+
+.tour__foot {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.tour__dots {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+
+.tour__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--color-line);
+}
+
+.tour__dot--on {
+  width: 20px;
+  background-color: var(--color-primary-500);
+}
+
+.tour__actions {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}

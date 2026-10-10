@@ -61,6 +61,10 @@ event imkitchen-types/Shopping::RecipeRemoved { recipe_id: String, recipe_ids: V
 event imkitchen-types/Shopping::RecipeSetGenerated { recipe_ids: Vec<String> }
 event imkitchen-types/Shopping::RecipeStatusChanged { recipe_id: String, status: RecipeStatus }
 event imkitchen-types/Shopping::Unchecked { ingredient: String }
+event imkitchen-types/Tour::Advanced { tour: String, step: u16, version: u16 }
+event imkitchen-types/Tour::Completed { tour: String, version: u16 }
+event imkitchen-types/Tour::Reset unit
+event imkitchen-types/Tour::Skipped { tour: String, step: u16, version: u16 }
 event imkitchen-types/UserProfile::Changed { description: String }
 
 type imkitchen_billing::types::invoice::InvoiceAddress { name: String, email: String, address: Address }
@@ -89,4 +93,5 @@ view imkitchen-core/shopping/Shopping rev=3 { user_id: String, checked: HashSet<
 view imkitchen-identity/User rev=3 { id: String, role: Role, state: State, ad_consent: bool, deleted: bool, cursor: String, aggregate_version: u16 } with State enum { Active, Suspended }
 view imkitchen-identity/meal_preferences/MealPreferences rev=3 { id: String, household_size: u16, dietary_restrictions: Vec<DietaryRestriction>, cuisine_variety_weight: f32, recipe_types: Vec<RecipeType>, aisle_order: Vec<IngredientCategory>, cursor: String, aggregate_version: u16 }
 view imkitchen-identity/password/Password rev=1 { id: String, user_id: String, completed: bool, expire_at: u64, cursor: String, aggregate_version: u16 }
+view imkitchen-identity/tour/Tour rev=1 { id: String, tours: Vec<TourProgress>, cursor: String, aggregate_version: u16 } with TourStatus enum { Pending, InProgress, Completed, Skipped }; TourProgress { tour: String, status: TourStatus, step: u16, version: u16 }
 view imkitchen-identity/user_profile/UserProfile rev=1 { id: String, description: String, cursor: String, aggregate_version: u16 }

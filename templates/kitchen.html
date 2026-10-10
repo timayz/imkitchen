@@ -13,7 +13,7 @@
   {# ── Populated Home — the next thing to cook, then the whole list ── #}
   <header class="mb-4 flex items-start justify-between gap-3">
     <div class="min-w-0">
-      <h1 class="font-serif text-2xl leading-tight tracking-tight text-ink">{{ "Up next"|t }}</h1>
+      <h1 data-tour="kitchen-title" class="font-serif text-2xl leading-tight tracking-tight text-ink">{{ "Up next"|t }}</h1>
       <p class="text-sm text-ink-3 mt-0.5">
         {% if completed_count == total_count %}
         {{ "Everything is cooked — regenerate or add recipes."|t }}
@@ -24,6 +24,7 @@
     </div>
     {# Desktop-only Regenerate inline with the header #}
     <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/kitchen/generate{% endif %}" ts-target="body" ts-swap="append"
+      data-tour="kitchen-cta kitchen-regenerate"
       class="hidden md:inline-flex items-center gap-1.5 px-3 h-9 bg-meal-main-soft text-meal-main-ink font-semibold rounded-xl text-xs hover:opacity-90 shadow-sm transition shrink-0">
       <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
       {{ "Regenerate"|t }}
@@ -32,6 +33,7 @@
 
   {# Mobile-only Regenerate #}
   <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/kitchen/generate{% endif %}" ts-target="body" ts-swap="append"
+    data-tour="kitchen-cta kitchen-regenerate"
     class="md:hidden w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 mb-4 bg-meal-main-soft text-meal-main-ink font-semibold rounded-xl text-sm hover:opacity-90 shadow-sm transition">
     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
     {{ "Regenerate recipes"|t }}

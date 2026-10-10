@@ -108,7 +108,7 @@
 
     {# Search + add #}
     <div class="flex gap-2 mb-3">
-      <label class="flex-1 flex items-center gap-2 h-11 px-3.5 bg-paper border border-line-2 rounded-2xl
+      <label data-tour="recipes-search" class="flex-1 flex items-center gap-2 h-11 px-3.5 bg-paper border border-line-2 rounded-2xl
         focus-within:border-primary-400 focus-within:ring-2 focus-within:ring-primary-100 transition">
         <svg class="w-4 h-4 text-ink-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <circle cx="11" cy="11" r="7"></circle>
@@ -119,6 +119,7 @@
           class="flex-1 min-w-0 bg-transparent outline-none text-sm placeholder:text-ink-3"/>
       </label>
       <a {% if demo %}ts-req="/demo/signup" ts-target="body" ts-swap="append"{% else %}href="/recipes/import"{% endif %} title="{{ "Import"|t }}"
+        data-tour="recipes-import"
         class="h-11 px-4 hidden sm:inline-flex items-center gap-1.5 bg-paper border border-line-2 hover:bg-cream text-ink text-sm cursor-pointer
           font-semibold rounded-2xl transition shrink-0">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -128,6 +129,7 @@
       </a>
       <button type="button" ts-req="{% if demo %}/demo/signup{% else %}/recipes/create{% endif %}"
         {% if demo %}ts-target="body" ts-swap="append"{% else %}ts-req-method="post"{% endif %}
+        data-tour="recipes-new"
         class="h-11 px-4 inline-flex items-center gap-1.5 bg-primary-500 hover:bg-primary-600 text-white text-sm
           font-semibold rounded-2xl shadow-sm transition shrink-0">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">

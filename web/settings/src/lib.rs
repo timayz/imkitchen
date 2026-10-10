@@ -21,6 +21,15 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             "/settings/general",
             get(routes::general::page).post(routes::general::action),
         )
+        .route(
+            "/settings/general/tours/reset",
+            post(routes::general::replay_tours_action),
+        )
+        .route("/tours", get(routes::tour::state))
+        .route("/tours/reset", post(routes::tour::reset))
+        .route("/tours/{id}/advance", post(routes::tour::advance))
+        .route("/tours/{id}/complete", post(routes::tour::complete))
+        .route("/tours/{id}/skip", post(routes::tour::skip))
         .route("/settings/billing", get(routes::billing::page))
         .route("/settings/billing/check", post(routes::billing::check))
         .route(

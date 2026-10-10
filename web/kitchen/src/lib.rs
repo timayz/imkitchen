@@ -8,7 +8,6 @@ use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::{CookieJar, Form};
 use imkitchen_core::recipe::query::user::UserView;
-use imkitchen_core::shopping::PoolRecipe;
 use imkitchen_types::recipe::{IngredientUnitFormat, Instruction, RecipeType};
 use imkitchen_types::shopping::RecipeStatus;
 use serde::Deserialize;
@@ -27,23 +26,14 @@ pub struct IndexTemplate {
     pub show_nav: bool,
 }
 
+/// The kitchen with nothing to cook: one card, one action.
 #[derive(askama::Template)]
-#[template(path = "onboarding-recipe.html")]
-pub struct OnboardingRecipeTemplate {
+#[template(path = "kitchen-empty.html")]
+pub struct KitchenEmptyTemplate {
     pub current_path: String,
     pub user: AuthUser,
-}
-
-#[derive(askama::Template)]
-#[template(path = "onboarding-menu.html")]
-pub struct OnboardingMenuTemplate {
-    pub current_path: String,
-    pub user: AuthUser,
-    pub recipes: Vec<PoolRecipe>,
-    pub main_count: usize,
-    pub appetizer_count: usize,
-    pub accompaniment_count: usize,
-    pub dessert_count: usize,
+    /// Offer "Generate" (true) or "Add your first recipe" (false).
+    pub has_recipes: bool,
 }
 
 #[derive(askama::Template)]
@@ -88,38 +78,27 @@ pub async fn page(
     let overview =
         imkitchen_web_shared::try_page_response!(kitchen::overview(&app, &user.id), template);
 
-    let list = match overview {
-        Overview::OnboardingRecipe => {
-            return template
-                .render(OnboardingRecipeTemplate {
-                    current_path: "kitchen".to_owned(),
-                    user,
-                })
-                .into_response();
-        }
-        Overview::OnboardingMenu(menu) => {
-            return template
-                .render(OnboardingMenuTemplate {
-                    current_path: "kitchen".to_owned(),
-                    user,
-                    main_count: menu.main_count,
-                    appetizer_count: menu.appetizer_count,
-                    accompaniment_count: menu.accompaniment_count,
-                    dessert_count: menu.dessert_count,
-                    recipes: menu.recipes,
-                })
-                .into_response();
-        }
-        Overview::List(list) => list,
-    };
-
     // Sliding session: every kitchen render re-issues the cookie.
     let auth_cookie = imkitchen_web_shared::try_page_response!(sync:
         imkitchen_web_shared::auth::build_cookie(app.config.jwt, token.sub.to_owned(), token.acc.to_owned()),
         template
     );
-
     let jar = jar.add(auth_cookie);
+
+    let list = match overview {
+        Overview::Empty(empty) => {
+            return (
+                jar,
+                template.render(KitchenEmptyTemplate {
+                    current_path: "kitchen".to_owned(),
+                    user,
+                    has_recipes: empty.has_recipes,
+                }),
+            )
+                .into_response();
+        }
+        Overview::List(list) => list,
+    };
     let (completed_instructions, coming_instructions, current_instruction) = list.steps;
 
     (
