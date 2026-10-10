@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="timer_alarm_channel_name">Cooking timers</string>
+    <string name="timer_alarm_channel_description">Rings when a cooking step timer ends</string>
+</resources>

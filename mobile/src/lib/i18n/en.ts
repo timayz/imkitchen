@@ -121,6 +121,8 @@ export const en = {
   'cooking.done': 'Done! Serve it up',
   'cooking.start': 'Start cooking',
   'cooking.timer_ready': 'Timer ready',
+  'cooking.timer_done': "Time's up",
+  'cooking.timer_notify': 'Step %{n} is done. On to the next one!',
   'cooking.timer_running': 'Cooking…',
   'cooking.imported': 'Imported',
   'cooking.imported_hint': 'This recipe was imported from an external source.',

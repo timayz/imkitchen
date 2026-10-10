@@ -13,5 +13,6 @@ let sparklingAutolinkModules: [SparklingAutolinkModule] = [
     SparklingAutolinkModule(name: "sparkling-keep-awake", iosModuleName: "KeepAwake", className: "KeepAwakeSetEnabledMethod"),
     SparklingAutolinkModule(name: "sparkling-media", iosModuleName: "", className: ""),
     SparklingAutolinkModule(name: "sparkling-navigation", iosModuleName: "Router", className: "RouterMethod"),
-    SparklingAutolinkModule(name: "sparkling-storage", iosModuleName: "SPKStorage", className: "StorageMethod")
+    SparklingAutolinkModule(name: "sparkling-storage", iosModuleName: "SPKStorage", className: "StorageMethod"),
+    SparklingAutolinkModule(name: "sparkling-timer-alarm", iosModuleName: "TimerAlarm", className: "TimerAlarmScheduleMethod")
 ]

@@ -14,6 +14,15 @@ import com.tiktok.sparkling.method.registry.core.utils.JsonUtils
 class SplashActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // `singleTask` + `finish()` below: once the app is running this
+        // activity is gone from the task, so an icon or notification tap
+        // recreates it *on top* of the live containers. Opening main again
+        // from there would bury the cooking screen under a second kitchen;
+        // the task is already in front, so just leave.
+        if (!isTaskRoot && intent?.data == null) {
+            finish()
+            return
+        }
         gotoSparklingPage(intent)
     }
 

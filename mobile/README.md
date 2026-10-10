@@ -20,8 +20,10 @@ in the app (store payment policies); users subscribe on the website.
 | `src/lib/cache.ts`, `src/lib/use-resource.ts` | Offline cache: every screen renders its last server response from the local store, then refreshes |
 | `src/lib/offline/` | Offline write queue (`queue.ts`, `ops.ts`) and the offline flag; kitchen changes work without a connection |
 | `methods/db/` | `sparkling-db`, the SQLite document store behind the cache and the queue (Kotlin + Swift) |
+| `methods/keep-awake/`, `methods/timer-alarm/` | `sparkling-keep-awake` (screen stays on while cooking) and `sparkling-timer-alarm` (the step timer rings through AlarmManager / UNUserNotificationCenter, so it survives sleep and process death) |
 | `src/styles/tokens.css` | Design tokens mirrored from the web app's `tailwind.css` |
 | `scripts/icons.mjs` | Renders launcher, splash and store icons from `static/icons/icon-maskable.svg` (`npm run icons`) |
+| `scripts/timer-sound.mjs` | Renders the cooking timer's bell into `methods/timer-alarm` for both platforms (`npm run sound`) |
 | `scripts/nav-icons.mjs` | Renders the tab bar icons from the web nav's SVG paths into `src/assets/icons/*.png` (`npm run icons`) |
 | `src/styles/fonts.css`, `src/assets/fonts/` | Fraunces SemiBold (Latin subset, SIL OFL) for headings, inlined as base64 into every bundle |
 | `android/` | Android shell (`app.imkitchen.android`), Kotlin, Gradle 9.7 / AGP 9.3, compileSdk 37 |
@@ -195,6 +197,20 @@ domains entitlement.
 - `sparkling-method-cli codegen` 2.0.1 emits broken TypeScript and Swift;
   `methods/keep-awake` keeps only its Kotlin abstract class and hand-writes
   the rest.
+- The cooking timer counts down from a deadline in JS but rings through the
+  OS (`methods/timer-alarm`): Android's exact-alarm permission is
+  `USE_EXACT_ALARM` (auto-granted, Play reserves it for alarm/timer features;
+  swap for `SCHEDULE_EXACT_ALARM` + a settings prompt if review objects) and
+  both platforms ask for notification permission on the first start of a
+  timer. Pausing or moving to the next step cancels the alarm; closing the
+  screen does not, and the deadline is kept in native storage so the
+  countdown is restored when the step is reopened, even after process death.
+- `SplashActivity` is `singleTask` and finishes itself, so an icon or
+  notification tap while the app runs recreates it on top of the live
+  containers: it leaves at once when the task already exists. A
+  `SparklingActivity` recreated after the process was killed has lost its
+  context (the transfer station is in memory) and would show an empty
+  "Sparkling Page"; `SparklingApplication` restarts from the splash instead.
 - Each bundle is its own JS runtime: nothing in memory survives a container
   push. The API client reloads the session from storage on first use.
 

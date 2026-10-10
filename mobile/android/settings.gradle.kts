@@ -45,7 +45,8 @@ val sparklingAutolinkProjects = listOf<Pair<String, java.io.File>>(
   "sparkling-keep-awake" to file("../node_modules/sparkling-keep-awake/android"),
   "sparkling-media" to file("../node_modules/sparkling-media/android"),
   "sparkling-navigation" to file("../node_modules/sparkling-navigation/android"),
-  "sparkling-storage" to file("../node_modules/sparkling-storage/android")
+  "sparkling-storage" to file("../node_modules/sparkling-storage/android"),
+  "sparkling-timer-alarm" to file("../node_modules/sparkling-timer-alarm/android")
 )
 sparklingAutolinkProjects.forEach { (name, dir) ->
     include(":$name")

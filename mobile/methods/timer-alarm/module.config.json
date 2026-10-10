@@ -1,0 +1,29 @@
+{
+  "name": "sparkling-timer-alarm",
+  "platforms": ["android", "ios"],
+  "version": "1.0.0",
+  "description": "Ring a cooking timer even when the app is asleep",
+  "methods": {
+    "schedule": {
+      "description": "Schedule a local notification with an alarm sound at an absolute time (epoch milliseconds); replaces any pending one with the same id",
+      "parameters": { "id": "string", "at": "number", "title": "string", "body": "string" },
+      "returns": { "scheduled": "boolean", "exact": "boolean", "notifications": "boolean" }
+    },
+    "cancel": {
+      "description": "Cancel a scheduled timer notification",
+      "parameters": { "id": "string" },
+      "returns": { "ok": "boolean" }
+    }
+  },
+  "android": {
+    "packageName": "app.imkitchen.timeralarm",
+    "className": "TimerAlarmScheduleMethod",
+    "buildGradle": "android/build.gradle.kts"
+  },
+  "ios": {
+    "moduleName": "TimerAlarm",
+    "className": "TimerAlarmScheduleMethod",
+    "podspecPath": "ios/Sparkling-TimerAlarm.podspec",
+    "swiftVersion": "5.0"
+  }
+}

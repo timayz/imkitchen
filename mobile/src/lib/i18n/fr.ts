@@ -128,6 +128,8 @@ export const fr: Record<MessageKey, string> = {
   'cooking.done': 'C’est prêt, à table !',
   'cooking.start': 'Commencer',
   'cooking.timer_ready': 'Minuteur prêt',
+  'cooking.timer_done': 'C’est l’heure',
+  'cooking.timer_notify': 'L’étape %{n} est terminée. À la suivante !',
   'cooking.timer_running': 'En cuisson…',
   'cooking.imported': 'Importée',
   'cooking.imported_hint': 'Cette recette a été importée d’une source externe.',
