@@ -98,7 +98,9 @@ final class TimerAlarmCenter: NSObject, UNUserNotificationCenterDelegate {
             let content = UNMutableNotificationContent()
             content.title = title
             content.body = body
-            content.sound = .default
+            // The app's own bell (`Sounds/cooking_timer.wav`, rendered by
+            // `scripts/timer-sound.mjs`), copied into the main bundle by the pod.
+            content.sound = UNNotificationSound(named: UNNotificationSoundName("cooking_timer.wav"))
             let seconds = max(1, at.timeIntervalSinceNow)
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: seconds, repeats: false)
             let request = UNNotificationRequest(identifier: id, content: content, trigger: trigger)

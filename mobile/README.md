@@ -23,6 +23,7 @@ in the app (store payment policies); users subscribe on the website.
 | `methods/keep-awake/`, `methods/timer-alarm/` | `sparkling-keep-awake` (screen stays on while cooking) and `sparkling-timer-alarm` (the step timer rings through AlarmManager / UNUserNotificationCenter, so it survives sleep and process death) |
 | `src/styles/tokens.css` | Design tokens mirrored from the web app's `tailwind.css` |
 | `scripts/icons.mjs` | Renders launcher, splash and store icons from `static/icons/icon-maskable.svg` (`npm run icons`) |
+| `scripts/timer-sound.mjs` | Renders the cooking timer's bell into `methods/timer-alarm` for both platforms (`npm run sound`) |
 | `scripts/nav-icons.mjs` | Renders the tab bar icons from the web nav's SVG paths into `src/assets/icons/*.png` (`npm run icons`) |
 | `src/styles/fonts.css`, `src/assets/fonts/` | Fraunces SemiBold (Latin subset, SIL OFL) for headings, inlined as base64 into every bundle |
 | `android/` | Android shell (`app.imkitchen.android`), Kotlin, Gradle 9.7 / AGP 9.3, compileSdk 37 |

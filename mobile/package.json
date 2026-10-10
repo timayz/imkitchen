@@ -41,6 +41,7 @@
     "test": "vitest run --passWithNoTests",
     "run:android": "sparkling-app-cli run:android",
     "run:ios": "sparkling-app-cli run:ios --copy",
-    "build:release": "IMKITCHEN_API_URL=https://imkitchen.app sparkling-app-cli build --copy"
+    "build:release": "IMKITCHEN_API_URL=https://imkitchen.app sparkling-app-cli build --copy",
+    "sound": "node scripts/timer-sound.mjs"
   }
 }

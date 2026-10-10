@@ -13,8 +13,11 @@ annotations; `sparkling-method-cli codegen` 2.0.1 emits broken stubs).
 Android (`app.imkitchen.timeralarm`): `AlarmManager.setAlarmClock` (the one
 alarm kind Doze and app-standby never defer; `setExactAndAllowWhileIdle` rang
 late on a dozing phone) → `TimerAlarmReceiver` → a `cooking_timer` channel
-notification with the device's alarm ringtone, insistent until dismissed
-(`TimerAlarms.kt`). The library manifest adds
+notification with the app's own bell, insistent until dismissed
+(`TimerAlarms.kt`). The bell is `res/raw/cooking_timer.wav`, rendered by
+`scripts/timer-sound.mjs` (`npm run sound`) for both platforms; a channel's
+sound is fixed at creation, so changing it means a new channel id and
+deleting the retired one. The library manifest adds
 `POST_NOTIFICATIONS` (asked at runtime on the first schedule),
 `SCHEDULE_EXACT_ALARM` up to API 32 and `USE_EXACT_ALARM` from API 33: the
 auto-granted exact-alarm permission that Play reserves for alarm/timer
@@ -23,7 +26,8 @@ inexact (`exact: false` in the result) and may ring a few minutes late in
 Doze. Registered in `SparklingApplication.kt`. Alarms do not survive a reboot.
 
 iOS (`TimerAlarmMethods.swift`): `UNUserNotificationCenter` time-interval
-request with the default sound; the first schedule prompts for permission.
+request with the same bell (`ios/Sounds/cooking_timer.wav`, copied into the
+app bundle by the podspec's `resources`); the first schedule prompts for permission.
 `TimerAlarmCenter` is set as the center's delegate so the notification is
 still shown and audible while the app is in the foreground. Auto-registered
 (direct `PipeMethod` subclasses); pod `ios/Sparkling-TimerAlarm.podspec`.

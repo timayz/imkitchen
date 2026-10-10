@@ -23,6 +23,8 @@ Pod::Spec.new do |s|
   }
 
   s.source_files = 'Sources/**/*.swift'
+  # Copied into the app bundle's root, where UNNotificationSound(named:) looks.
+  s.resources    = 'Sounds/*.wav'
   s.frameworks   = 'UIKit', 'UserNotifications'
 
   s.dependency 'SparklingMethod/Core'

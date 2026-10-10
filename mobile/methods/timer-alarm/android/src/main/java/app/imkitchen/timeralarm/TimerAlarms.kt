@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioManager
-import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
@@ -23,7 +22,9 @@ import androidx.core.app.NotificationManagerCompat
  * scheduling the same id again replaces the previous time.
  */
 object TimerAlarms {
-    const val CHANNEL_ID = "cooking_timer"
+    /** Bumped whenever the channel's fixed settings (sound) change; the old one is deleted. */
+    const val CHANNEL_ID = "cooking_timer_bell"
+    private val RETIRED_CHANNELS = listOf("cooking_timer")
     const val ACTION_FIRE = "app.imkitchen.timeralarm.FIRE"
     const val EXTRA_ID = "id"
     const val EXTRA_TITLE = "title"
@@ -70,7 +71,7 @@ object TimerAlarms {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             // Pre-Oreo devices have no channel: sound and vibration go on the notification itself.
-            .setSound(alarmSound(), AudioManager.STREAM_ALARM)
+            .setSound(alarmSound(context), AudioManager.STREAM_ALARM)
             .setVibrate(VIBRATION)
             .setAutoCancel(true)
             .setContentIntent(launchIntent(context, id))
@@ -99,13 +100,14 @@ object TimerAlarms {
             )
         }
 
-    private fun alarmSound(): Uri =
-        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+    /** The app's own bell (`res/raw/cooking_timer.wav`, rendered by `scripts/timer-sound.mjs`). */
+    private fun alarmSound(context: Context): Uri =
+        Uri.parse("android.resource://${context.packageName}/${R.raw.cooking_timer}")
 
     private fun ensureChannel(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        RETIRED_CHANNELS.forEach { manager.deleteNotificationChannel(it) }
         if (manager.getNotificationChannel(CHANNEL_ID) != null) return
         val channel = NotificationChannel(
             CHANNEL_ID,
@@ -114,7 +116,7 @@ object TimerAlarms {
         ).apply {
             description = context.getString(R.string.timer_alarm_channel_description)
             setSound(
-                alarmSound(),
+                alarmSound(context),
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ALARM)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
