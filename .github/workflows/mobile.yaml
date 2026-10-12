@@ -117,11 +117,11 @@ jobs:
       # restore the last pods build and only recompile the app target.
       # `pod install` leaves untouched pods alone (`incremental_installation`
       # in the Podfile), which keeps the derived data valid across runs.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: mobile/ios/Pods
           key: ${{ runner.os }}-pods-${{ hashFiles('mobile/ios/Podfile.lock') }}
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: mobile/ios/build
           key: ${{ runner.os }}-deriveddata-${{ hashFiles('mobile/ios/Podfile.lock') }}
