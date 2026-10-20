@@ -109,7 +109,7 @@ jobs:
         run: npm run build
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.4"
+          ruby-version: "3.4.11"
           bundler-cache: true
           working-directory: mobile
       # Both caches are keyed on Podfile.lock: the pods are the expensive part
