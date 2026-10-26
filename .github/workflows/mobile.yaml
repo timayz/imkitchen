@@ -79,7 +79,7 @@ jobs:
       - name: Build
         working-directory: mobile/android
         run: ./gradlew assembleDebug --console=plain
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: android-debug-apk
@@ -147,7 +147,7 @@ jobs:
             ARCHS=arm64 ONLY_ACTIVE_ARCH=YES \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
             build 2>&1 | tee build.log | $filter
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ios-build
@@ -207,7 +207,7 @@ jobs:
             smoke/app.log | tr -d '\r' | sed 's/ *backtrace:.*//; s/ *$//' | grep -v '^$' | sort -u \
             > smoke/lynx-errors.log || true
           while read -r line; do echo "::warning::iOS page error: $line"; done < smoke/lynx-errors.log
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: ios-smoke
