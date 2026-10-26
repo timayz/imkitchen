@@ -1,24 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from '@lynx-js/react';
 
 import { errorMessage } from '../../../../lib/api/client.js';
-import {
-  type Dish,
-  type Entry,
-  type KitchenList,
-  type Overview,
-  generate,
-  getDish,
-  getKitchen,
-} from '../../../../lib/api/kitchen.js';
-import type { Recipe, Status } from '../../../../lib/api/recipe.js';
-import { readDoc, revalidate, writeDoc } from '../../../../lib/cache.js';
+import { type Entry, type Overview, generate, getKitchen } from '../../../../lib/api/kitchen.js';
+import { writeDoc } from '../../../../lib/cache.js';
 import { course, minutes } from '../../../../lib/course.js';
 import { t } from '../../../../lib/i18n/index.js';
-import { openExternal, push } from '../../../../lib/nav.js';
+import { push } from '../../../../lib/nav.js';
 import { enqueue } from '../../../../lib/offline/queue.js';
 import { useResource } from '../../../../lib/use-resource.js';
 import { Button } from '../../../../ui/Button.js';
-import { Sheet } from '../../../../ui/Sheet.js';
 import { Spinner } from '../../../../ui/Spinner.js';
 import { GenerateSheet } from './GenerateSheet.js';
 import './KitchenTab.css';
@@ -33,12 +23,9 @@ export interface KitchenTabProps {
 export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
   // Cached locally: renders at once and refreshes in the background.
   const { data, error, refresh } = useResource<Overview>('kitchen', getKitchen, [refreshKey]);
-  // What the tab shows: the cached/fresh overview, or it with another recipe
-  // of the list in focus (a local choice the server does not keep).
   const [overview, setOverview] = useState<Overview | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [sheet, setSheet] = useState(false);
-  const [menu, setMenu] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -64,40 +51,6 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
   const onRemove = useCallback((id: string) => {
     setNotice(null);
     void enqueue({ kind: 'list', id, in_list: false });
-  }, []);
-
-  const onFocus = useCallback(async (id: string) => {
-    setBusy(true);
-    setNotice(null);
-    try {
-      let dish: Dish | null;
-      try {
-        dish = await revalidate<Dish>(`dish:${id}`, () => getDish(id));
-      } catch (err) {
-        // Offline: the dish seen before is good enough.
-        dish = await readDoc<Dish>(`dish:${id}`);
-        if (!dish) {
-          setNotice(errorMessage(err));
-          return;
-        }
-      }
-      const focused = dish;
-      setOverview((prev) => {
-        if (!prev || prev.kind !== 'list') return prev;
-        const next: KitchenList = {
-          ...prev,
-          entries: focused.entries,
-          focused: focused.recipe,
-          focused_status: focused.status,
-          steps: focused.steps,
-          cook_external: focused.cook_external,
-          external_url: focused.external_url,
-        };
-        return next;
-      });
-    } finally {
-      setBusy(false);
-    }
   }, []);
 
   if (!overview) {
@@ -176,16 +129,13 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
   }
 
   const list = overview;
-  // The server always focuses a recipe; `null` only comes from a list
-  // rewritten offline when the focused recipe was removed. The rows still
-  // render, the hero returns with the next refresh (or a tap on a row).
-  const focused = list.focused;
   const remaining = list.entries.filter((e) => e.status.status !== 'completed').length;
   const allCooked = list.total_count > 0 && list.completed_count === list.total_count;
-  const others = [
+  // Still to cook first, in the server's order; cooked ones sink to the bottom.
+  const rows = [
     ...list.entries.filter((e) => e.status.status !== 'completed'),
     ...list.entries.filter((e) => e.status.status === 'completed'),
-  ].filter((e) => e.id !== focused?.id);
+  ];
 
   return (
     <scroll-view className="tab-scroll" scroll-orientation="vertical">
@@ -225,29 +175,21 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
                 <text className="kt-done__text">✓ {t('kitchen.all_cooked')}</text>
               </view>
             )}
-            {focused !== null && (
-              <Hero
-                recipe={focused}
-                status={list.focused_status}
-                cookExternal={list.cook_external}
-                externalUrl={list.external_url}
-                busy={busy}
-                onMore={() => setMenu(true)}
-              />
-            )}
-            <view className="kt-section">
+            <view id="kt-list" className="kt-section">
               <text className="kt-eyebrow">
-                {t('kitchen.your_list')} · {others.length}
+                {t('kitchen.your_list')} · {rows.length}
               </text>
               <view className="kt-section__line" />
             </view>
-            {others.length > 0 && <text className="muted">{t('kitchen.swipe_hint')}</text>}
-            {others.map((entry) => (
+            <text id="kt-hint" className="muted">
+              {t('kitchen.swipe_hint')}
+            </text>
+            {rows.map((entry, i) => (
               <Row
                 key={entry.id}
+                id={i === 0 ? 'kt-row' : undefined}
                 entry={entry}
                 busy={busy}
-                onFocus={() => onFocus(entry.id)}
                 onRemove={() => onRemove(entry.id)}
               />
             ))}
@@ -260,22 +202,6 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
                   </text>
                 ))}
               </view>
-            )}
-            {focused !== null && (
-              <Sheet open={menu} onClose={() => setMenu(false)}>
-                <text className="h2">{focused.name}</text>
-                <Button
-                  label={t('kitchen.remove')}
-                  onTap={() => {
-                    setMenu(false);
-                    onRemove(focused.id);
-                  }}
-                  variant="danger"
-                  disabled={busy}
-                  block
-                />
-                <Button label={t('common.cancel')} onTap={() => setMenu(false)} variant="ghost" />
-              </Sheet>
             )}
           </>
         )}
@@ -330,91 +256,29 @@ function Chip({ tone, text }: { tone: 'herb' | 'main'; text: string }) {
   );
 }
 
-interface HeroProps {
-  recipe: Recipe;
-  status: Status;
-  cookExternal: boolean;
-  externalUrl: string | null;
-  busy: boolean;
-  onMore: () => void;
-}
-
-function Hero({ recipe, status, cookExternal, externalUrl, busy, onMore }: HeroProps) {
-  const c = course(recipe.recipe_type);
-  const cta =
-    status.status === 'cooking'
-      ? t('kitchen.continue')
-      : status.status === 'completed'
-        ? t('kitchen.again')
-        : t('kitchen.start');
-
-  const startCooking = () => {
-    if (cookExternal && externalUrl) openExternal(externalUrl);
-    else void push('cooking', { id: recipe.id });
-  };
-
-  return (
-    <view id="kt-hero" className="kt-hero">
-      <view className="kt-hero__band" style={{ backgroundColor: c.soft }}>
-        <view className="kt-hero__tile">
-          <text className="kt-hero__tile-emoji">{c.emoji}</text>
-        </view>
-        <view className="kt-hero__band-text">
-          <text className="kt-hero__course" style={{ color: c.ink }}>
-            {c.label.toUpperCase()}
-          </text>
-          <text className="kt-hero__meta" style={{ color: c.ink }}>
-            ⏱ {minutes(recipe.total_time)} 👥 {t('kitchen.servings', { n: recipe.household_size })}
-          </text>
-        </view>
-        {status.status === 'completed' && (
-          <Chip tone="herb" text={`✓ ${t('kitchen.cooked_badge')}`} />
-        )}
-        {status.status === 'cooking' && <Chip tone="main" text={`🔥 ${t('kitchen.cooking')}`} />}
-      </view>
-      <view className="kt-hero__body">
-        <text className="kt-hero__title">{recipe.name}</text>
-        {recipe.description !== '' && <text className="kt-hero__desc">{recipe.description}</text>}
-        <view className="kt-hero__actions">
-          <view id="kt-start" className="kt-cta" bindtap={busy ? undefined : startCooking}>
-            <text className="kt-cta__text">🔥 {cta}</text>
-          </view>
-          <view
-            id="kt-see"
-            className="kt-iconbtn"
-            bindtap={() => void push('recipe', { id: recipe.id })}
-          >
-            <text className="kt-iconbtn__glyph">📖</text>
-          </view>
-          <view className="kt-iconbtn" bindtap={busy ? undefined : onMore}>
-            <text className="kt-iconbtn__glyph">⋯</text>
-          </view>
-        </view>
-      </view>
-    </view>
-  );
-}
-
 interface RowProps {
+  /** Anchor for the guided tour (first row only). */
+  id?: string;
   entry: Entry;
   busy: boolean;
-  onFocus: () => void;
   onRemove: () => void;
 }
 
-/** Width of the remove action revealed by swiping a row left. */
-const REVEAL = 88;
+/** Width of one action revealed by swiping a row left. */
+const ACTION = 88;
+/** Travel of a fully open row: the "Recipe" and "Remove" actions side by side. */
+const REVEAL = ACTION * 2;
 /** Horizontal travel before a touch counts as a swipe rather than a tap. */
 const SLOP = 8;
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 
 /**
- * A list entry: tap to focus it, swipe left to reveal "Remove". The offset is
- * plain state, so the row follows the finger through the background thread;
- * the snap at the end animates through CSS.
+ * A list entry: tap to cook it, swipe left to reveal "Recipe" and "Remove".
+ * The offset is plain state, so the row follows the finger through the
+ * background thread; the snap at the end animates through CSS.
  */
-function Row({ entry, busy, onFocus, onRemove }: RowProps) {
+function Row({ id, entry, busy, onRemove }: RowProps) {
   const c = course(entry.recipe_type);
   const done = entry.status.status === 'completed';
   const cooking = entry.status.status === 'cooking';
@@ -449,7 +313,7 @@ function Row({ entry, busy, onFocus, onRemove }: RowProps) {
     setDragging(false);
   };
   const onTap = () => {
-    // A swipe ends with a tap on some hosts; never treat it as a focus.
+    // A swipe ends with a tap on some hosts; never treat it as a cook.
     if (moved.current) {
       moved.current = false;
       return;
@@ -459,7 +323,9 @@ function Row({ entry, busy, onFocus, onRemove }: RowProps) {
       setDx(0);
       return;
     }
-    if (!busy) onFocus();
+    // The cooking screen itself opens the original site for recipes that
+    // cannot be cooked in-app.
+    if (!busy) void push('cooking', { id: entry.id });
   };
 
   const classes = ['kt-row'];
@@ -467,10 +333,22 @@ function Row({ entry, busy, onFocus, onRemove }: RowProps) {
   if (!dragging) classes.push('kt-row--snap');
 
   return (
-    <view className="kt-swipe">
-      <view className="kt-swipe__action" bindtap={busy ? undefined : onRemove}>
-        <text className="kt-swipe__glyph">🗑</text>
-        <text className="kt-swipe__text">{t('kitchen.remove_short')}</text>
+    <view id={id} className="kt-swipe">
+      <view className="kt-swipe__actions">
+        <view
+          className="kt-swipe__action kt-swipe__action--recipe"
+          bindtap={() => void push('recipe', { id: entry.id })}
+        >
+          <text className="kt-swipe__glyph">📖</text>
+          <text className="kt-swipe__text">{t('kitchen.recipe_short')}</text>
+        </view>
+        <view
+          className="kt-swipe__action kt-swipe__action--remove"
+          bindtap={busy ? undefined : onRemove}
+        >
+          <text className="kt-swipe__glyph">🗑</text>
+          <text className="kt-swipe__text">{t('kitchen.remove_short')}</text>
+        </view>
       </view>
       <view
         className={classes.join(' ')}

@@ -94,7 +94,6 @@ export const fr: Record<MessageKey, string> = {
   'kitchen.start': 'Commencer à cuisiner',
   'kitchen.continue': 'Continuer',
   'kitchen.again': 'Cuisiner à nouveau',
-  'kitchen.remove': 'Retirer de la liste',
   'kitchen.cooking': 'En cours',
   'kitchen.cooked_badge': 'Cuisiné',
   'kitchen.prep_ahead': 'À préparer à l’avance',
@@ -117,8 +116,9 @@ export const fr: Record<MessageKey, string> = {
   'kitchen.replaces_one': 'Remplace le repas encore sur votre liste.',
   'kitchen.servings': '%{n} personnes',
   'kitchen.remove_short': 'Retirer',
+  'kitchen.recipe_short': 'Recette',
   'kitchen.swipe_hint':
-    'Touchez une recette pour la cuisiner ensuite, glissez vers la gauche pour la retirer.',
+    'Touchez une recette pour la cuisiner, glissez vers la gauche pour la lire ou la retirer.',
   'cooking.ingredients': 'Ingrédients · %{n} articles',
   'cooking.step_of': 'Cuisine · étape %{n} sur %{total}',
   'cooking.final': 'Cuisine · dernière étape',
@@ -368,12 +368,13 @@ export const fr: Record<MessageKey, string> = {
     'Tout ce que vous avez écrit, importé ou enregistré. Enregistrez une recette partagée par un autre cuisinier et elle rejoint votre collection.',
   'tour.cooking.up_next.title': 'À suivre',
   'tour.cooking.up_next.body':
-    'La prochaine recette à cuisiner, avec les quantités déjà ajustées à votre foyer.',
+    'Les recettes que vous prévoyez de cuisiner, la prochaine en haut, avec les quantités déjà ajustées à votre foyer.',
   'tour.cooking.start.title': 'Commencer à cuisiner',
   'tour.cooking.start.body':
-    'Le mode cuisine vous guide étape par étape, minuteurs compris, et garde l’écran allumé.',
+    'Touchez une recette pour entrer en mode cuisine : une étape à la fois, minuteurs compris, l’écran reste allumé.',
   'tour.cooking.recipe.title': 'Voir la recette complète',
-  'tour.cooking.recipe.body': 'Ingrédients, étapes et notes, plus la modification et le partage.',
+  'tour.cooking.recipe.body':
+    'Glissez une recette vers la gauche pour ouvrir ses ingrédients, étapes et notes, ou la retirer de la liste.',
   'tour.cooking.regenerate.title': 'Régénérez à tout moment',
   'tour.cooking.regenerate.body':
     'Les choix ne vous plaisent pas ? Tirez une nouvelle liste de votre collection, ou ajoutez et retirez des recettes à la main.',

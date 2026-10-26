@@ -44,7 +44,7 @@ export const TOURS: Record<string, TourDef> = {
       },
       {
         key: 'list',
-        targetIds: ['kt-hero', 'kt-empty'],
+        targetIds: ['kt-list', 'kt-empty'],
         titleKey: 'tour.kitchen.list.title',
         bodyKey: 'tour.kitchen.list.body',
       },
@@ -82,23 +82,23 @@ export const TOURS: Record<string, TourDef> = {
   },
   cooking: {
     page: 'kitchen',
-    requires: ['kt-hero'],
+    requires: ['kt-row'],
     steps: [
       {
         key: 'up_next',
-        targetIds: ['kt-hero'],
+        targetIds: ['kt-list'],
         titleKey: 'tour.cooking.up_next.title',
         bodyKey: 'tour.cooking.up_next.body',
       },
       {
         key: 'start',
-        targetIds: ['kt-start'],
+        targetIds: ['kt-row'],
         titleKey: 'tour.cooking.start.title',
         bodyKey: 'tour.cooking.start.body',
       },
       {
         key: 'recipe',
-        targetIds: ['kt-see'],
+        targetIds: ['kt-hint'],
         titleKey: 'tour.cooking.recipe.title',
         bodyKey: 'tour.cooking.recipe.body',
       },
