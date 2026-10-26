@@ -88,7 +88,6 @@ export const en = {
   'kitchen.start': 'Start cooking',
   'kitchen.continue': 'Continue cooking',
   'kitchen.again': 'Cook again',
-  'kitchen.remove': 'Remove from list',
   'kitchen.cooking': 'Cooking',
   'kitchen.cooked_badge': 'Cooked',
   'kitchen.prep_ahead': 'Prep ahead',
@@ -355,12 +354,13 @@ export const en = {
     'Everything you wrote, imported or saved. Save a recipe shared by another cook and it joins your collection.',
   'tour.cooking.up_next.title': 'Up next',
   'tour.cooking.up_next.body':
-    "The recipe you'll cook next, with quantities already scaled to your household.",
+    'The recipes you plan to cook, the next one on top, with quantities already scaled to your household.',
   'tour.cooking.start.title': 'Start cooking',
   'tour.cooking.start.body':
-    'Cooking Mode takes you through the recipe one step at a time, timers included, and keeps the screen awake.',
+    'Tap a recipe to enter Cooking Mode: one step at a time, timers included, with the screen kept awake.',
   'tour.cooking.recipe.title': 'See the full recipe',
-  'tour.cooking.recipe.body': 'Ingredients, steps and notes, plus editing and sharing.',
+  'tour.cooking.recipe.body':
+    'Swipe a recipe left to open its ingredients, steps and notes, or to remove it from the list.',
   'tour.cooking.regenerate.title': 'Regenerate any time',
   'tour.cooking.regenerate.body':
     "Don't like the picks? Shuffle a new list from your collection, or add and remove recipes by hand.",
