@@ -224,15 +224,27 @@
   overflow: hidden;
 }
 
-.kt-swipe__action {
+.kt-swipe__actions {
   position: absolute;
   top: 0;
   bottom: 0;
   right: 0;
+  display: flex;
+  flex-direction: row;
+}
+
+.kt-swipe__action {
   width: 88px;
   align-items: center;
   justify-content: center;
   gap: 2px;
+}
+
+.kt-swipe__action--recipe {
+  background-color: var(--color-ink);
+}
+
+.kt-swipe__action--remove {
   background-color: var(--color-primary-700);
 }
 

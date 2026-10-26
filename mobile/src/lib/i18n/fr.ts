@@ -117,8 +117,9 @@ export const fr: Record<MessageKey, string> = {
   'kitchen.replaces_one': 'Remplace le repas encore sur votre liste.',
   'kitchen.servings': '%{n} personnes',
   'kitchen.remove_short': 'Retirer',
+  'kitchen.recipe_short': 'Recette',
   'kitchen.swipe_hint':
-    'Touchez une recette pour la cuisiner ensuite, glissez vers la gauche pour la retirer.',
+    'Touchez une recette pour la cuisiner, glissez vers la gauche pour la lire ou la retirer.',
   'cooking.ingredients': 'Ingrédients · %{n} articles',
   'cooking.step_of': 'Cuisine · étape %{n} sur %{total}',
   'cooking.final': 'Cuisine · dernière étape',
