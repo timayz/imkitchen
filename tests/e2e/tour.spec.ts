@@ -5,8 +5,9 @@ import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 //
 // Each run registers its own user through the JSON API from the page's own
 // request context (the session is bound to the browser's User-Agent) and
-// signs in by storing the returned token as the web session cookie, which
-// sidesteps the TwinSpark redirect and the first service-worker reload.
+// signs in by storing the returned token as the web session cookie. It does
+// not use the shared `account` fixture on purpose: that one skips every
+// tour, and this spec needs them pending.
 
 const password = "correct-horse-42";
 

@@ -33,7 +33,6 @@ Thumbs.db
 # E2E tests
 playwright-report/
 test-results/
-tests/fixtures/.auth/*.json
 
 # Native mobile app (Sparkling / Lynx) under mobile/
 mobile/node_modules/
