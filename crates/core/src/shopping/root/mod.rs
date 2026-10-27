@@ -1,6 +1,8 @@
 mod add;
+mod add_dish;
 mod check;
 mod generate;
+mod meal;
 mod merge;
 mod pick;
 mod remove;
@@ -18,8 +20,8 @@ pub use toogle::*;
 
 use evento::{Executor, Projection, ProjectionAggregate, metadata::Event};
 use imkitchen_types::shopping::{
-    self, Checked, Generated, ListGenerated, RecipeAdded, RecipeRemoved, RecipeSetGenerated,
-    RecipeStatus, RecipeStatusChanged, Unchecked,
+    self, Checked, DishAdded, Generated, ListGenerated, RecipeAdded, RecipeRemoved,
+    RecipeSetGenerated, RecipeStatus, RecipeStatusChanged, Unchecked,
 };
 use std::{
     collections::{HashMap, HashSet},
@@ -118,6 +120,7 @@ pub fn create_projection<E: Executor>() -> Projection<E, Shopping> {
         .handler(handle_recipe_removed())
         .handler(handle_list_generated())
         .handler(handle_recipe_status_changed())
+        .handler(handle_dish_added())
         .strict()
 }
 
@@ -202,6 +205,15 @@ async fn handle_recipe_status_changed(
 ) -> anyhow::Result<()> {
     data.statuses
         .insert(event.data.recipe_id, event.data.status);
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_dish_added(event: Event<DishAdded>, data: &mut Shopping) -> anyhow::Result<()> {
+    data.user_id = event.metadata.requested_by()?;
+    data.recipes = event.data.recipe_ids;
+    data.ingredients = event.data.ingredients.iter().map(|i| i.key()).collect();
 
     Ok(())
 }

@@ -1,0 +1,74 @@
+{# ── Composer option blocks ──────────────────────────────────────────
+   One block per course: the picked recipes pinned (checked) on top, then
+   a page of matches for the section's search. Rendered inline by
+   dishes-edit.html and answered whole by /dishes/new/options, where each
+   block pushes itself over the one on the page (`ts-swap-push`). ──── #}
+{% macro type_emoji(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}🥗
+{%- when RecipeType::MainCourse -%}🍛
+{%- when RecipeType::Accompaniment -%}🥖
+{%- when RecipeType::Dessert -%}🍰
+{%- when RecipeType::Beverage -%}🥤
+{%- when RecipeType::Condiment -%}🥫
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro type_pill_classes(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}bg-meal-entree-soft text-meal-entree-ink
+{%- when RecipeType::MainCourse -%}bg-meal-main-soft text-meal-main-ink
+{%- when RecipeType::Accompaniment -%}bg-meal-side-soft text-meal-side-ink
+{%- when RecipeType::Dessert -%}bg-meal-dessert-soft text-meal-dessert-ink
+{%- when RecipeType::Beverage -%}bg-cyan-100 text-cyan-900
+{%- when RecipeType::Condiment -%}bg-amber-100 text-amber-900
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro option(course, item, checked) %}
+<label class="block cursor-pointer">
+  <input type="{% if course.multiple %}checkbox{% else %}radio{% endif %}" name="{{ course.field }}" value="{{ item.id }}" class="peer sr-only"
+    {% if checked %}checked{% endif %}{% if course.recipe_type == RecipeType::MainCourse %} required{% endif %}/>
+  <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 border-transparent text-ink text-sm transition
+    peer-checked:border-primary-500 peer-checked:bg-primary-50">
+    <span class="w-7 h-7 rounded-lg flex items-center justify-center text-sm shrink-0 {% call type_pill_classes(course.recipe_type) %}{% endcall %}">{% call type_emoji(course.recipe_type) %}{% endcall %}</span>
+    <span class="truncate">{{ item.name }}</span>
+  </div>
+</label>
+{% endmacro %}
+
+{% for course in courses %}
+<div id="options-{{ course.field }}" ts-swap-push="#options-{{ course.field }}">
+  {% if course.is_empty_pool() %}
+  <div class="bg-paper border border-dashed border-line-2 rounded-2xl p-4 text-sm text-ink-3">
+    {{ "Nothing of this kind in your library yet."|t }}
+    <a href="/recipes?recipe_type={{ course.recipe_type }}" class="text-primary-500 hover:text-primary-600 font-semibold">{{ "Browse recipes"|t }} →</a>
+  </div>
+  {% else %}
+  <div class="bg-paper border border-line-2 rounded-2xl p-2 md:p-3 grid gap-1.5 sm:grid-cols-2">
+    {% if !course.multiple && course.recipe_type != RecipeType::MainCourse %}
+    <label class="block cursor-pointer">
+      <input type="radio" name="{{ course.field }}" value="none" class="peer sr-only" {% if !course.has_selection() %}checked{% endif %}/>
+      <div class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 border-transparent text-ink-3 text-sm transition
+        peer-checked:border-line peer-checked:bg-cream peer-checked:text-ink">
+        <span class="w-7 h-7 rounded-lg bg-cream-2 flex items-center justify-center text-sm shrink-0">—</span>
+        <span class="truncate italic">{{ "None"|t }}</span>
+      </div>
+    </label>
+    {% endif %}
+    {% for item in course.selected %}
+    {% call option(course, item, true) %}{% endcall %}
+    {% endfor %}
+    {% for item in course.results %}
+    {% call option(course, item, false) %}{% endcall %}
+    {% endfor %}
+    {% if course.no_match() %}
+    <div class="px-3 py-2.5 text-sm text-ink-3 sm:col-span-2">{{ "No recipe matches"|t }} “{{ course.search }}”.</div>
+    {% endif %}
+    {% if course.more() > 0 %}
+    <div class="px-3 py-2 text-xs text-ink-3 sm:col-span-2">{{ course.more() }} {{ "more — type a name to narrow down"|t }}</div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endfor %}

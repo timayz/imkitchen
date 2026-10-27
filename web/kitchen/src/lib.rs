@@ -4,6 +4,8 @@
 //! The logic lives in `imkitchen_web_shared::services::kitchen` (shared with
 //! the JSON API); this crate only renders its results into templates.
 
+pub mod dishes;
+
 use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::{CookieJar, Form};
@@ -332,4 +334,5 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
         .route("/kitchen/{recipe_id}/select-dish", post(select_dish))
         .route("/kitchen/{recipe_id}/cook", get(cook_page))
         .route("/kitchen/{legacy}", get(legacy_kitchen_redirect))
+        .merge(dishes::routes())
 }

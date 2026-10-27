@@ -14,7 +14,53 @@ use sqlx::prelude::FromRow;
 pub struct PoolRecipe {
     pub id: String,
     pub name: String,
+    pub recipe_type: sqlx::types::Text<RecipeType>,
     pub accepts_accompaniment: bool,
+}
+
+impl PoolRecipe {
+    pub fn recipe_type(&self) -> &RecipeType {
+        &self.recipe_type.0
+    }
+}
+
+/// The columns [`PoolRecipe`] is read from.
+pub(crate) const POOL_COLUMNS: [MealPlanRecipe; 4] = [
+    MealPlanRecipe::Id,
+    MealPlanRecipe::Name,
+    MealPlanRecipe::RecipeType,
+    MealPlanRecipe::AcceptsAccompaniment,
+];
+
+/// Restrict a `meal_plan_recipe` selection to recipes matching every one of
+/// `dietary_restrictions`; no restriction leaves the statement untouched.
+pub(crate) fn restrict_dietary(
+    statement: &mut sea_query::SelectStatement,
+    dietary_restrictions: &[DietaryRestriction],
+) {
+    if dietary_restrictions.is_empty() {
+        return;
+    }
+
+    let in_clause = dietary_restrictions
+        .iter()
+        .map(|_| "?")
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    statement.and_where(Expr::cust_with_values(
+        format!(
+            "(SELECT COUNT(*) FROM json_each(dietary_restrictions) WHERE value IN ({})) = ?",
+            in_clause
+        ),
+        dietary_restrictions
+            .iter()
+            .map(|t| sea_query::Value::String(Some(*Box::new(t.to_string()))))
+            .chain(std::iter::once(sea_query::Value::Int(Some(
+                dietary_restrictions.len() as i32,
+            ))))
+            .collect::<Vec<_>>(),
+    ));
 }
 
 pub struct Randomize {
@@ -37,11 +83,7 @@ impl<E: Executor> super::Module<E> {
         let user_id = user_id.into();
 
         let statement = Query::select()
-            .columns([
-                MealPlanRecipe::Id,
-                MealPlanRecipe::Name,
-                MealPlanRecipe::AcceptsAccompaniment,
-            ])
+            .columns(POOL_COLUMNS)
             .from(MealPlanRecipe::Table)
             .and_where(Expr::col(MealPlanRecipe::UserId).eq(user_id))
             .and_where(Expr::col(MealPlanRecipe::RecipeType).eq(recipe_type.to_string()))
@@ -110,27 +152,7 @@ impl<E: Executor> super::Module<E> {
             .and_where(Expr::col(MealPlanRecipe::Name).not_equals(""))
             .to_owned();
 
-        if !dietary_restrictions.is_empty() {
-            let in_clause = dietary_restrictions
-                .iter()
-                .map(|_| "?")
-                .collect::<Vec<_>>()
-                .join(", ");
-
-            sub_statement.and_where(Expr::cust_with_values(
-                format!(
-                    "(SELECT COUNT(*) FROM json_each(dietary_restrictions) WHERE value IN ({})) = ?",
-                    in_clause
-                ),
-                dietary_restrictions
-                    .iter()
-                    .map(|t| sea_query::Value::String(Some(*Box::new(t.to_string()))))
-                    .chain(std::iter::once(sea_query::Value::Int(Some(
-                        dietary_restrictions.len() as i32,
-                    ))))
-                    .collect::<Vec<_>>(),
-            ));
-        }
+        restrict_dietary(&mut sub_statement, &dietary_restrictions);
 
         sub_statement
             .order_by_expr(
@@ -140,11 +162,7 @@ impl<E: Executor> super::Module<E> {
             .limit(7 * 5);
 
         let statement = Query::select()
-            .columns([
-                MealPlanRecipe::Id,
-                MealPlanRecipe::Name,
-                MealPlanRecipe::AcceptsAccompaniment,
-            ])
+            .columns(POOL_COLUMNS)
             .from(MealPlanRecipe::Table)
             .and_where(
                 MealPlanRecipe::Id

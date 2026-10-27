@@ -150,6 +150,11 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
+    let sub_dish_query = imkitchen_core::dish::query::subscription()
+        .data(write_pool.clone())
+        .start(&executor)
+        .await?;
+
     let stripe = stripe::ClientBuilder::new(&config.stripe.secret_key)
         .request_strategy(stripe::RequestStrategy::ExponentialBackoff(4))
         .build()?;
@@ -341,6 +346,7 @@ pub async fn serve(
         sub_recipe_thumbnail.shutdown(),
         sub_shopping_pool.shutdown(),
         sub_shopping.shutdown(),
+        sub_dish_query.shutdown(),
     ])
     .await;
 

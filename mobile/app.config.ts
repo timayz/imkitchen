@@ -28,6 +28,8 @@ const lynxConfig = defineConfig({
       cook: './src/pages/cook/index.tsx',
       'recipe-edit': './src/pages/recipe-edit/index.tsx',
       'recipe-import': './src/pages/recipe-import/index.tsx',
+      dishes: './src/pages/dishes/index.tsx',
+      'dish-edit': './src/pages/dish-edit/index.tsx',
     },
     define: {
       __API_BASE_URL__: JSON.stringify(apiUrl),

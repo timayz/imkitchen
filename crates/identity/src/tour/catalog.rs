@@ -25,9 +25,10 @@ pub const CATALOG: &[TourDef] = &[
     },
     TourDef {
         id: "cooking",
-        version: 1,
+        // 1 → 2: the "dishes" step was added when dishes shipped.
+        version: 2,
         page: "kitchen",
-        steps: &["up_next", "start", "recipe", "regenerate"],
+        steps: &["up_next", "start", "recipe", "regenerate", "dishes"],
     },
     TourDef {
         id: "groceries",

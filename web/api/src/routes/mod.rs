@@ -1,4 +1,5 @@
 pub mod auth;
+pub mod dish;
 pub mod grocery;
 pub mod health;
 pub mod kitchen;

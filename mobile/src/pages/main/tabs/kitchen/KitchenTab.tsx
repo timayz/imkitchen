@@ -100,6 +100,11 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
                   />
                 </view>
                 <Button label={t('kitchen.add_by_hand')} onTap={onAddRecipes} variant="ghost" />
+                <Button
+                  label={`🍽️ ${t('kitchen.dishes')}`}
+                  onTap={() => void push('dishes')}
+                  variant="ghost"
+                />
               </>
             ) : (
               <>
@@ -223,6 +228,9 @@ function Header({ caption, onRegenerate }: { caption: string; onRegenerate?: () 
       <view className="kt-header__text">
         <text className="h1">{t('kitchen.up_next')}</text>
         <text className="muted">{caption}</text>
+      </view>
+      <view id="kt-dishes" className="kt-dishes" bindtap={() => void push('dishes')}>
+        <text className="kt-dishes__glyph">🍽️</text>
       </view>
       {onRegenerate && (
         <view id="kt-regen" className="kt-regen" bindtap={onRegenerate}>

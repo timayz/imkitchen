@@ -68,6 +68,18 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             "/kitchen/recipes/{id}/status",
             axum::routing::put(routes::kitchen::set_status),
         )
+        .route(
+            "/dishes",
+            get(routes::dish::list).post(routes::dish::create),
+        )
+        .route("/dishes/candidates", get(routes::dish::candidates))
+        .route(
+            "/dishes/{id}",
+            get(routes::dish::detail)
+                .put(routes::dish::update)
+                .delete(routes::dish::delete),
+        )
+        .route("/dishes/{id}/shopping", post(routes::dish::add_to_shopping))
         .route("/groceries", get(routes::grocery::list))
         .route("/groceries/toggle", post(routes::grocery::toggle))
         .route(

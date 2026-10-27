@@ -1,0 +1,164 @@
+/* Top bar: back, title, + */
+.dishes__bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 20px 8px;
+}
+
+.dishes__back {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  background-color: var(--color-paper);
+  align-items: center;
+  justify-content: center;
+}
+
+.dishes__back-glyph {
+  font-size: 18px;
+  color: var(--color-ink);
+}
+
+.dishes__bar-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dishes__add {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary-500);
+  align-items: center;
+  justify-content: center;
+}
+
+.dishes__add-glyph {
+  font-size: 26px;
+  line-height: 28px;
+  font-weight: 700;
+  color: var(--color-paper);
+}
+
+.dishes__scroll {
+  flex: 1;
+}
+
+.dishes__notice {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary-100);
+}
+
+.dishes__notice--ok {
+  background-color: var(--color-herb-100);
+}
+
+.dishes__notice-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary-700);
+}
+
+.dishes__notice-text--ok {
+  color: var(--color-herb-700);
+}
+
+/* Empty state */
+.dishes__empty {
+  align-items: center;
+  gap: 10px;
+  padding: 28px 18px;
+}
+
+.dishes__empty-emoji {
+  font-size: 40px;
+}
+
+.dishes__empty-title {
+  font-size: 20px;
+  font-family: 'Fraunces';
+  color: var(--color-ink);
+}
+
+.dishes__center {
+  text-align: center;
+}
+
+/* One dish card */
+.dishes__head {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.dishes__head-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dishes__name {
+  font-size: 18px;
+  font-family: 'Fraunces';
+  color: var(--color-ink);
+}
+
+.dishes__edit {
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-cream);
+}
+
+.dishes__edit-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink-2);
+}
+
+.dishes__recipes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dishes__row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.dishes__tile {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  align-items: center;
+  justify-content: center;
+}
+
+.dishes__tile-emoji {
+  font-size: 15px;
+}
+
+.dishes__row-name {
+  flex: 1;
+  font-size: 15px;
+  color: var(--color-ink);
+}
+
+.dishes__row-name--main {
+  font-weight: 700;
+}
+
+.dishes__row-time {
+  font-size: 12px;
+  color: var(--color-ink-3);
+}

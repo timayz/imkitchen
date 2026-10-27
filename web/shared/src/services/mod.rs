@@ -4,6 +4,7 @@
 //! results, and never touch axum request or response types.
 
 pub mod auth;
+pub mod dish;
 pub mod grocery;
 pub mod kitchen;
 pub mod recipe;

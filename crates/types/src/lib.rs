@@ -1,4 +1,5 @@
 pub mod contact;
+pub mod dish;
 pub mod favorite;
 pub mod meal_preferences;
 pub mod mealplan;

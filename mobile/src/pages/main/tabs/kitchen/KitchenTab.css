@@ -27,6 +27,21 @@
   font-size: 20px;
 }
 
+/* Header shortcut to the composed dishes */
+.kt-dishes {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  background-color: var(--color-paper);
+  align-items: center;
+  justify-content: center;
+}
+
+.kt-dishes__glyph {
+  font-size: 20px;
+}
+
 /* Progress strip: one segment per meal in the round */
 .kt-progress {
   display: flex;

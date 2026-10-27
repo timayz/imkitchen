@@ -1,0 +1,89 @@
+.dish__bar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 20px 8px;
+}
+
+.dish__back {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  background-color: var(--color-paper);
+  align-items: center;
+  justify-content: center;
+}
+
+.dish__back-glyph {
+  font-size: 18px;
+  color: var(--color-ink);
+}
+
+.dish__bar-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dish__scroll {
+  flex: 1;
+}
+
+/* One course of the composer */
+.dish__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dish__section-head {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.dish__section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.dish__chips {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dish__danger {
+  align-items: flex-start;
+  margin-top: 8px;
+}
+
+/* Footer, pinned under the scroll */
+.dish__footer {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px 28px;
+  background-color: var(--color-paper);
+  border-top: 1px solid var(--color-line);
+}
+
+.dish__footer-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dish__footer-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ink);
+}

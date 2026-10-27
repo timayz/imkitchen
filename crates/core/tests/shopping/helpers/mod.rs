@@ -104,3 +104,13 @@ pub async fn run_pool_subscription(state: &State<Sqlite>) -> anyhow::Result<()> 
         .await?;
     Ok(())
 }
+
+/// Drain the dish read model (maintains the `dish` table).
+pub async fn run_dish_subscription(state: &State<Sqlite>) -> anyhow::Result<()> {
+    imkitchen_core::dish::query::subscription()
+        .data(state.write_db.clone())
+        .no_retry()
+        .run_once(&state.executor)
+        .await?;
+    Ok(())
+}

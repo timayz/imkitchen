@@ -1,6 +1,7 @@
 mod command;
 pub mod contact;
 mod date;
+pub mod dish;
 pub mod recipe;
 pub mod shopping;
 
@@ -20,6 +21,7 @@ pub struct State<E: Executor> {
 pub struct Core<E: Executor> {
     pub recipe: recipe::Module<E>,
     pub shopping: shopping::Module<E>,
+    pub dish: dish::Module<E>,
     pub contact: contact::Module<E>,
 }
 
@@ -31,6 +33,7 @@ impl<E: Executor> Core<E> {
         Self {
             recipe: recipe::Module::new(state.clone()),
             shopping: shopping::Module::new(state.clone()),
+            dish: dish::Module::new(state.clone()),
             contact: contact::Module::new(state),
         }
     }

@@ -1,0 +1,126 @@
+{% extends "_user.html" %}
+{% block title %}{{ "Dishes"|t }} - imkitchen{% endblock %}
+
+{% macro type_emoji(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}🥗
+{%- when RecipeType::MainCourse -%}🍛
+{%- when RecipeType::Accompaniment -%}🥖
+{%- when RecipeType::Dessert -%}🍰
+{%- when RecipeType::Beverage -%}🥤
+{%- when RecipeType::Condiment -%}🥫
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro type_pill_classes(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}bg-meal-entree-soft text-meal-entree-ink
+{%- when RecipeType::MainCourse -%}bg-meal-main-soft text-meal-main-ink
+{%- when RecipeType::Accompaniment -%}bg-meal-side-soft text-meal-side-ink
+{%- when RecipeType::Dessert -%}bg-meal-dessert-soft text-meal-dessert-ink
+{%- when RecipeType::Beverage -%}bg-cyan-100 text-cyan-900
+{%- when RecipeType::Condiment -%}bg-amber-100 text-amber-900
+{%- endmatch -%}
+{%- endmacro %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 md:py-8 max-w-5xl">
+
+  <header class="flex items-center justify-between gap-3 mb-5 md:mb-7">
+    <div class="flex-1 min-w-0">
+      <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3">
+        {{ "Kitchen"|t }} · {{ dishes.len() }} {{ "dishes"|t }}
+      </div>
+      <h1 class="font-serif text-2xl md:text-4xl leading-tight tracking-tight text-ink mt-1">{{ "Your dishes"|t }}</h1>
+      <p class="text-sm text-ink-3 mt-1 max-w-xl">
+        {{ "A dish is a meal you composed: one main course with the sides, sauces, starter, dessert or drink you like with it. Generation picks your dishes first; you can also add one to your list by hand."|t }}
+      </p>
+    </div>
+    {% if can_compose %}
+    <a href="/dishes/new"
+      class="h-11 px-4 inline-flex items-center gap-1.5 bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold rounded-2xl shadow-sm transition shrink-0">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m-7-7h14"/>
+      </svg>
+      <span class="hidden sm:inline">{{ "Compose a dish"|t }}</span>
+    </a>
+    {% endif %}
+  </header>
+
+  {% if dishes.is_empty() %}
+  <section class="rounded-3xl border border-line-2 shadow-sm p-6 text-center bg-linear-to-b from-paper to-cream-2 max-w-xl mx-auto">
+    <div class="flex justify-center gap-1.5 mb-4">
+      <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm bg-meal-main-soft -rotate-4">🍛</span>
+      <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm bg-meal-side-soft">🥖</span>
+      <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm bg-amber-100 rotate-4">🥫</span>
+    </div>
+    <h2 class="font-serif text-2xl leading-tight tracking-tight text-ink">{{ "No dishes yet"|t }}</h2>
+    {% if can_compose %}
+    <p class="text-[13.5px] text-ink-2 leading-relaxed mt-2 mb-5 max-w-xs mx-auto">
+      {{ "Pair a main course with the sides and sauces you always cook it with. Your dishes come first whenever you generate a list."|t }}
+    </p>
+    <a href="/dishes/new"
+      class="flex items-center justify-center gap-2 w-full px-5 py-3.5 bg-ink text-cream rounded-xl text-sm font-semibold shadow-sm hover:opacity-90 transition">
+      {{ "Compose a dish"|t }}
+    </a>
+    {% else %}
+    <p class="text-[13.5px] text-ink-2 leading-relaxed mt-2 mb-5 max-w-xs mx-auto">
+      {{ "A dish starts from a main course. Add one to your library first."|t }}
+    </p>
+    <a href="/recipes"
+      class="flex items-center justify-center gap-2 w-full px-5 py-3.5 bg-primary-500 text-white rounded-xl text-sm font-semibold shadow-sm hover:bg-primary-600 transition">
+      {{ "Add a main course"|t }}
+    </a>
+    {% endif %}
+  </section>
+  {% else %}
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% for dish in dishes %}
+    <article class="bg-paper border border-line-2 rounded-2xl p-4 flex flex-col gap-3 shadow-sm">
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <h2 class="font-serif text-lg leading-tight tracking-tight text-ink truncate">{{ dish.name }}</h2>
+          <div class="text-[10.5px] font-mono text-ink-3 mt-0.5">
+            {{ dish.recipes.len() }} {{ "recipes"|t }}{% if dish.total_time() > 0 %} · {{ dish.total_time() }} {{ "min"|t }}{% endif %}
+          </div>
+        </div>
+        <a href="/dishes/{{ dish.id }}/edit" title="{{ "Edit"|t }}"
+          class="w-9 h-9 rounded-xl bg-cream text-ink-2 hover:bg-cream-2 flex items-center justify-center shrink-0 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.4-9.4a2 2 0 112.8 2.8L12 16l-4 1 1-4 8.6-8.4z"/>
+          </svg>
+        </a>
+      </div>
+
+      {% if dish.recipes.is_empty() %}
+      <p class="text-xs text-ink-3">{{ "Every recipe of this dish was deleted."|t }}</p>
+      {% else %}
+      <ul class="flex flex-col gap-1.5">
+        {% for recipe in dish.recipes %}
+        <li>
+          <a href="/r/{{ recipe.slug }}" class="flex items-center gap-2 text-sm text-ink hover:text-primary-600">
+            <span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs shrink-0 {% call type_pill_classes(recipe.recipe_type) %}{% endcall %}">{% call type_emoji(recipe.recipe_type) %}{% endcall %}</span>
+            <span class="truncate {% if recipe.recipe_type == RecipeType::MainCourse %}font-semibold{% endif %}">{{ recipe.name }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+
+      <div class="flex items-center gap-2 mt-auto pt-1">
+        {% let id = dish.id.clone() %}
+        {% let in_list = dish.in_list %}
+        {% include "partials/dishes-add-button.html" %}
+        <form ts-req="/dishes/{{ dish.id }}/delete" ts-req-method="post" ts-swap="skip" class="ml-auto"
+          onsubmit="return confirm(this.dataset.confirm)" data-confirm="{{ "Delete this dish? Its recipes stay in your library."|t }}">
+          <button class="h-9 px-3 rounded-xl text-xs font-semibold text-ink-3 hover:text-red-700 hover:bg-red-50 transition">
+            {{ "Delete"|t }}
+          </button>
+        </form>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
