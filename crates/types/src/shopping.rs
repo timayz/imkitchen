@@ -68,4 +68,10 @@ pub enum Shopping {
         recipe_id: String,
         status: RecipeStatus,
     },
+    /// A whole dish was added by hand: `recipe_ids` is the resulting list.
+    DishAdded {
+        dish_id: String,
+        recipe_ids: Vec<String>,
+        ingredients: Vec<Ingredient>,
+    },
 }

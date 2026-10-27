@@ -1,5 +1,6 @@
 use crate::helpers;
 use evento::Sqlite;
+use imkitchen_core::dish::ComposeInput;
 use imkitchen_core::shopping::{GenerateList, Randomize};
 use imkitchen_types::recipe::RecipeType;
 use std::collections::HashMap;
@@ -287,6 +288,195 @@ async fn test_generate_without_mains_fails() -> anyhow::Result<()> {
         .await
         .unwrap_err();
     assert_eq!(err.to_string(), "No main course found");
+
+    Ok(())
+}
+
+/// Two dishes (one with two sides and a sauce, one a bare main) among the
+/// seeded pool: they come first, keep their composition, and the random
+/// pools never hand out a recipe a dish already placed.
+#[tokio::test]
+async fn test_generate_uses_dishes_first_and_fills_their_missing_courses() -> anyhow::Result<()> {
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
+    let recipe_cmd = imkitchen_core::recipe::Module::new(state.clone());
+    let shopping = imkitchen_core::shopping::Module::new(state.clone());
+    let dish = imkitchen_core::dish::Module::new(state.clone());
+    let (types, accepting) = seed_with_accepting(&state).await?;
+
+    let of = |t: RecipeType| {
+        types
+            .iter()
+            .filter(|(_, rt)| **rt == t)
+            .map(|(id, _)| id.clone())
+            .collect::<Vec<_>>()
+    };
+    let sides = of(RecipeType::Accompaniment);
+    let sauce = helpers::import_typed_recipe(
+        &recipe_cmd,
+        "sauce",
+        "sauce-ingredient",
+        10,
+        4,
+        RecipeType::Condiment,
+        false,
+        "john",
+    )
+    .await?;
+    helpers::run_shopping_subscription(&state).await?;
+    helpers::run_pool_subscription(&state).await?;
+
+    // Dish A: an accepting main with both sides and the sauce.
+    let dish_a = dish
+        .create(
+            ComposeInput {
+                name: "Full plate".to_owned(),
+                recipe_ids: vec![
+                    accepting[0].clone(),
+                    sides[0].clone(),
+                    sides[1].clone(),
+                    sauce.clone(),
+                ],
+            },
+            "john",
+        )
+        .await?;
+    // Dish B: the other accepting main alone.
+    let dish_b = dish
+        .create(
+            ComposeInput {
+                name: "Bare main".to_owned(),
+                recipe_ids: vec![accepting[1].clone()],
+            },
+            "john",
+        )
+        .await?;
+    helpers::run_dish_subscription(&state).await?;
+
+    shopping
+        .generate(
+            GenerateList {
+                count: 3,
+                household_size: 4,
+                randomize: Some(Randomize {
+                    cuisine_variety_weight: 1.0,
+                    dietary_restrictions: vec![],
+                    recipe_types: vec![
+                        RecipeType::Accompaniment,
+                        RecipeType::Dessert,
+                        RecipeType::Condiment,
+                    ],
+                }),
+            },
+            "john",
+        )
+        .await?;
+
+    let loaded = shopping.load("john").await?.expect("shopping aggregate");
+    let ids = &loaded.recipes;
+
+    // Both dishes are in, one of them first, then one random main.
+    let dish_a_ids = dish.load(&dish_a).await?.unwrap().recipe_ids;
+    let dish_b_ids = dish.load(&dish_b).await?.unwrap().recipe_ids;
+    let pos = |id: &String| ids.iter().position(|x| x == id).expect("recipe in list");
+    let a_main = pos(&accepting[0]);
+    let b_main = pos(&accepting[1]);
+    // Dish A reads main, side, side, dessert, sauce; nothing else in between.
+    assert_eq!(ids[a_main + 1], sides[0]);
+    assert_eq!(ids[a_main + 2], sides[1]);
+    assert_eq!(types[&ids[a_main + 3]], RecipeType::Dessert);
+    assert_eq!(ids[a_main + 4], sauce);
+    assert_eq!(dish_a_ids.len(), 4);
+    // Dish B is filled: its main accepts a side, but both sides went to dish
+    // A, so it gets a dessert and nothing else beside the main.
+    assert_eq!(types[&ids[b_main + 1]], RecipeType::Dessert);
+    assert_eq!(dish_b_ids, vec![accepting[1].clone()]);
+
+    let mains: Vec<&String> = ids
+        .iter()
+        .filter(|id| types.get(*id) == Some(&RecipeType::MainCourse))
+        .collect();
+    assert_eq!(mains.len(), 3);
+    // Sides were placed by dish A and never drawn again.
+    assert_eq!(ids.iter().filter(|id| sides.contains(id)).count(), 2);
+    assert_eq!(ids.iter().filter(|id| *id == &sauce).count(), 1);
+    // Three desserts, one per meal.
+    assert_eq!(
+        ids.iter()
+            .filter(|id| types.get(*id) == Some(&RecipeType::Dessert))
+            .count(),
+        3
+    );
+    assert_eq!(ids.len(), 3 + 2 + 1 + 3);
+
+    Ok(())
+}
+
+/// A dish whose main was deleted is skipped; one whose side was deleted
+/// keeps going without it.
+#[tokio::test]
+async fn test_generate_skips_dishes_without_their_main() -> anyhow::Result<()> {
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
+    let recipe_cmd = imkitchen_core::recipe::Module::new(state.clone());
+    let shopping = imkitchen_core::shopping::Module::new(state.clone());
+    let dish = imkitchen_core::dish::Module::new(state.clone());
+    let (types, accepting) = seed_with_accepting(&state).await?;
+    let sides: Vec<String> = types
+        .iter()
+        .filter(|(_, rt)| **rt == RecipeType::Accompaniment)
+        .map(|(id, _)| id.clone())
+        .collect();
+
+    let gone = dish
+        .create(
+            ComposeInput {
+                name: "Gone".to_owned(),
+                recipe_ids: vec![accepting[0].clone(), sides[0].clone()],
+            },
+            "john",
+        )
+        .await?;
+    let kept = dish
+        .create(
+            ComposeInput {
+                name: "Kept".to_owned(),
+                recipe_ids: vec![accepting[1].clone(), sides[1].clone()],
+            },
+            "john",
+        )
+        .await?;
+    helpers::run_dish_subscription(&state).await?;
+
+    recipe_cmd.delete(&accepting[0], "john").await?;
+    recipe_cmd.delete(&sides[1], "john").await?;
+    helpers::run_shopping_subscription(&state).await?;
+    helpers::run_pool_subscription(&state).await?;
+
+    shopping
+        .generate(
+            GenerateList {
+                count: 1,
+                household_size: 4,
+                randomize: Some(Randomize {
+                    cuisine_variety_weight: 1.0,
+                    dietary_restrictions: vec![],
+                    recipe_types: vec![],
+                }),
+            },
+            "john",
+        )
+        .await?;
+
+    let loaded = shopping.load("john").await?.expect("shopping aggregate");
+    assert_eq!(loaded.recipes, vec![accepting[1].clone()]);
+    assert!(
+        dish.load(&gone).await?.is_some(),
+        "the dish itself survives"
+    );
+    assert!(dish.load(&kept).await?.is_some());
 
     Ok(())
 }

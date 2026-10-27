@@ -2947,6 +2947,7 @@ dependencies = [
 name = "imkitchen-web-kitchen"
 version = "1.11.0"
 dependencies = [
+ "anyhow",
  "askama",
  "axum",
  "axum-extra",
@@ -3050,6 +3051,7 @@ dependencies = [
  "rust-i18n",
  "serde",
  "time",
+ "tokio",
  "tower",
  "tracing",
 ]

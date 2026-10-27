@@ -22,7 +22,13 @@
         {% endif %}
       </p>
     </div>
-    {# Desktop-only Regenerate inline with the header #}
+    {# Desktop-only: Dishes + Regenerate inline with the header #}
+    <a {% if demo %}ts-req="/demo/signup" ts-target="body" ts-swap="append"{% else %}href="/dishes"{% endif %} title="{{ "Dishes"|t }}"
+      data-tour="kitchen-dishes"
+      class="hidden md:inline-flex cursor-pointer items-center gap-1.5 px-3 h-9 bg-paper border border-line-2 text-ink font-semibold rounded-xl text-xs hover:bg-cream transition shrink-0">
+      <span class="text-sm leading-none">🍽️</span>
+      {{ "Dishes"|t }}
+    </a>
     <button ts-trigger="click" ts-req="{% if demo %}/demo/signup{% else %}/kitchen/generate{% endif %}" ts-target="body" ts-swap="append"
       data-tour="kitchen-cta kitchen-regenerate"
       class="hidden md:inline-flex items-center gap-1.5 px-3 h-9 bg-meal-main-soft text-meal-main-ink font-semibold rounded-xl text-xs hover:opacity-90 shadow-sm transition shrink-0">
@@ -38,6 +44,12 @@
     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l2.4 5.6L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.4z"/></svg>
     {{ "Regenerate recipes"|t }}
   </button>
+  <a {% if demo %}ts-req="/demo/signup" ts-target="body" ts-swap="append"{% else %}href="/dishes"{% endif %}
+    data-tour="kitchen-dishes"
+    class="md:hidden w-full cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2.5 mb-4 bg-paper border border-line-2 text-ink font-semibold rounded-xl text-sm hover:bg-cream transition">
+    <span class="leading-none">🍽️</span>
+    {{ "Your dishes"|t }}
+  </a>
 
   {% let has_aside = !prep_ahead.is_empty() %}
   <div class="{% if has_aside %}grid lg:grid-cols-3 gap-6{% endif %}">

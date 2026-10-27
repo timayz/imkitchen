@@ -29,6 +29,9 @@ event imkitchen-types/Contact::FormSubmitted { name: String, email: String, subj
 event imkitchen-types/Contact::MarkedReadAndReply unit
 event imkitchen-types/Contact::Reopened unit
 event imkitchen-types/Contact::Resolved unit
+event imkitchen-types/Dish::Changed { name: String, recipe_ids: Vec<String> }
+event imkitchen-types/Dish::Created { name: String, recipe_ids: Vec<String> }
+event imkitchen-types/Dish::Deleted unit
 event imkitchen-types/Favorite::Saved { recipe_id: String, recipe_owner: String }
 event imkitchen-types/Favorite::Unsaved { recipe_id: String }
 event imkitchen-types/MealPlan::DaysGenerated { start: u64, slots: Vec<Slot>, household_size: u16 }
@@ -54,6 +57,7 @@ event imkitchen-types/Recipe::ThumbnailUploaded unit
 event imkitchen-types/RecipeShare::AllMadePrivate unit
 event imkitchen-types/RecipeShare::AllSharedToCommunity { owner_name: String }
 event imkitchen-types/Shopping::Checked { ingredient: String }
+event imkitchen-types/Shopping::DishAdded { dish_id: String, recipe_ids: Vec<String>, ingredients: Vec<Ingredient> }
 event imkitchen-types/Shopping::Generated { ingredients: Vec<Ingredient>, from_date: u64, days: u8 }
 event imkitchen-types/Shopping::ListGenerated { recipe_ids: Vec<String>, ingredients: Vec<Ingredient> }
 event imkitchen-types/Shopping::RecipeAdded { recipe_id: String, recipe_ids: Vec<String>, ingredients: Vec<Ingredient> }
@@ -86,6 +90,7 @@ type imkitchen_types::shopping::RecipeStatus enum { Idle, Cooking (u8), Complete
 
 view imkitchen-billing/subscription/Subscription rev=1 { id: String, name: Option<String>, email: Option<String>, customer_id: Option<String>, payment_method_id: Option<String>, payment_intent_id: Option<String>, setup_intent_id: Option<String>, payment_details: Option<PaymentDetails>, address: Option<Address>, expire_at: u64, is_active: bool, cursor: String, aggregate_version: u16 }
 view imkitchen-core/contact/Contact rev=1 { id: String, status: Status, cursor: String, aggregate_version: u16 } with Status enum { Unread, Read, Resolved }; Status enum { Idle, Processing, Failed }
+view imkitchen-core/dish/Dish rev=0 { id: String, owner_id: String, name: String, recipe_ids: Vec<String>, cursor: String, aggregate_version: u16 }
 view imkitchen-core/recipe/Recipe rev=3 { id: String, owner_id: String, recipe_type: RecipeType, basic_information_hash: Vec<u8>, ingredients_hash: Vec<u8>, instructions_hash: Vec<u8>, dietary_restrictions_hash: Vec<u8>, advance_prep_hash: Vec<u8>, accepts_accompaniment: bool, is_shared: bool, cursor: String, aggregate_version: u16 }
 view imkitchen-core/recipe/RecipeShareState rev=1 { id: String, cursor: String, aggregate_version: u16 }
 view imkitchen-core/recipe/favorite/Favorite rev=1 { id: String, saved: bool, cursor: String, aggregate_version: u16 }

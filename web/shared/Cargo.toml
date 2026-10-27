@@ -12,6 +12,7 @@ serde = { workspace = true }
 async-trait = { workspace = true }
 anyhow = { workspace = true }
 tracing = { workspace = true }
+tokio = { workspace = true }
 jsonwebtoken = { workspace = true }
 time = { workspace = true }
 tower = { workspace = true }

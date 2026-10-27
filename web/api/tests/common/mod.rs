@@ -124,6 +124,11 @@ impl TestApp {
             .no_retry()
             .run_once(executor)
             .await?;
+        imkitchen_core::dish::query::subscription()
+            .data(pool.clone())
+            .no_retry()
+            .run_once(executor)
+            .await?;
 
         Ok(())
     }

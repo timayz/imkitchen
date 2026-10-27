@@ -1,8 +1,13 @@
 use evento::{Executor, ProjectionAggregate};
 use imkitchen_types::{recipe::RecipeType, shopping::ListGenerated};
+use std::collections::HashSet;
 use validator::Validate;
 
-use super::{merge::merge_ingredients, pick::Randomize};
+use super::{
+    meal::{Meal, Pools},
+    merge::merge_ingredients,
+    pick::{PoolRecipe, Randomize},
+};
 
 #[derive(Validate)]
 pub struct GenerateList {
@@ -18,18 +23,23 @@ impl<E: Executor> super::Module<E> {
     /// statuses are reset.
     ///
     /// Selection rule:
-    /// 1. up to `count` main courses from the pool (random, filtered by dietary
-    ///    restrictions and sized by `cuisine_variety_weight` when `randomize`
-    ///    is given, otherwise a plain sample). Fewer mains than `count` simply
-    ///    yields fewer meals — a recipe never appears twice in the list;
-    /// 2. each main becomes a meal: it is paired with one recipe of every
-    ///    optional course type enabled in `randomize.recipe_types` (appetizer,
-    ///    accompaniment, dessert, beverage, condiment), drawn from that type's
-    ///    pool without reuse, so once a pool runs out later meals go without
-    ///    that course. Accompaniments are only paired with mains that accept
-    ///    one;
-    /// 3. the list is written in meal order — starter, main, side, dessert,
-    ///    drink, sauce — and the merged ingredients are scaled to
+    /// 1. the user's dishes come first: up to `count` of them, shuffled, each
+    ///    resolved against the pool (a recipe that was deleted or no longer
+    ///    matches the dietary restrictions is dropped; a dish without its main
+    ///    is skipped). A dish is a meal as composed, with its sides and sauces;
+    /// 2. the remaining meals come from random main courses not used by a
+    ///    dish (filtered by dietary restrictions and sized by
+    ///    `cuisine_variety_weight` when `randomize` is given, otherwise a
+    ///    plain sample). Fewer mains than needed simply yields fewer meals —
+    ///    a recipe never appears twice in the list;
+    /// 3. every meal is completed with one recipe of each optional course
+    ///    type enabled in `randomize.recipe_types` that it lacks (appetizer,
+    ///    accompaniment, dessert, beverage, condiment), drawn from that
+    ///    type's pool without reuse, so once a pool runs out later meals go
+    ///    without that course. Accompaniments are only paired with mains that
+    ///    accept one; a dish that already has a side or a sauce keeps its own;
+    /// 4. the list is written in meal order — starter, main, sides, dessert,
+    ///    drink, sauces — and the merged ingredients are scaled to
     ///    `household_size`.
     pub async fn generate(
         &self,
@@ -39,72 +49,91 @@ impl<E: Executor> super::Module<E> {
         input.validate()?;
         let request_by = request_by.into();
         let randomize = input.randomize.as_ref();
+        let count = input.count as usize;
+        let dietary_restrictions = randomize
+            .map(|opts| opts.dietary_restrictions.to_vec())
+            .unwrap_or_default();
 
-        let mut mains = match randomize {
-            Some(opts) => {
-                self.random(
-                    &request_by,
-                    RecipeType::MainCourse,
-                    opts.cuisine_variety_weight,
-                    opts.dietary_restrictions.to_vec(),
-                )
-                .await?
-            }
-            None => {
-                self.sample_recipes(&request_by, RecipeType::MainCourse)
+        let mut meals = self.dish_meals(&request_by, &dietary_restrictions).await?;
+        meals.truncate(count);
+
+        let mut used: HashSet<String> = meals
+            .iter()
+            .flat_map(|meal| meal.clone().into_ids())
+            .collect();
+
+        if meals.len() < count {
+            let mains = match randomize {
+                Some(opts) => {
+                    self.random(
+                        &request_by,
+                        RecipeType::MainCourse,
+                        opts.cuisine_variety_weight,
+                        dietary_restrictions,
+                    )
                     .await?
-            }
-        };
+                }
+                None => {
+                    self.sample_recipes(&request_by, RecipeType::MainCourse)
+                        .await?
+                }
+            };
 
-        if mains.is_empty() {
+            let missing = count - meals.len();
+            let fresh: Vec<PoolRecipe> = mains
+                .into_iter()
+                .filter(|main| !used.contains(&main.id))
+                .take(missing)
+                .collect();
+            for main in fresh {
+                used.insert(main.id.to_owned());
+                meals.push(Meal::of_main(main));
+            }
+        }
+
+        if meals.is_empty() {
             crate::user!("No main course found");
         }
 
-        mains.truncate(input.count as usize);
-
         // One pool query per enabled course for the whole list; a disabled
-        // course costs nothing.
-        let mut appetizers = self
-            .optional_pool(&request_by, RecipeType::Appetizer, randomize)
-            .await?
-            .into_iter();
-        let mut accompaniments = self
-            .optional_pool(&request_by, RecipeType::Accompaniment, randomize)
-            .await?
-            .into_iter();
-        let mut desserts = self
-            .optional_pool(&request_by, RecipeType::Dessert, randomize)
-            .await?
-            .into_iter();
-        let mut beverages = self
-            .optional_pool(&request_by, RecipeType::Beverage, randomize)
-            .await?
-            .into_iter();
-        let mut condiments = self
-            .optional_pool(&request_by, RecipeType::Condiment, randomize)
-            .await?
-            .into_iter();
+        // course costs nothing. Recipes already placed by a dish are not drawn
+        // again.
+        let unused = |recipes: Vec<PoolRecipe>| {
+            recipes
+                .into_iter()
+                .filter(|r| !used.contains(&r.id))
+                .collect::<Vec<_>>()
+                .into_iter()
+        };
+        let mut pools = Pools {
+            appetizers: unused(
+                self.optional_pool(&request_by, RecipeType::Appetizer, randomize)
+                    .await?,
+            ),
+            accompaniments: unused(
+                self.optional_pool(&request_by, RecipeType::Accompaniment, randomize)
+                    .await?,
+            ),
+            desserts: unused(
+                self.optional_pool(&request_by, RecipeType::Dessert, randomize)
+                    .await?,
+            ),
+            beverages: unused(
+                self.optional_pool(&request_by, RecipeType::Beverage, randomize)
+                    .await?,
+            ),
+            condiments: unused(
+                self.optional_pool(&request_by, RecipeType::Condiment, randomize)
+                    .await?,
+            ),
+        };
 
-        let mut recipe_ids: Vec<String> = Vec::with_capacity(mains.len() * 4);
-        for main in mains {
-            let accompaniment = if main.accepts_accompaniment {
-                accompaniments.next()
-            } else {
-                None
-            };
-            for recipe in [
-                appetizers.next(),
-                Some(main),
-                accompaniment,
-                desserts.next(),
-                beverages.next(),
-                condiments.next(),
-            ]
-            .into_iter()
-            .flatten()
-            {
-                if !recipe_ids.contains(&recipe.id) {
-                    recipe_ids.push(recipe.id);
+        let mut recipe_ids: Vec<String> = Vec::with_capacity(meals.len() * 4);
+        for mut meal in meals {
+            meal.fill(&mut pools);
+            for id in meal.into_ids() {
+                if !recipe_ids.contains(&id) {
+                    recipe_ids.push(id);
                 }
             }
         }

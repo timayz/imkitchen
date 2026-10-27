@@ -1,3 +1,5 @@
+#[path = "shopping/add_dish.rs"]
+mod add_dish;
 #[path = "shopping/add_recipe.rs"]
 mod add_recipe;
 #[path = "shopping/check.rs"]

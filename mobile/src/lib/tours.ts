@@ -108,6 +108,12 @@ export const TOURS: Record<string, TourDef> = {
         titleKey: 'tour.cooking.regenerate.title',
         bodyKey: 'tour.cooking.regenerate.body',
       },
+      {
+        key: 'dishes',
+        targetIds: ['kt-dishes'],
+        titleKey: 'tour.cooking.dishes.title',
+        bodyKey: 'tour.cooking.dishes.body',
+      },
     ],
   },
   groceries: {

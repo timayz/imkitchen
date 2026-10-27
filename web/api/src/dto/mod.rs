@@ -3,6 +3,7 @@
 //! `Serialize` structs. Enums travel as their PascalCase variant names.
 
 pub mod auth;
+pub mod dish;
 pub mod grocery;
 pub mod kitchen;
 pub mod recipe;
