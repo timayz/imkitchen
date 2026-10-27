@@ -127,7 +127,9 @@ export class RecipeDetailPage {
   readonly save: Locator;
 
   constructor(private readonly page: Page) {
-    this.title = page.locator("h1");
+    // First heading only: the "similar recipes" fragment loaded below can
+    // briefly render a 404 page (its own h1) while the slug is projected.
+    this.title = page.locator("h1").first();
     this.addToList = page.locator("#add-to-shopping-btn");
     this.save = page.locator("#save-btn");
   }
