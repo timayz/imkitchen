@@ -94,7 +94,7 @@ dependencies {
 
     implementation("com.tiktok.sparkling:sparkling:2.0.1")
     implementation("com.tiktok.sparkling:sparkling-method:2.0.1")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.1")
 
     // Sparkling 2.0.1 only declares Lynx 3.6.0 transitively; pin the engine
     // explicitly so the whole org.lynxsdk.lynx graph resolves to the version

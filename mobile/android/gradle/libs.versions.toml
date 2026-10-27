@@ -8,8 +8,8 @@ appcompat = "1.8.0"
 activity = "1.8.0"
 
 fragmentKtx = "1.5.6"
-lynxSdk="4.1.0"
-primjs="4.1.1"
+lynxSdk="4.1.2"
+primjs="4.2.1"
 coroutines="1.5.6"
 fresco = "2.3.0"
 
