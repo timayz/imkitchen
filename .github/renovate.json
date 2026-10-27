@@ -18,6 +18,17 @@
         "^com\\.tiktok\\.sparkling"
       ],
       "allowedVersions": "!/-test\\./"
+    },
+    {
+      "description": "LynxService/Image 3.6.0 pins these two exactly; CocoaPods cannot resolve any other version until Sparkling moves off Lynx 3.6.0",
+      "matchManagers": [
+        "cocoapods"
+      ],
+      "matchPackageNames": [
+        "SDWebImage",
+        "SDWebImageWebPCoder"
+      ],
+      "enabled": false
     }
   ]
 }

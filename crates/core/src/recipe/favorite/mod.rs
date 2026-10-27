@@ -36,6 +36,7 @@ impl<E: Executor> Module<E> {
                     saved: false,
                     cursor: Default::default(),
                     aggregate_version: Default::default(),
+                    tenant: Default::default(),
                 })
             })
     }

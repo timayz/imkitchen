@@ -26,6 +26,7 @@ impl<E: Executor> super::Module<E> {
 
         self.executor
             .delete_snapshot(
+                String::new(),
                 recipe::Recipe::aggregate_type().to_owned(),
                 super::Recipe::projection_name().to_owned(),
                 id,

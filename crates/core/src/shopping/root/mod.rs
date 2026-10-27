@@ -87,6 +87,7 @@ impl Shopping {
             generated_at: 0,
             cursor: Default::default(),
             aggregate_version: Default::default(),
+            tenant: Default::default(),
         }
     }
 

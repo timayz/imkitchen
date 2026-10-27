@@ -21,9 +21,9 @@ time-tz = "3.0.0-rc.5.0.0"
 askama = { version = "0.16", features = ["serde_json"] }
 world-tax = "0.5"
 sqlx = { version = "0.9", default-features = false, features = ["migrate", "json", "derive", "runtime-tokio", "sqlite"] }
-sqlx_migrator = { version = "0.19", features = ["sqlite"] }
-evento = { version = "2.0.0-alpha.29", features = ["sqlite", "rw"] }
-evento-lock = "2.0.0-alpha.29"
+sqlx_migrator = { version = "0.20", features = ["sqlite"] }
+evento = { version = "2.0.0-alpha.36", features = ["sqlite", "rw"] }
+evento-lock = "2.0.0-alpha.36"
 argon2 = "0.6"
 jsonwebtoken = { version = "11.0", features = ["aws_lc_rs"] }
 lettre = { version = "0.11", features = ["rustls-tls", "builder"] }
@@ -52,7 +52,7 @@ urlencoding = "2.1"
 base64 = "0.23"
 url = "2.5"
 minify-html = "0.18"
-oxc = { version = "0.153.0", features = ["minifier", "codegen"] }
+oxc = { version = "0.155.0", features = ["minifier", "codegen"] }
 lightningcss = { version = "1.0.0-alpha.71", default-features = false }
 ulid = "3.0"
 sea-query = { version = "1.0.1", default-features = false, features = ["derive", "audit", "backend-sqlite"] }

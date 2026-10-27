@@ -39,6 +39,7 @@ impl<E: Executor> Module<E> {
                     expire_at: 0,
                     cursor: Default::default(),
                     aggregate_version: Default::default(),
+                    tenant: Default::default(),
                     customer_id: None,
                     payment_method_id: None,
                     payment_intent_id: None,
