@@ -3,7 +3,7 @@ use crate::types::{
     subscription::{Address, StripePaymentIntentSucceeded},
 };
 use evento::{
-    EventFilter, Executor,
+    EventFilter, Executor, TenantFilter,
     cursor::Args,
     metadata::Event,
     subscription::{Context, SubscriptionBuilder},
@@ -31,6 +31,7 @@ async fn handler_payment_intent_succeeded<E: Executor>(
         .read(
             Some([EventFilter::by_event::<Created>()].into()),
             None,
+            TenantFilter::Only(event.tenant.clone()),
             Args::backward(1, None),
             None,
         )
@@ -47,6 +48,7 @@ async fn handler_payment_intent_succeeded<E: Executor>(
 
     let id = evento::create()
         .metadata_from(&event.metadata)
+        .tenant(&event.tenant)
         .event(&Created {
             key,
             number,

@@ -45,6 +45,7 @@ impl<E: Executor> Module<E> {
                     aisle_order: IngredientCategory::DEFAULT_AISLE_ORDER.to_vec(),
                     cursor: Default::default(),
                     aggregate_version: Default::default(),
+                    tenant: Default::default(),
                 },
             })
     }

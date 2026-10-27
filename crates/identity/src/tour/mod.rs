@@ -42,6 +42,7 @@ impl<E: Executor> Module<E> {
                     tours: Vec::new(),
                     cursor: Default::default(),
                     aggregate_version: Default::default(),
+                    tenant: Default::default(),
                 })
             })
     }

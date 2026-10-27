@@ -6,6 +6,7 @@ pub enum RecipeUser {
     Id,
     Cursor,
     AggregateVersion,
+    Tenant,
     OwnerId,
     OwnerName,
     RecipeType,
@@ -841,6 +842,64 @@ pub(crate) mod m0014 {
                 .execute(&mut *connection)
                 .await?;
             sqlx::query("DROP INDEX IF EXISTS idx_recipe_user_sitemap_cooks")
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+    }
+}
+
+pub(crate) mod m0017 {
+    use sea_query::{ColumnDef, Table, TableAlterStatement};
+
+    use super::RecipeUser;
+
+    /// evento 2.0.0-alpha.36 gives every projection a `tenant`; a view read
+    /// back with `FromRow` needs the column. Existing rows are the default
+    /// tenant (`""`).
+    pub struct AddTenant;
+
+    fn add_tenant_column() -> TableAlterStatement {
+        Table::alter()
+            .table(RecipeUser::Table)
+            .add_column(
+                ColumnDef::new(RecipeUser::Tenant)
+                    .string()
+                    .string_len(255)
+                    .not_null()
+                    .default(""),
+            )
+            .to_owned()
+    }
+
+    fn drop_tenant_column() -> TableAlterStatement {
+        Table::alter()
+            .table(RecipeUser::Table)
+            .drop_column(RecipeUser::Tenant)
+            .to_owned()
+    }
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for AddTenant {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let add_column = add_tenant_column().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(sqlx::AssertSqlSafe(add_column))
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let drop_column = drop_tenant_column().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(sqlx::AssertSqlSafe(drop_column))
                 .execute(connection)
                 .await?;
 

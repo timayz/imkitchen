@@ -71,6 +71,7 @@ impl<E: Executor> Module<E> {
                 id: user_id,
                 cursor: Default::default(),
                 aggregate_version: Default::default(),
+                tenant: Default::default(),
             }))
     }
 }

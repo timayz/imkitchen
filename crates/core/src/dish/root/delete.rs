@@ -25,6 +25,7 @@ impl<E: Executor> super::Module<E> {
 
         self.executor
             .delete_snapshot(
+                String::new(),
                 dish::Dish::aggregate_type().to_owned(),
                 super::Dish::projection_name().to_owned(),
                 id,
