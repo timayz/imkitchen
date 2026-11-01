@@ -8,6 +8,8 @@ mod check;
 mod generate;
 #[path = "shopping/helpers/mod.rs"]
 mod helpers;
+#[path = "shopping/pool_favorite.rs"]
+mod pool_favorite;
 #[path = "shopping/regenerate.rs"]
 mod regenerate;
 #[path = "shopping/remove_recipe.rs"]

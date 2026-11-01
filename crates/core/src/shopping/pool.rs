@@ -12,7 +12,7 @@ use evento::{
 };
 use imkitchen_db::mealplan_recipe::MealPlanRecipe;
 use imkitchen_types::recipe::RecipeType;
-use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
+use sea_query::{Expr, ExprTrait, OnConflict, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 use sqlx::SqlitePool;
 
@@ -261,6 +261,13 @@ async fn handle_favorite_saved<E: Executor>(
             MealPlanRecipe::UserId,
         ])
         .select_from(select)?
+        // Already in the pool (own recipe, or a favorite re-saved from a
+        // stream the detail page could not find): nothing to add.
+        .on_conflict(
+            OnConflict::columns([MealPlanRecipe::Id, MealPlanRecipe::UserId])
+                .do_nothing()
+                .to_owned(),
+        )
         .to_owned();
 
     let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
