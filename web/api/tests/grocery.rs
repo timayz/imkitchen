@@ -85,8 +85,8 @@ async fn empty_list_has_no_aisles() -> anyhow::Result<()> {
 }
 
 /// An omelette (3 ingredients, 2 aisles) added to the user's list through the
-/// real commands.
-async fn add_omelette(app: &TestApp, user_id: &str) -> anyhow::Result<()> {
+/// real commands; returns the recipe id.
+async fn add_omelette(app: &TestApp, user_id: &str) -> anyhow::Result<String> {
     let id = app.state.core.recipe.create(user_id, None).await?;
     app.state
         .core
@@ -148,7 +148,7 @@ async fn add_omelette(app: &TestApp, user_id: &str) -> anyhow::Result<()> {
         .await?;
     // The ingredient table behind the list is projected from the aggregate.
     app.drain().await?;
-    Ok(())
+    Ok(id)
 }
 
 /// The groceries with the omelette on the list.
@@ -321,6 +321,53 @@ async fn check_is_absolute_and_idempotent() -> anyhow::Result<()> {
     )
     .await?;
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    Ok(())
+}
+
+/// The mobile flow: tick an item, remove every recipe from the kitchen, then
+/// add a recipe needing the same ingredient. It must come back unticked.
+#[tokio::test]
+async fn emptying_the_list_forgets_checks() -> anyhow::Result<()> {
+    let app = TestApp::new().await?;
+    let (token, user_id) = sign_in(&app).await?;
+    let first = add_omelette(&app, &user_id).await?;
+
+    let body = groceries(&app, &token).await?;
+    let key = body["aisles"][0]["items"][0]["key"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let (status, _) = call(
+        &app,
+        &token,
+        "PUT",
+        "/api/v1/groceries/check",
+        Some(json!({ "key": key.clone(), "checked": true })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    let (status, _) = call(
+        &app,
+        &token,
+        "DELETE",
+        &format!("/api/v1/kitchen/recipes/{first}"),
+        None,
+    )
+    .await?;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    app.drain().await?;
+    let (_, body) = call(&app, &token, "GET", "/api/v1/groceries", None).await?;
+    assert_eq!(body["total_items"], 0);
+    assert_eq!(body["checked_items"], 0);
+
+    add_omelette(&app, &user_id).await?;
+    let body = groceries(&app, &token).await?;
+    assert_eq!(body["checked_items"], 0, "{body}");
+    let item = body["aisles"][0]["items"][0].clone();
+    assert_eq!(item["key"], key);
+    assert_eq!(item["checked"], false);
 
     Ok(())
 }
