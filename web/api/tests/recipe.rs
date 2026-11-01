@@ -275,6 +275,54 @@ async fn sharing_saving_and_shopping_flow() -> anyhow::Result<()> {
     let (status, _) = call(&app, &guest, "GET", "/api/v1/cooks/nobody", None).await?;
     assert_eq!(status, StatusCode::NOT_FOUND);
 
+    // Following the chef: listed under /cooks, counted on the profile.
+    assert_eq!(body["following"], false);
+    assert_eq!(body["is_self"], false);
+    assert_eq!(body["stat"]["follower"], 0);
+    let (status, _) = call(&app, &guest, "GET", "/api/v1/cooks", None).await?;
+    assert_eq!(status, StatusCode::OK);
+    let (status, _) = call(
+        &app,
+        &guest,
+        "POST",
+        "/api/v1/cooks/pastrychef/follow",
+        None,
+    )
+    .await?;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, body) = call(&app, &chef, "POST", "/api/v1/cooks/pastrychef/follow", None).await?;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+    let (status, _) = call(&app, &guest, "POST", "/api/v1/cooks/nobody/follow", None).await?;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    app.drain().await?;
+    let (status, body) = call(&app, &guest, "GET", "/api/v1/cooks", None).await?;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(body["cooks"].as_array().unwrap().len(), 1);
+    assert_eq!(body["cooks"][0]["username"], "pastrychef");
+    assert_eq!(body["cooks"][0]["shared"], 1);
+    assert_eq!(body["cooks"][0]["follower"], 1);
+    let (_, body) = call(&app, &guest, "GET", "/api/v1/cooks/pastrychef", None).await?;
+    assert_eq!(body["following"], true);
+    assert_eq!(body["stat"]["follower"], 1);
+    let (_, body) = call(&app, &chef, "GET", "/api/v1/cooks/pastrychef", None).await?;
+    assert_eq!(body["is_self"], true);
+    assert_eq!(body["following"], false);
+    let (status, _) = call(
+        &app,
+        &guest,
+        "DELETE",
+        "/api/v1/cooks/pastrychef/follow",
+        None,
+    )
+    .await?;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    app.drain().await?;
+    let (_, body) = call(&app, &guest, "GET", "/api/v1/cooks", None).await?;
+    assert!(body["cooks"].as_array().unwrap().is_empty());
+    let (_, body) = call(&app, &guest, "GET", "/api/v1/cooks/pastrychef", None).await?;
+    assert_eq!(body["following"], false);
+    assert_eq!(body["stat"]["follower"], 0);
+
     // Make it private again: the guest loses access.
     let (status, _) = call(
         &app,

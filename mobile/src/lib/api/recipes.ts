@@ -53,6 +53,7 @@ export interface Stat {
   favorite: number
   shared: number
   from_community: number
+  follower: number
 }
 
 export interface Detail extends Recipe {
@@ -68,6 +69,18 @@ export interface Cook {
   description: string
   stat: Stat
   recipes: Page<Summary>
+  /** The caller is this chef. */
+  is_self: boolean
+  /** The caller follows this chef. */
+  following: boolean
+}
+
+/** One chef the caller follows: `GET /cooks`. */
+export interface FollowedCook {
+  username: string
+  description: string
+  shared: number
+  follower: number
 }
 
 /** The web cook page's filters: `GET /cooks/{username}`. */
@@ -144,6 +157,18 @@ export function recipeExists(id: string): Promise<boolean> {
 
 export function getCook(username: string, params: CookParams = {}): Promise<Cook> {
   return request<Cook>(`/api/v1/cooks/${encodeURIComponent(username)}${query({ ...params })}`)
+}
+
+export function getFollowedCooks(): Promise<FollowedCook[]> {
+  return request<{ cooks: FollowedCook[] }>('/api/v1/cooks').then((r) => r.cooks)
+}
+
+export function followCook(username: string): Promise<void> {
+  return request<void>(`/api/v1/cooks/${encodeURIComponent(username)}/follow`, { method: 'POST' })
+}
+
+export function unfollowCook(username: string): Promise<void> {
+  return request<void>(`/api/v1/cooks/${encodeURIComponent(username)}/follow`, { method: 'DELETE' })
 }
 
 /** Polls `exists` until it reports `expected`, at most ~10 s. */

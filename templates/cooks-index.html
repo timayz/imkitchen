@@ -1,0 +1,64 @@
+{% extends "_user.html" %}
+{% block title %}{{ "Followed chefs"|t }} - imkitchen{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 md:py-8 max-w-5xl">
+
+  <header class="flex items-center justify-between gap-3 mb-5 md:mb-7">
+    <div class="flex-1 min-w-0">
+      <div class="text-[10px] font-semibold tracking-widest uppercase font-mono text-ink-3">
+        {{ "Library"|t }} · {{ chefs.len() }} {{ "chefs"|t }}
+      </div>
+      <h1 class="font-serif text-2xl md:text-4xl leading-tight tracking-tight text-ink mt-1">{{ "Chefs you follow"|t }}</h1>
+      <p class="text-sm text-ink-3 mt-1 max-w-xl">
+        {{ "Open a chef to browse everything they share with the community."|t }}
+      </p>
+    </div>
+    <a href="/recipes"
+      class="h-11 px-4 inline-flex items-center gap-1.5 bg-paper border border-line-2 hover:bg-cream text-ink text-sm font-semibold rounded-2xl shadow-sm transition shrink-0">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m15 6-6 6 6 6"/>
+      </svg>
+      <span class="hidden sm:inline">{{ "Recipes"|t }}</span>
+    </a>
+  </header>
+
+  <div id="cooks-list" class="grid gap-3 md:grid-cols-2">
+    {% if chefs.is_empty() %}
+    <section class="md:col-span-2 rounded-3xl border border-line-2 shadow-sm p-6 text-center bg-linear-to-b from-paper to-cream-2 max-w-xl mx-auto">
+      <span class="text-5xl block mb-4">👩‍🍳</span>
+      <h2 class="font-serif text-2xl leading-tight tracking-tight text-ink">{{ "You are not following any chef yet"|t }}</h2>
+      <p class="text-[13.5px] text-ink-2 leading-relaxed mt-2 mb-5 max-w-xs mx-auto">
+        {{ "Open a community recipe, visit its chef and tap Follow to find their recipes here."|t }}
+      </p>
+      <a href="/recipes"
+        class="flex items-center justify-center gap-2 w-full px-5 py-3.5 bg-ink text-cream rounded-xl text-sm font-semibold shadow-sm hover:opacity-90 transition">
+        {{ "Browse the community"|t }}
+      </a>
+    </section>
+    {% else %}
+    {% for chef in chefs %}
+    <a id="cook-{{ chef.username }}" href="/cooks/{{ chef.username }}"
+      class="bg-paper border border-line-2 rounded-2xl p-4 md:p-5 shadow-sm hover:shadow-md transition flex items-start gap-3">
+      <div class="w-11 h-11 shrink-0 {{ chef.username|bg_color }} rounded-full flex items-center justify-center text-white font-bold text-sm">
+        {{ chef.username|initials }}
+      </div>
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-ink">@{{ chef.username }}</div>
+        <div class="text-xs text-ink-3 mt-0.5">
+          {{ chef.shared }} {{ "recipes shared"|t }} · {{ chef.follower }} {{ "followers"|t }}
+        </div>
+        {% if !chef.description.is_empty() %}
+        <p class="text-sm text-ink-2 mt-2 leading-relaxed line-clamp-2">{{ chef.description|nl2br|safe }}</p>
+        {% endif %}
+      </div>
+      <svg class="w-4 h-4 text-ink-3 shrink-0 mt-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m9 6 6 6-6 6"/>
+      </svg>
+    </a>
+    {% endfor %}
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

@@ -15,6 +15,7 @@ pub struct UserStatView {
     pub favorite: u32,
     pub shared: u32,
     pub from_community: u32,
+    pub follower: u32,
 }
 
 impl<E: Executor> crate::recipe::Module<E> {
@@ -29,6 +30,7 @@ impl<E: Executor> crate::recipe::Module<E> {
                 RecipeUserStat::Shared,
                 RecipeUserStat::Favorite,
                 RecipeUserStat::FromCommunity,
+                RecipeUserStat::Follower,
             ])
             .from(RecipeUserStat::Table)
             .and_where(Expr::col(RecipeUserStat::UserId).eq(user_id))

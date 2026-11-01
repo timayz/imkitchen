@@ -2009,5 +2009,16 @@
   "Search by name": "Rechercher par nom",
   "No recipe matches": "Aucune recette ne correspond à",
   "more — type a name to narrow down": "de plus — tapez un nom pour affiner",
-  "A dish needs a name": "Un plat a besoin d’un nom"
+  "A dish needs a name": "Un plat a besoin d’un nom",
+  "Follow": "Suivre",
+  "Following": "Abonné",
+  "followers": "abonnés",
+  "chefs": "chefs",
+  "Chefs you follow": "Les chefs que vous suivez",
+  "Open a chef to browse everything they share with the community.": "Ouvrez un chef pour parcourir tout ce qu'il partage avec la communauté.",
+  "You are not following any chef yet": "Vous ne suivez encore aucun chef",
+  "Open a community recipe, visit its chef and tap Follow to find their recipes here.": "Ouvrez une recette de la communauté, visitez son chef et appuyez sur Suivre pour retrouver ses recettes ici.",
+  "Browse the community": "Parcourir la communauté",
+  "You cannot follow yourself": "Vous ne pouvez pas vous suivre vous-même",
+  "Followed chefs": "Chefs suivis"
 }

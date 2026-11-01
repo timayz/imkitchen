@@ -13,7 +13,9 @@ use crate::{
     auth::{ApiChef, ApiUser},
     dto::{
         Created,
-        recipe::{Browse, BrowseParams, Cook, CookParams, DetailDto, Exists, Page, page},
+        recipe::{
+            Browse, BrowseParams, Cook, CookParams, DetailDto, Exists, FollowedCooks, Page, page,
+        },
     },
 };
 
@@ -174,10 +176,44 @@ pub async fn cook(
     Path((username,)): Path<(String,)>,
     Query(params): Query<CookParams>,
 ) -> ApiResult<Cook> {
-    let profile = recipe::cook_profile(&app, &username, params.into())
+    let profile = recipe::cook_profile(&app, &username, Some(&user.id), params.into())
         .await?
         .ok_or(ApiError::NotFound)?;
     Ok(Json(Cook::new(username, profile)))
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn follow(
+    State(app): State<AppState>,
+    user: ApiUser,
+    Path((username,)): Path<(String,)>,
+) -> Result<StatusCode, ApiError> {
+    recipe::follow(&app, &user.id, &username).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn unfollow(
+    State(app): State<AppState>,
+    user: ApiUser,
+    Path((username,)): Path<(String,)>,
+) -> Result<StatusCode, ApiError> {
+    recipe::unfollow(&app, &user.id, &username).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// The chefs the caller follows, newest first.
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn followed_cooks(
+    State(app): State<AppState>,
+    user: ApiUser,
+) -> ApiResult<FollowedCooks> {
+    let cooks = recipe::followed_chefs(&app, &user.id)
+        .await?
+        .into_iter()
+        .map(Into::into)
+        .collect();
+    Ok(Json(FollowedCooks { cooks }))
 }
 
 use axum::extract::{Multipart, Request};

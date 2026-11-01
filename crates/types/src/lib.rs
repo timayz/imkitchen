@@ -1,3 +1,4 @@
+pub mod chef_follow;
 pub mod contact;
 pub mod dish;
 pub mod favorite;

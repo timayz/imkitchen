@@ -141,7 +141,9 @@ impl From<&UserView> for Recipe {
 use evento::cursor::{ReadResult, Value};
 use imkitchen_core::recipe::query::user::{SortBy, UserViewList};
 use imkitchen_core::recipe::query::user_stat::UserStatView;
-use imkitchen_web_shared::services::recipe::{BrowseQuery, CookProfile, CookQuery, Detail};
+use imkitchen_web_shared::services::recipe::{
+    BrowseQuery, CookProfile, CookQuery, Detail, FollowedChef,
+};
 use serde::Deserialize;
 
 /// A recipe card in a list.
@@ -244,6 +246,7 @@ pub struct Stat {
     pub favorite: u32,
     pub shared: u32,
     pub from_community: u32,
+    pub follower: u32,
 }
 
 impl From<&UserStatView> for Stat {
@@ -253,6 +256,7 @@ impl From<&UserStatView> for Stat {
             favorite: s.favorite,
             shared: s.shared,
             from_community: s.from_community,
+            follower: s.follower,
         }
     }
 }
@@ -314,6 +318,10 @@ pub struct Cook {
     pub description: String,
     pub stat: Stat,
     pub recipes: Page,
+    /// The caller is this chef.
+    pub is_self: bool,
+    /// The caller follows this chef.
+    pub following: bool,
 }
 
 impl Cook {
@@ -323,8 +331,35 @@ impl Cook {
             description: profile.description,
             stat: Stat::from(&profile.stat),
             recipes: page(profile.recipes),
+            is_self: profile.is_self,
+            following: profile.following,
         }
     }
+}
+
+/// One entry of `GET /cooks`, the chefs the caller follows.
+#[derive(Serialize, Debug)]
+pub struct FollowedCook {
+    pub username: String,
+    pub description: String,
+    pub shared: u32,
+    pub follower: u32,
+}
+
+impl From<FollowedChef> for FollowedCook {
+    fn from(c: FollowedChef) -> Self {
+        Self {
+            username: c.username,
+            description: c.description,
+            shared: c.shared,
+            follower: c.follower,
+        }
+    }
+}
+
+#[derive(Serialize, Debug)]
+pub struct FollowedCooks {
+    pub cooks: Vec<FollowedCook>,
 }
 
 #[derive(Serialize, Debug)]

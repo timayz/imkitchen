@@ -26,6 +26,7 @@ const lynxConfig = defineConfig({
       cooking: './src/pages/cooking/index.tsx',
       recipe: './src/pages/recipe/index.tsx',
       cook: './src/pages/cook/index.tsx',
+      cooks: './src/pages/cooks/index.tsx',
       'recipe-edit': './src/pages/recipe-edit/index.tsx',
       'recipe-import': './src/pages/recipe-import/index.tsx',
       dishes: './src/pages/dishes/index.tsx',

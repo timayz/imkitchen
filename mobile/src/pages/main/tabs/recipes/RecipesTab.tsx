@@ -241,6 +241,7 @@ export function RecipesTab({ refreshKey }: { refreshKey: number }) {
             active={filters.in_meal_plan}
             onTap={() => set({ in_meal_plan: !filters.in_meal_plan })}
           />
+          <Chip label={t('recipes.following')} active={false} onTap={() => void push('cooks')} />
           {user?.is_chef && (
             <Chip
               label={t('recipes.no_image')}

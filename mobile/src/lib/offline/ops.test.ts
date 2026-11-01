@@ -123,7 +123,7 @@ const detail: Detail = {
   saved: false,
   in_shopping: false,
   owner_description: '',
-  owner_stat: { total: 1, favorite: 0, shared: 1, from_community: 0 },
+  owner_stat: { total: 1, favorite: 0, shared: 1, from_community: 0, follower: 0 },
 };
 
 describe('grocery op', () => {

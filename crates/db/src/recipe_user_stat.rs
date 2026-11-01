@@ -8,6 +8,7 @@ pub enum RecipeUserStat {
     Shared,
     Favorite,
     FromCommunity,
+    Follower,
     CreatedAt,
 }
 
@@ -117,6 +118,61 @@ pub(crate) mod m0005 {
             &self,
             _connection: &mut sqlx::SqliteConnection,
         ) -> Result<(), sqlx_migrator::Error> {
+            Ok(())
+        }
+    }
+}
+
+pub(crate) mod m0019 {
+    use sea_query::{ColumnDef, Table, TableAlterStatement};
+
+    use super::RecipeUserStat;
+
+    /// How many users follow the chef (maintained by recipe-follower-view).
+    pub struct AddFollower;
+
+    fn add_follower_column() -> TableAlterStatement {
+        Table::alter()
+            .table(RecipeUserStat::Table)
+            .add_column(
+                ColumnDef::new(RecipeUserStat::Follower)
+                    .integer()
+                    .not_null()
+                    .default(0),
+            )
+            .to_owned()
+    }
+
+    fn drop_follower_column() -> TableAlterStatement {
+        Table::alter()
+            .table(RecipeUserStat::Table)
+            .drop_column(RecipeUserStat::Follower)
+            .to_owned()
+    }
+
+    #[async_trait::async_trait]
+    impl sqlx_migrator::Operation<sqlx::Sqlite> for AddFollower {
+        async fn up(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let add_column = add_follower_column().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(sqlx::AssertSqlSafe(add_column))
+                .execute(connection)
+                .await?;
+
+            Ok(())
+        }
+
+        async fn down(
+            &self,
+            connection: &mut sqlx::SqliteConnection,
+        ) -> Result<(), sqlx_migrator::Error> {
+            let drop_column = drop_follower_column().to_string(sea_query::SqliteQueryBuilder);
+            sqlx::query(sqlx::AssertSqlSafe(drop_column))
+                .execute(connection)
+                .await?;
+
             Ok(())
         }
     }
