@@ -1,13 +1,12 @@
 use crate::helpers;
 use evento::WriteBuilder;
-use imkitchen_core::recipe::favorite::legacy_id;
 use imkitchen_types::favorite::Saved;
 use temp_dir::TempDir;
 
-/// A favorite saved twice for the same recipe and cook, once on the legacy
-/// stream and once on the current one (what happened in production while
-/// the detail page could not find legacy favorites), must not stall the pool
-/// subscription on a duplicate row: the recipe is in the cook's pool once.
+/// A favorite saved twice for the same recipe and cook on two streams (what
+/// production holds for favorites re-saved while the pre-alpha.28 stream was
+/// unreachable, see db `m0018`) must not stall the pool subscription on a
+/// duplicate row: the recipe is in the cook's pool once.
 #[tokio::test]
 async fn duplicate_saved_events_keep_one_pool_row() -> anyhow::Result<()> {
     let dir = TempDir::new()?;
@@ -21,7 +20,7 @@ async fn duplicate_saved_events_keep_one_pool_row() -> anyhow::Result<()> {
         recipe_id: recipe_id.clone(),
         recipe_owner: "chef".to_owned(),
     };
-    WriteBuilder::new(legacy_id(&recipe_id, "cook"))
+    WriteBuilder::new("stream-before-alpha-28")
         .event(&saved)
         .requested_by("cook")
         .commit(&state.executor)
