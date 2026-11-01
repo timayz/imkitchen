@@ -39,8 +39,8 @@ pub fn grocery_view(
     let categories: Vec<(String, Vec<Ingredient>)> = to_categories(ingredients, order);
 
     let total_items: usize = categories.iter().map(|(_, items)| items.len()).sum();
-    // Count only keys still on the list: the aggregate keeps checks for
-    // ingredients a removed recipe took away.
+    // Count only keys still on the list: editing a recipe can drop an
+    // ingredient without touching the aggregate, leaving its check behind.
     let checked_items = ingredients
         .iter()
         .filter(|i| checked.contains(&i.key()))

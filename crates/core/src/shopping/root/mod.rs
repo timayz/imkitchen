@@ -112,7 +112,10 @@ pub fn create_projection<E: Executor>() -> Projection<E, Shopping> {
         // 2 → 3: the meal-plan window (`from_date`/`days`) was dropped,
         // `recipes` became an ordered `Vec` and `statuses` was added when the
         // list replaced the calendar meal plan.
-        .revision(3)
+        // 3 → 4: `RecipeRemoved` now drops checks for ingredients that left
+        // the list; rebuild so lists emptied before the fix lose their stale
+        // checks instead of carrying them onto the next recipes added.
+        .revision(4)
         .handler(handle_checked())
         .handler(handle_generated())
         .handler(handle_unchecked())
@@ -180,6 +183,11 @@ async fn handle_recipe_removed(
     data.recipes = event.data.recipe_ids;
     data.ingredients = event.data.ingredients.iter().map(|i| i.key()).collect();
     data.statuses.remove(&event.data.recipe_id);
+    // A check belongs to the ingredient as it is on the list now; once the
+    // recipe that needed it is gone, a later recipe using the same ingredient
+    // must start unchecked.
+    let ingredients = &data.ingredients;
+    data.checked.retain(|key| ingredients.contains(key));
 
     Ok(())
 }
