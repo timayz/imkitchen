@@ -140,6 +140,12 @@ pub async fn serve(
         .start(&executor)
         .await?;
 
+    let sub_recipe_follower = imkitchen_core::recipe::query::follower::subscription()
+        .data(write_pool.clone())
+        .any_routing_key()
+        .start(&executor)
+        .await?;
+
     let sub_shopping_pool = imkitchen_core::shopping::pool::subscription()
         .data(write_pool.clone())
         .start(&executor)
@@ -343,6 +349,7 @@ pub async fn serve(
         sub_recipe_saga_embeddable.shutdown(),
         sub_recipe_user_fts.shutdown(),
         sub_recipe_user_stat.shutdown(),
+        sub_recipe_follower.shutdown(),
         sub_recipe_thumbnail.shutdown(),
         sub_shopping_pool.shutdown(),
         sub_shopping.shutdown(),

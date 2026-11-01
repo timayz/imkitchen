@@ -114,6 +114,12 @@ impl TestApp {
             .no_retry()
             .run_once(executor)
             .await?;
+        imkitchen_core::recipe::query::follower::subscription()
+            .data(pool.clone())
+            .any_routing_key()
+            .no_retry()
+            .run_once(executor)
+            .await?;
         imkitchen_core::shopping::pool::subscription()
             .data(pool.clone())
             .no_retry()

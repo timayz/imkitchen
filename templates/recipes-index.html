@@ -200,6 +200,17 @@
         {{ "Saved"|t }}
       </label>
 
+      {# Following — a link to the chefs the user follows, styled like the
+         chips. It carries no `name` so the filter form never submits it. #}
+      <a id="following-link" {% if demo %}ts-trigger="click" ts-req="/demo/signup" ts-req-method="GET" ts-target="body" ts-swap="append"{% else %}href="/cooks"{% endif %}
+        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border text-xs font-semibold
+        cursor-pointer transition bg-paper border-line-2 text-ink hover:bg-cream">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        {{ "Followed chefs"|t }}
+      </a>
+
       {% if user.is_chef() %}
       {# No-image toggle — narrows to recipes that still need a thumbnail.
          Chef/admin only: illustrating recipes is a catalog-maintenance task,

@@ -13,7 +13,7 @@ use strum::VariantArray;
 use imkitchen_web_shared::{
     AppState,
     auth::AuthUser,
-    services::recipe::{self, CookQuery},
+    services::recipe::{self, CookQuery, FollowedChef},
     template::{NotFoundTemplate, Template, filters},
 };
 
@@ -28,6 +28,9 @@ pub struct CookTemplate {
     pub owner_description: String,
     pub recipes: ReadResult<UserViewList>,
     pub query: PageQuery,
+    /// The viewer is the chef: no Follow button.
+    pub is_self: bool,
+    pub following: bool,
 }
 
 impl Default for CookTemplate {
@@ -40,6 +43,8 @@ impl Default for CookTemplate {
             owner_description: String::new(),
             recipes: ReadResult::default(),
             query: Default::default(),
+            is_self: false,
+            following: false,
         }
     }
 }
@@ -77,8 +82,9 @@ pub async fn page(
         sort_by: input.sort_by.unwrap_or_default(),
     };
 
+    let viewer = user.as_ref().map(|u| u.id.as_str());
     let Some(profile) = imkitchen_web_shared::try_page_response!(
-        recipe::cook_profile(&app, &username, cook_query),
+        recipe::cook_profile(&app, &username, viewer, cook_query),
         template
     ) else {
         return template.render(NotFoundTemplate).into_response();
@@ -103,7 +109,79 @@ pub async fn page(
             owner_description: profile.description,
             recipes: profile.recipes,
             query,
+            is_self: profile.is_self,
+            following: profile.following,
             ..Default::default()
+        })
+        .into_response()
+}
+
+#[derive(askama::Template)]
+#[template(path = "partials/cooks-follow-button.html")]
+pub struct FollowButtonTemplate {
+    pub username: String,
+    pub following: bool,
+}
+
+pub async fn follow(
+    template: Template,
+    AuthUser(user): AuthUser,
+    State(app): State<AppState>,
+    axum::extract::Path((username,)): axum::extract::Path<(String,)>,
+) -> impl IntoResponse {
+    imkitchen_web_shared::try_response!(recipe::follow(&app, &user.id, &username), template);
+
+    (
+        [("ts-swap", "skip")],
+        template.render(FollowButtonTemplate {
+            username,
+            following: true,
+        }),
+    )
+        .into_response()
+}
+
+pub async fn unfollow(
+    template: Template,
+    AuthUser(user): AuthUser,
+    State(app): State<AppState>,
+    axum::extract::Path((username,)): axum::extract::Path<(String,)>,
+) -> impl IntoResponse {
+    imkitchen_web_shared::try_response!(recipe::unfollow(&app, &user.id, &username), template);
+
+    (
+        [("ts-swap", "skip")],
+        template.render(FollowButtonTemplate {
+            username,
+            following: false,
+        }),
+    )
+        .into_response()
+}
+
+/// The chefs the user follows.
+#[derive(askama::Template)]
+#[template(path = "cooks-index.html")]
+pub struct CooksIndexTemplate {
+    pub current_path: String,
+    pub user: AuthUser,
+    pub chefs: Vec<FollowedChef>,
+}
+
+#[tracing::instrument(skip_all)]
+pub async fn index(
+    template: Template,
+    AuthUser(user): AuthUser,
+    State(app): State<AppState>,
+) -> impl IntoResponse {
+    let chefs =
+        imkitchen_web_shared::try_page_response!(recipe::followed_chefs(&app, &user.id), template);
+
+    template
+        .render(CooksIndexTemplate {
+            current_path: "recipes".to_owned(),
+            user: AuthUser(user),
+            chefs,
         })
         .into_response()
 }

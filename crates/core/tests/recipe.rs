@@ -2,6 +2,8 @@
 mod delete;
 #[path = "recipe/favorite.rs"]
 mod favorite;
+#[path = "recipe/follow.rs"]
+mod follow;
 #[path = "recipe/helpers/mod.rs"]
 mod helpers;
 #[path = "recipe/relevance.rs"]

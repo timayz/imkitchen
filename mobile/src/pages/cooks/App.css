@@ -1,0 +1,71 @@
+/* Same structure as the cook page: the scroll-view is flex-sized inside
+   .screen so it actually scrolls. */
+.cooks__scroll {
+  flex: 1;
+}
+
+.cooks__title {
+  font-size: 26px;
+  line-height: 30px;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  color: var(--color-ink);
+}
+
+.cooks__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cooks__row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+}
+
+.cooks__avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 24px;
+  align-items: center;
+  justify-content: center;
+}
+
+.cooks__avatar-text {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.cooks__identity {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cooks__name {
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 700;
+  color: var(--color-ink);
+  text-overflow: ellipsis;
+}
+
+.cooks__meta {
+  font-size: 12px;
+  color: var(--color-ink-3);
+}
+
+.cooks__chevron {
+  font-size: 18px;
+  color: var(--color-ink-3);
+}
+
+.cooks--center {
+  align-items: center;
+  justify-content: center;
+}

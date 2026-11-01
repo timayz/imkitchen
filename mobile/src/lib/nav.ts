@@ -19,6 +19,7 @@ export type Bundle =
   | 'recipe-edit'
   | 'recipe-import'
   | 'cook'
+  | 'cooks'
   | 'dishes'
   | 'dish-edit'
 

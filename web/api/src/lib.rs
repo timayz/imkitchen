@@ -112,7 +112,12 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
         )
         .route("/recipes/{id}/share", post(routes::recipe::share))
         .route("/recipes/{id}/unshare", post(routes::recipe::unshare))
+        .route("/cooks", get(routes::recipe::followed_cooks))
         .route("/cooks/{username}", get(routes::recipe::cook))
+        .route(
+            "/cooks/{username}/follow",
+            post(routes::recipe::follow).delete(routes::recipe::unfollow),
+        )
         .route("/settings/general", get(routes::settings::general))
         .route(
             "/settings/preferences",

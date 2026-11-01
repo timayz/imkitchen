@@ -3,7 +3,15 @@ import { useCallback, useEffect, useRef, useState } from '@lynx-js/react'
 import '../../styles/base.css'
 import { errorMessage } from '../../lib/api/client.js'
 import type { RecipeType } from '../../lib/api/recipe.js'
-import { type Cook, type CookParams, type SortBy, type Summary, getCook } from '../../lib/api/recipes.js'
+import {
+  type Cook,
+  type CookParams,
+  type SortBy,
+  type Summary,
+  followCook,
+  getCook,
+  unfollowCook,
+} from '../../lib/api/recipes.js'
 import { avatar } from '../../lib/avatar.js'
 import { course } from '../../lib/course.js'
 import { t } from '../../lib/i18n/index.js'
@@ -27,7 +35,7 @@ interface Filters {
 
 const DEFAULT_FILTERS: Filters = { search: '', sort_by: 'RecentlyAdded' }
 
-type Profile = Pick<Cook, 'username' | 'description' | 'stat'>
+type Profile = Pick<Cook, 'username' | 'description' | 'stat' | 'is_self' | 'following'>
 type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; profile: Profile }
 
 /** A chef's public recipes: `cook.lynx.bundle?username=…`. */
@@ -43,6 +51,7 @@ export function App() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sortOpen, setSortOpen] = useState(false)
+  const [followBusy, setFollowBusy] = useState(false)
   const generation = useRef(0)
 
   const params = useCallback(
@@ -110,6 +119,31 @@ export function App() {
     }
   }, [cursor, filters, loading, loadingMore, params, username])
 
+  // Follow/unfollow goes straight to the API (not the offline queue: the queue
+  // patches cached documents and this screen caches nothing). The button flips
+  // at once and reverts if the request fails.
+  const toggleFollow = useCallback(async () => {
+    if (followBusy || state.kind !== 'ready') return
+    const before = state.profile
+    const following = !before.following
+    const patch = (p: Profile, on: boolean): Profile => ({
+      ...p,
+      following: on,
+      stat: { ...p.stat, follower: Math.max(0, p.stat.follower + (on ? 1 : -1)) },
+    })
+    setFollowBusy(true)
+    setError(null)
+    setState({ kind: 'ready', profile: patch(before, following) })
+    try {
+      await (following ? followCook(username) : unfollowCook(username))
+    } catch (err) {
+      setState((prev) => (prev.kind === 'ready' ? { kind: 'ready', profile: patch(prev.profile, !following) } : prev))
+      setError(errorMessage(err))
+    } finally {
+      setFollowBusy(false)
+    }
+  }, [followBusy, state, username])
+
   const set = (patch: Partial<Filters>) => setFilters((f) => ({ ...f, ...patch }))
   const clear = () => {
     setFilters(DEFAULT_FILTERS)
@@ -169,6 +203,14 @@ export function App() {
                 </text>
                 <text className="badge badge--chef">{t('cook.eyebrow')}</text>
               </view>
+              {!profile.is_self && (
+                <Button
+                  label={profile.following ? t('cook.following') : t('cook.follow')}
+                  onTap={() => void toggleFollow()}
+                  variant={profile.following ? 'secondary' : 'primary'}
+                  disabled={followBusy}
+                />
+              )}
             </view>
             {profile.description !== '' && <text className="body">{profile.description}</text>}
             <view className="cook__stats">
@@ -176,9 +218,13 @@ export function App() {
                 <text className="cook__stat-value">{profile.stat.shared}</text>
                 <text className="cook__stat-label">{t('recipes.shared')}</text>
               </view>
-              <view className="cook__stat">
+              <view className="cook__stat cook__stat--divider">
                 <text className="cook__stat-value">{profile.stat.total}</text>
                 <text className="cook__stat-label">{t('tabs.recipes')}</text>
+              </view>
+              <view className="cook__stat">
+                <text className="cook__stat-value">{profile.stat.follower}</text>
+                <text className="cook__stat-label">{t('cook.followers')}</text>
               </view>
             </view>
           </view>

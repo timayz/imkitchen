@@ -36,6 +36,7 @@ pub use update::UpdateInput;
 pub struct Module<E: Executor> {
     state: crate::State<E>,
     pub favorite: crate::recipe::favorite::Module<E>,
+    pub follow: crate::recipe::follow::Module<E>,
 }
 
 impl<E: Executor> Deref for Module<E> {
@@ -53,6 +54,7 @@ impl<E: Executor> Module<E> {
     {
         Self {
             favorite: crate::recipe::favorite::Module(state.clone()),
+            follow: crate::recipe::follow::Module(state.clone()),
             state,
         }
     }

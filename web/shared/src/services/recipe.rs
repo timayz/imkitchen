@@ -374,12 +374,18 @@ pub struct CookProfile {
     pub stat: UserStatView,
     pub description: String,
     pub recipes: ReadResult<UserViewList>,
+    /// The viewer is the chef (no Follow button).
+    pub is_self: bool,
+    /// The viewer follows the chef.
+    pub following: bool,
 }
 
 /// A chef's shared recipes. `None` when no chef carries the username.
+/// `viewer` is the signed-in user, if any, for the follow state.
 pub async fn cook_profile(
     app: &AppState,
     username: &str,
+    viewer: Option<&str>,
     q: CookQuery,
 ) -> anyhow::Result<Option<CookProfile>> {
     let Some(owner_id) = app.core.recipe.find_owner_id_by_name(username).await? else {
@@ -393,6 +399,19 @@ pub async fn cook_profile(
         .await?
         .unwrap_or_default();
     let owner_profile = app.identity.user_profile.load(&owner_id).await?;
+
+    let is_self = viewer == Some(owner_id.as_str());
+    let following = match viewer {
+        Some(viewer) if !is_self => {
+            app.core
+                .recipe
+                .follow
+                .load(&owner_id, viewer)
+                .await?
+                .following
+        }
+        _ => false,
+    };
 
     let args = Args {
         first: q.first,
@@ -423,7 +442,56 @@ pub async fn cook_profile(
         stat,
         description: owner_profile.description,
         recipes,
+        is_self,
+        following,
     }))
+}
+
+/// Follow a chef by username. Not-found when no chef carries the name (only
+/// chefs with shared recipes have a page); a user cannot follow themself.
+pub async fn follow(app: &AppState, user_id: &str, username: &str) -> imkitchen_core::Result<()> {
+    let Some(owner_id) = app.core.recipe.find_owner_id_by_name(username).await? else {
+        imkitchen_core::not_found!("chef");
+    };
+    if owner_id == user_id {
+        imkitchen_core::user!("You cannot follow yourself");
+    }
+    app.core
+        .recipe
+        .follow
+        .follow(owner_id, username, user_id)
+        .await
+}
+
+pub async fn unfollow(app: &AppState, user_id: &str, username: &str) -> imkitchen_core::Result<()> {
+    let Some(owner_id) = app.core.recipe.find_owner_id_by_name(username).await? else {
+        imkitchen_core::not_found!("chef");
+    };
+    app.core.recipe.follow.unfollow(owner_id, user_id).await
+}
+
+/// A chef on the viewer's "Following" list.
+pub struct FollowedChef {
+    pub username: String,
+    pub description: String,
+    pub shared: u32,
+    pub follower: u32,
+}
+
+/// The chefs the user follows, newest first.
+pub async fn followed_chefs(app: &AppState, user_id: &str) -> anyhow::Result<Vec<FollowedChef>> {
+    let rows = app.core.recipe.list_followed_chefs(user_id).await?;
+    let mut chefs = Vec::with_capacity(rows.len());
+    for row in rows {
+        let profile = app.identity.user_profile.load(&row.chef_id).await?;
+        chefs.push(FollowedChef {
+            username: row.chef_name,
+            description: profile.description,
+            shared: row.shared,
+            follower: row.follower,
+        });
+    }
+    Ok(chefs)
 }
 
 use imkitchen_core::recipe::{ImportInput, UpdateInput};

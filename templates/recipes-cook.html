@@ -64,21 +64,39 @@
 {% let active_type = query.recipe_type.as_deref().unwrap_or("") %}
 {% let view = query.view.as_deref().unwrap_or("grid") %}
 {% let cook_url = "/cooks/"|demo_href %}
+{% let demo = ""|is_demo %}
 
 <div class="container mx-auto px-4 py-6 md:py-8">
 
   {# ── Cook header ──────────────────────────────────────────── #}
-  <header class="mb-5 md:mb-7 bg-paper border border-line-2 rounded-2xl p-4 md:p-5 flex items-start gap-3">
+  <header id="cook-header" class="mb-5 md:mb-7 bg-paper border border-line-2 rounded-2xl p-4 md:p-5 flex items-start gap-3">
     <div class="w-11 h-11 shrink-0 {{ username|bg_color }} rounded-full flex items-center justify-center text-white font-bold text-sm">
       {{ username|initials }}
     </div>
     <div class="flex-1 min-w-0">
       <div class="font-semibold text-ink">@{{ username }}</div>
-      <div class="text-xs text-ink-3 mt-0.5">{{ stat.shared }} {{ "recipes shared"|t }}</div>
+      <div class="text-xs text-ink-3 mt-0.5">
+        {{ stat.shared }} {{ "recipes shared"|t }} · <span id="follower-count">{{ stat.follower }}</span> {{ "followers"|t }}
+      </div>
       {% if !owner_description.is_empty() %}
       <p class="text-sm text-ink-2 mt-2 leading-relaxed">{{ owner_description|nl2br|safe }}</p>
       {% endif %}
     </div>
+    {# Follow — hidden on the chef's own page. Anonymous visitors (demo mode)
+       are funnelled to sign-up, like every other action on public pages. #}
+    {% if !is_self %}
+    {% if demo %}
+    <button id="follow-btn" ts-trigger="click" ts-req="/demo/signup" ts-req-method="GET" ts-target="body" ts-swap="append"
+      class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition bg-primary-500 text-white hover:bg-primary-600">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m-7-7h14"/>
+      </svg>
+      {{ "Follow"|t }}
+    </button>
+    {% else %}
+    {% include "partials/cooks-follow-button.html" %}
+    {% endif %}
+    {% endif %}
   </header>
 
   {# ── Filters form — scoped to this cook ─────────────────────── #}
