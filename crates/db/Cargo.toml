@@ -10,3 +10,11 @@ sqlx.workspace = true
 sqlx_migrator.workspace = true
 sea-query.workspace = true
 async-trait.workspace = true
+bitcode.workspace = true
+imkitchen-types = { path = "../types", version = "1.12.0" }
+
+[dev-dependencies]
+tokio.workspace = true
+temp-dir.workspace = true
+anyhow.workspace = true
+sha3.workspace = true

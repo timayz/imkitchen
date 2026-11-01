@@ -2794,11 +2794,17 @@ dependencies = [
 name = "imkitchen-db"
 version = "1.12.0"
 dependencies = [
+ "anyhow",
  "async-trait",
+ "bitcode",
  "evento",
+ "imkitchen-types",
  "sea-query",
+ "sha3",
  "sqlx",
  "sqlx_migrator",
+ "temp-dir",
+ "tokio",
 ]
 
 [[package]]
