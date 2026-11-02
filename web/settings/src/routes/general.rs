@@ -1,8 +1,9 @@
 use axum::extract::State;
 use axum::response::IntoResponse;
 use axum_extra::extract::Form;
-use imkitchen_identity::meal_preferences::UpdateInput;
+use imkitchen_identity::meal_preferences::{UpdateInput, meal_sources};
 use imkitchen_identity::user_profile;
+use imkitchen_types::meal_preferences::MealSources;
 use imkitchen_types::recipe::{DietaryRestriction, IngredientCategory, RecipeType};
 use serde::Deserialize;
 use strum::VariantArray;
@@ -20,6 +21,7 @@ pub struct MealPreferencesTemplate {
     pub household_size: u16,
     pub dietary_restrictions: Vec<DietaryRestriction>,
     pub recipe_types: Vec<RecipeType>,
+    pub sources: MealSources,
     pub cuisine_variety_weight: f32,
     pub aisle_order: Vec<IngredientCategory>,
     pub email: String,
@@ -35,6 +37,7 @@ impl Default for MealPreferencesTemplate {
             household_size: 4,
             dietary_restrictions: Vec::default(),
             recipe_types: RecipeType::default_meal_plan_types(),
+            sources: MealSources::default(),
             cuisine_variety_weight: 1.0,
             aisle_order: IngredientCategory::DEFAULT_AISLE_ORDER.to_vec(),
             email: String::new(),
@@ -58,6 +61,7 @@ pub async fn page(
         household_size: preferences.household_size,
         dietary_restrictions: preferences.dietary_restrictions.to_vec(),
         recipe_types: preferences.recipe_types.to_vec(),
+        sources: preferences.sources,
         cuisine_variety_weight: preferences.cuisine_variety_weight,
         aisle_order: preferences.aisle_order,
         email: general.email,
@@ -74,6 +78,11 @@ pub struct ActionInput {
     pub dietary_restrictions: Vec<DietaryRestriction>,
     #[serde(default)]
     pub recipe_types: Vec<RecipeType>,
+    /// Checkboxes: absent when off.
+    #[serde(default)]
+    pub dishes: bool,
+    #[serde(default)]
+    pub main_courses: bool,
     pub cuisine_variety_weight: f32,
 }
 
@@ -84,12 +93,17 @@ pub async fn action(
     user: AuthUser,
     Form(input): Form<ActionInput>,
 ) -> impl IntoResponse {
+    let sources = imkitchen_web_shared::try_response!(
+        sync: meal_sources(input.dishes, input.main_courses),
+        template
+    );
     imkitchen_web_shared::try_response!(
         app.identity.meal_preferences.update(
             &user.id,
             UpdateInput {
                 dietary_restrictions: input.dietary_restrictions.to_vec(),
                 recipe_types: input.recipe_types.to_vec(),
+                sources,
                 cuisine_variety_weight: input.cuisine_variety_weight,
                 household_size: input.household_size,
             }

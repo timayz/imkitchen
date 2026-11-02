@@ -585,6 +585,7 @@ pub async fn generate(
             GenerateList {
                 count,
                 household_size: household_size.unwrap_or(preferences.household_size),
+                sources: preferences.sources,
                 randomize: Some(Randomize {
                     cuisine_variety_weight: preferences.cuisine_variety_weight,
                     dietary_restrictions: preferences.dietary_restrictions.to_vec(),

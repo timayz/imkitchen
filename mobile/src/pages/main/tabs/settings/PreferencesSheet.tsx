@@ -65,6 +65,23 @@ export function PreferencesSheet({ open, busy, value, onClose, onSave }: Prefere
         </view>
       </view>
       <view className="field">
+        <text className="field__label">{t('settings.sources')}</text>
+        <text className="muted">{t('settings.sources_hint')}</text>
+        <view className="set-chips">
+          {/* Turning the only active source off is ignored: a meal needs one. */}
+          <Chip
+            label={`🍽️ ${t('settings.dishes')}`}
+            active={draft.dishes}
+            onTap={() => (draft.main_courses || !draft.dishes) && patch({ dishes: !draft.dishes })}
+          />
+          <Chip
+            label={`${course('MainCourse').emoji} ${course('MainCourse').label}`}
+            active={draft.main_courses}
+            onTap={() => (draft.dishes || !draft.main_courses) && patch({ main_courses: !draft.main_courses })}
+          />
+        </view>
+      </view>
+      <view className="field">
         <text className="field__label">{t('settings.courses')}</text>
         <text className="muted">{t('settings.courses_hint')}</text>
         <view className="set-chips">

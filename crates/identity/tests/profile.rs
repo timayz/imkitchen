@@ -1,4 +1,5 @@
-use imkitchen_identity::meal_preferences::UpdateInput;
+use imkitchen_identity::meal_preferences::{UpdateInput, meal_sources};
+use imkitchen_types::meal_preferences::MealSources;
 use imkitchen_types::recipe::{DietaryRestriction, IngredientCategory, RecipeType};
 use temp_dir::TempDir;
 
@@ -18,6 +19,7 @@ async fn test_update_meal_preferences() -> anyhow::Result<()> {
             john,
             UpdateInput {
                 cuisine_variety_weight: 0.3,
+                sources: MealSources::default(),
                 household_size: 2,
                 dietary_restrictions: vec![DietaryRestriction::Vegetarian],
                 // Out of order, and with the mandatory MainCourse included, to
@@ -49,6 +51,7 @@ async fn test_update_meal_preferences() -> anyhow::Result<()> {
             john,
             UpdateInput {
                 cuisine_variety_weight: 0.5,
+                sources: MealSources::default(),
                 household_size: 4,
                 dietary_restrictions: vec![
                     DietaryRestriction::GlutenFree,
@@ -95,6 +98,53 @@ async fn test_meal_preferences_defaults() -> anyhow::Result<()> {
     assert_eq!(
         preferences.aisle_order,
         IngredientCategory::DEFAULT_AISLE_ORDER.to_vec()
+    );
+    assert_eq!(preferences.sources, MealSources::DishesAndMainCourses);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_meal_sources_round_trip_and_never_both_off() -> anyhow::Result<()> {
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
+    let cmd = imkitchen_identity::Module::new(state);
+    let users = helpers::create_users(&cmd, vec!["john"]).await?;
+    let john = users.first().unwrap();
+
+    assert_eq!(meal_sources(true, true)?, MealSources::DishesAndMainCourses);
+    assert_eq!(meal_sources(true, false)?, MealSources::Dishes);
+    assert_eq!(meal_sources(false, true)?, MealSources::MainCourses);
+    let err = meal_sources(false, false).unwrap_err();
+    assert!(
+        matches!(err, imkitchen_core::Error::User(_)),
+        "both off is a user error, got {err:?}"
+    );
+
+    for sources in [MealSources::Dishes, MealSources::MainCourses] {
+        cmd.meal_preferences
+            .update(
+                john,
+                UpdateInput {
+                    cuisine_variety_weight: 1.0,
+                    sources,
+                    household_size: 4,
+                    dietary_restrictions: vec![],
+                    recipe_types: vec![],
+                },
+            )
+            .await?;
+        assert_eq!(cmd.meal_preferences.load(john).await?.sources, sources);
+    }
+
+    // The aisle order is its own write and leaves the sources alone.
+    cmd.meal_preferences
+        .set_aisle_order(john, vec![IngredientCategory::Frozen])
+        .await?;
+    assert_eq!(
+        cmd.meal_preferences.load(john).await?.sources,
+        MealSources::MainCourses
     );
 
     Ok(())
@@ -177,6 +227,7 @@ async fn test_set_aisle_order_on_fresh_stream_keeps_default_preferences() -> any
             john,
             UpdateInput {
                 cuisine_variety_weight: 0.5,
+                sources: MealSources::default(),
                 household_size: 2,
                 dietary_restrictions: vec![],
                 recipe_types: vec![],
@@ -220,6 +271,7 @@ async fn test_meal_preferences_legacy_changed_event() -> anyhow::Result<()> {
         preferences.recipe_types,
         RecipeType::default_meal_plan_types()
     );
+    assert_eq!(preferences.sources, MealSources::DishesAndMainCourses);
 
     // Writing on top of a legacy stream must line up with `original_version`.
     cmd.meal_preferences
@@ -227,6 +279,7 @@ async fn test_meal_preferences_legacy_changed_event() -> anyhow::Result<()> {
             john,
             UpdateInput {
                 cuisine_variety_weight: 0.5,
+                sources: MealSources::default(),
                 household_size: 6,
                 dietary_restrictions: vec![],
                 recipe_types: vec![RecipeType::Condiment],
@@ -253,6 +306,7 @@ async fn test_meal_preferences_legacy_changed_event() -> anyhow::Result<()> {
             john,
             UpdateInput {
                 cuisine_variety_weight: 0.5,
+                sources: MealSources::default(),
                 household_size: 6,
                 dietary_restrictions: vec![],
                 recipe_types: vec![RecipeType::Condiment],

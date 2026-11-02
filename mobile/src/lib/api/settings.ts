@@ -13,6 +13,9 @@ export interface General {
   household_size: number
   dietary_restrictions: DietaryRestriction[]
   recipe_types: RecipeType[]
+  /** Generated meals come from the user's dishes and/or random main courses; never both false. */
+  dishes: boolean
+  main_courses: boolean
   /** 0.1 – 1.0 */
   cuisine_variety_weight: number
   /** Every aisle (`IngredientCategory` names), in grocery-list order. */
@@ -23,6 +26,9 @@ export interface Preferences {
   household_size: number
   dietary_restrictions: DietaryRestriction[]
   recipe_types: RecipeType[]
+  /** At least one of the two stays on; the server refuses both off. */
+  dishes: boolean
+  main_courses: boolean
   cuisine_variety_weight: number
 }
 

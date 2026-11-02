@@ -480,7 +480,7 @@ There is no separate validation database. Uniqueness checks (email, username) ru
 | `Recipe` | `imkitchen-core/recipe/Recipe` rev 3 | recipe id |
 | `RecipeShare` | `imkitchen-core/recipe/RecipeShareState` rev 1 | user id |
 | `Favorite` | `imkitchen-core/recipe/favorite/Favorite` rev 1 | `evento::hash_ids([recipe_id, user_id])` |
-| `MealPreferences` | `imkitchen-identity/meal_preferences/MealPreferences` rev 2 | user id |
+| `MealPreferences` | `imkitchen-identity/meal_preferences/MealPreferences` rev 4 | user id |
 | `User` | `imkitchen-identity/User` rev 2 | user id |
 | `UserProfile`, `Password` | `.../UserProfile` rev 1, `.../Password` rev 1 | user id / reset id |
 | `Subscription`, `Invoice` | `imkitchen-billing/subscription/Subscription` rev 1 | user id / invoice id |
@@ -500,8 +500,8 @@ There is no separate validation database. Uniqueness checks (email, username) ru
 ### Generation
 
 1. `POST /kitchen/generate` with `count` (1..=30 meals) and an optional `household_size` from the generate modal, whose people stepper defaults to the settings value.
-2. The handler loads `MealPreferences` (household size as the fallback, dietary restrictions, cuisine variety weight, enabled optional recipe types) and calls `shopping.generate(GenerateList { count, household_size, randomize })`.
-3. `pick::random` selects up to 35 random `MainCourse` rows from `meal_plan_recipe` matching every dietary restriction, shuffles them and truncates to `ceil(len * cuisine_variety_weight)`; `generate` then truncates to `count`. Without `randomize` a plain `sample_recipes` (up to 7) is used. No mains at all is a user error.
+2. The handler loads `MealPreferences` (household size as the fallback, dietary restrictions, cuisine variety weight, enabled optional recipe types, meal sources) and calls `shopping.generate(GenerateList { count, household_size, sources, randomize })`.
+3. `sources` (`MealSources`: `DishesAndMainCourses` by default, `Dishes` or `MainCourses`) says where meals come from; the settings form shows it as two toggles that cannot both be off (`meal_sources()` refuses that, `MealSourcesChanged` stores the enum). With dishes on, the user's dishes come first, shuffled and truncated to `count`. With main courses on, `pick::random` fills the remaining meals with up to 35 random `MainCourse` rows from `meal_plan_recipe` matching every dietary restriction, shuffled and truncated to `ceil(len * cuisine_variety_weight)`. Without `randomize` a plain `sample_recipes` (up to 7) is used. No meal at all is a user error ("No main course found", or "No dish found" for a dishes-only user).
 4. `optional_pool` fetches one random pool per enabled optional type (appetizer, accompaniment, dessert, beverage, condiment). Each main then becomes a meal: `generate` takes the next unused recipe from every pool and writes the ids in meal order (starter, main, side, dessert, drink, sauce); an accompaniment is only taken for a main whose `accepts_accompaniment` is set. Once a pool is exhausted later meals go without that course. Ids are deduplicated; a flat list never repeats a recipe.
 5. `merge::merge_ingredients` loads each recipe's `(id, household_size, ingredients)` from `shopping_recipe`, scales quantities with `scale_quantity` (serving target = `max(recipe size, that recipe's servings)`, so quantities never scale below the authored size, rounding up) and sums duplicates by `Ingredient::key()`.
 6. `ListGenerated { recipe_ids, ingredients }` and `ServingsSet { recipe_ids, household_size }` are committed in one write; checks and statuses reset.
@@ -602,7 +602,7 @@ All routes are merged flat into one Axum router in `src/cli/server.rs`. `{param}
 - `GET|PUT|DELETE /api/v1/recipes/{id}` (GET also resolves slugs; DELETE is 202), `GET /api/v1/recipes/{id}/edit`, `GET /api/v1/recipes/{id}/similar`, `GET /api/v1/recipes/{id}/exists`, `POST|DELETE /api/v1/recipes/{id}/save`, `POST /api/v1/recipes/{id}/shopping`, `POST /api/v1/recipes/{id}/share`, `POST /api/v1/recipes/{id}/unshare`
 - `POST /api/v1/recipes/{id}/thumbnail` — multipart or JSON `{content_type,data_base64}`; merged after the global body limit with its own 20 MB cap
 - `GET /api/v1/cooks/{username}` (cursor page)
-- `GET /api/v1/settings/general`, `PUT /api/v1/settings/preferences`, `PUT /api/v1/settings/profile`, `POST /api/v1/settings/username`, `POST /api/v1/settings/account/password-reset`, `DELETE /api/v1/settings/account` (`{password}` re-checked; 204 ends every session, cancels the subscription, deletes the user's recipes and frees the email), `GET /api/v1/settings/sessions`, `DELETE /api/v1/settings/sessions/{acc}`
+- `GET /api/v1/settings/general` (includes `dishes` / `main_courses`), `PUT /api/v1/settings/preferences` (`dishes` and `main_courses` default to true; both false is a 400), `PUT /api/v1/settings/profile`, `POST /api/v1/settings/username`, `POST /api/v1/settings/account/password-reset`, `DELETE /api/v1/settings/account` (`{password}` re-checked; 204 ends every session, cancels the subscription, deletes the user's recipes and frees the email), `GET /api/v1/settings/sessions`, `DELETE /api/v1/settings/sessions/{acc}`
 
 ### Response Format
 

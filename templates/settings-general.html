@@ -72,17 +72,35 @@
 <form method="post" action="/settings/general" ts-req="" ts-swap="skip" class="space-y-5 md:space-y-6" autocomplete="off">
 
   {# ── Courses ───────────────────────────────────────────────── #}
-  <section data-tour="settings-courses">
+  <section data-tour="settings-courses" id="courses-section"
+    data-lock-title="{{ "A meal needs your dishes or the main courses: turn the other one on first"|t }}">
     <div class="text-[11px] font-mono font-semibold tracking-widest uppercase text-ink-3 mb-2 px-1">
       {{ "Courses"|t }}
     </div>
     <div class="bg-paper rounded-2xl border border-line-2 shadow-sm overflow-hidden">
+      {# Where meals come from: dishes, random main courses or both. The script
+         below keeps at least one of the two on. #}
+      <label id="src-dishes-row" class="group flex items-center justify-between gap-3 px-4 md:px-5 py-3.5 border-b border-line-2 cursor-pointer hover:bg-cream/50 transition">
+        <span class="min-w-0">
+          <span class="block text-sm font-semibold text-ink">{{ "Dishes"|t }}</span>
+          <span class="block text-[11px] text-ink-3 mt-0.5">{{ "Your composed dishes come first, as you made them."|t }}</span>
+        </span>
+        <span class="relative inline-flex shrink-0">
+          <input type="checkbox" name="dishes" id="src-dishes" value="true"{% if sources.dishes() %} checked{% endif %}
+            onchange="ikSourcesSync(this)" class="peer sr-only" />
+          <span class="w-11 h-6 rounded-full bg-line peer-checked:bg-herb-500 transition-colors"></span>
+          <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></span>
+        </span>
+      </label>
       <div class="md:grid md:grid-cols-2">
-        <label class="group flex items-center justify-between gap-3 px-4 md:px-5 py-3.5 border-b border-line-2 md:odd:border-r md:odd:border-line-2 cursor-not-allowed opacity-60"
-          title="{{ "The main course is always included"|t }}">
-          <span class="text-sm font-semibold text-ink">{{ "MainCourse"|t }}</span>
+        <label id="src-mains-row" class="group flex items-center justify-between gap-3 px-4 md:px-5 py-3.5 border-b border-line-2 md:odd:border-r md:odd:border-line-2 cursor-pointer hover:bg-cream/50 transition">
+          <span class="min-w-0">
+            <span class="block text-sm font-semibold text-ink">{{ "MainCourse"|t }}</span>
+            <span class="block text-[11px] text-ink-3 mt-0.5">{{ "Random main courses fill the remaining meals."|t }}</span>
+          </span>
           <span class="relative inline-flex shrink-0">
-            <input type="checkbox" checked disabled class="peer sr-only" />
+            <input type="checkbox" name="main_courses" id="src-mains" value="true"{% if sources.main_courses() %} checked{% endif %}
+              onchange="ikSourcesSync(this)" class="peer sr-only" />
             <span class="w-11 h-6 rounded-full bg-line peer-checked:bg-herb-500 transition-colors"></span>
             <span class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></span>
           </span>
@@ -101,7 +119,7 @@
         {% endfor %}
       </div>
       <p class="text-[12px] text-ink-3 px-4 md:px-5 py-3 border-t border-line-2">
-        {{ "Only the courses you enable are added when your list is generated. The main course is always included."|t }}
+        {{ "Keep your dishes or the main courses on: a meal needs one of them. Only the courses you enable are added to each meal."|t }}
       </p>
     </div>
   </section>
@@ -218,6 +236,22 @@
     ikAisleSync();
   }
   ikAisleSync();
+
+  // Meal sources: dishes and main courses cannot both be off. Turning the
+  // last one off is undone, and the only one on is drawn as locked.
+  function ikSourcesSync(changed) {
+    var dishes = document.getElementById('src-dishes');
+    var mains = document.getElementById('src-mains');
+    if (changed && !dishes.checked && !mains.checked) changed.checked = true;
+    var lock = document.getElementById('courses-section').dataset.lockTitle;
+    [[dishes, mains, 'src-dishes-row'], [mains, dishes, 'src-mains-row']].forEach(function (pair) {
+      var only = pair[0].checked && !pair[1].checked;
+      var row = document.getElementById(pair[2]);
+      row.classList.toggle('opacity-60', only);
+      row.title = only ? lock : '';
+    });
+  }
+  ikSourcesSync(null);
 </script>
 
 {# ── Guided tours ──────────────────────────────────────────────── #}

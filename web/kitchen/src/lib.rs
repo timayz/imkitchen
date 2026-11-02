@@ -10,6 +10,7 @@ use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::{CookieJar, Form};
 use imkitchen_core::recipe::query::user::UserView;
+use imkitchen_types::meal_preferences::MealSources;
 use imkitchen_types::recipe::{IngredientUnitFormat, Instruction, RecipeType};
 use imkitchen_types::shopping::RecipeStatus;
 use serde::Deserialize;
@@ -276,6 +277,8 @@ pub async fn cook_page(
 pub struct GenerateModalTemplate {
     /// Default for the "people at the table" stepper: the settings value.
     pub household_size: u16,
+    /// Settings toggles, to tell the user where the meals will come from.
+    pub sources: MealSources,
 }
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -290,6 +293,7 @@ pub async fn generate_modal(
     );
     template.render(GenerateModalTemplate {
         household_size: preferences.household_size,
+        sources: preferences.sources,
     })
 }
 

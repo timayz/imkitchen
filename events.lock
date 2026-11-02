@@ -40,6 +40,7 @@ event imkitchen-types/MealPlan::DaysGenerated { start: u64, slots: Vec<Slot>, ho
 event imkitchen-types/MealPlan::SlotRecipeStatusChanged { date: u64, recipe_id: String, status: DaySlotStatus }
 event imkitchen-types/MealPreferences::AisleOrderChanged { aisles: Vec<IngredientCategory> }
 event imkitchen-types/MealPreferences::Changed { household_size: u16, dietary_restrictions: Vec<DietaryRestriction>, cuisine_variety_weight: f32 }
+event imkitchen-types/MealPreferences::MealSourcesChanged { sources: MealSources }
 event imkitchen-types/MealPreferences::RecipeTypesChanged { recipe_types: Vec<RecipeType> }
 event imkitchen-types/Recipe::AdvancePrepChanged { advance_prep: String }
 event imkitchen-types/Recipe::BasicInformationChanged { name: String, origin: Option<String>, description: String, household_size: u16, prep_time: u16, cook_time: u16 }
@@ -79,6 +80,7 @@ type imkitchen_billing::types::subscription::Address { city: Option<String>, cou
 type imkitchen_billing::types::subscription::PaymentDetails { plan: String, price: u32, tax: u32, tax_rate: Option<f64>, is_vat: bool }
 type imkitchen_identity::types::user::Role enum { User, Chef, Admin }
 type imkitchen_types::contact::Subject enum { GeneralInquiry, TechnicalSupport, BillingQuestion, FeatureRequest, BugReport, PartnershipOpportunity, Other }
+type imkitchen_types::meal_preferences::MealSources enum { DishesAndMainCourses, Dishes, MainCourses }
 type imkitchen_types::mealplan::DaySlotStatus enum { Idle, Cooking (u8), Completed }
 type imkitchen_types::mealplan::Slot { day: u64, date: u64, household_size: u16, appetizer: Option<SlotRecipe>, main_course: SlotRecipe, accompaniment: Option<SlotRecipe>, dessert: Option<SlotRecipe>, beverage: Option<SlotRecipe>, condiment: Option<SlotRecipe> }
 type imkitchen_types::mealplan::SlotRecipe { id: String, name: String }
@@ -100,7 +102,7 @@ view imkitchen-core/recipe/favorite/Favorite rev=1 { id: String, saved: bool, cu
 view imkitchen-core/recipe/follow/ChefFollow rev=0 { id: String, following: bool, cursor: String, aggregate_version: u16 }
 view imkitchen-core/shopping/Shopping rev=5 { user_id: String, checked: HashSet<String>, ingredients: HashSet<String>, recipes: Vec<String>, statuses: HashMap<String, RecipeStatus>, generated_at: u64, servings: HashMap<String, u16>, cursor: String, aggregate_version: u16 }
 view imkitchen-identity/User rev=3 { id: String, role: Role, state: State, ad_consent: bool, deleted: bool, cursor: String, aggregate_version: u16 } with State enum { Active, Suspended }
-view imkitchen-identity/meal_preferences/MealPreferences rev=3 { id: String, household_size: u16, dietary_restrictions: Vec<DietaryRestriction>, cuisine_variety_weight: f32, recipe_types: Vec<RecipeType>, aisle_order: Vec<IngredientCategory>, cursor: String, aggregate_version: u16 }
+view imkitchen-identity/meal_preferences/MealPreferences rev=4 { id: String, household_size: u16, dietary_restrictions: Vec<DietaryRestriction>, cuisine_variety_weight: f32, recipe_types: Vec<RecipeType>, aisle_order: Vec<IngredientCategory>, sources: MealSources, cursor: String, aggregate_version: u16 }
 view imkitchen-identity/password/Password rev=1 { id: String, user_id: String, completed: bool, expire_at: u64, cursor: String, aggregate_version: u16 }
 view imkitchen-identity/tour/Tour rev=1 { id: String, tours: Vec<TourProgress>, cursor: String, aggregate_version: u16 } with TourStatus enum { Pending, InProgress, Completed, Skipped }; TourProgress { tour: String, status: TourStatus, step: u16, version: u16 }
 view imkitchen-identity/user_profile/UserProfile rev=1 { id: String, description: String, cursor: String, aggregate_version: u16 }

@@ -2,6 +2,7 @@ use crate::helpers;
 use evento::Sqlite;
 use imkitchen_core::dish::ComposeInput;
 use imkitchen_core::shopping::{GenerateList, Randomize};
+use imkitchen_types::meal_preferences::MealSources;
 use imkitchen_types::recipe::RecipeType;
 use std::collections::HashMap;
 use temp_dir::TempDir;
@@ -98,6 +99,7 @@ async fn test_generate_picks_mains_and_enabled_courses() -> anyhow::Result<()> {
             GenerateList {
                 count: 7,
                 household_size: 4,
+                sources: MealSources::default(),
                 randomize: Some(Randomize {
                     cuisine_variety_weight: 1.0,
                     dietary_restrictions: vec![],
@@ -147,6 +149,7 @@ async fn test_generate_without_optional_types_picks_only_mains() -> anyhow::Resu
             GenerateList {
                 count: 7,
                 household_size: 4,
+                sources: MealSources::default(),
                 randomize: Some(Randomize {
                     cuisine_variety_weight: 1.0,
                     dietary_restrictions: vec![],
@@ -182,6 +185,7 @@ async fn test_generate_never_repeats_when_pool_is_short() -> anyhow::Result<()> 
             GenerateList {
                 count: 30,
                 household_size: 4,
+                sources: MealSources::default(),
                 randomize: Some(Randomize {
                     cuisine_variety_weight: 1.0,
                     dietary_restrictions: vec![],
@@ -216,6 +220,7 @@ async fn test_generate_accompaniments_only_when_a_main_accepts_one() -> anyhow::
             GenerateList {
                 count: 10,
                 household_size: 4,
+                sources: MealSources::default(),
                 randomize: Some(Randomize {
                     cuisine_variety_weight: 1.0,
                     dietary_restrictions: vec![],
@@ -258,6 +263,7 @@ async fn test_generate_rejects_zero_count() -> anyhow::Result<()> {
             GenerateList {
                 count: 0,
                 household_size: 4,
+                sources: MealSources::default(),
                 randomize: None,
             },
             "john",
@@ -281,6 +287,7 @@ async fn test_generate_without_mains_fails() -> anyhow::Result<()> {
             GenerateList {
                 count: 7,
                 household_size: 4,
+                sources: MealSources::default(),
                 randomize: None,
             },
             "john",
@@ -359,6 +366,7 @@ async fn test_generate_uses_dishes_first_and_fills_their_missing_courses() -> an
             GenerateList {
                 count: 3,
                 household_size: 4,
+                sources: MealSources::default(),
                 randomize: Some(Randomize {
                     cuisine_variety_weight: 1.0,
                     dietary_restrictions: vec![],
@@ -460,6 +468,7 @@ async fn test_generate_skips_dishes_without_their_main() -> anyhow::Result<()> {
             GenerateList {
                 count: 1,
                 household_size: 4,
+                sources: MealSources::default(),
                 randomize: Some(Randomize {
                     cuisine_variety_weight: 1.0,
                     dietary_restrictions: vec![],
@@ -477,6 +486,72 @@ async fn test_generate_skips_dishes_without_their_main() -> anyhow::Result<()> {
         "the dish itself survives"
     );
     assert!(dish.load(&kept).await?.is_some());
+
+    Ok(())
+}
+
+/// The settings decide where meals come from: dishes only never draws a
+/// random main (fewer dishes than asked yields fewer meals), main courses
+/// only ignores the dishes, and a dishes-only user without a dish is told so.
+#[tokio::test]
+async fn test_generate_honours_the_meal_sources() -> anyhow::Result<()> {
+    let dir = TempDir::new()?;
+    let path = dir.child("db.sqlite3");
+    let state = helpers::setup_test_state(path).await?;
+    let shopping = imkitchen_core::shopping::Module::new(state.clone());
+    let dish = imkitchen_core::dish::Module::new(state.clone());
+    let (types, accepting) = seed_with_accepting(&state).await?;
+    let sides: Vec<String> = types
+        .iter()
+        .filter(|(_, rt)| **rt == RecipeType::Accompaniment)
+        .map(|(id, _)| id.clone())
+        .collect();
+
+    let generate = |sources: MealSources| {
+        shopping.generate(
+            GenerateList {
+                count: 5,
+                household_size: 4,
+                sources,
+                randomize: Some(Randomize {
+                    cuisine_variety_weight: 1.0,
+                    dietary_restrictions: vec![],
+                    recipe_types: vec![],
+                }),
+            },
+            "john",
+        )
+    };
+
+    // No dish yet: dishes only has nothing to build a meal from.
+    let err = generate(MealSources::Dishes).await.unwrap_err();
+    assert_eq!(err.to_string(), "No dish found");
+
+    dish.create(
+        ComposeInput {
+            name: "Plate".to_owned(),
+            recipe_ids: vec![accepting[0].clone(), sides[0].clone()],
+        },
+        "john",
+    )
+    .await?;
+    helpers::run_dish_subscription(&state).await?;
+
+    generate(MealSources::Dishes).await?;
+    let loaded = shopping.load("john").await?.expect("shopping aggregate");
+    assert_eq!(loaded.recipes, vec![accepting[0].clone(), sides[0].clone()]);
+
+    generate(MealSources::MainCourses).await?;
+    let loaded = shopping.load("john").await?.expect("shopping aggregate");
+    assert_eq!(count(&loaded.recipes, &types, RecipeType::MainCourse), 5);
+    // The dish is ignored: its side was never placed.
+    assert!(!loaded.recipes.contains(&sides[0]));
+
+    generate(MealSources::DishesAndMainCourses).await?;
+    let loaded = shopping.load("john").await?.expect("shopping aggregate");
+    assert_eq!(count(&loaded.recipes, &types, RecipeType::MainCourse), 5);
+    assert_eq!(loaded.recipes[0], accepting[0]);
+    assert_eq!(loaded.recipes[1], sides[0]);
 
     Ok(())
 }

@@ -28,6 +28,26 @@ test.describe("settings", () => {
     void account;
   });
 
+  test("dishes and main courses cannot both be off, and the choice is saved", async ({ page, account }) => {
+    const settings = new SettingsGeneralPage(page);
+    await settings.goto();
+    await expect(settings.sourceToggle("dishes")).toBeChecked();
+    await expect(settings.sourceToggle("main_courses")).toBeChecked();
+
+    // Turning main courses off is fine; dishes then cannot follow.
+    await settings.flipSource("main_courses");
+    await expect(settings.sourceToggle("main_courses")).not.toBeChecked();
+    await settings.flipSource("dishes");
+    await expect(settings.sourceToggle("dishes")).toBeChecked();
+
+    await settings.savePreferences();
+    await expect(toast(page)).toBeVisible();
+    await page.reload();
+    await expect(settings.sourceToggle("dishes")).toBeChecked();
+    await expect(settings.sourceToggle("main_courses")).not.toBeChecked();
+    void account;
+  });
+
   test("replaying the tours brings the kitchen tour back", async ({ page, account }) => {
     const settings = new SettingsGeneralPage(page);
     await settings.goto();

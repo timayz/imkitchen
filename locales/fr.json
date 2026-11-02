@@ -1343,7 +1343,6 @@
   "Life plan": "Plan à vie",
   "Login & sessions": "Connexion et sessions",
   "Max variety": "Variété max",
-  "The main course is always included": "Le plat principal est toujours inclus",
   "Next billed": "Prochaine facturation",
   "Payment method": "Moyen de paiement",
   "Payment method on file": "Moyen de paiement enregistré",
@@ -1913,7 +1912,6 @@
   "Kitchen with your recipe list": "Cuisine avec votre liste de recettes",
   "List generated": "Liste générée",
   "No — dietary tags must be set explicitly on every recipe to be respected when generating.": "Non — les étiquettes alimentaires doivent être définies explicitement sur chaque recette pour être respectées à la génération.",
-  "Only the courses you enable are added when your list is generated. The main course is always included.": "Seuls les types activés sont ajoutés quand votre liste est générée. Le plat principal est toujours inclus.",
   "Pick how many mains. The algorithm balances cuisines, respects your diet, and auto-pairs sides.": "Choisissez le nombre de plats. L'algorithme équilibre les cuisines, respecte votre régime et associe les accompagnements.",
   "Provide the Service (generate lists, sync devices, render groceries).": "Fournir le service (générer les listes, synchroniser les appareils, afficher les courses).",
   "Recipe lists": "Listes de recettes",
@@ -2020,5 +2018,11 @@
   "Open a community recipe, visit its chef and tap Follow to find their recipes here.": "Ouvrez une recette de la communauté, visitez son chef et appuyez sur Suivre pour retrouver ses recettes ici.",
   "Browse the community": "Parcourir la communauté",
   "You cannot follow yourself": "Vous ne pouvez pas vous suivre vous-même",
-  "Followed chefs": "Chefs suivis"
+  "Followed chefs": "Chefs suivis",
+  "Your composed dishes come first, as you made them.": "Vos plats composés passent en premier, tels que vous les avez faits.",
+  "Random main courses fill the remaining meals.": "Des plats principaux au hasard complètent les repas restants.",
+  "Keep your dishes or the main courses on: a meal needs one of them. Only the courses you enable are added to each meal.": "Gardez vos plats ou les plats principaux activés : un repas a besoin de l’un des deux. Seuls les types activés sont ajoutés à chaque repas.",
+  "A meal needs your dishes or the main courses: turn the other one on first": "Un repas a besoin de vos plats ou des plats principaux : activez d’abord l’autre",
+  "Each meal is one of your dishes, completed with a starter, side and dessert according to your preferences.": "Chaque repas est l’un de vos plats, complété d’une entrée, d’un accompagnement et d’un dessert selon vos préférences.",
+  "Your dishes are left out.": "Vos plats ne sont pas utilisés."
 }

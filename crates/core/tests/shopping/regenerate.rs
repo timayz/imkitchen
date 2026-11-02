@@ -1,5 +1,6 @@
 use crate::helpers;
 use imkitchen_core::shopping::{ChangeRecipeStatus, GenerateList, ToggleInput};
+use imkitchen_types::meal_preferences::MealSources;
 use imkitchen_types::shopping::RecipeStatus;
 use temp_dir::TempDir;
 
@@ -44,6 +45,7 @@ async fn test_regenerate_replaces_manual_recipes_and_resets_progress() -> anyhow
             GenerateList {
                 count: 7,
                 household_size: 4,
+                sources: MealSources::default(),
                 randomize: None,
             },
             "john",
