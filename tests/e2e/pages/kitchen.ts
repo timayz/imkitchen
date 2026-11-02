@@ -5,12 +5,14 @@ export class KitchenPage {
   readonly card: Locator;
   readonly hero: Locator;
   readonly generateModal: Locator;
+  readonly platModal: Locator;
 
   constructor(private readonly page: Page) {
     this.title = page.locator('[data-tour~="kitchen-title"]');
     this.card = page.locator("#current-recipe-card");
     this.hero = page.locator('[data-tour~="kitchen-hero"]');
     this.generateModal = page.locator("#modal-generate");
+    this.platModal = page.locator("#modal-plat");
   }
 
   async goto() {
@@ -48,6 +50,20 @@ export class KitchenPage {
 
   removeButtons() {
     return this.card.getByTitle("Remove from list");
+  }
+
+  /** Every composed-dish row (one per dish in the list). */
+  platRows() {
+    return this.card.locator('button[ts-req^="/kitchen/dish/"]:not([ts-req$="/remove"])');
+  }
+
+  removeDishButtons() {
+    return this.card.getByTitle("Remove dish from list");
+  }
+
+  async openPlat(name: string) {
+    await this.platRows().filter({ hasText: name }).click();
+    await this.platModal.waitFor();
   }
 
   async startCooking() {

@@ -6,6 +6,7 @@ mod meal;
 mod merge;
 mod pick;
 mod remove;
+mod remove_dish;
 mod state;
 mod status;
 mod toogle;
@@ -21,8 +22,8 @@ pub use toogle::*;
 
 use evento::{Executor, Projection, ProjectionAggregate, metadata::Event};
 use imkitchen_types::shopping::{
-    self, Checked, DishAdded, Generated, ListGenerated, RecipeAdded, RecipeRemoved,
-    RecipeSetGenerated, RecipeStatus, RecipeStatusChanged, ServingsSet, Unchecked,
+    self, Checked, DishAdded, DishPlaced, DishRemoved, Generated, ListGenerated, RecipeAdded,
+    RecipeRemoved, RecipeSetGenerated, RecipeStatus, RecipeStatusChanged, ServingsSet, Unchecked,
 };
 use std::{
     collections::{HashMap, HashSet},
@@ -75,9 +76,19 @@ impl<E: Executor> Module<E> {
     }
 }
 
+/// A composed dish's recipes that are in the list (its own recipes only, not
+/// the courses generation filled in around it), in meal order. The kitchen
+/// shows them as one row.
+#[derive(Encode, Decode, Clone, Debug, Default, PartialEq)]
+pub struct ListDish {
+    pub dish_id: String,
+    pub recipe_ids: Vec<String>,
+}
+
 /// The user's recipe list: the recipes in it (in list order), the merged
 /// ingredient keys they need, which of those are checked off, each
-/// recipe's cooking status and the household size each recipe is scaled to.
+/// recipe's cooking status, the household size each recipe is scaled to and
+/// which recipes form a composed dish.
 #[evento::projection(name = "imkitchen-core/shopping/Shopping", Encode, Decode)]
 pub struct Shopping {
     pub user_id: String,
@@ -91,6 +102,8 @@ pub struct Shopping {
     /// missing entry means the recipe predates per-recipe servings: callers
     /// fall back to the user's settings value.
     pub servings: HashMap<String, u16>,
+    /// Dish groups in placement order; a recipe is in at most one.
+    pub dishes: Vec<ListDish>,
 }
 
 impl Shopping {
@@ -103,6 +116,7 @@ impl Shopping {
             statuses: Default::default(),
             generated_at: 0,
             servings: Default::default(),
+            dishes: Default::default(),
             cursor: Default::default(),
             aggregate_version: Default::default(),
             tenant: Default::default(),
@@ -117,6 +131,27 @@ impl Shopping {
     /// before servings were recorded.
     pub fn servings(&self, recipe_id: &str, default: u16) -> u16 {
         self.servings.get(recipe_id).copied().unwrap_or(default)
+    }
+
+    /// The dish group placed under `dish_id`, if it is in the list.
+    pub fn dish(&self, dish_id: &str) -> Option<&ListDish> {
+        self.dishes.iter().find(|d| d.dish_id == dish_id)
+    }
+
+    /// The dish group `recipe_id` belongs to, if any.
+    pub fn dish_of(&self, recipe_id: &str) -> Option<&ListDish> {
+        self.dishes
+            .iter()
+            .find(|d| d.recipe_ids.iter().any(|id| id == recipe_id))
+    }
+
+    /// Drop group members that left the list, and groups left empty.
+    fn prune_dishes(&mut self) {
+        let recipes = &self.recipes;
+        for dish in self.dishes.iter_mut() {
+            dish.recipe_ids.retain(|id| recipes.contains(id));
+        }
+        self.dishes.retain(|d| !d.recipe_ids.is_empty());
     }
 }
 
@@ -141,7 +176,9 @@ pub fn create_projection<E: Executor>() -> Projection<E, Shopping> {
         // checks instead of carrying them onto the next recipes added.
         // 4 → 5 (2026-11-01): `servings` added when the list started
         // remembering the household size chosen per recipe.
-        .revision(5)
+        // 5 → 6 (2026-11-01): `dishes` added so the kitchen shows a composed
+        // dish as one row.
+        .revision(6)
         .handler(handle_checked())
         .handler(handle_generated())
         .handler(handle_unchecked())
@@ -152,6 +189,8 @@ pub fn create_projection<E: Executor>() -> Projection<E, Shopping> {
         .handler(handle_recipe_status_changed())
         .handler(handle_dish_added())
         .handler(handle_servings_set())
+        .handler(handle_dish_placed())
+        .handler(handle_dish_removed())
         .strict()
 }
 
@@ -164,6 +203,7 @@ async fn handle_generated(event: Event<Generated>, data: &mut Shopping) -> anyho
     data.checked = HashSet::new();
     data.generated_at = event.timestamp;
     data.servings.clear();
+    data.dishes.clear();
 
     Ok(())
 }
@@ -190,6 +230,7 @@ async fn handle_recipe_set_generated(
 ) -> anyhow::Result<()> {
     data.recipes = event.data.recipe_ids;
     data.statuses.clear();
+    data.dishes.clear();
 
     Ok(())
 }
@@ -217,6 +258,7 @@ async fn handle_recipe_removed(
     // must start unchecked.
     let ingredients = &data.ingredients;
     data.checked.retain(|key| ingredients.contains(key));
+    data.prune_dishes();
 
     Ok(())
 }
@@ -232,8 +274,9 @@ async fn handle_list_generated(
     data.ingredients = event.data.ingredients.iter().map(|i| i.key()).collect();
     data.checked.clear();
     data.statuses.clear();
-    // `ServingsSet` follows in the same commit with the generated recipes.
+    // `ServingsSet` and the `DishPlaced` groups follow in the same commit.
     data.servings.clear();
+    data.dishes.clear();
 
     Ok(())
 }
@@ -263,6 +306,51 @@ async fn handle_servings_set(event: Event<ServingsSet>, data: &mut Shopping) -> 
     for recipe_id in event.data.recipe_ids {
         data.servings.insert(recipe_id, event.data.household_size);
     }
+
+    Ok(())
+}
+
+/// A recipe belongs to one group: placing it under a dish pulls it out of any
+/// other, and placing a dish again replaces its earlier group.
+#[evento::handler]
+async fn handle_dish_placed(event: Event<DishPlaced>, data: &mut Shopping) -> anyhow::Result<()> {
+    let DishPlaced {
+        dish_id,
+        recipe_ids,
+    } = event.data;
+    data.dishes.retain(|d| d.dish_id != dish_id);
+    for dish in data.dishes.iter_mut() {
+        dish.recipe_ids.retain(|id| !recipe_ids.contains(id));
+    }
+    if !recipe_ids.is_empty() {
+        data.dishes.push(ListDish {
+            dish_id,
+            recipe_ids,
+        });
+    }
+    data.prune_dishes();
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_dish_removed(event: Event<DishRemoved>, data: &mut Shopping) -> anyhow::Result<()> {
+    let removed: Vec<String> = data
+        .recipes
+        .iter()
+        .filter(|id| !event.data.recipe_ids.contains(id))
+        .cloned()
+        .collect();
+    data.recipes = event.data.recipe_ids;
+    data.ingredients = event.data.ingredients.iter().map(|i| i.key()).collect();
+    for id in &removed {
+        data.statuses.remove(id);
+        data.servings.remove(id);
+    }
+    let ingredients = &data.ingredients;
+    data.checked.retain(|key| ingredients.contains(key));
+    data.dishes.retain(|d| d.dish_id != event.data.dish_id);
+    data.prune_dishes();
 
     Ok(())
 }

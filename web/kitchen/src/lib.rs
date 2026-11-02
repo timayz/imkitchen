@@ -16,7 +16,9 @@ use imkitchen_types::shopping::RecipeStatus;
 use serde::Deserialize;
 
 pub use imkitchen_web_shared::config;
-pub use imkitchen_web_shared::services::kitchen::{IngredientAisle, ListEntry, list_entries};
+pub use imkitchen_web_shared::services::kitchen::{
+    IngredientAisle, ListDishEntry, ListEntry, ListItem, Plat, list_entries,
+};
 
 use imkitchen_web_shared::AppState;
 use imkitchen_web_shared::auth::{AuthToken, AuthUser};
@@ -47,9 +49,13 @@ pub struct KitchenTemplate {
     /// Every recipe in the list, in list order (generated meals read starter →
     /// main → side → dessert → drink → sauce).
     pub entries: Vec<ListEntry>,
+    /// The list as rows: a composed dish ("plat") is one item.
+    pub items: Vec<ListItem>,
     /// The recipe to cook next: the first one in the list not yet cooked.
     pub slot_recipe: UserView,
     pub focused_status: RecipeStatus,
+    /// The composed dish the focused recipe belongs to, if any.
+    pub focused_dish: Option<ListDishEntry>,
     pub completed_count: usize,
     pub total_count: usize,
     /// Uncooked recipes (other than the focused one) with an advance-prep note.
@@ -110,8 +116,10 @@ pub async fn page(
             current_path: "kitchen".to_owned(),
             user,
             entries: list.entries,
+            items: list.items,
             slot_recipe: list.focused,
             focused_status: list.focused_status,
+            focused_dish: list.focused_dish,
             completed_count: list.completed_count,
             total_count: list.total_count,
             prep_ahead: list.prep_ahead,
@@ -207,8 +215,10 @@ pub async fn update_step_action(
 #[template(path = "partials/kitchen-dish.html")]
 pub struct KitchenDishTemplate {
     pub entries: Vec<ListEntry>,
+    pub items: Vec<ListItem>,
     pub slot_recipe: UserView,
     pub focused_status: RecipeStatus,
+    pub focused_dish: Option<ListDishEntry>,
     pub completed_instructions: Vec<(usize, String)>,
     pub coming_instructions: Vec<(usize, String)>,
     pub current_instruction: Option<(usize, Instruction)>,
@@ -236,8 +246,10 @@ pub async fn select_dish(
     template
         .render(KitchenDishTemplate {
             entries: dish.entries,
+            items: dish.items,
             slot_recipe: dish.recipe,
             focused_status: dish.status,
+            focused_dish: dish.focused_dish,
             completed_instructions,
             coming_instructions,
             current_instruction,
@@ -337,6 +349,44 @@ pub async fn remove_recipe_action(
     Redirect::to("/").into_response()
 }
 
+/// A composed dish of the list, opened from its row: pick which of its recipes
+/// to cook, or take the whole dish off the list.
+#[derive(askama::Template)]
+#[template(path = "partials/kitchen-plat-modal.html")]
+pub struct PlatModalTemplate {
+    pub plat: Plat,
+}
+
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn plat_modal(
+    template: Template,
+    AuthUser(user): AuthUser,
+    State(app): State<AppState>,
+    Path((dish_id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    let Some(plat) = imkitchen_web_shared::try_response!(anyhow:
+        kitchen::plat(&app, &user.id, &dish_id),
+        template
+    ) else {
+        return template.render(NotFoundTemplate).into_response();
+    };
+
+    template.render(PlatModalTemplate { plat }).into_response()
+}
+
+/// Remove a whole composed dish from the list and re-render the kitchen.
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn remove_dish_action(
+    template: Template,
+    user: AuthUser,
+    State(app): State<AppState>,
+    Path((dish_id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    imkitchen_web_shared::try_response!(kitchen::remove_dish(&app, &user.id, &dish_id), template);
+
+    Redirect::to("/").into_response()
+}
+
 /// Calendar-era `/kitchen/{date}` bookmarks.
 async fn legacy_kitchen_redirect() -> impl IntoResponse {
     Redirect::permanent("/")
@@ -351,6 +401,8 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             get(generate_modal).post(generate_action),
         )
         .route("/kitchen/recipe/{id}/remove", post(remove_recipe_action))
+        .route("/kitchen/dish/{dish_id}", get(plat_modal))
+        .route("/kitchen/dish/{dish_id}/remove", post(remove_dish_action))
         .route(
             "/kitchen/{recipe_id}/step/{direction}",
             post(update_step_action),

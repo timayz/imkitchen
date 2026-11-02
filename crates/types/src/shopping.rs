@@ -82,4 +82,19 @@ pub enum Shopping {
         recipe_ids: Vec<String>,
         household_size: u16,
     },
+    /// The recipes of one composed dish that made it into the list, in meal
+    /// order: the kitchen shows them as one row. Follows `ListGenerated` (one
+    /// per dish meal, the dish's own recipes before random courses are filled
+    /// in) or `DishAdded`. A recipe belongs to at most one group.
+    DishPlaced {
+        dish_id: String,
+        recipe_ids: Vec<String>,
+    },
+    /// A whole dish group left the list: `recipe_ids` is the resulting list,
+    /// like `RecipeRemoved`.
+    DishRemoved {
+        dish_id: String,
+        recipe_ids: Vec<String>,
+        ingredients: Vec<Ingredient>,
+    },
 }

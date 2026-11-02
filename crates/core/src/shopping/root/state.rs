@@ -2,6 +2,7 @@ use evento::Executor;
 use imkitchen_types::{recipe::Ingredient, shopping::RecipeStatus};
 use std::collections::{HashMap, HashSet};
 
+use super::ListDish;
 use super::merge::{Servings, merge_ingredients};
 
 /// Current list state, computed straight from the aggregate so it is
@@ -18,6 +19,8 @@ pub struct ShoppingState {
     /// Household size for recipes without a recorded one (the user's settings
     /// value at read time).
     pub default_servings: u16,
+    /// Composed dishes in the list, each with its own recipes in meal order.
+    pub dishes: Vec<ListDish>,
 }
 
 impl ShoppingState {
@@ -36,6 +39,18 @@ impl ShoppingState {
             .copied()
             .unwrap_or(self.default_servings)
     }
+
+    /// The dish group `recipe_id` belongs to, if any.
+    pub fn dish_of(&self, recipe_id: &str) -> Option<&ListDish> {
+        self.dishes
+            .iter()
+            .find(|d| d.recipe_ids.iter().any(|id| id == recipe_id))
+    }
+
+    /// The dish group placed under `dish_id`, if it is in the list.
+    pub fn dish(&self, dish_id: &str) -> Option<&ListDish> {
+        self.dishes.iter().find(|d| d.dish_id == dish_id)
+    }
 }
 
 impl<E: Executor> super::Module<E> {
@@ -48,9 +63,15 @@ impl<E: Executor> super::Module<E> {
         user_id: impl Into<String>,
         default_household_size: u16,
     ) -> anyhow::Result<ShoppingState> {
-        let (recipe_ids, checked, statuses, servings) = match self.load(user_id).await? {
-            Some(s) => (s.recipes, s.checked, s.statuses, s.servings),
-            None => (vec![], HashSet::new(), HashMap::new(), HashMap::new()),
+        let (recipe_ids, checked, statuses, servings, dishes) = match self.load(user_id).await? {
+            Some(s) => (s.recipes, s.checked, s.statuses, s.servings, s.dishes),
+            None => (
+                vec![],
+                HashSet::new(),
+                HashMap::new(),
+                HashMap::new(),
+                vec![],
+            ),
         };
 
         let recipe_ingredients = self
@@ -71,6 +92,7 @@ impl<E: Executor> super::Module<E> {
             statuses,
             servings,
             default_servings: default_household_size,
+            dishes,
         })
     }
 }

@@ -63,6 +63,10 @@ pub fn routes() -> axum::Router<imkitchen_web_shared::AppState> {
             get(routes::kitchen::dish).delete(routes::kitchen::remove),
         )
         .route("/kitchen/recipes/{id}/cook", get(routes::kitchen::cook))
+        .route(
+            "/kitchen/dishes/{id}",
+            axum::routing::delete(routes::kitchen::remove_dish),
+        )
         .route("/kitchen/recipes/{id}/step", post(routes::kitchen::step))
         .route(
             "/kitchen/recipes/{id}/status",

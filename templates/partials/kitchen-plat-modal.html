@@ -1,0 +1,81 @@
+{%- import "partials/course-macros.html" as course -%}
+{# ── Dish ("plat") sheet
+   Opened from a dish row of the kitchen. Lists the dish's recipes that are
+   in the list with their cooking status; each one starts (or resumes) the
+   cooking screen. The footer takes the whole dish off the list. ──────── #}
+<div id="modal-plat"
+  class="fixed inset-0 bg-ink/45 backdrop-blur-sm z-60 flex items-end md:items-center justify-center md:p-4"
+  ts-trigger="click target #modal-plat" ts-action="remove #modal-plat">
+  <div onclick="event.stopPropagation()"
+    class="bg-paper w-full md:max-w-md rounded-t-3xl md:rounded-3xl border border-line-2 md:shadow-lg flex flex-col max-h-[90vh] md:max-h-[85vh] overflow-hidden">
+
+    {# Drag handle — mobile only #}
+    <div class="md:hidden flex justify-center pt-3 pb-1">
+      <div class="w-10 h-1 bg-line rounded-full"></div>
+    </div>
+
+    {# Header #}
+    <div class="flex items-start gap-3 px-5 md:px-7 py-4 md:pt-6">
+      <div class="w-11 h-11 rounded-2xl bg-cream-2 text-ink flex items-center justify-center text-xl shrink-0">🍽️</div>
+      <div class="flex-1 min-w-0">
+        <div class="text-[10px] font-mono font-semibold tracking-widest uppercase text-ink-3">{{ "Dish"|t }} · {{ plat.dish.completed_count() }}/{{ plat.dish.entries.len() }} {{ "cooked"|t }}</div>
+        <h3 class="font-serif text-2xl leading-tight tracking-tight text-ink mt-0.5">{{ plat.dish.name }}</h3>
+      </div>
+      <button type="button" ts-trigger="click" ts-action="remove #modal-plat"
+        class="w-9 h-9 rounded-xl bg-cream text-ink-2 hover:bg-cream-2 flex items-center justify-center shrink-0 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="h-px bg-line-2"></div>
+
+    {# Body — one row per recipe of the dish #}
+    <div class="flex-1 overflow-y-auto px-5 md:px-7 py-4 md:py-5 space-y-2">
+      <p class="text-sm text-ink-2 leading-relaxed mb-3">{{ "Choose what to cook. The courses cook in parallel; the dish is done when every recipe is."|t }}</p>
+      {% for r in plat.recipes %}
+      <div class="flex items-center gap-3 p-3 rounded-xl border border-line-2 bg-paper{% if r.entry.is_completed() %} opacity-70{% endif %}">
+        <div class="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 {% call course::soft(r.entry.recipe_type) %}{% endcall %}">
+          {% call course::emoji(r.entry.recipe_type) %}{% endcall %}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[10px] font-semibold tracking-wide uppercase font-mono {% call course::ink(r.entry.recipe_type) %}{% endcall %}">{{ r.entry.recipe_type.as_ref()|t }}</div>
+          <div class="text-sm font-semibold text-ink truncate{% if r.entry.is_completed() %} line-through{% endif %}">{{ r.entry.name }}</div>
+          <div class="text-xs text-ink-3 mt-0.5 flex items-center gap-2">
+            <span>⏱ {{ &r.entry.total_time()|minutes }}</span>
+            {% if r.entry.is_completed() %}
+            <span class="font-semibold text-herb-700">✓ {{ "Cooked"|t }}</span>
+            {% else if r.entry.is_cooking() %}
+            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold text-white {% call course::dot(r.entry.recipe_type) %}{% endcall %}">{{ "Cooking"|t }}</span>
+            {% endif %}
+          </div>
+        </div>
+        {% if let Some(origin) = r.external_url %}
+        <a href="{{ origin }}" target="_blank" rel="noopener noreferrer"
+          class="inline-flex items-center gap-1.5 px-3 py-2 bg-ink text-cream rounded-xl text-xs font-semibold shadow-sm hover:opacity-90 transition shrink-0">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg>
+          {{ "Start cooking"|t }}
+        </a>
+        {% else %}
+        <a href="/kitchen/{{ r.entry.id }}/cook"
+          class="inline-flex items-center gap-1.5 px-3 py-2 {% if r.entry.is_completed() %}border border-line bg-paper text-ink{% else %}bg-ink text-cream shadow-sm{% endif %} rounded-xl text-xs font-semibold hover:opacity-90 transition shrink-0">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg>
+          {% if r.entry.is_cooking() %}{{ "Continue cooking"|t }}{% else if r.entry.is_completed() %}{{ "Cook again"|t }}{% else %}{{ "Start cooking"|t }}{% endif %}
+        </a>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+
+    {# Footer #}
+    <div class="flex gap-2 px-5 md:px-7 py-4 border-t border-line-2 bg-paper">
+      <button type="button" ts-trigger="click" ts-action="remove #modal-plat"
+        class="flex-1 px-4 py-2.5 bg-cream border border-line text-ink-2 font-semibold rounded-xl text-sm hover:bg-cream-2 transition">
+        {{ "Close"|t }}
+      </button>
+      <button type="button" ts-trigger="click" ts-req="/kitchen/dish/{{ plat.dish.dish_id }}/remove" ts-req-method="post" ts-target="body"
+        class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-red-200 bg-red-50 text-red-700 font-semibold rounded-xl text-sm hover:bg-red-100 transition">
+        {{ "Remove dish from list"|t }}
+      </button>
+    </div>
+  </div>
+</div>

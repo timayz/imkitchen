@@ -62,6 +62,15 @@ async fn adds_the_whole_dish_in_meal_order_once() -> anyhow::Result<()> {
     // beef (main + sauce), potato and rice: one key per distinct ingredient.
     assert_eq!(loaded.ingredients.len(), 3);
     assert!(loaded.ingredients.iter().any(|k| k.starts_with("beef-")));
+    // The dish is one group, in meal order; the side that was a loose row is
+    // pulled in, `other` stays on its own.
+    assert_eq!(loaded.dishes.len(), 1);
+    assert_eq!(loaded.dishes[0].dish_id, dish_id);
+    assert_eq!(
+        loaded.dishes[0].recipe_ids,
+        vec![main.clone(), side.clone(), sauce.clone()]
+    );
+    assert!(loaded.dish_of(&other).is_none());
     let version = loaded.aggregate_version;
 
     // Adding it again changes nothing.

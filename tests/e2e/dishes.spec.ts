@@ -1,5 +1,6 @@
 import { test, expect } from "./fixtures";
 import { DishEditorPage, DishesPage } from "./pages/dishes";
+import { KitchenPage } from "./pages/kitchen";
 import { uniqueName } from "./support/api";
 
 /**
@@ -50,10 +51,30 @@ test.describe("dishes", () => {
     await expect(card).toContainText("In my list");
     await api.waitForKitchen((overview) => overview.kind === "list" && overview.total_count === 3);
 
+    // The kitchen shows the dish as one row; its recipes are picked from a sheet.
     await page.goto("/");
+    const kitchen = new KitchenPage(page);
+    await expect(kitchen.platRows()).toHaveCount(1);
+    await expect(kitchen.platRows()).toContainText(name);
+    await expect(kitchen.platRows()).toContainText("3 recipes");
+    await expect(kitchen.rows()).toHaveCount(0);
+    await expect(kitchen.hero).toContainText(name);
+
+    await kitchen.openPlat(name);
     for (const recipe of [main, side, dessert]) {
-      await expect(page.locator("#current-recipe-card")).toContainText(recipe.name);
+      await expect(kitchen.platModal).toContainText(recipe.name);
     }
+    await expect(kitchen.platModal.locator('a[href$="/cook"]')).toHaveCount(3);
+    await kitchen.platModal.locator('a[href$="/cook"]').filter({ hasText: "Start cooking" }).nth(1).click();
+    await page.waitForURL(/\/kitchen\/[^/]+\/cook$/);
+    await expect(page.locator("#cooking-screen")).toContainText(side.name);
+
+    // Taking the dish off the list removes all three recipes.
+    await page.goto("/");
+    await kitchen.openPlat(name);
+    await kitchen.platModal.getByRole("button", { name: "Remove dish from list" }).click();
+    await expect(kitchen.platRows()).toHaveCount(0);
+    await api.waitForKitchen((overview) => overview.kind === "empty");
 
     // Deleting the dish keeps its recipes in the library.
     await dishes.goto();

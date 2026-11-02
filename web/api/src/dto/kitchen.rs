@@ -2,7 +2,7 @@ use imkitchen_types::recipe::{Instruction, RecipeType};
 use imkitchen_types::shopping::RecipeStatus;
 use imkitchen_web_shared::services::kitchen::{
     self, CookingScreen as CookingScreenView, Dish as DishView, IngredientAisle, KitchenList,
-    ListEntry, StepView,
+    ListEntry, ListItem, StepView,
 };
 use serde::{Deserialize, Serialize};
 
@@ -23,6 +23,29 @@ pub struct Entry {
     pub total_time: u16,
     pub thumbnail_url: Option<String>,
     pub blur_placeholder: Option<String>,
+    /// The composed dish this recipe is part of in the list: entries sharing
+    /// a `dish_id` form one row, named in `dishes`.
+    pub dish_id: Option<String>,
+}
+
+/// A composed dish in the list: the name for the row its entries form.
+#[derive(Serialize, Clone, Debug)]
+pub struct DishGroup {
+    pub id: String,
+    pub name: String,
+}
+
+fn dish_groups(items: &[ListItem]) -> Vec<DishGroup> {
+    items
+        .iter()
+        .filter_map(|item| match item {
+            ListItem::Dish(dish) => Some(DishGroup {
+                id: dish.dish_id.to_owned(),
+                name: dish.name.to_owned(),
+            }),
+            ListItem::Recipe(_) => None,
+        })
+        .collect()
 }
 
 impl From<&ListEntry> for Entry {
@@ -40,6 +63,7 @@ impl From<&ListEntry> for Entry {
             total_time: e.total_time(),
             thumbnail_url: thumbnail_url(&e.id, e.thumbnail_version.as_deref(), "mobile"),
             blur_placeholder: e.blur_placeholder.to_owned(),
+            dish_id: e.dish_id.to_owned(),
         }
     }
 }
@@ -104,6 +128,8 @@ pub enum Overview {
 #[derive(Serialize, Debug)]
 pub struct List {
     pub entries: Vec<Entry>,
+    /// Names of the composed dishes whose entries are in the list, in list order.
+    pub dishes: Vec<DishGroup>,
     pub focused: Recipe,
     pub focused_status: Status,
     pub completed_count: usize,
@@ -135,6 +161,7 @@ impl From<KitchenList> for List {
         };
         Self {
             entries: list.entries.iter().map(Entry::from).collect(),
+            dishes: dish_groups(&list.items),
             focused: Recipe::from(&list.focused),
             focused_status: Status::from(&list.focused_status),
             completed_count: list.completed_count,
@@ -151,6 +178,7 @@ impl From<KitchenList> for List {
 #[derive(Serialize, Debug)]
 pub struct Dish {
     pub entries: Vec<Entry>,
+    pub dishes: Vec<DishGroup>,
     pub recipe: Recipe,
     pub status: Status,
     pub steps: Steps,
@@ -167,6 +195,7 @@ impl From<DishView> for Dish {
         };
         Self {
             entries: dish.entries.iter().map(Entry::from).collect(),
+            dishes: dish_groups(&dish.items),
             recipe: Recipe::from(&dish.recipe),
             status: Status::from(&dish.status),
             steps: Steps::from(&dish.steps),

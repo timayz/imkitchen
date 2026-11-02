@@ -1,5 +1,5 @@
 import type { Groceries } from '../api/groceries.js'
-import type { CookingScreen, Dish, Overview } from '../api/kitchen.js'
+import type { CookingScreen, Dish, Entry, Overview } from '../api/kitchen.js'
 import type { Status } from '../api/recipe.js'
 import type { Detail } from '../api/recipes.js'
 import { applyStatus } from '../cooking.js'
@@ -16,6 +16,8 @@ export type Op =
   | { kind: 'saved'; id: string; saved: boolean }
   /** `household_size` is the people count chosen when adding; absent = settings value. */
   | { kind: 'list'; id: string; in_list: boolean; household_size?: number }
+  /** Takes a whole composed dish (every entry with that `dish_id`) off the list. */
+  | { kind: 'dish_remove'; id: string }
 
 /** Two ops with the same logical key replace each other (last one wins). */
 export function logicalKey(op: Op): string {
@@ -28,6 +30,8 @@ export function logicalKey(op: Op): string {
       return `saved:${op.id}`
     case 'list':
       return `list:${op.id}`
+    case 'dish_remove':
+      return `dish_remove:${op.id}`
   }
 }
 
@@ -42,6 +46,8 @@ export function affects(op: Op): string[] {
       return [`recipe:${op.id}`]
     case 'list':
       return [`recipe:${op.id}`, 'kitchen', 'groceries']
+    case 'dish_remove':
+      return ['kitchen', 'groceries']
   }
 }
 
@@ -67,6 +73,9 @@ export function apply<T>(op: Op, docKey: string, doc: T): T {
       if (docKey === 'kitchen' && !op.in_list) return kitchenRemove(doc as Overview, op.id) as T
       return doc
     }
+    case 'dish_remove':
+      if (docKey === 'kitchen') return kitchenRemoveDish(doc as Overview, op.id) as T
+      return doc
   }
 }
 
@@ -82,13 +91,25 @@ function kitchenStatus(overview: Overview, id: string, status: Status): Overview
 }
 
 function kitchenRemove(overview: Overview, id: string): Overview {
+  return kitchenWithout(overview, (e) => e.id === id)
+}
+
+function kitchenRemoveDish(overview: Overview, dishId: string): Overview {
   if (overview.kind !== 'list') return overview
-  const entries = overview.entries.filter((e) => e.id !== id)
-  const focusedGone = overview.focused?.id === id
+  const next = kitchenWithout(overview, (e) => e.dish_id === dishId)
+  return next.kind === 'list' ? { ...next, dishes: (next.dishes ?? []).filter((d) => d.id !== dishId) } : next
+}
+
+/** The list without the entries matching `gone`; the focus is reset when it was one of them. */
+function kitchenWithout(overview: Overview, gone: (e: Entry) => boolean): Overview {
+  if (overview.kind !== 'list') return overview
+  const removed = new Set(overview.entries.filter(gone).map((e) => e.id))
+  const entries = overview.entries.filter((e) => !removed.has(e.id))
+  const focusedGone = overview.focused !== null && removed.has(overview.focused.id)
   return {
     ...overview,
     entries,
-    prep_ahead: overview.prep_ahead.filter((e) => e.id !== id),
+    prep_ahead: overview.prep_ahead.filter((e) => !removed.has(e.id)),
     total_count: entries.length,
     completed_count: entries.filter((e) => e.status.status === 'completed').length,
     // The next focus is the server's call; until then show the list without one.
