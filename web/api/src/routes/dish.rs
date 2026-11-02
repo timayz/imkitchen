@@ -9,7 +9,10 @@ use imkitchen_web_shared::{AppState, services::dish};
 use crate::{
     ApiError, ApiJson, ApiResult,
     auth::ApiUser,
-    dto::dish::{Candidates, CandidatesQuery, ComposeRequest, Created, Dish, Dishes},
+    dto::{
+        dish::{Candidates, CandidatesQuery, ComposeRequest, Created, Dish, Dishes},
+        kitchen::ListAddRequest,
+    },
 };
 
 #[tracing::instrument(skip_all, fields(user = user.id))]
@@ -87,13 +90,16 @@ pub async fn delete(
     Ok(StatusCode::NO_CONTENT)
 }
 
-/// Adds every recipe of the dish to the kitchen list.
+/// Adds every recipe of the dish to the kitchen list. The optional JSON body
+/// picks the household size; without one the settings value applies.
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn add_to_shopping(
     State(app): State<AppState>,
     user: ApiUser,
     Path((id,)): Path<(String,)>,
+    body: Option<ApiJson<ListAddRequest>>,
 ) -> Result<StatusCode, ApiError> {
-    dish::add_to_list(&app, &user.id, &id).await?;
+    let household_size = body.and_then(|ApiJson(b)| b.household_size);
+    dish::add_to_list(&app, &user.id, &id, household_size).await?;
     Ok(StatusCode::NO_CONTENT)
 }

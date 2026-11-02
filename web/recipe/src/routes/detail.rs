@@ -2,6 +2,7 @@ use axum::{
     extract::{Path, State},
     response::{IntoResponse, Redirect},
 };
+use axum_extra::extract::Form;
 use evento::cursor::ReadResult;
 use imkitchen_core::recipe::{
     favorite,
@@ -11,13 +12,16 @@ use imkitchen_core::recipe::{
     },
 };
 use imkitchen_types::recipe::{DietaryRestriction, IngredientUnitFormat, RecipeType};
+use serde::Deserialize;
 use serde_json::json;
 
 use imkitchen_web_shared::{
     AppState,
     auth::{AuthUser, RequireChef},
     services::recipe::{self, ShareError},
-    template::{NotFoundTemplate, Status, Template, filters},
+    template::{
+        LIST_ADD_MODAL_DISMISS, ListAddModalTemplate, NotFoundTemplate, Status, Template, filters,
+    },
 };
 
 #[derive(askama::Template)]
@@ -405,21 +409,56 @@ pub async fn unsave(
 pub struct AddToShoppingButtonTemplate {
     pub id: String,
     pub added: bool,
+    pub demo: bool,
 }
 
-/// Add the recipe to the viewer's shopping list. Any viewable recipe (owned or
-/// shared) can be added; ingredient scaling uses the viewer's household size.
-pub async fn add_to_shopping(
+/// "How many people?" sheet shown before the recipe is added to the list.
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn add_to_shopping_modal(
     template: Template,
     AuthUser(user): AuthUser,
     State(app): State<AppState>,
     Path((id,)): Path<(String,)>,
 ) -> impl IntoResponse {
-    imkitchen_web_shared::try_response!(recipe::add_to_shopping(&app, &user.id, &id), template);
+    let preferences = imkitchen_web_shared::try_response!(anyhow:
+        app.identity.meal_preferences.load(&user.id),
+        template
+    );
+    template.render(ListAddModalTemplate {
+        action: &format!("/recipes/{id}/add-to-shopping"),
+        target: "#add-to-shopping-btn",
+        title: "Add to my list",
+        household_size: preferences.household_size,
+    })
+}
 
-    (
-        [("ts-swap", "skip")],
-        template.render(AddToShoppingButtonTemplate { id, added: true }),
-    )
-        .into_response()
+#[derive(Deserialize, Debug, Default)]
+pub struct ListAddForm {
+    /// People to cook for; the settings value when absent.
+    #[serde(default)]
+    pub household_size: Option<u16>,
+}
+
+/// Add the recipe to the viewer's shopping list for the chosen household
+/// size, dismiss the sheet and swap the button to "In my list". Any viewable
+/// recipe (owned or shared) can be added.
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn add_to_shopping(
+    template: Template,
+    AuthUser(user): AuthUser,
+    State(app): State<AppState>,
+    Path((id,)): Path<(String,)>,
+    Form(input): Form<ListAddForm>,
+) -> impl IntoResponse {
+    imkitchen_web_shared::try_response!(
+        recipe::add_to_shopping(&app, &user.id, &id, input.household_size),
+        template
+    );
+
+    let button = template.to_string(AddToShoppingButtonTemplate {
+        id,
+        added: true,
+        demo: false,
+    });
+    axum::response::Html(format!("{button}{LIST_ADD_MODAL_DISMISS}")).into_response()
 }

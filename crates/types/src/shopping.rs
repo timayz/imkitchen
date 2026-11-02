@@ -74,4 +74,12 @@ pub enum Shopping {
         recipe_ids: Vec<String>,
         ingredients: Vec<Ingredient>,
     },
+    /// The household size chosen for these recipes when they were generated
+    /// or added. A separate variant rather than a field on `ListGenerated` /
+    /// `RecipeAdded` / `DishAdded` because bitcode is positional: existing
+    /// variants must never change shape (see `MealPreferences::RecipeTypesChanged`).
+    ServingsSet {
+        recipe_ids: Vec<String>,
+        household_size: u16,
+    },
 }

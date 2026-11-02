@@ -99,7 +99,7 @@ function send(op: Op): Promise<unknown> {
     case 'saved':
       return op.saved ? saveRecipe(op.id) : unsaveRecipe(op.id)
     case 'list':
-      return op.in_list ? addRecipeToList(op.id) : removeFromList(op.id)
+      return op.in_list ? addRecipeToList(op.id, op.household_size) : removeFromList(op.id)
   }
 }
 

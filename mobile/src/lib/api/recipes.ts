@@ -125,8 +125,12 @@ export function unsaveRecipe(id: string): Promise<void> {
   return request<void>(`/api/v1/recipes/${encodeURIComponent(id)}/save`, { method: 'DELETE' })
 }
 
-export function addRecipeToList(id: string): Promise<void> {
-  return request<void>(`/api/v1/recipes/${encodeURIComponent(id)}/shopping`, { method: 'POST' })
+/** Without `household_size` the server scales to the settings value. */
+export function addRecipeToList(id: string, household_size?: number): Promise<void> {
+  return request<void>(`/api/v1/recipes/${encodeURIComponent(id)}/shopping`, {
+    method: 'POST',
+    body: household_size === undefined ? undefined : { household_size },
+  })
 }
 
 export function shareRecipe(id: string): Promise<void> {
@@ -150,9 +154,7 @@ export function deleteRecipe(id: string): Promise<void> {
 }
 
 export function recipeExists(id: string): Promise<boolean> {
-  return request<{ exists: boolean }>(`/api/v1/recipes/${encodeURIComponent(id)}/exists`).then(
-    (r) => r.exists,
-  )
+  return request<{ exists: boolean }>(`/api/v1/recipes/${encodeURIComponent(id)}/exists`).then((r) => r.exists)
 }
 
 export function getCook(username: string, params: CookParams = {}): Promise<Cook> {

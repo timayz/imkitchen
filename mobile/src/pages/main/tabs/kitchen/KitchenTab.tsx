@@ -32,11 +32,11 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
     if (data) setOverview(data);
   }, [data]);
 
-  const onGenerate = useCallback(async (count: number) => {
+  const onGenerate = useCallback(async (count: number, household_size: number) => {
     setBusy(true);
     setNotice(null);
     try {
-      const next = await generate(count);
+      const next = await generate(count, household_size);
       await writeDoc('kitchen', next);
       setSheet(false);
     } catch (err) {

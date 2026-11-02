@@ -320,6 +320,112 @@ async fn generate_fills_the_list_from_the_pool() -> anyhow::Result<()> {
 }
 
 #[tokio::test]
+async fn generate_scales_every_recipe_to_the_chosen_household() -> anyhow::Result<()> {
+    let app = TestApp::new().await?;
+    let session = sign_in(&app).await?;
+    let recipe_id = create_recipe(&app, &session.user_id).await?;
+
+    let (status, body) = call(
+        &app,
+        &session,
+        "POST",
+        "/api/v1/kitchen/generate",
+        Some(json!({ "count": 1, "household_size": 6 })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    app.drain().await?;
+
+    let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
+    assert_eq!(body["entries"][0]["servings"], 6);
+
+    // The 2-serving recipe is tripled, whatever the settings say.
+    let (_, body) = call(
+        &app,
+        &session,
+        "GET",
+        &format!("/api/v1/kitchen/recipes/{recipe_id}/cook"),
+        None,
+    )
+    .await?;
+    let tomatoes = body["ingredient_aisles"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|a| a["items"].as_array().unwrap())
+        .find(|i| i["name"] == "Tomatoes")
+        .unwrap()
+        .clone();
+    assert_eq!(tomatoes["quantity"], 400 * 6 / 2);
+
+    // An impossible size fails validation.
+    let (status, body) = call(
+        &app,
+        &session,
+        "POST",
+        "/api/v1/kitchen/generate",
+        Some(json!({ "count": 1, "household_size": 0 })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{body}");
+    assert_eq!(body["error"]["code"], "validation");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn adding_a_recipe_takes_an_optional_household_size() -> anyhow::Result<()> {
+    let app = TestApp::new().await?;
+    let session = sign_in(&app).await?;
+    let recipe_id = create_recipe(&app, &session.user_id).await?;
+
+    // With a body: scaled to the chosen size.
+    let (status, body) = call(
+        &app,
+        &session,
+        "POST",
+        &format!("/api/v1/recipes/{recipe_id}/shopping"),
+        Some(json!({ "household_size": 6 })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::NO_CONTENT, "{body}");
+    let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
+    assert_eq!(body["entries"][0]["servings"], 6);
+
+    // Bodiless (the mobile queue, older clients): back to the settings value.
+    let household = app
+        .state
+        .identity
+        .meal_preferences
+        .load(&session.user_id)
+        .await?
+        .household_size;
+    let (status, body) = call(
+        &app,
+        &session,
+        "POST",
+        &format!("/api/v1/recipes/{recipe_id}/shopping"),
+        None,
+    )
+    .await?;
+    assert_eq!(status, StatusCode::NO_CONTENT, "{body}");
+    let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
+    assert_eq!(body["entries"][0]["servings"], household);
+
+    let (status, body) = call(
+        &app,
+        &session,
+        "POST",
+        &format!("/api/v1/recipes/{recipe_id}/shopping"),
+        Some(json!({ "household_size": 0 })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::BAD_REQUEST, "{body}");
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn status_is_set_absolutely() -> anyhow::Result<()> {
     let app = TestApp::new().await?;
     let session = sign_in(&app).await?;

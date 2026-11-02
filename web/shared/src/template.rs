@@ -508,6 +508,25 @@ macro_rules! try_page_response {
     };
 }
 
+/// Pushed reply fragment that dismisses [`ListAddModalTemplate`]. Append it
+/// after the main reply element (the refreshed button the sheet's form
+/// targets): twinspark resolves pushed targets from the origin's own target,
+/// so the sheet itself must not be what the main swap replaces.
+pub const LIST_ADD_MODAL_DISMISS: &str =
+    "<div ts-swap-push=\"#modal-list-add\" ts-trigger=\"load\" ts-action=\"remove\"></div>";
+
+/// "For how many people?" confirm sheet shown before a recipe or dish is added
+/// to the list. `action` is the POST URL the form submits `household_size` to
+/// and `target` the selector of the button the reply swaps.
+#[derive(askama::Template)]
+#[template(path = "partials/list-add-modal.html")]
+pub struct ListAddModalTemplate<'a> {
+    pub action: &'a str,
+    pub target: &'a str,
+    pub title: &'a str,
+    pub household_size: u16,
+}
+
 #[derive(askama::Template)]
 #[template(path = "partials/toast-success.html")]
 pub struct ToastSuccessTemplate<'a> {

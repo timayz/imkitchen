@@ -1,16 +1,20 @@
 use evento::{Executor, ProjectionAggregate};
 use imkitchen_db::shopping_recipe::ShoppingRecipe;
-use imkitchen_types::shopping::DishAdded;
+use imkitchen_types::shopping::{DishAdded, ServingsSet};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 
-use super::merge::merge_ingredients;
+use super::{
+    check_household_size,
+    merge::{Servings, merge_ingredients},
+};
 
 impl<E: Executor> super::Module<E> {
-    /// Add every recipe of one of the user's dishes to the list, in the
-    /// dish's meal order, recomputing the merged ingredients. Recipes
-    /// already in the list stay where they are; deleted ones are skipped.
-    /// Nothing is written when the list already holds the whole dish.
+    /// Add every recipe of one of the user's dishes to the list for
+    /// `household_size` people, in the dish's meal order, recomputing the
+    /// merged ingredients. Recipes already in the list stay where they are but
+    /// are rescaled to the chosen size; deleted ones are skipped. Nothing is
+    /// written when the list already holds the whole dish at that size.
     pub async fn add_dish(
         &self,
         dish_id: impl Into<String>,
@@ -19,6 +23,7 @@ impl<E: Executor> super::Module<E> {
     ) -> crate::Result<()> {
         let request_by = request_by.into();
         let dish_id = dish_id.into();
+        check_household_size(household_size)?;
 
         let dish = match crate::dish::load(&self.executor, &dish_id).await? {
             Some(dish) if dish.owner_id == request_by => dish,
@@ -29,31 +34,49 @@ impl<E: Executor> super::Module<E> {
         let existing = self.existing_recipe_ids(dish.recipe_ids).await?;
 
         let mut recipe_ids = shopping.recipes.clone();
-        for id in existing {
-            if !recipe_ids.contains(&id) {
-                recipe_ids.push(id);
+        for id in &existing {
+            if !recipe_ids.contains(id) {
+                recipe_ids.push(id.clone());
             }
         }
 
-        if recipe_ids.len() == shopping.recipes.len() {
+        let grows = recipe_ids.len() != shopping.recipes.len();
+        let rescales = existing
+            .iter()
+            .any(|id| shopping.servings.get(id) != Some(&household_size));
+        if !grows && !rescales {
             return Ok(());
         }
 
-        let recipe_ingredients = self
-            .filter_recipe_ingredients_by_ids(recipe_ids.clone())
-            .await?;
-        let ingredients = merge_ingredients(recipe_ingredients, household_size);
+        let mut builder = shopping.write()?.requested_by(request_by).to_owned();
 
-        shopping
-            .write()?
-            .event(&DishAdded {
+        if grows {
+            let mut per_recipe = shopping.servings.clone();
+            for id in &existing {
+                per_recipe.insert(id.clone(), household_size);
+            }
+            let recipe_ingredients = self
+                .filter_recipe_ingredients_by_ids(recipe_ids.clone())
+                .await?;
+            let ingredients = merge_ingredients(
+                recipe_ingredients,
+                &Servings {
+                    per_recipe: &per_recipe,
+                    default: household_size,
+                },
+            );
+            builder.event(&DishAdded {
                 dish_id,
                 recipe_ids,
                 ingredients,
-            })
-            .requested_by(request_by)
-            .commit(&self.executor)
-            .await?;
+            });
+        }
+
+        builder.event(&ServingsSet {
+            recipe_ids: existing,
+            household_size,
+        });
+        builder.commit(&self.executor).await?;
 
         Ok(())
     }

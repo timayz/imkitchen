@@ -47,7 +47,7 @@ impl<E: Executor> super::Module<E> {
             .filter_recipe_ingredients_by_ids(shopping.recipes.clone())
             .await?
             .iter()
-            .flat_map(|(_, ingredients)| ingredients)
+            .flat_map(|(_, _, ingredients)| ingredients)
             .any(|ingredient| ingredient.key() == name);
 
         if !known {

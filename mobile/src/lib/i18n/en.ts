@@ -45,8 +45,7 @@ export const en = {
   'reset.expired_title': 'This link has expired',
   'reset.expired_body':
     'Reset links only work once and for 15 minutes. Request a new one and we’ll email it right away.',
-  'reset.expired_note':
-    'Your password hasn’t changed. You can still sign in with your current one.',
+  'reset.expired_note': 'Your password hasn’t changed. You can still sign in with your current one.',
   'reset.request_again': 'Request a new link',
   'tabs.kitchen': 'Kitchen',
   'tabs.groceries': 'Groceries',
@@ -92,8 +91,7 @@ export const en = {
   'kitchen.cooked_badge': 'Cooked',
   'kitchen.prep_ahead': 'Prep ahead',
   'kitchen.nothing': 'Nothing to cook yet',
-  'kitchen.nothing_hint':
-    'Generate a list from your recipes or add a few by hand, then cook them one by one.',
+  'kitchen.nothing_hint': 'Generate a list from your recipes or add a few by hand, then cook them one by one.',
   'kitchen.add_first_recipe': 'Add your first recipe',
   'kitchen.collection': 'Your collection is ready',
   'kitchen.generate_hint':
@@ -146,8 +144,7 @@ export const en = {
   'groceries.feature_aisles': 'Sorted by aisle, the way the shop is laid out.',
   'groceries.feature_merged': 'Quantities are merged across recipes, so one line per ingredient.',
   'groceries.empty': 'Nothing to buy yet',
-  'groceries.empty_hint':
-    'Add recipes to your list and their ingredients show up here, aisle by aisle.',
+  'groceries.empty_hint': 'Add recipes to your list and their ingredients show up here, aisle by aisle.',
   'recipes.library': 'Library',
   'recipes.search': 'Search',
   'recipes.search_placeholder': 'Name, description or ingredient…',
@@ -185,6 +182,8 @@ export const en = {
   'recipes.origin': 'Open the original recipe',
   'recipes.in_list': 'In my list',
   'recipes.add_to_list': 'Add to my list',
+  'list.people': 'People at the table',
+  'list.people_hint': 'Used for ingredient scaling. Your settings stay unchanged.',
   'recipes.save': 'Save',
   'recipes.saved_btn': 'Saved',
   'recipes.edit': 'Edit',
@@ -192,8 +191,7 @@ export const en = {
   'recipes.make_private': 'Make private',
   'recipes.delete': 'Delete',
   'recipes.delete_title': 'Delete this recipe?',
-  'recipes.delete_hint':
-    'It will be removed from your library and from any list it is in. This cannot be undone.',
+  'recipes.delete_hint': 'It will be removed from your library and from any list it is in. This cannot be undone.',
   'recipes.ingredients': 'Ingredients',
   'recipes.instructions': 'Instructions',
   'recipes.similar': 'Similar recipes',
@@ -258,8 +256,7 @@ export const en = {
   'edit.save': 'Save recipe',
   'edit.saved': 'Recipe saved.',
   'edit.discard_title': 'Discard changes?',
-  'edit.discard_hint':
-    'You edited this recipe but have not saved. Leaving now throws those edits away.',
+  'edit.discard_hint': 'You edited this recipe but have not saved. Leaving now throws those edits away.',
   'edit.save_leave': 'Save and leave',
   'edit.discard': 'Discard changes',
   'edit.keep_editing': 'Keep editing',
@@ -321,14 +318,12 @@ export const en = {
   'settings.logout_hint': 'Of this device only',
   'settings.delete_meta': 'Recipes and menu gone for good',
   'settings.billing_note': 'imkitchen · Subscriptions are managed on the website',
-  'settings.sessions_hint':
-    'Sign out a device you no longer recognise. Signing out everywhere else keeps this one.',
+  'settings.sessions_hint': 'Sign out a device you no longer recognise. Signing out everywhere else keeps this one.',
   'settings.revoke_others': 'Sign out all other devices',
   'settings.revoked_others': 'Other devices signed out.',
   'settings.app_device': '%{model} · imkitchen app',
   'settings.unknown_device': 'Unknown device',
-  'kitchen.empty_first_hint':
-    'Add a main course to your library and cook it from here, step by step.',
+  'kitchen.empty_first_hint': 'Add a main course to your library and cook it from here, step by step.',
   'kitchen.empty_ready_hint':
     'Generate a list from your recipes, or pick them by hand. Cooking Mode takes it from there.',
   'settings.tours': 'Guided tours',
@@ -353,8 +348,7 @@ export const en = {
   'tour.kitchen.cta.body':
     'Add your first recipe to start. Once you have a few, generate a list from your collection in one tap, and regenerate whenever you like.',
   'tour.recipes.search.title': 'Find anything',
-  'tour.recipes.search.body':
-    'Search your library and the community by name, description or ingredient.',
+  'tour.recipes.search.body': 'Search your library and the community by name, description or ingredient.',
   'tour.recipes.new.title': 'Add a recipe',
   'tour.recipes.new.body':
     'Write your own, with ingredients, steps and timing, or import recipes you already have. A draft opens right away.',
@@ -380,23 +374,19 @@ export const en = {
   'tour.groceries.route.body':
     'One stop per aisle, in the order you walk your store. Tap an aisle to jump to it; change the order in Settings.',
   'tour.groceries.aisle.title': 'Aisle by aisle',
-  'tour.groceries.aisle.body':
-    'Everything the recipes in your list need, grouped by aisle, with your progress so far.',
+  'tour.groceries.aisle.body': 'Everything the recipes in your list need, grouped by aisle, with your progress so far.',
   'tour.groceries.check.title': 'Check things off',
-  'tour.groceries.check.body':
-    'Tap an item as it lands in the cart. It stays checked on every device, even offline.',
+  'tour.groceries.check.body': 'Tap an item as it lands in the cart. It stays checked on every device, even offline.',
   'tour.settings.household.title': 'Your household',
-  'tour.settings.household.body':
-    'How many people you cook for. Every ingredient quantity scales to match.',
+  'tour.settings.household.body': 'How many people you cook for. Every ingredient quantity scales to match.',
   'tour.settings.courses.title': 'Courses and diet',
-  'tour.settings.courses.body':
-    'Pick which courses a generated meal includes and the ingredients to steer clear of.',
+  'tour.settings.courses.body': 'Pick which courses a generated meal includes and the ingredients to steer clear of.',
   'tour.settings.aisles.title': 'Aisle order',
-  'tour.settings.aisles.body':
-    'Arrange the aisles the way your store is laid out and the groceries list follows.',
+  'tour.settings.aisles.body': 'Arrange the aisles the way your store is laid out and the groceries list follows.',
   'dishes.title': 'Dishes',
   'dishes.count': '%{n} composed',
-  'dishes.intro': 'A dish is a meal you composed: one main course with the sides, sauces, starter, dessert or drink you like with it. Generation picks your dishes first; you can also add one to your list here.',
+  'dishes.intro':
+    'A dish is a meal you composed: one main course with the sides, sauces, starter, dessert or drink you like with it. Generation picks your dishes first; you can also add one to your list here.',
   'dishes.empty_title': 'No dishes yet',
   'dishes.empty_hint': 'Pair a main course with the sides and sauces you always cook it with.',
   'dishes.compose': 'Compose a dish',
@@ -428,6 +418,6 @@ export const en = {
   'dish.search': 'Search by name',
   'dish.no_match': 'No recipe matches “%{q}”.',
   'dish.more': '%{n} more — type a name to narrow down.',
-} as const;
+} as const
 
-export type MessageKey = keyof typeof en;
+export type MessageKey = keyof typeof en

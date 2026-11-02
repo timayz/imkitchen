@@ -24,6 +24,7 @@ import { Button } from '../../ui/Button.js'
 import { OfflineBanner } from '../../ui/OfflineBanner.js'
 import { RecipeCard } from '../../ui/RecipeCard.js'
 import { RecipeImage } from '../../ui/RecipeImage.js'
+import { ServingsSheet } from '../../ui/ServingsSheet.js'
 import { Sheet } from '../../ui/Sheet.js'
 import { Spinner } from '../../ui/Spinner.js'
 
@@ -37,6 +38,7 @@ export function App() {
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmAdd, setConfirmAdd] = useState(false)
 
   const r = recipe.data
   const similar = similarPage.data?.edges.map((e) => e.node) ?? []
@@ -197,10 +199,21 @@ export function App() {
           <view className="rdet__actions">
             <Button
               label={r.in_shopping ? t('recipes.in_list') : t('recipes.add_to_list')}
-              onTap={() => void enqueue({ kind: 'list', id: r.id, in_list: true })}
+              onTap={() => setConfirmAdd(true)}
               variant={r.in_shopping ? 'secondary' : 'primary'}
               disabled={busy || r.in_shopping}
               block
+            />
+            <ServingsSheet
+              open={confirmAdd}
+              busy={busy}
+              title={t('recipes.add_to_list')}
+              confirmLabel={t('recipes.add_to_list')}
+              onClose={() => setConfirmAdd(false)}
+              onConfirm={(household_size) => {
+                setConfirmAdd(false)
+                void enqueue({ kind: 'list', id: r.id, in_list: true, household_size })
+              }}
             />
             {!r.is_owner && (
               <Button

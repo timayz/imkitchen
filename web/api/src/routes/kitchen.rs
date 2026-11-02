@@ -26,7 +26,7 @@ pub async fn generate(
     user: ApiUser,
     ApiJson(input): ApiJson<GenerateRequest>,
 ) -> ApiResult<Overview> {
-    kitchen::generate(&app, &user.id, input.count).await?;
+    kitchen::generate(&app, &user.id, input.count, input.household_size).await?;
     let view = kitchen::overview(&app, &user.id).await?;
     Ok(Json(Overview::from(view)))
 }

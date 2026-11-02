@@ -27,9 +27,12 @@ export class KitchenPage {
     await this.generateModal.waitFor();
   }
 
-  async generate(count: 3 | 7 | 14 | 30) {
+  async generate(count: 3 | 7 | 14 | 30, people?: number) {
     await this.openGenerate();
     await this.generateModal.locator(`.gen-preset[data-count="${count}"]`).click();
+    if (people !== undefined) {
+      await this.generateModal.locator('input[name="household_size"]').fill(String(people));
+    }
     await this.generateModal.getByRole("button", { name: "Generate" }).click();
     await this.generateModal.waitFor({ state: "detached" });
   }

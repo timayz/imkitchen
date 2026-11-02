@@ -18,6 +18,8 @@ pub struct ListEntry {
     pub slug: String,
     pub recipe_type: RecipeType,
     pub status: RecipeStatus,
+    /// People the recipe is scaled for.
+    pub servings: u16,
     pub advance_prep: String,
     pub prep_time: u16,
     pub cook_time: u16,
@@ -54,24 +56,16 @@ pub type StepView = (
     Option<(usize, Instruction)>,
 );
 
-/// The list state plus the household size it was scaled for.
-pub struct ListContext {
-    pub state: ShoppingState,
-    pub household_size: u16,
-}
-
-pub async fn load_list(app: &AppState, user_id: &str) -> anyhow::Result<ListContext> {
+/// The list, with every recipe scaled to the household size recorded when it
+/// was generated or added (the settings value for recipes without one).
+pub async fn load_list(app: &AppState, user_id: &str) -> anyhow::Result<ShoppingState> {
     let household_size = app
         .identity
         .meal_preferences
         .load(user_id)
         .await?
         .household_size;
-    let state = app.core.shopping.state(user_id, household_size).await?;
-    Ok(ListContext {
-        state,
-        household_size,
-    })
+    app.core.shopping.state(user_id, household_size).await
 }
 
 /// Whether the "Start cooking" button should link straight to the recipe's
@@ -103,7 +97,7 @@ async fn origin_embeddable(app: &AppState, origin: &str) -> bool {
         .unwrap_or(false)
 }
 
-/// Scale a recipe's ingredient quantities to the user's household size and
+/// Scale a recipe's ingredient quantities to `household_size` people and
 /// sort them by name. Shared by every kitchen screen that shows ingredients
 /// (dashboard, dish preview, and the cooking screen) so they stay consistent.
 pub fn scale_ingredients(recipe: &mut UserView, household_size: u16) {
@@ -160,6 +154,7 @@ pub fn list_entries(state: &ShoppingState, cards: Vec<RecipeCard>) -> Vec<ListEn
                 pos,
                 ListEntry {
                     status: state.status(&card.id),
+                    servings: state.servings(&card.id),
                     id: card.id,
                     name: card.name,
                     slug: card.slug,
@@ -284,17 +279,17 @@ pub fn next_status(direction: &str, current: &RecipeStatus, len: usize) -> Recip
 /// recipe is not in the list (or no longer exists).
 pub async fn find_list_recipe(
     app: &AppState,
-    list: &ListContext,
+    list: &ShoppingState,
     recipe_id: &str,
 ) -> anyhow::Result<Option<(UserView, RecipeStatus)>> {
-    if !list.state.contains(recipe_id) {
+    if !list.contains(recipe_id) {
         return Ok(None);
     }
     let Some(mut recipe) = app.core.recipe.find_user(recipe_id).await? else {
         return Ok(None);
     };
-    scale_ingredients(&mut recipe, list.household_size);
-    Ok(Some((recipe, list.state.status(recipe_id))))
+    scale_ingredients(&mut recipe, list.servings(recipe_id));
+    Ok(Some((recipe, list.status(recipe_id))))
 }
 
 /// What the kitchen home shows.
@@ -332,15 +327,15 @@ pub struct KitchenList {
 pub async fn overview(app: &AppState, user_id: &str) -> anyhow::Result<Overview> {
     let list = load_list(app, user_id).await?;
 
-    let cards = if list.state.recipe_ids.is_empty() {
+    let cards = if list.recipe_ids.is_empty() {
         vec![]
     } else {
         app.core
             .recipe
-            .filter_by_ids(list.state.recipe_ids.clone())
+            .filter_by_ids(list.recipe_ids.clone())
             .await?
     };
-    let entries = list_entries(&list.state, cards);
+    let entries = list_entries(&list, cards);
 
     // The recipe to cook next: the first uncooked entry whose recipe still
     // resolves, else the first one that does. A list whose recipes were all
@@ -364,7 +359,7 @@ pub async fn overview(app: &AppState, user_id: &str) -> anyhow::Result<Overview>
     let completed_count = entries.iter().filter(|e| e.is_completed()).count();
 
     let focused_status = focused_entry.status.clone();
-    scale_ingredients(&mut focused, list.household_size);
+    scale_ingredients(&mut focused, list.servings(&focused_entry.id));
     let steps = split_instructions(&focused, &focused_status, true);
 
     let prep_ahead: Vec<ListEntry> = entries
@@ -420,9 +415,9 @@ pub async fn dish(app: &AppState, user_id: &str, recipe_id: &str) -> anyhow::Res
     let cards = app
         .core
         .recipe
-        .filter_by_ids(list.state.recipe_ids.clone())
+        .filter_by_ids(list.recipe_ids.clone())
         .await?;
-    let entries = list_entries(&list.state, cards);
+    let entries = list_entries(&list, cards);
 
     let steps = split_instructions(&recipe, &status, true);
     let cook_external = cook_is_external(app, &recipe, &steps.2).await;
@@ -573,9 +568,15 @@ pub async fn set_status(
     Ok(Some(build_cooking_screen(app, recipe, status).await))
 }
 
-/// Replace the list with freshly picked recipes. The list is read back from
-/// the aggregate, so the next overview is already up to date — no polling.
-pub async fn generate(app: &AppState, user_id: &str, count: u8) -> imkitchen_core::Result<()> {
+/// Replace the list with freshly picked recipes, scaled to `household_size`
+/// people (the settings value when `None`). The list is read back from the
+/// aggregate, so the next overview is already up to date — no polling.
+pub async fn generate(
+    app: &AppState,
+    user_id: &str,
+    count: u8,
+    household_size: Option<u16>,
+) -> imkitchen_core::Result<()> {
     let preferences = app.identity.meal_preferences.load(user_id).await?;
 
     app.core
@@ -583,7 +584,7 @@ pub async fn generate(app: &AppState, user_id: &str, count: u8) -> imkitchen_cor
         .generate(
             GenerateList {
                 count,
-                household_size: preferences.household_size,
+                household_size: household_size.unwrap_or(preferences.household_size),
                 randomize: Some(Randomize {
                     cuisine_variety_weight: preferences.cuisine_variety_weight,
                     dietary_restrictions: preferences.dietary_restrictions.to_vec(),

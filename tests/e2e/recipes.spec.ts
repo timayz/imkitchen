@@ -200,7 +200,7 @@ test.describe("recipe management", () => {
     await detail.goto(recipe.slug);
 
     await expect(detail.addToList).toContainText("Add to my list");
-    await detail.addToList.click();
+    await detail.addToListFor();
     await expect(detail.addToList).toContainText("In my list");
 
     await page.goto("/");

@@ -1,8 +1,11 @@
-import { useState } from '@lynx-js/react'
+import { useEffect, useState } from '@lynx-js/react'
 
+import { defaultHouseholdSize } from '../../../../lib/api/settings.js'
 import { t } from '../../../../lib/i18n/index.js'
 import { Button } from '../../../../ui/Button.js'
+import { MAX_SERVINGS } from '../../../../ui/ServingsSheet.js'
 import { Sheet } from '../../../../ui/Sheet.js'
+import { Stepper } from '../../../../ui/Stepper.js'
 import './GenerateSheet.css'
 
 const PRESETS = [3, 7, 14, 30]
@@ -13,13 +16,22 @@ export interface GenerateSheetProps {
   /** Meals still to cook on the current list; generating replaces them. */
   remaining: number
   onClose: () => void
-  onGenerate: (count: number) => void
+  /** `household_size` is the people count every generated recipe is scaled to. */
+  onGenerate: (count: number, household_size: number) => void
 }
 
-/** "How many meals?" picker, the web's generate modal. */
+/** "How many meals?" and "how many people?" picker, the web's generate modal. */
 export function GenerateSheet({ open, busy, remaining, onClose, onGenerate }: GenerateSheetProps) {
   const [count, setCount] = useState(7)
+  const [people, setPeople] = useState<number | null>(null)
   const clamp = (n: number) => Math.min(30, Math.max(1, n))
+
+  // Defaults to the settings household size each time the sheet opens.
+  useEffect(() => {
+    if (!open) return
+    setPeople(null)
+    void defaultHouseholdSize().then((n) => setPeople(Math.min(MAX_SERVINGS, Math.max(1, n))))
+  }, [open])
 
   return (
     <Sheet open={open} onClose={onClose}>
@@ -56,10 +68,11 @@ export function GenerateSheet({ open, busy, remaining, onClose, onGenerate }: Ge
           <text className="gen__step-glyph">+</text>
         </view>
       </view>
+      <Stepper label={t('list.people')} value={people ?? 1} min={1} max={MAX_SERVINGS} onChange={setPeople} />
       <Button
         label={`✨ ${t('kitchen.generate_cta', { n: count })}`}
-        onTap={() => onGenerate(count)}
-        disabled={busy}
+        onTap={() => onGenerate(count, people ?? 1)}
+        disabled={busy || people === null}
         variant="ink"
         block
       />

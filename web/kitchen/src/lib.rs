@@ -273,15 +273,32 @@ pub async fn cook_page(
 
 #[derive(askama::Template)]
 #[template(path = "partials/kitchen-generate-modal.html")]
-pub struct GenerateModalTemplate;
+pub struct GenerateModalTemplate {
+    /// Default for the "people at the table" stepper: the settings value.
+    pub household_size: u16,
+}
 
-pub async fn generate_modal(template: Template, _user: AuthUser) -> impl IntoResponse {
-    template.render(GenerateModalTemplate)
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn generate_modal(
+    template: Template,
+    AuthUser(user): AuthUser,
+    State(app): State<AppState>,
+) -> impl IntoResponse {
+    let preferences = imkitchen_web_shared::try_response!(anyhow:
+        app.identity.meal_preferences.load(&user.id),
+        template
+    );
+    template.render(GenerateModalTemplate {
+        household_size: preferences.household_size,
+    })
 }
 
 #[derive(Deserialize, Debug)]
 pub struct GenerateForm {
     pub count: u8,
+    /// People to cook for; the settings value when absent.
+    #[serde(default)]
+    pub household_size: Option<u16>,
 }
 
 /// Replace the list with freshly picked recipes, then send the browser back
@@ -294,7 +311,10 @@ pub async fn generate_action(
     AuthUser(user): AuthUser,
     Form(input): Form<GenerateForm>,
 ) -> impl IntoResponse {
-    imkitchen_web_shared::try_response!(kitchen::generate(&app, &user.id, input.count), template);
+    imkitchen_web_shared::try_response!(
+        kitchen::generate(&app, &user.id, input.count, input.household_size),
+        template
+    );
 
     Redirect::to("/").into_response()
 }

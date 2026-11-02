@@ -379,13 +379,16 @@ async fn adds_a_dish_to_the_kitchen_list() -> anyhow::Result<()> {
         &session,
         "POST",
         &format!("/api/v1/dishes/{id}/shopping"),
-        None,
+        Some(json!({ "household_size": 6 })),
     )
     .await?;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
     let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
     assert_eq!(body["kind"], "list");
+    for entry in body["entries"].as_array().unwrap() {
+        assert_eq!(entry["servings"], 6, "{entry}");
+    }
     let names: Vec<&str> = body["entries"]
         .as_array()
         .unwrap()

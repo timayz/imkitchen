@@ -1,17 +1,20 @@
-<!-- Add dish to my list (twinspark swap target) -->
-<button id="dish-add-{{ id }}" ts-swap-push="#dish-add-{{ id }}"
-  ts-req="/dishes/{{ id }}/add-to-list" ts-req-method="post"
-  class="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold transition
-    {% if in_list %}bg-ink text-cream border border-ink{% else %}bg-primary-500 text-white hover:bg-primary-600 shadow-sm{% endif %}">
-  {% if in_list %}
+{# Add dish to my list. Opens the "how many people?" sheet (GET, appended to
+   the body); the sheet's POST reply pushes this button back as "In my list". #}
+{% if in_list %}
+<button id="dish-add-{{ id }}" ts-swap-push="#dish-add-{{ id }}" type="button" disabled
+  class="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold transition bg-ink text-cream border border-ink">
   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
   </svg>
   {{ "In my list"|t }}
-  {% else %}
+</button>
+{% else %}
+<button id="dish-add-{{ id }}" ts-swap-push="#dish-add-{{ id }}" type="button"
+  ts-trigger="click" ts-req="/dishes/{{ id }}/add-to-list" ts-req-method="GET" ts-target="body" ts-swap="append"
+  class="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-semibold transition bg-primary-500 text-white hover:bg-primary-600 shadow-sm">
   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
     <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m-7-7h14"/>
   </svg>
   {{ "Add to my list"|t }}
-  {% endif %}
 </button>
+{% endif %}

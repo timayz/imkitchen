@@ -14,7 +14,8 @@ export type Op =
   | { kind: 'grocery'; key: string; checked: boolean }
   | { kind: 'status'; id: string; status: Status }
   | { kind: 'saved'; id: string; saved: boolean }
-  | { kind: 'list'; id: string; in_list: boolean }
+  /** `household_size` is the people count chosen when adding; absent = settings value. */
+  | { kind: 'list'; id: string; in_list: boolean; household_size?: number }
 
 /** Two ops with the same logical key replace each other (last one wins). */
 export function logicalKey(op: Op): string {

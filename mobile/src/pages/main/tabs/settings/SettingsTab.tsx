@@ -6,6 +6,7 @@ import {
   type General,
   type Preferences,
   type Session,
+  GENERAL_KEY,
   deleteAccount,
   getGeneral,
   getSessions,
@@ -32,8 +33,6 @@ import { DevicesSheet } from './DevicesSheet.js';
 import { PreferencesSheet } from './PreferencesSheet.js';
 import { ProfileSheet } from './ProfileSheet.js';
 import './SettingsTab.css';
-
-const GENERAL_KEY = 'settings:general';
 
 type Open = 'preferences' | 'aisles' | 'profile' | 'devices' | 'delete' | null;
 

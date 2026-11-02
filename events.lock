@@ -66,6 +66,7 @@ event imkitchen-types/Shopping::RecipeAdded { recipe_id: String, recipe_ids: Vec
 event imkitchen-types/Shopping::RecipeRemoved { recipe_id: String, recipe_ids: Vec<String>, ingredients: Vec<Ingredient> }
 event imkitchen-types/Shopping::RecipeSetGenerated { recipe_ids: Vec<String> }
 event imkitchen-types/Shopping::RecipeStatusChanged { recipe_id: String, status: RecipeStatus }
+event imkitchen-types/Shopping::ServingsSet { recipe_ids: Vec<String>, household_size: u16 }
 event imkitchen-types/Shopping::Unchecked { ingredient: String }
 event imkitchen-types/Tour::Advanced { tour: String, step: u16, version: u16 }
 event imkitchen-types/Tour::Completed { tour: String, version: u16 }
@@ -97,7 +98,7 @@ view imkitchen-core/recipe/Recipe rev=3 { id: String, owner_id: String, recipe_t
 view imkitchen-core/recipe/RecipeShareState rev=1 { id: String, cursor: String, aggregate_version: u16 }
 view imkitchen-core/recipe/favorite/Favorite rev=1 { id: String, saved: bool, cursor: String, aggregate_version: u16 }
 view imkitchen-core/recipe/follow/ChefFollow rev=0 { id: String, following: bool, cursor: String, aggregate_version: u16 }
-view imkitchen-core/shopping/Shopping rev=4 { user_id: String, checked: HashSet<String>, ingredients: HashSet<String>, recipes: Vec<String>, statuses: HashMap<String, RecipeStatus>, generated_at: u64, cursor: String, aggregate_version: u16 }
+view imkitchen-core/shopping/Shopping rev=5 { user_id: String, checked: HashSet<String>, ingredients: HashSet<String>, recipes: Vec<String>, statuses: HashMap<String, RecipeStatus>, generated_at: u64, servings: HashMap<String, u16>, cursor: String, aggregate_version: u16 }
 view imkitchen-identity/User rev=3 { id: String, role: Role, state: State, ad_consent: bool, deleted: bool, cursor: String, aggregate_version: u16 } with State enum { Active, Suspended }
 view imkitchen-identity/meal_preferences/MealPreferences rev=3 { id: String, household_size: u16, dietary_restrictions: Vec<DietaryRestriction>, cuisine_variety_weight: f32, recipe_types: Vec<RecipeType>, aisle_order: Vec<IngredientCategory>, cursor: String, aggregate_version: u16 }
 view imkitchen-identity/password/Password rev=1 { id: String, user_id: String, completed: bool, expire_at: u64, cursor: String, aggregate_version: u16 }

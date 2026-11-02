@@ -279,12 +279,14 @@ pub async fn unsave(app: &AppState, user_id: &str, id: &str) -> imkitchen_core::
     app.core.recipe.favorite.unsave(id, user_id).await
 }
 
-/// Add the recipe to the viewer's shopping list. Any viewable recipe (owned
-/// or shared) can be added; scaling uses the viewer's household size.
+/// Add the recipe to the viewer's shopping list for `household_size` people
+/// (the viewer's settings value when `None`). Any viewable recipe (owned or
+/// shared) can be added.
 pub async fn add_to_shopping(
     app: &AppState,
     user_id: &str,
     id: &str,
+    household_size: Option<u16>,
 ) -> imkitchen_core::Result<()> {
     let Some(recipe) = app.core.recipe.user(id).await? else {
         imkitchen_core::not_found!("recipe");
@@ -295,7 +297,11 @@ pub async fn add_to_shopping(
     let preferences = app.identity.meal_preferences.load(user_id).await?;
     app.core
         .shopping
-        .add_recipe(id, preferences.household_size, user_id)
+        .add_recipe(
+            id,
+            household_size.unwrap_or(preferences.household_size),
+            user_id,
+        )
         .await
 }
 

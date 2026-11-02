@@ -15,6 +15,8 @@ pub struct Entry {
     pub slug: String,
     pub recipe_type: RecipeType,
     pub status: Status,
+    /// People the recipe is scaled for.
+    pub servings: u16,
     pub advance_prep: String,
     pub prep_time: u16,
     pub cook_time: u16,
@@ -31,6 +33,7 @@ impl From<&ListEntry> for Entry {
             slug: e.slug.to_owned(),
             recipe_type: e.recipe_type.clone(),
             status: Status::from(&e.status),
+            servings: e.servings,
             advance_prep: e.advance_prep.to_owned(),
             prep_time: e.prep_time,
             cook_time: e.cook_time,
@@ -223,6 +226,17 @@ impl From<CookingScreenView> for CookingScreen {
 pub struct GenerateRequest {
     /// Number of meals to compose (1–30 on the web).
     pub count: u8,
+    /// People to cook for; the settings value when absent.
+    #[serde(default)]
+    pub household_size: Option<u16>,
+}
+
+/// Optional body of the "add recipe/dish to the list" endpoints.
+#[derive(Deserialize, Debug, Default)]
+pub struct ListAddRequest {
+    /// People to cook for; the settings value when absent.
+    #[serde(default)]
+    pub household_size: Option<u16>,
 }
 
 #[derive(Deserialize, Debug)]
