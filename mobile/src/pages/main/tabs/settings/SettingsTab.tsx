@@ -191,7 +191,14 @@ export function SettingsTab({ refreshKey, onToursReset }: SettingsTabProps) {
 
   const initial = (user.username ?? user.email).slice(0, 1).toUpperCase();
   const diets = general.dietary_restrictions.map((d) => t(`diet.${d}` as const));
-  const courses = [course('MainCourse'), ...general.recipe_types.map(course)].map((c) => c.label);
+  // A settings document cached before the source toggles existed lacks them: both on.
+  const dishes = general.dishes ?? true;
+  const mainCourses = general.main_courses ?? true;
+  const courses = [
+    ...(dishes ? [t('settings.dishes')] : []),
+    ...(mainCourses ? [course('MainCourse').label] : []),
+    ...general.recipe_types.map((type) => course(type).label),
+  ];
   const pct = Math.round(general.cuisine_variety_weight * 100);
   const aisles = general.aisle_order.slice(0, 3).map((c) => aisle(`shopping_${c}`).label);
 
@@ -391,6 +398,8 @@ export function SettingsTab({ refreshKey, onToursReset }: SettingsTabProps) {
           household_size: general.household_size,
           dietary_restrictions: general.dietary_restrictions,
           recipe_types: general.recipe_types,
+          dishes,
+          main_courses: mainCourses,
           cuisine_variety_weight: general.cuisine_variety_weight,
         }}
         onClose={() => setOpen(null)}

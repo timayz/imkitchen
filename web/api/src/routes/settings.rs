@@ -27,6 +27,7 @@ pub async fn preferences(
     user: ApiUser,
     ApiJson(input): ApiJson<PreferencesRequest>,
 ) -> Result<StatusCode, ApiError> {
+    let sources = meal_preferences::meal_sources(input.dishes, input.main_courses)?;
     app.identity
         .meal_preferences
         .update(
@@ -36,6 +37,7 @@ pub async fn preferences(
                 dietary_restrictions: input.dietary_restrictions,
                 cuisine_variety_weight: input.cuisine_variety_weight,
                 recipe_types: input.recipe_types,
+                sources,
             },
         )
         .await?;

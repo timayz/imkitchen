@@ -11,6 +11,10 @@ pub struct General {
     pub dietary_restrictions: Vec<DietaryRestriction>,
     /// Optional courses to generate besides the main course.
     pub recipe_types: Vec<RecipeType>,
+    /// Generated meals come from the user's dishes…
+    pub dishes: bool,
+    /// …and/or from random main courses. Never both false.
+    pub main_courses: bool,
     /// 0.1 – 1.0
     pub cuisine_variety_weight: f32,
     /// Every aisle, in the order the groceries list shows them.
@@ -25,6 +29,8 @@ impl From<GeneralView> for General {
             household_size: g.preferences.household_size,
             dietary_restrictions: g.preferences.dietary_restrictions,
             recipe_types: g.preferences.recipe_types,
+            dishes: g.preferences.sources.dishes(),
+            main_courses: g.preferences.sources.main_courses(),
             cuisine_variety_weight: g.preferences.cuisine_variety_weight,
             aisle_order: g.preferences.aisle_order,
         }
@@ -45,7 +51,17 @@ pub struct PreferencesRequest {
     pub dietary_restrictions: Vec<DietaryRestriction>,
     #[serde(default)]
     pub recipe_types: Vec<RecipeType>,
+    /// Both default to on (a client predating them keeps the historical
+    /// behaviour); sending both as false is a user error.
+    #[serde(default = "on")]
+    pub dishes: bool,
+    #[serde(default = "on")]
+    pub main_courses: bool,
     pub cuisine_variety_weight: f32,
+}
+
+fn on() -> bool {
+    true
 }
 
 #[derive(Deserialize, Debug)]

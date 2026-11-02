@@ -1,5 +1,6 @@
 use evento::{Executor, ProjectionAggregate};
 use imkitchen_types::{
+    meal_preferences::MealSources,
     recipe::RecipeType,
     shopping::{ListGenerated, ServingsSet},
 };
@@ -21,6 +22,8 @@ pub struct GenerateList {
     /// People to cook for; every generated recipe is scaled to it.
     #[validate(range(min = 1, max = MAX_HOUSEHOLD_SIZE))]
     pub household_size: u16,
+    /// Dishes, random main courses or both (the settings toggles).
+    pub sources: MealSources,
     pub randomize: Option<Randomize>,
 }
 
@@ -28,7 +31,7 @@ impl<E: Executor> super::Module<E> {
     /// Replace the user's list with freshly composed meals. Checks and cooking
     /// statuses are reset.
     ///
-    /// Selection rule:
+    /// Selection rule, each step only when `sources` enables it:
     /// 1. the user's dishes come first: up to `count` of them, shuffled, each
     ///    resolved against the pool (a recipe that was deleted or no longer
     ///    matches the dietary restrictions is dropped; a dish without its main
@@ -36,8 +39,9 @@ impl<E: Executor> super::Module<E> {
     /// 2. the remaining meals come from random main courses not used by a
     ///    dish (filtered by dietary restrictions and sized by
     ///    `cuisine_variety_weight` when `randomize` is given, otherwise a
-    ///    plain sample). Fewer mains than needed simply yields fewer meals —
-    ///    a recipe never appears twice in the list;
+    ///    plain sample). Fewer mains (or dishes) than needed simply yields
+    ///    fewer meals — a recipe never appears twice in the list. No meal at
+    ///    all is a user error;
     /// 3. every meal is completed with one recipe of each optional course
     ///    type enabled in `randomize.recipe_types` that it lacks (appetizer,
     ///    accompaniment, dessert, beverage, condiment), drawn from that
@@ -60,7 +64,11 @@ impl<E: Executor> super::Module<E> {
             .map(|opts| opts.dietary_restrictions.to_vec())
             .unwrap_or_default();
 
-        let mut meals = self.dish_meals(&request_by, &dietary_restrictions).await?;
+        let mut meals = if input.sources.dishes() {
+            self.dish_meals(&request_by, &dietary_restrictions).await?
+        } else {
+            vec![]
+        };
         meals.truncate(count);
 
         let mut used: HashSet<String> = meals
@@ -68,7 +76,7 @@ impl<E: Executor> super::Module<E> {
             .flat_map(|meal| meal.clone().into_ids())
             .collect();
 
-        if meals.len() < count {
+        if meals.len() < count && input.sources.main_courses() {
             let mains = match randomize {
                 Some(opts) => {
                     self.random(
@@ -98,7 +106,10 @@ impl<E: Executor> super::Module<E> {
         }
 
         if meals.is_empty() {
-            crate::user!("No main course found");
+            if input.sources.main_courses() {
+                crate::user!("No main course found");
+            }
+            crate::user!("No dish found");
         }
 
         // One pool query per enabled course for the whole list; a disabled

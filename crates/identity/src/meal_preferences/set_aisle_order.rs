@@ -1,5 +1,7 @@
 use evento::{Executor, ProjectionAggregate};
-use imkitchen_types::meal_preferences::{AisleOrderChanged, Changed, RecipeTypesChanged};
+use imkitchen_types::meal_preferences::{
+    AisleOrderChanged, Changed, MealSourcesChanged, RecipeTypesChanged,
+};
 use imkitchen_types::recipe::IngredientCategory;
 
 impl<E: Executor> super::Module<E> {
@@ -30,6 +32,9 @@ impl<E: Executor> super::Module<E> {
                 })
                 .event(&RecipeTypesChanged {
                     recipe_types: preferences.recipe_types.clone(),
+                })
+                .event(&MealSourcesChanged {
+                    sources: preferences.sources,
                 });
         }
         write

@@ -1,5 +1,7 @@
 use evento::{Executor, ProjectionAggregate};
-use imkitchen_types::meal_preferences::{Changed, RecipeTypesChanged};
+use imkitchen_types::meal_preferences::{
+    Changed, MealSources, MealSourcesChanged, RecipeTypesChanged,
+};
 use imkitchen_types::recipe::{DietaryRestriction, RecipeType};
 use validator::Validate;
 
@@ -13,6 +15,19 @@ pub struct UpdateInput {
     /// Optional courses to generate. `MainCourse` is stripped — it is always
     /// generated — and an empty selection is valid.
     pub recipe_types: Vec<RecipeType>,
+    /// Where meals come from. Parse the settings toggles with [`meal_sources`].
+    pub sources: MealSources,
+}
+
+/// Parse the "Dishes" and "Main course" toggles of the settings form. Turning
+/// both off is refused: generation would have nothing to build a meal from.
+pub fn meal_sources(dishes: bool, main_courses: bool) -> imkitchen_core::Result<MealSources> {
+    match MealSources::from_flags(dishes, main_courses) {
+        Some(sources) => Ok(sources),
+        None => imkitchen_core::user!(
+            "Keep your dishes or the main courses on: a meal needs one of them"
+        ),
+    }
 }
 
 impl<E: Executor> super::Module<E> {
@@ -42,6 +57,9 @@ impl<E: Executor> super::Module<E> {
                 cuisine_variety_weight: input.cuisine_variety_weight,
             })
             .event(&RecipeTypesChanged { recipe_types })
+            .event(&MealSourcesChanged {
+                sources: input.sources,
+            })
             .requested_by(id)
             .commit(&self.executor)
             .await?;

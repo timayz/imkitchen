@@ -76,6 +76,8 @@ async fn general_settings_round_trip() -> anyhow::Result<()> {
     assert_eq!(body["email"], "chef@imkitchen.test");
     assert_eq!(body["household_size"], 4);
     assert_eq!(body["description"], "");
+    assert_eq!(body["dishes"], true);
+    assert_eq!(body["main_courses"], true);
     let aisles = body["aisle_order"].as_array().unwrap();
     assert_eq!(aisles.len(), 9);
     assert_eq!(aisles[0], "FruitsAndVegetables");
@@ -90,11 +92,28 @@ async fn general_settings_round_trip() -> anyhow::Result<()> {
             "household_size": 2,
             "dietary_restrictions": ["Vegan"],
             "recipe_types": ["Dessert"],
+            "main_courses": false,
             "cuisine_variety_weight": 0.5
         })),
     )
     .await?;
     assert_eq!(status, StatusCode::NO_CONTENT);
+    // Dishes and main courses cannot both be off.
+    let (status, _) = call(
+        &app,
+        &token,
+        ua,
+        "PUT",
+        "/api/v1/settings/preferences",
+        Some(json!({
+            "household_size": 2,
+            "dishes": false,
+            "main_courses": false,
+            "cuisine_variety_weight": 0.5
+        })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
     let (status, _) = call(
         &app,
         &token,
@@ -110,6 +129,9 @@ async fn general_settings_round_trip() -> anyhow::Result<()> {
     assert_eq!(body["household_size"], 2);
     assert_eq!(body["dietary_restrictions"], json!(["Vegan"]));
     assert_eq!(body["recipe_types"], json!(["Dessert"]));
+    // `dishes` was left out of the request: it defaults to on.
+    assert_eq!(body["dishes"], true);
+    assert_eq!(body["main_courses"], false);
     assert_eq!(body["description"], "Home cook.");
 
     // The aisle order is its own call; a partial, repeated list is completed.

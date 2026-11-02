@@ -6,7 +6,9 @@ use std::ops::Deref;
 pub use update::*;
 
 use evento::{Executor, Projection, metadata::Event};
-use imkitchen_types::meal_preferences::{self, AisleOrderChanged, Changed, RecipeTypesChanged};
+use imkitchen_types::meal_preferences::{
+    self, AisleOrderChanged, Changed, MealSources, MealSourcesChanged, RecipeTypesChanged,
+};
 use imkitchen_types::recipe::{DietaryRestriction, IngredientCategory, RecipeType};
 
 #[derive(Clone)]
@@ -43,6 +45,7 @@ impl<E: Executor> Module<E> {
                     cuisine_variety_weight: 1.0,
                     recipe_types: RecipeType::default_meal_plan_types(),
                     aisle_order: IngredientCategory::DEFAULT_AISLE_ORDER.to_vec(),
+                    sources: MealSources::default(),
                     cursor: Default::default(),
                     aggregate_version: Default::default(),
                     tenant: Default::default(),
@@ -63,6 +66,8 @@ pub struct MealPreferences {
     pub cuisine_variety_weight: f32,
     pub recipe_types: Vec<RecipeType>,
     pub aisle_order: Vec<IngredientCategory>,
+    /// Where generated meals come from: dishes, random main courses or both.
+    pub sources: MealSources,
 }
 
 fn create_projection<E: Executor>() -> Projection<E, MealPreferences> {
@@ -73,10 +78,12 @@ fn create_projection<E: Executor>() -> Projection<E, MealPreferences> {
         // 1 → 2: evento's `#[projection]` macro grew the `aggregate_version`
         // field, changing the bitcode layout again.
         // 2 → 3: `aisle_order` added.
-        .revision(3)
+        // 3 → 4: `sources` added.
+        .revision(4)
         .handler(handle_updated())
         .handler(handle_recipe_types_changed())
         .handler(handle_aisle_order_changed())
+        .handler(handle_meal_sources_changed())
         .strict()
 }
 
@@ -98,6 +105,9 @@ async fn handle_updated(event: Event<Changed>, data: &mut MealPreferences) -> an
     // `RecipeTypesChanged` right after `Changed` — higher version, same
     // timestamp, so replayed second — and the user's real selection wins.
     data.recipe_types = RecipeType::default_meal_plan_types();
+    // Same story for the meal sources: `update` commits `MealSourcesChanged`
+    // right after, and a legacy stream generates from dishes and mains alike.
+    data.sources = MealSources::default();
     // Unlike `recipe_types`, nothing re-commits the aisle order on each save:
     // only seed it, never reset a custom one on replay.
     if data.aisle_order.is_empty() {
@@ -125,6 +135,17 @@ async fn handle_aisle_order_changed(
 ) -> anyhow::Result<()> {
     data.id = event.aggregate_id.to_owned();
     data.aisle_order = event.data.aisles;
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_meal_sources_changed(
+    event: Event<MealSourcesChanged>,
+    data: &mut MealPreferences,
+) -> anyhow::Result<()> {
+    data.id = event.aggregate_id.to_owned();
+    data.sources = event.data.sources;
 
     Ok(())
 }

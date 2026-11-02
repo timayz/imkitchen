@@ -6,6 +6,7 @@ use crate::helpers;
 use evento::WriteBuilder;
 use imkitchen_core::dish::ComposeInput;
 use imkitchen_core::shopping::{GenerateList, Randomize};
+use imkitchen_types::meal_preferences::MealSources;
 use imkitchen_types::recipe::{Ingredient, IngredientCategory, IngredientUnit, RecipeType};
 use imkitchen_types::shopping::RecipeAdded;
 use temp_dir::TempDir;
@@ -35,6 +36,7 @@ async fn generate_records_the_household_size_on_every_recipe() -> anyhow::Result
             GenerateList {
                 count: 2,
                 household_size: 6,
+                sources: MealSources::default(),
                 randomize: Some(Randomize {
                     cuisine_variety_weight: 1.0,
                     dietary_restrictions: vec![],
