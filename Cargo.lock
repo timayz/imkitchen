@@ -1326,7 +1326,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d045de693cb712d0b22c6a64be5b953f67b3ce00ab5ad3dd5d8b441886ab8e1a"
 dependencies = [
  "quote",
- "syn 3.0.9",
+ "syn 2.0.119",
 ]
 
 [[package]]
@@ -1722,7 +1722,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1753,9 +1753,9 @@ dependencies = [
 
 [[package]]
 name = "evento"
-version = "2.0.0-alpha.37"
+version = "2.0.0-alpha.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5dddd1875fe636132ef5338f4113c8d0d3d9308cb6ad1234bed734eeb53405e2"
+checksum = "db2b246e83f757025ddabd64722ee1909b3cc83d1a8ddd144272b89cca6a5839"
 dependencies = [
  "evento-core",
  "evento-sql",
@@ -1765,9 +1765,9 @@ dependencies = [
 
 [[package]]
 name = "evento-core"
-version = "2.0.0-alpha.37"
+version = "2.0.0-alpha.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e667c638eeafd2621e429925388acda6532887941b571e485b100f7dcddd0ae8"
+checksum = "366797dd71959e82774b846ee0ab191c5c8bd1324df964488f9cf1a72f3dbd6c"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1786,9 +1786,9 @@ dependencies = [
 
 [[package]]
 name = "evento-lock"
-version = "2.0.0-alpha.37"
+version = "2.0.0-alpha.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "394a814c3d18ce6531ea6e819f4492352fd7c4690c645ade532827ec84fdb5cc"
+checksum = "3a949cec22f71be1cfae97937172a297b823691bdab2c17c499d83f6270d2308"
 dependencies = [
  "anyhow",
  "quote",
@@ -1798,9 +1798,9 @@ dependencies = [
 
 [[package]]
 name = "evento-macro"
-version = "2.0.0-alpha.37"
+version = "2.0.0-alpha.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9db69272e32443f69ab7d394d01bd50e1148b648bcf2a0f142b169b98c90a346"
+checksum = "f669b712491b8ce4e59ed820401934434adb6ece51ff703d9715c9d5471c2b3c"
 dependencies = [
  "convert_case 0.12.0",
  "quote",
@@ -1809,9 +1809,9 @@ dependencies = [
 
 [[package]]
 name = "evento-sql"
-version = "2.0.0-alpha.37"
+version = "2.0.0-alpha.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dc6c24322f9cfa78d1b2137d99eb0dcb43f5e7cb84b86fd6f9332735765c617"
+checksum = "bec80180d1e15fde573af1ae1d08b5d836b6f9cf5ed0e89261be09db4258e073"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1826,9 +1826,9 @@ dependencies = [
 
 [[package]]
 name = "evento-sql-migrator"
-version = "2.0.0-alpha.37"
+version = "2.0.0-alpha.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e99cfe505480fe6671ac00cf91f820b047fd11f9b640d3d5663a67e330621fa8"
+checksum = "9defe31f762780da5720a07193798576ade5b70fa77036dde9a73d532081b645"
 dependencies = [
  "async-trait",
  "evento-sql",
@@ -5160,7 +5160,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -5684,7 +5684,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -5743,7 +5743,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -6597,10 +6597,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -7448,7 +7448,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
