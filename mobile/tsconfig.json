@@ -6,10 +6,9 @@
     "module": "node18",
     "moduleResolution": "node16",
 
-    "baseUrl": ".",
     "paths": {
       "sparkling-navigation": [
-        "node_modules/sparkling-navigation"
+        "./node_modules/sparkling-navigation"
       ]
     },
 
