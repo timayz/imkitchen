@@ -187,6 +187,13 @@ describe('status op', () => {
 describe('saved and list ops', () => {
   it('flags the recipe detail', () => {
     expect(apply({ kind: 'saved', id: 'r1', saved: true }, 'recipe:r1', detail).saved).toBe(true);
+    expect(logicalKey({ kind: 'list', id: 'r1', in_list: true, household_size: 6 })).toBe(
+      'list:r1'
+    );
+    expect(
+      apply({ kind: 'list', id: 'r1', in_list: true, household_size: 6 }, 'recipe:r1', detail)
+        .in_shopping
+    ).toBe(true);
     expect(apply({ kind: 'list', id: 'r1', in_list: true }, 'recipe:r1', detail).in_shopping).toBe(
       true
     );

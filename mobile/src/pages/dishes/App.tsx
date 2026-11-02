@@ -9,6 +9,7 @@ import { t } from '../../lib/i18n/index.js'
 import { back, push } from '../../lib/nav.js'
 import { useResource } from '../../lib/use-resource.js'
 import { Button } from '../../ui/Button.js'
+import { ServingsSheet } from '../../ui/ServingsSheet.js'
 import { Spinner } from '../../ui/Spinner.js'
 
 /**
@@ -19,6 +20,8 @@ export function App() {
   const dishes = useResource<Dish[]>('dishes', getDishes, [])
   const [busy, setBusy] = useState<string | null>(null)
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
+  /** The dish waiting for a "how many people?" answer. */
+  const [adding, setAdding] = useState<Dish | null>(null)
 
   // Returning from the composer: show what was saved.
   useEffect(() => {
@@ -29,12 +32,13 @@ export function App() {
   }, [dishes.refresh])
 
   const add = useCallback(
-    async (dish: Dish) => {
+    async (dish: Dish, household_size: number) => {
       if (busy) return
+      setAdding(null)
       setBusy(dish.id)
       setNotice(null)
       try {
-        await addDishToList(dish.id)
+        await addDishToList(dish.id, household_size)
         setNotice({ kind: 'ok', text: t('dishes.added', { name: dish.name }) })
         dishes.refresh()
       } catch (err) {
@@ -122,7 +126,7 @@ export function App() {
               )}
               <Button
                 label={dish.in_list ? `✓ ${t('dishes.in_list')}` : t('dishes.add')}
-                onTap={() => void add(dish)}
+                onTap={() => setAdding(dish)}
                 variant={dish.in_list ? 'secondary' : 'primary'}
                 disabled={busy !== null || dish.recipes.length === 0}
                 block
@@ -131,6 +135,16 @@ export function App() {
           ))}
         </view>
       </scroll-view>
+      <ServingsSheet
+        open={adding !== null}
+        busy={busy !== null}
+        title={adding?.name ?? ''}
+        confirmLabel={t('dishes.add')}
+        onClose={() => setAdding(null)}
+        onConfirm={(household_size) => {
+          if (adding) void add(adding, household_size)
+        }}
+      />
     </view>
   )
 }

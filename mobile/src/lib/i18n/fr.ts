@@ -1,4 +1,4 @@
-import type { MessageKey } from './en.js';
+import type { MessageKey } from './en.js'
 
 export const fr: Record<MessageKey, string> = {
   'login.title': 'Bon retour',
@@ -13,16 +13,14 @@ export const fr: Record<MessageKey, string> = {
   'login.register_subtitle': 'Vos recettes, votre liste, vos courses.',
   'login.password_hint': '8 à 20 caractères.',
   'login.confirm_password': 'Confirmer le mot de passe',
-  'login.mismatch':
-    'Les mots de passe ne correspondent pas. Vérifiez que les deux champs sont identiques.',
+  'login.mismatch': 'Les mots de passe ne correspondent pas. Vérifiez que les deux champs sont identiques.',
   'login.register_submit': 'Créer le compte',
   'login.have_account': 'Déjà un compte ?',
   'login.sign_in': 'Se connecter',
   'login.show_password': 'Afficher',
   'login.hide_password': 'Masquer',
   'reset.title': 'Mot de passe oublié ?',
-  'reset.subtitle':
-    'Saisissez votre e-mail et nous vous enverrons un lien pour en choisir un nouveau.',
+  'reset.subtitle': 'Saisissez votre e-mail et nous vous enverrons un lien pour en choisir un nouveau.',
   'reset.email_hint': 'Utilisez l’adresse de votre inscription.',
   'reset.submit': 'Envoyer le lien',
   'reset.remembered': 'Vous vous en souvenez ?',
@@ -39,20 +37,17 @@ export const fr: Record<MessageKey, string> = {
   'reset.other_email': 'Utiliser une autre adresse',
   'reset.checking': 'Vérification du lien…',
   'reset.new_title': 'Créez un nouveau mot de passe',
-  'reset.new_subtitle':
-    'Choisissez quelque chose que vous seul connaissez. Il servira désormais à vous connecter.',
+  'reset.new_subtitle': 'Choisissez quelque chose que vous seul connaissez. Il servira désormais à vous connecter.',
   'reset.new_password': 'Nouveau mot de passe',
   'reset.new_submit': 'Enregistrer le mot de passe',
   'reset.changed_mind': 'Changé d’avis ?',
   'reset.done_title': 'Mot de passe mis à jour',
-  'reset.done_body':
-    'C’est fait. Connectez-vous avec votre nouveau mot de passe pour retrouver votre cuisine.',
+  'reset.done_body': 'C’est fait. Connectez-vous avec votre nouveau mot de passe pour retrouver votre cuisine.',
   'reset.done_sign_in': 'Se connecter',
   'reset.expired_title': 'Ce lien a expiré',
   'reset.expired_body':
     'Les liens de réinitialisation ne servent qu’une fois et pendant 15 minutes. Demandez-en un nouveau et nous l’enverrons tout de suite.',
-  'reset.expired_note':
-    'Votre mot de passe n’a pas changé. Vous pouvez toujours vous connecter avec l’actuel.',
+  'reset.expired_note': 'Votre mot de passe n’a pas changé. Vous pouvez toujours vous connecter avec l’actuel.',
   'reset.request_again': 'Demander un nouveau lien',
   'tabs.kitchen': 'Cuisine',
   'tabs.groceries': 'Courses',
@@ -117,8 +112,7 @@ export const fr: Record<MessageKey, string> = {
   'kitchen.servings': '%{n} personnes',
   'kitchen.remove_short': 'Retirer',
   'kitchen.recipe_short': 'Recette',
-  'kitchen.swipe_hint':
-    'Touchez une recette pour la cuisiner, glissez vers la gauche pour la lire ou la retirer.',
+  'kitchen.swipe_hint': 'Touchez une recette pour la cuisiner, glissez vers la gauche pour la lire ou la retirer.',
   'cooking.ingredients': 'Ingrédients · %{n} articles',
   'cooking.step_of': 'Cuisine · étape %{n} sur %{total}',
   'cooking.final': 'Cuisine · dernière étape',
@@ -146,17 +140,14 @@ export const fr: Record<MessageKey, string> = {
   'groceries.aisle_meta': '%{left} restants · %{checked} sur %{total}',
   'groceries.aisle_done_meta': '%{total} articles dans le panier',
   'groceries.done': 'Terminé',
-  'groceries.all_done':
-    'Tout est dans le panier. Direction l’onglet Cuisine pour passer aux fourneaux.',
+  'groceries.all_done': 'Tout est dans le panier. Direction l’onglet Cuisine pour passer aux fourneaux.',
   'groceries.none_todo': 'Plus rien à acheter.',
   'groceries.none_done': 'Rien dans le panier pour l’instant.',
   'groceries.go_recipes': 'Voir les recettes',
   'groceries.feature_aisles': 'Trié par rayon, comme dans le magasin.',
-  'groceries.feature_merged':
-    'Les quantités sont fusionnées entre recettes : une ligne par ingrédient.',
+  'groceries.feature_merged': 'Les quantités sont fusionnées entre recettes : une ligne par ingrédient.',
   'groceries.empty': 'Rien à acheter pour l’instant',
-  'groceries.empty_hint':
-    'Ajoutez des recettes à votre liste et leurs ingrédients apparaîtront ici, rayon par rayon.',
+  'groceries.empty_hint': 'Ajoutez des recettes à votre liste et leurs ingrédients apparaîtront ici, rayon par rayon.',
   'recipes.library': 'Bibliothèque',
   'recipes.search': 'Rechercher',
   'recipes.search_placeholder': 'Nom, description ou ingrédient…',
@@ -194,6 +185,8 @@ export const fr: Record<MessageKey, string> = {
   'recipes.origin': 'Ouvrir la recette originale',
   'recipes.in_list': 'Dans ma liste',
   'recipes.add_to_list': 'Ajouter à ma liste',
+  'list.people': 'Personnes à table',
+  'list.people_hint': 'Sert à ajuster les quantités. Vos réglages ne changent pas.',
   'recipes.save': 'Enregistrer',
   'recipes.saved_btn': 'Enregistrée',
   'recipes.edit': 'Modifier',
@@ -201,8 +194,7 @@ export const fr: Record<MessageKey, string> = {
   'recipes.make_private': 'Rendre privée',
   'recipes.delete': 'Supprimer',
   'recipes.delete_title': 'Supprimer cette recette ?',
-  'recipes.delete_hint':
-    'Elle disparaîtra de votre bibliothèque et de toutes les listes. Irréversible.',
+  'recipes.delete_hint': 'Elle disparaîtra de votre bibliothèque et de toutes les listes. Irréversible.',
   'recipes.ingredients': 'Ingrédients',
   'recipes.instructions': 'Étapes',
   'recipes.similar': 'Recettes similaires',
@@ -259,8 +251,7 @@ export const fr: Record<MessageKey, string> = {
   'edit.timer_none': 'Aucun',
   'edit.add_step': '+ Ajouter une étape',
   'edit.change_photo': 'Changer la photo',
-  'edit.photo_hint':
-    'Redimensionnée côté serveur. La nouvelle photo apparaît dès qu’elle est prête.',
+  'edit.photo_hint': 'Redimensionnée côté serveur. La nouvelle photo apparaît dès qu’elle est prête.',
   'edit.photo_uploaded': 'Photo envoyée. Elle apparaîtra une fois redimensionnée.',
   'edit.unsaved': 'Modifications non enregistrées',
   'edit.unsaved_hint': 'Les lignes vides sont ignorées à l’enregistrement.',
@@ -268,22 +259,19 @@ export const fr: Record<MessageKey, string> = {
   'edit.save': 'Enregistrer la recette',
   'edit.saved': 'Recette enregistrée.',
   'edit.discard_title': 'Abandonner les modifications ?',
-  'edit.discard_hint':
-    'Vous avez modifié cette recette sans enregistrer. Quitter maintenant perd ces modifications.',
+  'edit.discard_hint': 'Vous avez modifié cette recette sans enregistrer. Quitter maintenant perd ces modifications.',
   'edit.save_leave': 'Enregistrer et quitter',
   'edit.discard': 'Abandonner',
   'edit.keep_editing': 'Continuer la modification',
   'import.title': 'Importer des recettes',
-  'import.hint':
-    'Collez un tableau JSON de 20 recettes maximum (même format que l’import du site).',
+  'import.hint': 'Collez un tableau JSON de 20 recettes maximum (même format que l’import du site).',
   'import.json': 'JSON',
   'import.submit': 'Importer',
   'import.invalid_json': 'Ce n’est pas du JSON valide.',
   'import.count': 'Importez entre 1 et 20 recettes à la fois.',
   'import.done': '%{n} recettes importées.',
   'settings.username': 'Nom d’utilisateur',
-  'settings.username_hint':
-    '3 à 25 lettres et chiffres. Définitif ; requis pour partager des recettes.',
+  'settings.username_hint': '3 à 25 lettres et chiffres. Définitif ; requis pour partager des recettes.',
   'settings.username_set': 'Définir',
   'settings.username_done': 'Nom d’utilisateur défini.',
   'settings.preferences': 'Préférences de repas',
@@ -295,8 +283,7 @@ export const fr: Record<MessageKey, string> = {
   'settings.save_preferences': 'Enregistrer les préférences',
   'settings.preferences_saved': 'Préférences mises à jour.',
   'settings.aisles': 'Ordre des rayons',
-  'settings.aisles_hint':
-    'Votre liste de courses suit cet ordre. Les articles sans rayon viennent en dernier.',
+  'settings.aisles_hint': 'Votre liste de courses suit cet ordre. Les articles sans rayon viennent en dernier.',
   'settings.aisles_meta': '%{aisles} › …',
   'settings.aisles_reset': "Rétablir l'ordre par défaut",
   'settings.save_aisles': "Enregistrer l'ordre des rayons",
@@ -315,8 +302,7 @@ export const fr: Record<MessageKey, string> = {
   'settings.delete_hint':
     'Supprime définitivement votre compte, vos recettes et votre menu. L’adresse e-mail pourra être réutilisée.',
   'settings.delete_confirm_title': 'Supprimer ce compte ?',
-  'settings.delete_confirm_hint':
-    'Cette action est irréversible. Saisissez votre mot de passe pour confirmer.',
+  'settings.delete_confirm_hint': 'Cette action est irréversible. Saisissez votre mot de passe pour confirmer.',
   'settings.delete_confirm': 'Supprimer définitivement',
   'settings.eyebrow': 'Votre compte',
   'settings.signed_in': 'Connecté',
@@ -341,8 +327,7 @@ export const fr: Record<MessageKey, string> = {
   'settings.revoked_others': 'Autres appareils déconnectés.',
   'settings.app_device': '%{model} · appli imkitchen',
   'settings.unknown_device': 'Appareil inconnu',
-  'kitchen.empty_first_hint':
-    'Ajoutez un plat principal à votre bibliothèque et cuisinez-le d’ici, étape par étape.',
+  'kitchen.empty_first_hint': 'Ajoutez un plat principal à votre bibliothèque et cuisinez-le d’ici, étape par étape.',
   'kitchen.empty_ready_hint':
     'Générez une liste à partir de vos recettes, ou choisissez-les à la main. Le mode cuisine prend le relais.',
   'settings.tours': 'Visites guidées',
@@ -367,8 +352,7 @@ export const fr: Record<MessageKey, string> = {
   'tour.kitchen.cta.body':
     'Ajoutez votre première recette pour commencer. Avec quelques-unes, générez une liste depuis votre collection en un geste, et régénérez quand vous voulez.',
   'tour.recipes.search.title': 'Trouvez tout',
-  'tour.recipes.search.body':
-    'Cherchez dans votre bibliothèque et la communauté par nom, description ou ingrédient.',
+  'tour.recipes.search.body': 'Cherchez dans votre bibliothèque et la communauté par nom, description ou ingrédient.',
   'tour.recipes.new.title': 'Ajouter une recette',
   'tour.recipes.new.body':
     'Écrivez la vôtre, avec ingrédients, étapes et minutage, ou importez celles que vous avez déjà. Un brouillon s’ouvre tout de suite.',
@@ -394,23 +378,20 @@ export const fr: Record<MessageKey, string> = {
   'tour.groceries.route.body':
     'Un arrêt par rayon, dans l’ordre de votre magasin. Touchez un rayon pour y aller ; changez l’ordre dans les Paramètres.',
   'tour.groceries.aisle.title': 'Rayon par rayon',
-  'tour.groceries.aisle.body':
-    'Tout ce dont les recettes de votre liste ont besoin, par rayon, avec votre avancement.',
+  'tour.groceries.aisle.body': 'Tout ce dont les recettes de votre liste ont besoin, par rayon, avec votre avancement.',
   'tour.groceries.check.title': 'Cochez au fur et à mesure',
   'tour.groceries.check.body':
     'Touchez un article quand il tombe dans le panier. Il reste coché sur tous vos appareils, même hors ligne.',
   'tour.settings.household.title': 'Votre foyer',
-  'tour.settings.household.body':
-    'Pour combien de personnes vous cuisinez. Chaque quantité d’ingrédient s’ajuste.',
+  'tour.settings.household.body': 'Pour combien de personnes vous cuisinez. Chaque quantité d’ingrédient s’ajuste.',
   'tour.settings.courses.title': 'Plats et régime',
-  'tour.settings.courses.body':
-    'Choisissez les plats d’un repas généré et les ingrédients à éviter.',
+  'tour.settings.courses.body': 'Choisissez les plats d’un repas généré et les ingrédients à éviter.',
   'tour.settings.aisles.title': 'Ordre des rayons',
-  'tour.settings.aisles.body':
-    'Classez les rayons comme votre magasin et la liste de courses suit.',
+  'tour.settings.aisles.body': 'Classez les rayons comme votre magasin et la liste de courses suit.',
   'dishes.title': 'Plats',
   'dishes.count': '%{n} composés',
-  'dishes.intro': 'Un plat est un repas que vous avez composé : un plat principal avec les accompagnements, sauces, entrée, dessert ou boisson que vous aimez avec. La génération prend vos plats en premier ; vous pouvez aussi en ajouter un à votre liste ici.',
+  'dishes.intro':
+    'Un plat est un repas que vous avez composé : un plat principal avec les accompagnements, sauces, entrée, dessert ou boisson que vous aimez avec. La génération prend vos plats en premier ; vous pouvez aussi en ajouter un à votre liste ici.',
   'dishes.empty_title': 'Aucun plat pour l’instant',
   'dishes.empty_hint': 'Associez un plat principal aux accompagnements et sauces que vous cuisinez toujours avec.',
   'dishes.compose': 'Composer un plat',
@@ -424,7 +405,8 @@ export const fr: Record<MessageKey, string> = {
   'dish.edit_title': 'Modifier le plat',
   'dish.name': 'Nom du plat',
   'dish.name_placeholder': 'ex. : Rôti du dimanche et sa garniture',
-  'dish.rule': 'Un plat principal, autant d’accompagnements et de sauces que vous voulez, et au plus une entrée, un dessert et une boisson.',
+  'dish.rule':
+    'Un plat principal, autant d’accompagnements et de sauces que vous voulez, et au plus une entrée, un dessert et une boisson.',
   'dish.no_mains': 'Un plat commence par un plat principal. Ajoutez-en un à votre bibliothèque d’abord.',
   'dish.required': 'obligatoire',
   'dish.pick_any': 'autant que vous voulez',
@@ -442,4 +424,4 @@ export const fr: Record<MessageKey, string> = {
   'dish.search': 'Rechercher par nom',
   'dish.no_match': 'Aucune recette ne correspond à « %{q} ».',
   'dish.more': '%{n} de plus — tapez un nom pour affiner.',
-};
+}

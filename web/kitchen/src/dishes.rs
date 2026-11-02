@@ -13,7 +13,10 @@ use serde::Deserialize;
 use imkitchen_web_shared::AppState;
 use imkitchen_web_shared::auth::AuthUser;
 use imkitchen_web_shared::services::dish::{self, ComposeInput, DishView};
-use imkitchen_web_shared::template::{NotFoundTemplate, Template, ToastSuccessTemplate, filters};
+use imkitchen_web_shared::template::{
+    LIST_ADD_MODAL_DISMISS, ListAddModalTemplate, NotFoundTemplate, Template, ToastSuccessTemplate,
+    filters,
+};
 
 #[derive(askama::Template)]
 #[template(path = "dishes.html")]
@@ -428,24 +431,55 @@ pub struct AddButtonTemplate {
     pub in_list: bool,
 }
 
-/// Add the dish to the list and swap its button to "In my list".
+/// "How many people?" sheet shown before the dish is added to the list.
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn add_to_list_modal(
+    template: Template,
+    State(app): State<AppState>,
+    AuthUser(user): AuthUser,
+    Path((id,)): Path<(String,)>,
+) -> impl IntoResponse {
+    let preferences = imkitchen_web_shared::try_response!(anyhow:
+        app.identity.meal_preferences.load(&user.id),
+        template
+    );
+    template.render(ListAddModalTemplate {
+        action: &format!("/dishes/{id}/add-to-list"),
+        target: &format!("#dish-add-{id}"),
+        title: "Add to my list",
+        household_size: preferences.household_size,
+    })
+}
+
+#[derive(Deserialize, Debug, Default)]
+pub struct ListAddForm {
+    /// People to cook for; the settings value when absent.
+    #[serde(default)]
+    pub household_size: Option<u16>,
+}
+
+/// Add the dish to the list, dismiss the sheet and swap the dish's button to
+/// "In my list" with a success toast.
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn add_to_list_action(
     template: Template,
     State(app): State<AppState>,
     AuthUser(user): AuthUser,
     Path((id,)): Path<(String,)>,
+    Form(input): Form<ListAddForm>,
 ) -> impl IntoResponse {
-    imkitchen_web_shared::try_response!(dish::add_to_list(&app, &user.id, &id), template);
+    imkitchen_web_shared::try_response!(
+        dish::add_to_list(&app, &user.id, &id, input.household_size),
+        template
+    );
 
     let button = template.to_string(AddButtonTemplate { id, in_list: true });
-    template
-        .render(ToastSuccessTemplate {
-            original: Some(&button),
-            message: "Dish added to your list",
-            description: None,
-        })
-        .into_response()
+    let toast = template.to_string(ToastSuccessTemplate {
+        original: None,
+        message: "Dish added to your list",
+        description: None,
+    });
+    axum::response::Html(format!("{button}{LIST_ADD_MODAL_DISMISS}{toast}")).into_response()
 }
 
 /// Legacy bookmark shape kept symmetrical with the recipe routes.
@@ -462,5 +496,8 @@ pub fn routes() -> axum::Router<AppState> {
         .route("/dishes/{id}", get(redirect_to_list).post(update_action))
         .route("/dishes/{id}/edit", get(edit_page))
         .route("/dishes/{id}/delete", post(delete_action))
-        .route("/dishes/{id}/add-to-list", post(add_to_list_action))
+        .route(
+            "/dishes/{id}/add-to-list",
+            get(add_to_list_modal).post(add_to_list_action),
+        )
 }

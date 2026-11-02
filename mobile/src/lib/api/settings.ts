@@ -1,5 +1,11 @@
+import { peekDoc, readDoc, writeDoc } from '../cache.js'
 import { request } from './client.js'
 import type { DietaryRestriction, RecipeType } from './recipe.js'
+
+/** Cache key of the general settings document (shared across bundles). */
+export const GENERAL_KEY = 'settings:general'
+
+const FALLBACK_HOUSEHOLD_SIZE = 4
 
 export interface General {
   email: string
@@ -29,6 +35,23 @@ export interface Session {
 
 export function getGeneral(): Promise<General> {
   return request<General>('/api/v1/settings/general')
+}
+
+/**
+ * The household size from settings, used as the default of the "how many
+ * people?" pickers. Served from the cached settings document when there is
+ * one (so it works offline and across bundles), fetched otherwise.
+ */
+export async function defaultHouseholdSize(): Promise<number> {
+  const cached = peekDoc<General>(GENERAL_KEY) ?? (await readDoc<General>(GENERAL_KEY))
+  if (cached) return cached.household_size
+  try {
+    const general = await getGeneral()
+    await writeDoc(GENERAL_KEY, general)
+    return general.household_size
+  } catch {
+    return FALLBACK_HOUSEHOLD_SIZE
+  }
 }
 
 export function updatePreferences(p: Preferences): Promise<void> {

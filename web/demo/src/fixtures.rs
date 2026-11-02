@@ -433,6 +433,7 @@ pub fn kitchen() -> KitchenTemplate {
             slug: r.slug.clone(),
             recipe_type: r.recipe_type.0.clone(),
             status: status.clone(),
+            servings: 4,
             advance_prep: r.advance_prep.clone(),
             prep_time: r.prep_time,
             cook_time: r.cook_time,

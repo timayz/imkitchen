@@ -6,17 +6,18 @@ use sea_query_sqlx::SqlxBinder;
 use std::collections::HashMap;
 
 impl<E: Executor> super::Module<E> {
-    /// Fetch each recipe's authored household size and ingredient list from the
-    /// `shopping_recipe` projection, for a set of recipe ids.
+    /// Fetch each recipe's id, authored household size and ingredient list
+    /// from the `shopping_recipe` projection, for a set of recipe ids.
     pub(crate) async fn filter_recipe_ingredients_by_ids(
         &self,
         ids: Vec<String>,
-    ) -> anyhow::Result<Vec<(u16, Vec<Ingredient>)>> {
+    ) -> anyhow::Result<Vec<RecipeIngredients>> {
         if ids.is_empty() {
             return Ok(vec![]);
         }
 
         let statement = Query::select()
+            .column(ShoppingRecipe::Id)
             .column(ShoppingRecipe::HouseholdSize)
             .column(ShoppingRecipe::Ingredients)
             .from(ShoppingRecipe::Table)
@@ -24,17 +25,16 @@ impl<E: Executor> super::Module<E> {
             .to_owned();
 
         let (sql, values) = statement.build_sqlx(SqliteQueryBuilder);
-        Ok(
-            sqlx::query_as_with::<_, (u16, evento::sql_types::Bitcode<Vec<Ingredient>>), _>(
-                sqlx::AssertSqlSafe(sql),
-                values,
-            )
-            .fetch_all(&self.read_db)
-            .await?
-            .into_iter()
-            .map(|(household_size, ingredients)| (household_size, ingredients.0))
-            .collect(),
-        )
+        Ok(sqlx::query_as_with::<
+            _,
+            (String, u16, evento::sql_types::Bitcode<Vec<Ingredient>>),
+            _,
+        >(sqlx::AssertSqlSafe(sql), values)
+        .fetch_all(&self.read_db)
+        .await?
+        .into_iter()
+        .map(|(id, household_size, ingredients)| (id, household_size, ingredients.0))
+        .collect())
     }
 
     /// Whether a `shopping_recipe` row exists for the given recipe id. Ownership
@@ -58,23 +58,41 @@ impl<E: Executor> super::Module<E> {
     }
 }
 
+/// `(recipe id, authored household size, ingredients)` as read from
+/// `shopping_recipe`.
+pub(crate) type RecipeIngredients = (String, u16, Vec<Ingredient>);
+
+/// The household size each listed recipe is scaled to: the size recorded when
+/// it was generated or added, or `default` (the user's settings value) for a
+/// recipe that predates per-recipe servings.
+pub struct Servings<'a> {
+    pub per_recipe: &'a HashMap<String, u16>,
+    pub default: u16,
+}
+
+impl Servings<'_> {
+    pub fn of(&self, recipe_id: &str) -> u16 {
+        self.per_recipe
+            .get(recipe_id)
+            .copied()
+            .unwrap_or(self.default)
+    }
+}
+
 /// Merge and scale a set of recipes' ingredients into a single shopping list.
 ///
 /// Duplicate ingredients (same `key()`) are summed. Each recipe's quantities are
-/// scaled from its authored household size to the user's household size via
+/// scaled from its authored household size to its own serving target via
 /// [`scale_quantity`].
 pub(crate) fn merge_ingredients(
-    recipe_ingredients: Vec<(u16, Vec<Ingredient>)>,
-    user_household_size: u16,
+    recipe_ingredients: Vec<RecipeIngredients>,
+    servings: &Servings<'_>,
 ) -> Vec<Ingredient> {
     let mut ingredients: HashMap<String, Ingredient> = HashMap::new();
-    for (recipe_household_size, list) in recipe_ingredients {
+    for (recipe_id, recipe_household_size, list) in recipe_ingredients {
+        let target = servings.of(&recipe_id);
         for ingredient in list {
-            let scaled = scale_quantity(
-                ingredient.quantity,
-                recipe_household_size,
-                user_household_size,
-            );
+            let scaled = scale_quantity(ingredient.quantity, recipe_household_size, target);
             let entry = ingredients.entry(ingredient.key()).or_insert(Ingredient {
                 name: ingredient.name,
                 quantity: 0,
@@ -108,7 +126,37 @@ pub(crate) fn scale_quantity(
 
 #[cfg(test)]
 mod tests {
-    use super::scale_quantity;
+    use super::*;
+    use imkitchen_types::recipe::{IngredientCategory, IngredientUnit};
+
+    fn ingredient(name: &str, quantity: u32) -> Ingredient {
+        Ingredient {
+            name: name.to_owned(),
+            quantity,
+            unit: Some(IngredientUnit::G),
+            category: Some(IngredientCategory::Grocery),
+        }
+    }
+
+    #[test]
+    fn merges_each_recipe_at_its_own_servings() {
+        // "a" was added for 8 people, "b" has no recorded size → default 2
+        // (below its authored 4, so it keeps its own quantity).
+        let per_recipe = HashMap::from([("a".to_owned(), 8u16)]);
+        let servings = Servings {
+            per_recipe: &per_recipe,
+            default: 2,
+        };
+        let merged = merge_ingredients(
+            vec![
+                ("a".to_owned(), 4, vec![ingredient("rice", 100)]),
+                ("b".to_owned(), 4, vec![ingredient("rice", 100)]),
+            ],
+            &servings,
+        );
+        assert_eq!(merged.len(), 1);
+        assert_eq!(merged[0].quantity, 200 + 100);
+    }
 
     #[test]
     fn scales_up_when_household_exceeds_recipe() {

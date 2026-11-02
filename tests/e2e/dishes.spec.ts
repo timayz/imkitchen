@@ -43,6 +43,10 @@ test.describe("dishes", () => {
 
     // On the list by hand: every recipe of the dish lands in the kitchen.
     await card.getByRole("button", { name: "Add to my list" }).click();
+    const modal = page.locator("#modal-list-add");
+    await modal.waitFor();
+    await modal.getByRole("button", { name: "Add to my list" }).click();
+    await modal.waitFor({ state: "detached" });
     await expect(card).toContainText("In my list");
     await api.waitForKitchen((overview) => overview.kind === "list" && overview.total_count === 3);
 

@@ -1,11 +1,15 @@
 use evento::{Executor, ProjectionAggregate};
-use imkitchen_types::{recipe::RecipeType, shopping::ListGenerated};
-use std::collections::HashSet;
+use imkitchen_types::{
+    recipe::RecipeType,
+    shopping::{ListGenerated, ServingsSet},
+};
+use std::collections::{HashMap, HashSet};
 use validator::Validate;
 
 use super::{
+    MAX_HOUSEHOLD_SIZE,
     meal::{Meal, Pools},
-    merge::merge_ingredients,
+    merge::{Servings, merge_ingredients},
     pick::{PoolRecipe, Randomize},
 };
 
@@ -14,6 +18,8 @@ pub struct GenerateList {
     /// How many meals to compose (1..=30), one main course each.
     #[validate(range(min = 1, max = 30))]
     pub count: u8,
+    /// People to cook for; every generated recipe is scaled to it.
+    #[validate(range(min = 1, max = MAX_HOUSEHOLD_SIZE))]
     pub household_size: u16,
     pub randomize: Option<Randomize>,
 }
@@ -40,7 +46,7 @@ impl<E: Executor> super::Module<E> {
     ///    accept one; a dish that already has a side or a sauce keeps its own;
     /// 4. the list is written in meal order — starter, main, sides, dessert,
     ///    drink, sauces — and the merged ingredients are scaled to
-    ///    `household_size`.
+    ///    `household_size`, which is recorded for every recipe (`ServingsSet`).
     pub async fn generate(
         &self,
         input: GenerateList,
@@ -141,14 +147,24 @@ impl<E: Executor> super::Module<E> {
         let recipe_ingredients = self
             .filter_recipe_ingredients_by_ids(recipe_ids.clone())
             .await?;
-        let ingredients = merge_ingredients(recipe_ingredients, input.household_size);
+        let ingredients = merge_ingredients(
+            recipe_ingredients,
+            &Servings {
+                per_recipe: &HashMap::new(),
+                default: input.household_size,
+            },
+        );
 
         self.load_or_empty(&request_by)
             .await?
             .write()?
             .event(&ListGenerated {
-                recipe_ids,
+                recipe_ids: recipe_ids.clone(),
                 ingredients,
+            })
+            .event(&ServingsSet {
+                recipe_ids,
+                household_size: input.household_size,
             })
             .requested_by(request_by)
             .commit(&self.executor)

@@ -124,6 +124,8 @@ export class RecipeEditorPage {
 export class RecipeDetailPage {
   readonly title: Locator;
   readonly addToList: Locator;
+  /** The "how many people?" sheet opened by `addToList`. */
+  readonly listModal: Locator;
   readonly save: Locator;
 
   constructor(private readonly page: Page) {
@@ -131,7 +133,19 @@ export class RecipeDetailPage {
     // briefly render a 404 page (its own h1) while the slug is projected.
     this.title = page.locator("h1").first();
     this.addToList = page.locator("#add-to-shopping-btn");
+    this.listModal = page.locator("#modal-list-add");
     this.save = page.locator("#save-btn");
+  }
+
+  /** Opens the sheet, optionally sets the people count, and confirms. */
+  async addToListFor(people?: number) {
+    await this.addToList.click();
+    await this.listModal.waitFor();
+    if (people !== undefined) {
+      await this.listModal.locator('input[name="household_size"]').fill(String(people));
+    }
+    await this.listModal.getByRole("button", { name: "Add to my list" }).click();
+    await this.listModal.waitFor({ state: "detached" });
   }
 
   async goto(slug: string) {

@@ -229,6 +229,10 @@ pub enum Shopping {
     RecipeRemoved { recipe_id: String, recipe_ids: Vec<String>, ingredients: Vec<Ingredient> },
     ListGenerated { recipe_ids: Vec<String>, ingredients: Vec<Ingredient> },
     RecipeStatusChanged { recipe_id: String, status: RecipeStatus },
+    DishAdded { dish_id: String, recipe_ids: Vec<String>, ingredients: Vec<Ingredient> },
+    // Household size chosen for these recipes; committed right after
+    // ListGenerated / RecipeAdded / DishAdded in the same write.
+    ServingsSet { recipe_ids: Vec<String>, household_size: u16 },
     // Legacy variants (Generated, RecipeSetGenerated) stay declared, never written.
 }
 ```
@@ -472,7 +476,7 @@ There is no separate validation database. Uniqueness checks (email, username) ru
 
 | Aggregate (events in `crates/types`) | Projection (view) | Aggregate id |
 |--------------------------------------|-------------------|--------------|
-| `Shopping` | `imkitchen-core/shopping/Shopping` rev 3 | user id |
+| `Shopping` | `imkitchen-core/shopping/Shopping` rev 5 | user id |
 | `Recipe` | `imkitchen-core/recipe/Recipe` rev 3 | recipe id |
 | `RecipeShare` | `imkitchen-core/recipe/RecipeShareState` rev 1 | user id |
 | `Favorite` | `imkitchen-core/recipe/favorite/Favorite` rev 1 | `evento::hash_ids([recipe_id, user_id])` |
@@ -487,24 +491,25 @@ There is no separate validation database. Uniqueness checks (email, username) ru
 
 - `recipes: Vec<String>` is the list in order; `statuses` holds each recipe's `RecipeStatus { Idle, Cooking(u8), Completed }` (missing means `Idle`); `ingredients` holds the merged ingredient keys and `checked` the ones ticked on the groceries page.
 - `RecipeAdded` / `RecipeRemoved` / `ListGenerated` carry the full new `recipe_ids` and merged `ingredients`, so a projection rebuild never has to recompute them.
-- `ListGenerated` replaces the list and clears `checked` and `statuses`. `RecipeRemoved` drops the recipe's status. `Checked`/`Unchecked` toggle one ingredient key.
-- `Module::state(user_id, household_size)` loads the projection and recomputes the merged, household-scaled ingredient list from `shopping_recipe` synchronously; this is what the kitchen and groceries pages render.
+- `ListGenerated` replaces the list and clears `checked`, `statuses` and `servings`. `RecipeRemoved` drops the recipe's status and servings. `Checked`/`Unchecked` toggle one ingredient key.
+- `servings: HashMap<String, u16>` is the household size chosen per recipe when it was generated or added (`ServingsSet`). A missing entry means the recipe predates per-recipe servings and is scaled to the settings value instead. The choice is one-off: it never writes back to `MealPreferences`.
+- `Module::state(user_id, default_household_size)` loads the projection and recomputes the merged ingredient list from `shopping_recipe` synchronously, scaling each recipe to its own servings (`merge::Servings`); this is what the kitchen and groceries pages render.
 
 ## Data Flows
 
 ### Generation
 
-1. `POST /kitchen/generate` with `count` (1..=30 meals) from the generate modal.
-2. The handler loads `MealPreferences` (household size, dietary restrictions, cuisine variety weight, enabled optional recipe types) and calls `shopping.generate(GenerateList { count, household_size, randomize })`.
+1. `POST /kitchen/generate` with `count` (1..=30 meals) and an optional `household_size` from the generate modal, whose people stepper defaults to the settings value.
+2. The handler loads `MealPreferences` (household size as the fallback, dietary restrictions, cuisine variety weight, enabled optional recipe types) and calls `shopping.generate(GenerateList { count, household_size, randomize })`.
 3. `pick::random` selects up to 35 random `MainCourse` rows from `meal_plan_recipe` matching every dietary restriction, shuffles them and truncates to `ceil(len * cuisine_variety_weight)`; `generate` then truncates to `count`. Without `randomize` a plain `sample_recipes` (up to 7) is used. No mains at all is a user error.
 4. `optional_pool` fetches one random pool per enabled optional type (appetizer, accompaniment, dessert, beverage, condiment). Each main then becomes a meal: `generate` takes the next unused recipe from every pool and writes the ids in meal order (starter, main, side, dessert, drink, sauce); an accompaniment is only taken for a main whose `accepts_accompaniment` is set. Once a pool is exhausted later meals go without that course. Ids are deduplicated; a flat list never repeats a recipe.
-5. `merge::merge_ingredients` loads each recipe's `(household_size, ingredients)` from `shopping_recipe`, scales quantities with `scale_quantity` (serving target = `max(recipe size, household size)`, so quantities never scale below the authored size, rounding up) and sums duplicates by `Ingredient::key()`.
-6. One `ListGenerated { recipe_ids, ingredients }` event is committed; checks and statuses reset.
+5. `merge::merge_ingredients` loads each recipe's `(id, household_size, ingredients)` from `shopping_recipe`, scales quantities with `scale_quantity` (serving target = `max(recipe size, that recipe's servings)`, so quantities never scale below the authored size, rounding up) and sums duplicates by `Ingredient::key()`.
+6. `ListGenerated { recipe_ids, ingredients }` and `ServingsSet { recipe_ids, household_size }` are committed in one write; checks and statuses reset.
 7. The handler redirects to `/`; twinspark swaps the fresh kitchen page into `<body>`. No polling, because the page reads the aggregate.
 
 ### Adding and Removing Recipes
 
-- `POST /recipes/{id}/add-to-shopping` → `shopping.add_recipe(id, household_size, user)`: idempotent, requires a `shopping_recipe` row (so shared recipes can be added), commits `RecipeAdded` with the recomputed set.
+- `GET /recipes/{id}/add-to-shopping` renders the "how many people?" sheet (`partials/list-add-modal.html`, default = settings); `POST` with `household_size` → `shopping.add_recipe(id, household_size, user)`: requires a `shopping_recipe` row (so shared recipes can be added), commits `RecipeAdded` + `ServingsSet`. Re-adding at the same size is a no-op; at another size it commits only `ServingsSet` (rescale). The reply is the refreshed button (swapped into the sheet's `ts-target`) followed by a pushed self-removing div that dismisses the sheet (`template::LIST_ADD_MODAL_DISMISS`; twinspark resolves pushed targets from the origin's target, so the sheet cannot be the main swap). `GET`/`POST /dishes/{id}/add-to-list` work the same way for dishes (`shopping.add_dish`), rescaling dish recipes already in the list.
 - `POST /kitchen/recipe/{id}/remove` → `shopping.remove_recipe(...)`: commits `RecipeRemoved`, then redirects to `/` so the kitchen can move its focus to the next recipe.
 
 ### Kitchen and Cooking Status

@@ -1,16 +1,17 @@
 use evento::{Executor, ProjectionAggregate};
 use imkitchen_types::shopping::RecipeRemoved;
 
-use super::merge::merge_ingredients;
+use super::merge::{Servings, merge_ingredients};
 
 impl<E: Executor> super::Module<E> {
     /// Remove a recipe from the user's list, recomputing the merged
     /// ingredient list for the remaining recipe set. When the set becomes empty
-    /// the list is left with no ingredients.
+    /// the list is left with no ingredients. `default_household_size` scales
+    /// recipes that have no recorded servings of their own.
     pub async fn remove_recipe(
         &self,
         recipe_id: impl Into<String>,
-        household_size: u16,
+        default_household_size: u16,
         request_by: impl Into<String>,
     ) -> crate::Result<()> {
         let request_by = request_by.into();
@@ -31,7 +32,13 @@ impl<E: Executor> super::Module<E> {
         let recipe_ingredients = self
             .filter_recipe_ingredients_by_ids(recipe_ids.clone())
             .await?;
-        let ingredients = merge_ingredients(recipe_ingredients, household_size);
+        let ingredients = merge_ingredients(
+            recipe_ingredients,
+            &Servings {
+                per_recipe: &shopping.servings,
+                default: default_household_size,
+            },
+        );
 
         shopping
             .write()?

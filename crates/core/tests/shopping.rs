@@ -14,6 +14,8 @@ mod pool_favorite;
 mod regenerate;
 #[path = "shopping/remove_recipe.rs"]
 mod remove_recipe;
+#[path = "shopping/servings.rs"]
+mod servings;
 #[path = "shopping/status.rs"]
 mod status;
 #[path = "shopping/toggle.rs"]

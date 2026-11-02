@@ -9,10 +9,11 @@ use imkitchen_web_shared::{
 };
 
 use crate::{
-    ApiError, ApiResult,
+    ApiError, ApiJson, ApiResult,
     auth::{ApiChef, ApiUser},
     dto::{
         Created,
+        kitchen::ListAddRequest,
         recipe::{
             Browse, BrowseParams, Cook, CookParams, DetailDto, Exists, FollowedCooks, Page, page,
         },
@@ -103,13 +104,17 @@ pub async fn unsave(
     Ok(StatusCode::NO_CONTENT)
 }
 
+/// Adds the recipe to the kitchen list. The optional JSON body picks the
+/// household size; without one the settings value applies.
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn add_to_shopping(
     State(app): State<AppState>,
     user: ApiUser,
     Path((id,)): Path<(String,)>,
+    body: Option<ApiJson<ListAddRequest>>,
 ) -> Result<StatusCode, ApiError> {
-    recipe::add_to_shopping(&app, &user.id, &id).await?;
+    let household_size = body.and_then(|ApiJson(b)| b.household_size);
+    recipe::add_to_shopping(&app, &user.id, &id, household_size).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -219,10 +224,7 @@ pub async fn followed_cooks(
 use axum::extract::{Multipart, Request};
 use base64::{Engine, engine::general_purpose::STANDARD};
 
-use crate::{
-    ApiJson,
-    dto::recipe::{Imported, RecipeInput, ThumbnailJson},
-};
+use crate::dto::recipe::{Imported, RecipeInput, ThumbnailJson};
 
 /// The editable fields; 403 for anyone but the owner.
 #[tracing::instrument(skip_all, fields(user = user.id))]

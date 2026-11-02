@@ -236,13 +236,22 @@ pub async fn delete(app: &AppState, user_id: &str, id: &str) -> imkitchen_core::
     Ok(())
 }
 
-/// Add every recipe of the dish to the user's list, scaled to their
-/// household size. The list is read from the aggregate, so the kitchen is
-/// up to date right away.
-pub async fn add_to_list(app: &AppState, user_id: &str, id: &str) -> imkitchen_core::Result<()> {
+/// Add every recipe of the dish to the user's list, scaled to `household_size`
+/// people (the settings value when `None`). The list is read from the
+/// aggregate, so the kitchen is up to date right away.
+pub async fn add_to_list(
+    app: &AppState,
+    user_id: &str,
+    id: &str,
+    household_size: Option<u16>,
+) -> imkitchen_core::Result<()> {
     let preferences = app.identity.meal_preferences.load(user_id).await?;
     app.core
         .shopping
-        .add_dish(id, preferences.household_size, user_id)
+        .add_dish(
+            id,
+            household_size.unwrap_or(preferences.household_size),
+            user_id,
+        )
         .await
 }

@@ -84,6 +84,10 @@ export function deleteDish(id: string): Promise<void> {
   return request<void>(`/api/v1/dishes/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
 
-export function addDishToList(id: string): Promise<void> {
-  return request<void>(`/api/v1/dishes/${encodeURIComponent(id)}/shopping`, { method: 'POST' })
+/** Without `household_size` the server scales to the settings value. */
+export function addDishToList(id: string, household_size?: number): Promise<void> {
+  return request<void>(`/api/v1/dishes/${encodeURIComponent(id)}/shopping`, {
+    method: 'POST',
+    body: household_size === undefined ? undefined : { household_size },
+  })
 }

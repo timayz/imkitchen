@@ -144,7 +144,7 @@
           ⏱ {{ total_time|minutes }}
         </span>
         <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-paper/70 {{ hero_pill_ink }}">
-          👥 {{ slot_recipe.household_size }}
+          👥 {% for entry in entries %}{% if entry.id == slot_recipe.id %}{{ entry.servings }}{% endif %}{% endfor %}
         </span>
         {% if focused_status.is_completed() %}
         <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-herb-500 text-white">

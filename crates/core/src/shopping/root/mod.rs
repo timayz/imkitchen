@@ -13,6 +13,7 @@ mod toogle;
 use bitcode::{Decode, Encode};
 pub use check::SetCheckedInput;
 pub use generate::GenerateList;
+pub use merge::Servings;
 pub use pick::{PoolRecipe, Randomize};
 pub use state::ShoppingState;
 pub use status::ChangeRecipeStatus;
@@ -21,12 +22,24 @@ pub use toogle::*;
 use evento::{Executor, Projection, ProjectionAggregate, metadata::Event};
 use imkitchen_types::shopping::{
     self, Checked, DishAdded, Generated, ListGenerated, RecipeAdded, RecipeRemoved,
-    RecipeSetGenerated, RecipeStatus, RecipeStatusChanged, Unchecked,
+    RecipeSetGenerated, RecipeStatus, RecipeStatusChanged, ServingsSet, Unchecked,
 };
 use std::{
     collections::{HashMap, HashSet},
     ops::Deref,
 };
+
+/// Largest household a list entry can be scaled to; matches the settings
+/// form's upper bound.
+pub const MAX_HOUSEHOLD_SIZE: u16 = 1000;
+
+/// Reject a household size the settings form would not accept either.
+pub(crate) fn check_household_size(household_size: u16) -> crate::Result<()> {
+    if household_size == 0 || household_size > MAX_HOUSEHOLD_SIZE {
+        crate::user!("household size must be between 1 and {MAX_HOUSEHOLD_SIZE}");
+    }
+    Ok(())
+}
 
 #[derive(Clone)]
 pub struct Module<E: Executor> {
@@ -63,8 +76,8 @@ impl<E: Executor> Module<E> {
 }
 
 /// The user's recipe list: the recipes in it (in list order), the merged
-/// ingredient keys they need, which of those are checked off, and each
-/// recipe's cooking status.
+/// ingredient keys they need, which of those are checked off, each
+/// recipe's cooking status and the household size each recipe is scaled to.
 #[evento::projection(name = "imkitchen-core/shopping/Shopping", Encode, Decode)]
 pub struct Shopping {
     pub user_id: String,
@@ -74,6 +87,10 @@ pub struct Shopping {
     /// Cooking status per recipe id; a missing entry means `Idle`.
     pub statuses: HashMap<String, RecipeStatus>,
     pub generated_at: u64,
+    /// Household size chosen per recipe id when it was generated or added. A
+    /// missing entry means the recipe predates per-recipe servings: callers
+    /// fall back to the user's settings value.
+    pub servings: HashMap<String, u16>,
 }
 
 impl Shopping {
@@ -85,6 +102,7 @@ impl Shopping {
             recipes: Default::default(),
             statuses: Default::default(),
             generated_at: 0,
+            servings: Default::default(),
             cursor: Default::default(),
             aggregate_version: Default::default(),
             tenant: Default::default(),
@@ -93,6 +111,12 @@ impl Shopping {
 
     pub fn status(&self, recipe_id: &str) -> RecipeStatus {
         self.statuses.get(recipe_id).cloned().unwrap_or_default()
+    }
+
+    /// Household size the recipe is scaled to, or `default` when it was added
+    /// before servings were recorded.
+    pub fn servings(&self, recipe_id: &str, default: u16) -> u16 {
+        self.servings.get(recipe_id).copied().unwrap_or(default)
     }
 }
 
@@ -115,7 +139,9 @@ pub fn create_projection<E: Executor>() -> Projection<E, Shopping> {
         // 3 → 4: `RecipeRemoved` now drops checks for ingredients that left
         // the list; rebuild so lists emptied before the fix lose their stale
         // checks instead of carrying them onto the next recipes added.
-        .revision(4)
+        // 4 → 5 (2026-11-01): `servings` added when the list started
+        // remembering the household size chosen per recipe.
+        .revision(5)
         .handler(handle_checked())
         .handler(handle_generated())
         .handler(handle_unchecked())
@@ -125,6 +151,7 @@ pub fn create_projection<E: Executor>() -> Projection<E, Shopping> {
         .handler(handle_list_generated())
         .handler(handle_recipe_status_changed())
         .handler(handle_dish_added())
+        .handler(handle_servings_set())
         .strict()
 }
 
@@ -136,6 +163,7 @@ async fn handle_generated(event: Event<Generated>, data: &mut Shopping) -> anyho
     data.ingredients = event.data.ingredients.iter().map(|i| i.key()).collect();
     data.checked = HashSet::new();
     data.generated_at = event.timestamp;
+    data.servings.clear();
 
     Ok(())
 }
@@ -183,6 +211,7 @@ async fn handle_recipe_removed(
     data.recipes = event.data.recipe_ids;
     data.ingredients = event.data.ingredients.iter().map(|i| i.key()).collect();
     data.statuses.remove(&event.data.recipe_id);
+    data.servings.remove(&event.data.recipe_id);
     // A check belongs to the ingredient as it is on the list now; once the
     // recipe that needed it is gone, a later recipe using the same ingredient
     // must start unchecked.
@@ -203,6 +232,8 @@ async fn handle_list_generated(
     data.ingredients = event.data.ingredients.iter().map(|i| i.key()).collect();
     data.checked.clear();
     data.statuses.clear();
+    // `ServingsSet` follows in the same commit with the generated recipes.
+    data.servings.clear();
 
     Ok(())
 }
@@ -223,6 +254,15 @@ async fn handle_dish_added(event: Event<DishAdded>, data: &mut Shopping) -> anyh
     data.user_id = event.metadata.requested_by()?;
     data.recipes = event.data.recipe_ids;
     data.ingredients = event.data.ingredients.iter().map(|i| i.key()).collect();
+
+    Ok(())
+}
+
+#[evento::handler]
+async fn handle_servings_set(event: Event<ServingsSet>, data: &mut Shopping) -> anyhow::Result<()> {
+    for recipe_id in event.data.recipe_ids {
+        data.servings.insert(recipe_id, event.data.household_size);
+    }
 
     Ok(())
 }

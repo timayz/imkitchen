@@ -79,8 +79,11 @@ export function getKitchen(): Promise<Overview> {
   return request<Overview>('/api/v1/kitchen');
 }
 
-export function generate(count: number): Promise<Overview> {
-  return request<Overview>('/api/v1/kitchen/generate', { method: 'POST', body: { count } });
+export function generate(count: number, household_size: number): Promise<Overview> {
+  return request<Overview>('/api/v1/kitchen/generate', {
+    method: 'POST',
+    body: { count, household_size },
+  });
 }
 
 export function removeFromList(id: string): Promise<void> {
