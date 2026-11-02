@@ -418,6 +418,32 @@ async fn test_generate_uses_dishes_first_and_fills_their_missing_courses() -> an
     );
     assert_eq!(ids.len(), 3 + 2 + 1 + 3);
 
+    // Each dish is one group holding its own recipes: the desserts drawn
+    // around them are loose rows, and the random main has no group.
+    assert_eq!(loaded.dishes.len(), 2);
+    let group = |id: &str| {
+        loaded
+            .dishes
+            .iter()
+            .find(|d| d.dish_id == id)
+            .expect("dish group")
+            .recipe_ids
+            .clone()
+    };
+    assert_eq!(
+        group(&dish_a),
+        vec![
+            accepting[0].clone(),
+            sides[0].clone(),
+            sides[1].clone(),
+            sauce.clone()
+        ]
+    );
+    assert_eq!(group(&dish_b), vec![accepting[1].clone()]);
+    assert_eq!(loaded.dish_of(&ids[a_main + 3]), None);
+    let view = shopping.state("john", 4).await?;
+    assert_eq!(view.dishes, loaded.dishes);
+
     Ok(())
 }
 

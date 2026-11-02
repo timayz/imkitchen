@@ -13,6 +13,18 @@ export interface Entry {
   total_time: number;
   thumbnail_url: string | null;
   blur_placeholder: string | null;
+  /**
+   * The composed dish this recipe is part of in the list: entries sharing a
+   * `dish_id` form one row. Absent in documents cached before dishes were
+   * grouped.
+   */
+  dish_id?: string | null;
+}
+
+/** A composed dish in the list: the name of the row its entries form. */
+export interface DishGroup {
+  id: string;
+  name: string;
 }
 
 export interface StepText {
@@ -35,6 +47,8 @@ export interface Steps {
 export interface KitchenList {
   kind: 'list';
   entries: Entry[];
+  /** Names of the composed dishes in the list; absent in older cached documents. */
+  dishes?: DishGroup[];
   /** Always set by the server; `null` only in a list rewritten offline. */
   focused: Recipe | null;
   focused_status: Status;
@@ -88,6 +102,11 @@ export function generate(count: number, household_size: number): Promise<Overvie
 
 export function removeFromList(id: string): Promise<void> {
   return request<void>(`/api/v1/kitchen/recipes/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+/** Takes every recipe of a composed dish off the list. */
+export function removeDishFromList(id: string): Promise<void> {
+  return request<void>(`/api/v1/kitchen/dishes/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 
 export function getDish(id: string): Promise<Dish> {

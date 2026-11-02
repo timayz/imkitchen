@@ -49,6 +49,8 @@ test.describe("kitchen", () => {
     const kitchen = new KitchenPage(page);
     await kitchen.goto();
     await expect(kitchen.rows()).toHaveCount(1);
+    // Recipes added on their own are plain rows, never a dish.
+    await expect(kitchen.platRows()).toHaveCount(0);
     const focused = (await kitchen.hero.locator("h2").textContent())?.trim();
     const other = focused === first.name ? second : first;
 

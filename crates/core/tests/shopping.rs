@@ -12,6 +12,8 @@ mod helpers;
 mod pool_favorite;
 #[path = "shopping/regenerate.rs"]
 mod regenerate;
+#[path = "shopping/remove_dish.rs"]
+mod remove_dish;
 #[path = "shopping/remove_recipe.rs"]
 mod remove_recipe;
 #[path = "shopping/servings.rs"]

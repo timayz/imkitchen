@@ -218,3 +218,39 @@ describe('saved and list ops', () => {
     ]);
   });
 });
+
+describe('dish_remove op', () => {
+  const grouped: KitchenList = {
+    ...kitchen,
+    entries: [
+      { ...entry('r1', { status: 'idle', step: null }), dish_id: 'd1' },
+      { ...entry('r2', { status: 'completed', step: null }), dish_id: 'd1' },
+      entry('r3', { status: 'idle', step: null }),
+    ],
+    dishes: [{ id: 'd1', name: 'Sunday roast' }],
+    completed_count: 1,
+    total_count: 3,
+  };
+
+  it('drops every entry of the dish, its name and the focus it held', () => {
+    const op = { kind: 'dish_remove', id: 'd1' } as const;
+    expect(logicalKey(op)).toBe('dish_remove:d1');
+    expect(affects(op)).toEqual(['kitchen', 'groceries']);
+    const next = apply(op, 'kitchen', grouped as Overview);
+    if (next.kind !== 'list') throw new Error('still a list');
+    expect(next.entries.map((e) => e.id)).toEqual(['r3']);
+    expect(next.dishes).toEqual([]);
+    expect(next.total_count).toBe(1);
+    expect(next.completed_count).toBe(0);
+    expect(next.focused).toBeNull();
+    // Other documents pass through.
+    expect(apply(op, 'groceries', groceries)).toBe(groceries);
+  });
+
+  it('leaves a list without that dish alone', () => {
+    const next = apply({ kind: 'dish_remove', id: 'nope' }, 'kitchen', grouped as Overview);
+    if (next.kind !== 'list') throw new Error('still a list');
+    expect(next.entries).toHaveLength(3);
+    expect(next.focused).toBe(recipe);
+  });
+});

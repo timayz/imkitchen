@@ -230,6 +230,25 @@
   color: var(--color-ink-3);
 }
 
+/* Composed dish rows */
+.kt-row__tile--dish {
+  background-color: var(--color-cream-2);
+}
+
+.kt-row__eyebrow {
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--color-ink-3);
+}
+
+.kt-row__count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-ink-2);
+}
+
 /* Prep ahead */
 .kt-prep {
   display: flex;

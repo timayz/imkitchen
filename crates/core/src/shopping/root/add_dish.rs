@@ -1,6 +1,6 @@
 use evento::{Executor, ProjectionAggregate};
 use imkitchen_db::shopping_recipe::ShoppingRecipe;
-use imkitchen_types::shopping::{DishAdded, ServingsSet};
+use imkitchen_types::shopping::{DishAdded, DishPlaced, ServingsSet};
 use sea_query::{Expr, ExprTrait, Query, SqliteQueryBuilder};
 use sea_query_sqlx::SqlxBinder;
 
@@ -13,8 +13,10 @@ impl<E: Executor> super::Module<E> {
     /// Add every recipe of one of the user's dishes to the list for
     /// `household_size` people, in the dish's meal order, recomputing the
     /// merged ingredients. Recipes already in the list stay where they are but
-    /// are rescaled to the chosen size; deleted ones are skipped. Nothing is
-    /// written when the list already holds the whole dish at that size.
+    /// are rescaled to the chosen size; deleted ones are skipped. The dish's
+    /// recipes form one group in the kitchen (`DishPlaced`). Nothing is
+    /// written when the list already holds the whole dish, grouped, at that
+    /// size.
     pub async fn add_dish(
         &self,
         dish_id: impl Into<String>,
@@ -44,7 +46,10 @@ impl<E: Executor> super::Module<E> {
         let rescales = existing
             .iter()
             .any(|id| shopping.servings.get(id) != Some(&household_size));
-        if !grows && !rescales {
+        let grouped = shopping
+            .dish(&dish_id)
+            .is_some_and(|d| d.recipe_ids == existing);
+        if !grows && !rescales && grouped {
             return Ok(());
         }
 
@@ -66,9 +71,16 @@ impl<E: Executor> super::Module<E> {
                 },
             );
             builder.event(&DishAdded {
-                dish_id,
+                dish_id: dish_id.clone(),
                 recipe_ids,
                 ingredients,
+            });
+        }
+
+        if !grouped && !existing.is_empty() {
+            builder.event(&DishPlaced {
+                dish_id,
+                recipe_ids: existing.clone(),
             });
         }
 

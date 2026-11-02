@@ -6,6 +6,7 @@ use imkitchen_core::recipe::query::user::{RecipeCard, UserView};
 use imkitchen_core::shopping::{ChangeRecipeStatus, GenerateList, Randomize, ShoppingState};
 use imkitchen_types::recipe::{Ingredient, Instruction, RecipeType};
 use imkitchen_types::shopping::RecipeStatus;
+use std::collections::HashMap;
 
 use crate::AppState;
 
@@ -25,6 +26,8 @@ pub struct ListEntry {
     pub cook_time: u16,
     pub thumbnail_version: Option<String>,
     pub blur_placeholder: Option<String>,
+    /// The composed dish this recipe is part of in the list, if any.
+    pub dish_id: Option<String>,
 }
 
 impl ListEntry {
@@ -39,6 +42,139 @@ impl ListEntry {
     pub fn is_cooking(&self) -> bool {
         self.status.is_cooking()
     }
+}
+
+/// A composed dish ("plat") as one row of the kitchen: its own recipes that
+/// are in the list, in meal order.
+#[derive(Clone, Debug)]
+pub struct ListDishEntry {
+    pub dish_id: String,
+    /// From the dish read model; the main course's name (else the first
+    /// recipe's) when the dish was deleted since it was placed.
+    pub name: String,
+    pub entries: Vec<ListEntry>,
+}
+
+impl ListDishEntry {
+    pub fn completed_count(&self) -> usize {
+        self.entries.iter().filter(|e| e.is_completed()).count()
+    }
+
+    /// Every recipe of the dish has been cooked.
+    pub fn is_completed(&self) -> bool {
+        !self.entries.is_empty() && self.entries.iter().all(ListEntry::is_completed)
+    }
+
+    /// At least one recipe of the dish is being cooked.
+    pub fn is_cooking(&self) -> bool {
+        self.entries.iter().any(ListEntry::is_cooking)
+    }
+
+    /// Total time of the longest recipe: the courses cook in parallel.
+    pub fn total_time(&self) -> u16 {
+        self.entries
+            .iter()
+            .map(ListEntry::total_time)
+            .max()
+            .unwrap_or(0)
+    }
+
+    pub fn main(&self) -> Option<&ListEntry> {
+        self.entries
+            .iter()
+            .find(|e| e.recipe_type == RecipeType::MainCourse)
+    }
+
+    pub fn contains(&self, recipe_id: &str) -> bool {
+        self.entries.iter().any(|e| e.id == recipe_id)
+    }
+}
+
+/// One row of the kitchen list: a loose recipe or a composed dish.
+#[derive(Clone, Debug)]
+pub enum ListItem {
+    Recipe(ListEntry),
+    Dish(ListDishEntry),
+}
+
+impl ListItem {
+    pub fn is_completed(&self) -> bool {
+        match self {
+            ListItem::Recipe(entry) => entry.is_completed(),
+            ListItem::Dish(dish) => dish.is_completed(),
+        }
+    }
+}
+
+/// `entries` partitioned into dish rows and loose recipes, each placed where
+/// its first recipe sits in list order. A dish's recipes follow the group's
+/// meal order; a group whose recipes all vanished is dropped.
+pub fn list_items(
+    state: &ShoppingState,
+    entries: &[ListEntry],
+    names: &HashMap<String, String>,
+) -> Vec<ListItem> {
+    let mut items = Vec::with_capacity(entries.len());
+    let mut placed: Vec<&str> = Vec::new();
+    for entry in entries {
+        let Some(dish_id) = entry.dish_id.as_deref() else {
+            items.push(ListItem::Recipe(entry.clone()));
+            continue;
+        };
+        if placed.contains(&dish_id) {
+            continue;
+        }
+        placed.push(dish_id);
+        let Some(group) = state.dish(dish_id) else {
+            items.push(ListItem::Recipe(entry.clone()));
+            continue;
+        };
+        let members: Vec<ListEntry> = group
+            .recipe_ids
+            .iter()
+            .filter_map(|id| entries.iter().find(|e| &e.id == id))
+            .cloned()
+            .collect();
+        if members.is_empty() {
+            continue;
+        }
+        let name = names.get(dish_id).cloned().unwrap_or_else(|| {
+            members
+                .iter()
+                .find(|e| e.recipe_type == RecipeType::MainCourse)
+                .or(members.first())
+                .map(|e| e.name.to_owned())
+                .unwrap_or_default()
+        });
+        items.push(ListItem::Dish(ListDishEntry {
+            dish_id: dish_id.to_owned(),
+            name,
+            entries: members,
+        }));
+    }
+    items
+}
+
+/// Names of the dishes grouped in the list, from the dish read model. A dish
+/// deleted since it was placed is simply absent (the row falls back to its
+/// main course's name).
+async fn dish_names(
+    app: &AppState,
+    user_id: &str,
+    state: &ShoppingState,
+) -> anyhow::Result<HashMap<String, String>> {
+    if state.dishes.is_empty() {
+        return Ok(HashMap::new());
+    }
+    Ok(app
+        .core
+        .dish
+        .list(user_id)
+        .await?
+        .into_iter()
+        .filter(|row| state.dish(&row.id).is_some())
+        .map(|row| (row.id, row.name))
+        .collect())
 }
 
 /// A single grocery aisle section of a recipe's ingredient list, keyed by the
@@ -155,6 +291,7 @@ pub fn list_entries(state: &ShoppingState, cards: Vec<RecipeCard>) -> Vec<ListEn
                 ListEntry {
                     status: state.status(&card.id),
                     servings: state.servings(&card.id),
+                    dish_id: state.dish_of(&card.id).map(|d| d.dish_id.to_owned()),
                     id: card.id,
                     name: card.name,
                     slug: card.slug,
@@ -311,9 +448,13 @@ pub struct KitchenList {
     /// Every recipe in the list, in list order (generated meals read starter →
     /// main → side → dessert → drink → sauce).
     pub entries: Vec<ListEntry>,
+    /// The same list as rows: composed dishes collapsed into one item each.
+    pub items: Vec<ListItem>,
     /// The recipe to cook next: the first one in the list not yet cooked.
     pub focused: UserView,
     pub focused_status: RecipeStatus,
+    /// The composed dish the focused recipe is part of, if any.
+    pub focused_dish: Option<ListDishEntry>,
     pub completed_count: usize,
     pub total_count: usize,
     /// Uncooked recipes (other than the focused one) with an advance-prep note.
@@ -336,6 +477,8 @@ pub async fn overview(app: &AppState, user_id: &str) -> anyhow::Result<Overview>
             .await?
     };
     let entries = list_entries(&list, cards);
+    let names = dish_names(app, user_id, &list).await?;
+    let items = list_items(&list, &entries, &names);
 
     // The recipe to cook next: the first uncooked entry whose recipe still
     // resolves, else the first one that does. A list whose recipes were all
@@ -370,11 +513,17 @@ pub async fn overview(app: &AppState, user_id: &str) -> anyhow::Result<Overview>
         .collect();
 
     let cook_external = cook_is_external(app, &focused, &steps.2).await;
+    let focused_dish = items.iter().find_map(|item| match item {
+        ListItem::Dish(dish) if dish.contains(&focused_entry.id) => Some(dish.clone()),
+        _ => None,
+    });
 
     Ok(Overview::List(Box::new(KitchenList {
         entries,
+        items,
         focused,
         focused_status,
+        focused_dish,
         completed_count,
         total_count,
         prep_ahead,
@@ -400,8 +549,11 @@ async fn empty(app: &AppState, user_id: &str) -> anyhow::Result<Overview> {
 /// The kitchen with another recipe of the list in focus.
 pub struct Dish {
     pub entries: Vec<ListEntry>,
+    pub items: Vec<ListItem>,
     pub recipe: UserView,
     pub status: RecipeStatus,
+    /// The composed dish the focused recipe is part of, if any.
+    pub focused_dish: Option<ListDishEntry>,
     pub steps: StepView,
     pub cook_external: bool,
 }
@@ -418,17 +570,78 @@ pub async fn dish(app: &AppState, user_id: &str, recipe_id: &str) -> anyhow::Res
         .filter_by_ids(list.recipe_ids.clone())
         .await?;
     let entries = list_entries(&list, cards);
+    let names = dish_names(app, user_id, &list).await?;
+    let items = list_items(&list, &entries, &names);
+    let focused_dish = items.iter().find_map(|item| match item {
+        ListItem::Dish(dish) if dish.contains(recipe_id) => Some(dish.clone()),
+        _ => None,
+    });
 
     let steps = split_instructions(&recipe, &status, true);
     let cook_external = cook_is_external(app, &recipe, &steps.2).await;
 
     Ok(Some(Dish {
         entries,
+        items,
         recipe,
         status,
+        focused_dish,
         steps,
         cook_external,
     }))
+}
+
+/// A composed dish of the list, opened from its kitchen row: every recipe of
+/// the group with what "cook" should do for it.
+pub struct Plat {
+    pub dish: ListDishEntry,
+    pub recipes: Vec<PlatRecipe>,
+}
+
+pub struct PlatRecipe {
+    pub entry: ListEntry,
+    /// Set when there is nothing to cook in-app (no parsed steps and an origin
+    /// that refuses framing): "cook" opens this URL instead, as the hero does.
+    pub external_url: Option<String>,
+}
+
+pub async fn plat(app: &AppState, user_id: &str, dish_id: &str) -> anyhow::Result<Option<Plat>> {
+    let list = load_list(app, user_id).await?;
+    let Some(group) = list.dish(dish_id) else {
+        return Ok(None);
+    };
+
+    let cards = app
+        .core
+        .recipe
+        .filter_by_ids(group.recipe_ids.clone())
+        .await?;
+    let entries = list_entries(&list, cards);
+    let names = dish_names(app, user_id, &list).await?;
+    let Some(ListItem::Dish(dish)) = list_items(&list, &entries, &names).into_iter().next() else {
+        return Ok(None);
+    };
+
+    let mut recipes = Vec::with_capacity(dish.entries.len());
+    for entry in &dish.entries {
+        let Some(recipe) = app.core.recipe.find_user(&entry.id).await? else {
+            continue;
+        };
+        let external_url = match recipe.origin.as_deref() {
+            Some(origin)
+                if recipe.instructions.is_empty() && !origin_embeddable(app, origin).await =>
+            {
+                Some(origin.to_owned())
+            }
+            _ => None,
+        };
+        recipes.push(PlatRecipe {
+            entry: entry.clone(),
+            external_url,
+        });
+    }
+
+    Ok(Some(Plat { dish, recipes }))
 }
 
 /// One screen of the cooking flow: the ingredient list while `Idle`, then one
@@ -605,6 +818,20 @@ pub async fn remove(app: &AppState, user_id: &str, recipe_id: &str) -> imkitchen
     app.core
         .shopping
         .remove_recipe(recipe_id, preferences.household_size, user_id)
+        .await?;
+    Ok(())
+}
+
+/// Remove a whole composed dish (every recipe of its group) from the list.
+pub async fn remove_dish(
+    app: &AppState,
+    user_id: &str,
+    dish_id: &str,
+) -> imkitchen_core::Result<()> {
+    let preferences = app.identity.meal_preferences.load(user_id).await?;
+    app.core
+        .shopping
+        .remove_dish(dish_id, preferences.household_size, user_id)
         .await?;
     Ok(())
 }

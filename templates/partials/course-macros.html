@@ -1,0 +1,45 @@
+{# Per-course emoji / soft tint / ink / dot, shared by the kitchen rows and the dish modal. #}
+{% macro emoji(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}🥗
+{%- when RecipeType::MainCourse -%}🍛
+{%- when RecipeType::Accompaniment -%}🥖
+{%- when RecipeType::Dessert -%}🍰
+{%- when RecipeType::Beverage -%}🥤
+{%- when RecipeType::Condiment -%}🥫
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro soft(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}bg-meal-entree-soft
+{%- when RecipeType::MainCourse -%}bg-meal-main-soft
+{%- when RecipeType::Accompaniment -%}bg-meal-side-soft
+{%- when RecipeType::Dessert -%}bg-meal-dessert-soft
+{%- when RecipeType::Beverage -%}bg-cyan-100
+{%- when RecipeType::Condiment -%}bg-amber-100
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro ink(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}text-meal-entree-ink
+{%- when RecipeType::MainCourse -%}text-meal-main-ink
+{%- when RecipeType::Accompaniment -%}text-meal-side-ink
+{%- when RecipeType::Dessert -%}text-meal-dessert-ink
+{%- when RecipeType::Beverage -%}text-cyan-800
+{%- when RecipeType::Condiment -%}text-amber-800
+{%- endmatch -%}
+{%- endmacro %}
+
+{% macro dot(rt) -%}
+{%- match rt -%}
+{%- when RecipeType::Appetizer -%}bg-meal-entree
+{%- when RecipeType::MainCourse -%}bg-meal-main
+{%- when RecipeType::Accompaniment -%}bg-meal-side
+{%- when RecipeType::Dessert -%}bg-meal-dessert
+{%- when RecipeType::Beverage -%}bg-cyan-500
+{%- when RecipeType::Condiment -%}bg-amber-500
+{%- endmatch -%}
+{%- endmacro %}
+

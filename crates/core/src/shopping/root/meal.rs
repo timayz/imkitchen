@@ -14,6 +14,8 @@ use super::pick::{POOL_COLUMNS, PoolRecipe, restrict_dietary};
 
 #[derive(Clone, Debug, Default)]
 pub struct Meal {
+    /// The composed dish this meal came from, if any.
+    pub dish_id: Option<String>,
     pub appetizer: Option<PoolRecipe>,
     pub main: Option<PoolRecipe>,
     pub accompaniments: Vec<PoolRecipe>,
@@ -80,16 +82,21 @@ impl Meal {
     }
 
     /// Recipe ids in meal order: starter, main, sides, dessert, drink, sauces.
-    pub fn into_ids(self) -> Vec<String> {
+    pub fn ids(&self) -> Vec<String> {
         self.appetizer
-            .into_iter()
-            .chain(self.main)
-            .chain(self.accompaniments)
-            .chain(self.dessert)
-            .chain(self.beverage)
-            .chain(self.condiments)
-            .map(|r| r.id)
+            .iter()
+            .chain(self.main.iter())
+            .chain(self.accompaniments.iter())
+            .chain(self.dessert.iter())
+            .chain(self.beverage.iter())
+            .chain(self.condiments.iter())
+            .map(|r| r.id.to_owned())
             .collect()
+    }
+
+    /// Owned form of [`Meal::ids`].
+    pub fn into_ids(self) -> Vec<String> {
+        self.ids()
     }
 }
 
@@ -134,7 +141,10 @@ impl<E: Executor> super::Module<E> {
         let mut meals: Vec<Meal> = dishes
             .into_iter()
             .filter_map(|dish| {
-                let mut meal = Meal::default();
+                let mut meal = Meal {
+                    dish_id: Some(dish.id.clone()),
+                    ..Default::default()
+                };
                 for id in dish.recipe_ids.0.iter() {
                     if let Some(recipe) = recipes.get(id) {
                         meal.put(recipe.clone());

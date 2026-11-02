@@ -233,6 +233,11 @@ pub enum Shopping {
     // Household size chosen for these recipes; committed right after
     // ListGenerated / RecipeAdded / DishAdded in the same write.
     ServingsSet { recipe_ids: Vec<String>, household_size: u16 },
+    // The recipes of one composed dish that are in the list, in meal order:
+    // the kitchen shows them as one row. Follows ListGenerated / DishAdded.
+    DishPlaced { dish_id: String, recipe_ids: Vec<String> },
+    // A whole dish group left the list; `recipe_ids` is the resulting list.
+    DishRemoved { dish_id: String, recipe_ids: Vec<String>, ingredients: Vec<Ingredient> },
     // Legacy variants (Generated, RecipeSetGenerated) stay declared, never written.
 }
 ```
@@ -476,7 +481,7 @@ There is no separate validation database. Uniqueness checks (email, username) ru
 
 | Aggregate (events in `crates/types`) | Projection (view) | Aggregate id |
 |--------------------------------------|-------------------|--------------|
-| `Shopping` | `imkitchen-core/shopping/Shopping` rev 5 | user id |
+| `Shopping` | `imkitchen-core/shopping/Shopping` rev 6 | user id |
 | `Recipe` | `imkitchen-core/recipe/Recipe` rev 3 | recipe id |
 | `RecipeShare` | `imkitchen-core/recipe/RecipeShareState` rev 1 | user id |
 | `Favorite` | `imkitchen-core/recipe/favorite/Favorite` rev 1 | `evento::hash_ids([recipe_id, user_id])` |
@@ -493,6 +498,7 @@ There is no separate validation database. Uniqueness checks (email, username) ru
 - `RecipeAdded` / `RecipeRemoved` / `ListGenerated` carry the full new `recipe_ids` and merged `ingredients`, so a projection rebuild never has to recompute them.
 - `ListGenerated` replaces the list and clears `checked`, `statuses` and `servings`. `RecipeRemoved` drops the recipe's status and servings. `Checked`/`Unchecked` toggle one ingredient key.
 - `servings: HashMap<String, u16>` is the household size chosen per recipe when it was generated or added (`ServingsSet`). A missing entry means the recipe predates per-recipe servings and is scaled to the settings value instead. The choice is one-off: it never writes back to `MealPreferences`.
+- `dishes: Vec<ListDish { dish_id, recipe_ids }>` are the composed dishes ("plats") in the list, each with its own recipes in meal order (`DishPlaced`). A recipe belongs to at most one group: placing it under a dish pulls it out of any other. `ListGenerated` clears the groups (the generation's `DishPlaced` events follow in the same write); `RecipeRemoved` shrinks a group and drops it when empty; `DishRemoved` takes the whole group off the list. Lists written before groups existed simply have none and render flat.
 - `Module::state(user_id, default_household_size)` loads the projection and recomputes the merged ingredient list from `shopping_recipe` synchronously, scaling each recipe to its own servings (`merge::Servings`); this is what the kitchen and groceries pages render.
 
 ## Data Flows
@@ -504,13 +510,14 @@ There is no separate validation database. Uniqueness checks (email, username) ru
 3. `sources` (`MealSources`: `DishesAndMainCourses` by default, `Dishes` or `MainCourses`) says where meals come from; the settings form shows it as two toggles that cannot both be off (`meal_sources()` refuses that, `MealSourcesChanged` stores the enum). With dishes on, the user's dishes come first, shuffled and truncated to `count`. With main courses on, `pick::random` fills the remaining meals with up to 35 random `MainCourse` rows from `meal_plan_recipe` matching every dietary restriction, shuffled and truncated to `ceil(len * cuisine_variety_weight)`. Without `randomize` a plain `sample_recipes` (up to 7) is used. No meal at all is a user error ("No main course found", or "No dish found" for a dishes-only user).
 4. `optional_pool` fetches one random pool per enabled optional type (appetizer, accompaniment, dessert, beverage, condiment). Each main then becomes a meal: `generate` takes the next unused recipe from every pool and writes the ids in meal order (starter, main, side, dessert, drink, sauce); an accompaniment is only taken for a main whose `accepts_accompaniment` is set. Once a pool is exhausted later meals go without that course. Ids are deduplicated; a flat list never repeats a recipe.
 5. `merge::merge_ingredients` loads each recipe's `(id, household_size, ingredients)` from `shopping_recipe`, scales quantities with `scale_quantity` (serving target = `max(recipe size, that recipe's servings)`, so quantities never scale below the authored size, rounding up) and sums duplicates by `Ingredient::key()`.
-6. `ListGenerated { recipe_ids, ingredients }` and `ServingsSet { recipe_ids, household_size }` are committed in one write; checks and statuses reset.
+6. `ListGenerated { recipe_ids, ingredients }`, `ServingsSet { recipe_ids, household_size }` and one `DishPlaced { dish_id, recipe_ids }` per dish meal (its own recipes as composed, before the pools filled it) are committed in one write; checks and statuses reset.
 7. The handler redirects to `/`; twinspark swaps the fresh kitchen page into `<body>`. No polling, because the page reads the aggregate.
 
 ### Adding and Removing Recipes
 
-- `GET /recipes/{id}/add-to-shopping` renders the "how many people?" sheet (`partials/list-add-modal.html`, default = settings); `POST` with `household_size` → `shopping.add_recipe(id, household_size, user)`: requires a `shopping_recipe` row (so shared recipes can be added), commits `RecipeAdded` + `ServingsSet`. Re-adding at the same size is a no-op; at another size it commits only `ServingsSet` (rescale). The reply is the refreshed button (swapped into the sheet's `ts-target`) followed by a pushed self-removing div that dismisses the sheet (`template::LIST_ADD_MODAL_DISMISS`; twinspark resolves pushed targets from the origin's target, so the sheet cannot be the main swap). `GET`/`POST /dishes/{id}/add-to-list` work the same way for dishes (`shopping.add_dish`), rescaling dish recipes already in the list.
+- `GET /recipes/{id}/add-to-shopping` renders the "how many people?" sheet (`partials/list-add-modal.html`, default = settings); `POST` with `household_size` → `shopping.add_recipe(id, household_size, user)`: requires a `shopping_recipe` row (so shared recipes can be added), commits `RecipeAdded` + `ServingsSet`. Re-adding at the same size is a no-op; at another size it commits only `ServingsSet` (rescale). The reply is the refreshed button (swapped into the sheet's `ts-target`) followed by a pushed self-removing div that dismisses the sheet (`template::LIST_ADD_MODAL_DISMISS`; twinspark resolves pushed targets from the origin's target, so the sheet cannot be the main swap). `GET`/`POST /dishes/{id}/add-to-list` work the same way for dishes (`shopping.add_dish`), rescaling dish recipes already in the list and committing `DishPlaced` so the kitchen shows the dish as one row (recipes already listed loose are pulled into the group).
 - `POST /kitchen/recipe/{id}/remove` → `shopping.remove_recipe(...)`: commits `RecipeRemoved`, then redirects to `/` so the kitchen can move its focus to the next recipe.
+- The kitchen renders the list as `ListItem`s (`services::kitchen::list_items`): a composed dish is one row (`partials/kitchen-dish.html`, macro `plat_row`) named from the `dish` read model (the main course's name when the dish was deleted since). `GET /kitchen/dish/{dish_id}` opens the dish sheet (`partials/kitchen-plat-modal.html`): every recipe of the group with its status and a cook link to `/kitchen/{recipe_id}/cook` (or the origin, like the hero, when there is nothing to cook in-app). `POST /kitchen/dish/{dish_id}/remove` → `shopping.remove_dish(...)` commits `DishRemoved` and redirects to `/`.
 
 ### Kitchen and Cooking Status
 
@@ -537,6 +544,8 @@ All routes are merged flat into one Axum router in `src/cli/server.rs`. `{param}
 - `GET /kitchen/generate` - Generate modal (partial)
 - `POST /kitchen/generate` - Replace the list (`count` form field), redirect to `/`
 - `POST /kitchen/recipe/{id}/remove` - Remove a recipe from the list, redirect to `/`
+- `GET /kitchen/dish/{dish_id}` - Dish ("plat") sheet: pick which of its recipes to cook (partial)
+- `POST /kitchen/dish/{dish_id}/remove` - Remove a whole dish from the list, redirect to `/`
 - `POST /kitchen/{recipe_id}/select-dish` - Focus another recipe (partial `kitchen-dish`)
 - `GET /kitchen/{recipe_id}/cook` - Cooking screen
 - `POST /kitchen/{recipe_id}/step/{direction}` - Move the cooking cursor (`prev` | `next`), returns the cooking screen partial
@@ -596,7 +605,7 @@ All routes are merged flat into one Axum router in `src/cli/server.rs`. `{param}
 - `GET /api/v1/health`
 - `POST /api/v1/auth/login` (`{email,password}` → `{token,expires_at,user}`), `POST /api/v1/auth/register` (same body, 201 with the same session envelope: the new account is signed in on this device), `POST /api/v1/auth/logout`, `POST /api/v1/auth/refresh`, `POST /api/v1/auth/password-reset` (`{email}`, always 202)
 - `GET /api/v1/me`
-- `GET /api/v1/kitchen` (tagged `kind`: `onboarding_recipe` | `onboarding_menu` | `list`), `POST /api/v1/kitchen/generate` (`{count}`), `GET|DELETE /api/v1/kitchen/recipes/{id}`, `GET /api/v1/kitchen/recipes/{id}/cook`, `POST /api/v1/kitchen/recipes/{id}/step` (`{direction: "next"|"prev"}`), `PUT /api/v1/kitchen/recipes/{id}/status` (`{status: "idle"|"cooking"|"completed", step?}`, absolute and idempotent: what the mobile offline queue replays)
+- `GET /api/v1/kitchen` (tagged `kind`: `onboarding_recipe` | `onboarding_menu` | `list`; each entry carries `dish_id` and `dishes: [{id, name}]` names the composed dishes whose entries form one row), `POST /api/v1/kitchen/generate` (`{count}`), `GET|DELETE /api/v1/kitchen/recipes/{id}`, `DELETE /api/v1/kitchen/dishes/{id}` (every recipe of the dish group), `GET /api/v1/kitchen/recipes/{id}/cook`, `POST /api/v1/kitchen/recipes/{id}/step` (`{direction: "next"|"prev"}`), `PUT /api/v1/kitchen/recipes/{id}/status` (`{status: "idle"|"cooking"|"completed", step?}`, absolute and idempotent: what the mobile offline queue replays)
 - `GET /api/v1/groceries`, `POST /api/v1/groceries/toggle` (`{key}`), `PUT /api/v1/groceries/check` (`{key, checked}`, absolute and idempotent)
 - `GET /api/v1/recipes` (cursor page: `first`, `after`, `recipe_type`, `search`, `sort_by`, `mine`, `in_meal_plan`, `no_image`), `POST /api/v1/recipes` (draft), `POST /api/v1/recipes/import` (202, poll `exists`), `POST /api/v1/recipes/share-all`, `POST /api/v1/recipes/unshare-all`
 - `GET|PUT|DELETE /api/v1/recipes/{id}` (GET also resolves slugs; DELETE is 202), `GET /api/v1/recipes/{id}/edit`, `GET /api/v1/recipes/{id}/similar`, `GET /api/v1/recipes/{id}/exists`, `POST|DELETE /api/v1/recipes/{id}/save`, `POST /api/v1/recipes/{id}/shopping`, `POST /api/v1/recipes/{id}/share`, `POST /api/v1/recipes/{id}/unshare`

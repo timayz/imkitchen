@@ -391,6 +391,9 @@ async fn adding_a_recipe_takes_an_optional_household_size() -> anyhow::Result<()
     assert_eq!(status, StatusCode::NO_CONTENT, "{body}");
     let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
     assert_eq!(body["entries"][0]["servings"], 6);
+    // A recipe added on its own belongs to no dish.
+    assert!(body["entries"][0]["dish_id"].is_null(), "{body}");
+    assert_eq!(body["dishes"], json!([]));
 
     // Bodiless (the mobile queue, older clients): back to the settings value.
     let household = app

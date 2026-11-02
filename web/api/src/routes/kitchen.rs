@@ -41,6 +41,17 @@ pub async fn remove(
     Ok(StatusCode::NO_CONTENT)
 }
 
+/// Remove a whole composed dish (every recipe of its group) from the list.
+#[tracing::instrument(skip_all, fields(user = user.id))]
+pub async fn remove_dish(
+    State(app): State<AppState>,
+    user: ApiUser,
+    Path((id,)): Path<(String,)>,
+) -> Result<StatusCode, ApiError> {
+    kitchen::remove_dish(&app, &user.id, &id).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
 #[tracing::instrument(skip_all, fields(user = user.id))]
 pub async fn dish(
     State(app): State<AppState>,

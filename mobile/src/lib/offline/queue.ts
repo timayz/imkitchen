@@ -1,6 +1,6 @@
 import { ApiError, isOffline } from '../api/client.js'
 import { getGroceries, setGroceryChecked } from '../api/groceries.js'
-import { getCooking, getDish, getKitchen, removeFromList, setStatus } from '../api/kitchen.js'
+import { getCooking, getDish, getKitchen, removeDishFromList, removeFromList, setStatus } from '../api/kitchen.js'
 import { addRecipeToList, getRecipe, saveRecipe, unsaveRecipe } from '../api/recipes.js'
 import { patchDoc, revalidate, setRebaseHook, writeDoc } from '../cache.js'
 import { db } from '../db.js'
@@ -100,12 +100,15 @@ function send(op: Op): Promise<unknown> {
       return op.saved ? saveRecipe(op.id) : unsaveRecipe(op.id)
     case 'list':
       return op.in_list ? addRecipeToList(op.id, op.household_size) : removeFromList(op.id)
+    case 'dish_remove':
+      return removeDishFromList(op.id)
   }
 }
 
 /** Whether a rejected op is settled on the server anyway. */
 function settled(op: Op, err: ApiError): boolean {
-  return op.kind === 'list' && !op.in_list && err.status === 404
+  if (err.status !== 404) return false
+  return (op.kind === 'list' && !op.in_list) || op.kind === 'dish_remove'
 }
 
 const fetchers: Record<string, (id: string) => Promise<unknown>> = {

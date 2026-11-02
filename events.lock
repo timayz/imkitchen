@@ -61,6 +61,8 @@ event imkitchen-types/RecipeShare::AllMadePrivate unit
 event imkitchen-types/RecipeShare::AllSharedToCommunity { owner_name: String }
 event imkitchen-types/Shopping::Checked { ingredient: String }
 event imkitchen-types/Shopping::DishAdded { dish_id: String, recipe_ids: Vec<String>, ingredients: Vec<Ingredient> }
+event imkitchen-types/Shopping::DishPlaced { dish_id: String, recipe_ids: Vec<String> }
+event imkitchen-types/Shopping::DishRemoved { dish_id: String, recipe_ids: Vec<String>, ingredients: Vec<Ingredient> }
 event imkitchen-types/Shopping::Generated { ingredients: Vec<Ingredient>, from_date: u64, days: u8 }
 event imkitchen-types/Shopping::ListGenerated { recipe_ids: Vec<String>, ingredients: Vec<Ingredient> }
 event imkitchen-types/Shopping::RecipeAdded { recipe_id: String, recipe_ids: Vec<String>, ingredients: Vec<Ingredient> }
@@ -100,7 +102,7 @@ view imkitchen-core/recipe/Recipe rev=3 { id: String, owner_id: String, recipe_t
 view imkitchen-core/recipe/RecipeShareState rev=1 { id: String, cursor: String, aggregate_version: u16 }
 view imkitchen-core/recipe/favorite/Favorite rev=1 { id: String, saved: bool, cursor: String, aggregate_version: u16 }
 view imkitchen-core/recipe/follow/ChefFollow rev=0 { id: String, following: bool, cursor: String, aggregate_version: u16 }
-view imkitchen-core/shopping/Shopping rev=5 { user_id: String, checked: HashSet<String>, ingredients: HashSet<String>, recipes: Vec<String>, statuses: HashMap<String, RecipeStatus>, generated_at: u64, servings: HashMap<String, u16>, cursor: String, aggregate_version: u16 }
+view imkitchen-core/shopping/Shopping rev=6 { user_id: String, checked: HashSet<String>, ingredients: HashSet<String>, recipes: Vec<String>, statuses: HashMap<String, RecipeStatus>, generated_at: u64, servings: HashMap<String, u16>, dishes: Vec<ListDish>, cursor: String, aggregate_version: u16 } with ListDish { dish_id: String, recipe_ids: Vec<String> }
 view imkitchen-identity/User rev=3 { id: String, role: Role, state: State, ad_consent: bool, deleted: bool, cursor: String, aggregate_version: u16 } with State enum { Active, Suspended }
 view imkitchen-identity/meal_preferences/MealPreferences rev=4 { id: String, household_size: u16, dietary_restrictions: Vec<DietaryRestriction>, cuisine_variety_weight: f32, recipe_types: Vec<RecipeType>, aisle_order: Vec<IngredientCategory>, sources: MealSources, cursor: String, aggregate_version: u16 }
 view imkitchen-identity/password/Password rev=1 { id: String, user_id: String, completed: bool, expire_at: u64, cursor: String, aggregate_version: u16 }

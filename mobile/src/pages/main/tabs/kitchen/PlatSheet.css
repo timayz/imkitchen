@@ -1,0 +1,101 @@
+.plat__eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--color-ink-3);
+}
+
+.plat__title {
+  font-size: 24px;
+  line-height: 28px;
+  font-family: 'Fraunces';
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  color: var(--color-ink);
+}
+
+.plat__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plat__row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 10px;
+  background-color: var(--color-paper);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line-2);
+}
+
+.plat__row--done {
+  opacity: 0.7;
+}
+
+.plat__tile {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  align-items: center;
+  justify-content: center;
+}
+
+.plat__emoji {
+  font-size: 20px;
+}
+
+.plat__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plat__course {
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.plat__name {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--color-ink);
+  text-overflow: ellipsis;
+}
+
+.plat__name--done {
+  text-decoration: line-through;
+}
+
+.plat__meta {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--color-ink-3);
+}
+
+.plat__cook {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background-color: var(--color-ink);
+}
+
+.plat__cook--again {
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line);
+}
+
+.plat__cook-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-cream);
+}
+
+.plat__cook-text--again {
+  color: var(--color-ink);
+}

@@ -2,7 +2,7 @@ use evento::{Executor, ProjectionAggregate};
 use imkitchen_types::{
     meal_preferences::MealSources,
     recipe::RecipeType,
-    shopping::{ListGenerated, ServingsSet},
+    shopping::{DishPlaced, ListGenerated, ServingsSet},
 };
 use std::collections::{HashMap, HashSet};
 use validator::Validate;
@@ -50,7 +50,10 @@ impl<E: Executor> super::Module<E> {
     ///    accept one; a dish that already has a side or a sauce keeps its own;
     /// 4. the list is written in meal order — starter, main, sides, dessert,
     ///    drink, sauces — and the merged ingredients are scaled to
-    ///    `household_size`, which is recorded for every recipe (`ServingsSet`).
+    ///    `household_size`, which is recorded for every recipe (`ServingsSet`);
+    /// 5. each dish meal's own recipes (as composed, before the fill) are
+    ///    recorded as a group (`DishPlaced`) so the kitchen shows the dish as
+    ///    one row.
     pub async fn generate(
         &self,
         input: GenerateList,
@@ -71,10 +74,7 @@ impl<E: Executor> super::Module<E> {
         };
         meals.truncate(count);
 
-        let mut used: HashSet<String> = meals
-            .iter()
-            .flat_map(|meal| meal.clone().into_ids())
-            .collect();
+        let mut used: HashSet<String> = meals.iter().flat_map(Meal::ids).collect();
 
         if meals.len() < count && input.sources.main_courses() {
             let mains = match randomize {
@@ -145,6 +145,17 @@ impl<E: Executor> super::Module<E> {
             ),
         };
 
+        // The dish's own recipes, before random courses are filled in around it.
+        let placed: Vec<DishPlaced> = meals
+            .iter()
+            .filter_map(|meal| {
+                meal.dish_id.clone().map(|dish_id| DishPlaced {
+                    dish_id,
+                    recipe_ids: meal.ids(),
+                })
+            })
+            .collect();
+
         let mut recipe_ids: Vec<String> = Vec::with_capacity(meals.len() * 4);
         for mut meal in meals {
             meal.fill(&mut pools);
@@ -166,20 +177,20 @@ impl<E: Executor> super::Module<E> {
             },
         );
 
-        self.load_or_empty(&request_by)
-            .await?
-            .write()?
-            .event(&ListGenerated {
-                recipe_ids: recipe_ids.clone(),
-                ingredients,
-            })
-            .event(&ServingsSet {
-                recipe_ids,
-                household_size: input.household_size,
-            })
-            .requested_by(request_by)
-            .commit(&self.executor)
-            .await?;
+        let shopping = self.load_or_empty(&request_by).await?;
+        let mut builder = shopping.write()?.requested_by(request_by).to_owned();
+        builder.event(&ListGenerated {
+            recipe_ids: recipe_ids.clone(),
+            ingredients,
+        });
+        builder.event(&ServingsSet {
+            recipe_ids,
+            household_size: input.household_size,
+        });
+        for dish in &placed {
+            builder.event(dish);
+        }
+        builder.commit(&self.executor).await?;
 
         Ok(())
     }

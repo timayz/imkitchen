@@ -17,7 +17,7 @@ use imkitchen_types::recipe::{
 };
 use imkitchen_types::shopping::RecipeStatus;
 use imkitchen_web_grocery::{GroceriesTemplate, grocery_view};
-use imkitchen_web_kitchen::{CookingTemplate, KitchenTemplate, ListEntry};
+use imkitchen_web_kitchen::{CookingTemplate, KitchenTemplate, ListEntry, ListItem};
 use imkitchen_web_recipe::routes::cook::{CookTemplate, PageQuery as CookPageQuery};
 use imkitchen_web_recipe::routes::detail::{DetailTemplate, SimilarTemplate};
 use imkitchen_web_recipe::routes::index::{IndexTemplate as RecipesIndexTemplate, PageQuery};
@@ -439,6 +439,7 @@ pub fn kitchen() -> KitchenTemplate {
             cook_time: r.cook_time,
             thumbnail_version: r.thumbnail_version.clone(),
             blur_placeholder: r.blur_placeholder.clone(),
+            dish_id: None,
         })
         .collect();
 
@@ -457,12 +458,16 @@ pub fn kitchen() -> KitchenTemplate {
         .cloned()
         .collect();
 
+    let items = entries.iter().cloned().map(ListItem::Recipe).collect();
+
     KitchenTemplate {
         current_path: "kitchen".to_owned(),
         user: demo_user(),
         entries,
+        items,
         slot_recipe,
         focused_status: focused_entry.status,
+        focused_dish: None,
         completed_count,
         total_count,
         prep_ahead,

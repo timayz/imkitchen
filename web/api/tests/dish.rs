@@ -396,6 +396,14 @@ async fn adds_a_dish_to_the_kitchen_list() -> anyhow::Result<()> {
         .map(|e| e["name"].as_str().unwrap())
         .collect();
     assert_eq!(names, vec!["Roast chicken", "Potatoes", "Gravy"]);
+    // The three entries form one row, named after the dish.
+    for entry in body["entries"].as_array().unwrap() {
+        assert_eq!(entry["dish_id"], json!(id), "{entry}");
+    }
+    assert_eq!(
+        body["dishes"],
+        json!([{ "id": id, "name": "Sunday roast" }])
+    );
 
     let (_, body) = call(&app, &session, "GET", &format!("/api/v1/dishes/{id}"), None).await?;
     assert_eq!(body["in_list"], true);
@@ -403,6 +411,74 @@ async fn adds_a_dish_to_the_kitchen_list() -> anyhow::Result<()> {
     // The groceries hold the three ingredients.
     let (_, body) = call(&app, &session, "GET", "/api/v1/groceries", None).await?;
     assert_eq!(body["total_items"], 3, "{body}");
+
+    // Removing the dish takes every recipe of its group off the list.
+    let (status, _) = call(
+        &app,
+        &session,
+        "DELETE",
+        &format!("/api/v1/kitchen/dishes/{id}"),
+        None,
+    )
+    .await?;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (_, body) = call(&app, &session, "GET", "/api/v1/kitchen", None).await?;
+    assert_eq!(body["kind"], "empty", "{body}");
+    let (status, _) = call(
+        &app,
+        &session,
+        "DELETE",
+        &format!("/api/v1/kitchen/dishes/{id}"),
+        None,
+    )
+    .await?;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+
+    Ok(())
+}
+
+/// Generation keeps a dish's own recipes as one group; the courses drawn
+/// around it and the random main courses are loose entries.
+#[tokio::test]
+async fn generated_dishes_are_grouped_in_the_kitchen() -> anyhow::Result<()> {
+    let app = TestApp::new().await?;
+    let session = sign_in(&app, "chef@imkitchen.test").await?;
+    let pool = seed(&app, &session.user_id).await?;
+
+    let (_, body) = call(
+        &app,
+        &session,
+        "POST",
+        "/api/v1/dishes",
+        Some(json!({ "name": "Sunday roast", "recipe_ids": [pool.main, pool.side] })),
+    )
+    .await?;
+    let id = body["id"].as_str().unwrap().to_owned();
+    app.drain().await?;
+
+    let (status, body) = call(
+        &app,
+        &session,
+        "POST",
+        "/api/v1/kitchen/generate",
+        Some(json!({ "count": 1 })),
+    )
+    .await?;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    assert_eq!(body["kind"], "list");
+    assert_eq!(
+        body["dishes"],
+        json!([{ "id": id, "name": "Sunday roast" }])
+    );
+    let entries = body["entries"].as_array().unwrap();
+    assert_eq!(entries[0]["id"], json!(pool.main));
+    assert_eq!(entries[0]["dish_id"], json!(id));
+    assert_eq!(entries[1]["id"], json!(pool.side));
+    assert_eq!(entries[1]["dish_id"], json!(id));
+    // Whatever was drawn to complete the meal is not part of the dish.
+    for entry in &entries[2..] {
+        assert!(entry["dish_id"].is_null(), "{entry}");
+    }
 
     Ok(())
 }

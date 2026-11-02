@@ -1,16 +1,25 @@
-import { useCallback, useEffect, useRef, useState } from '@lynx-js/react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from '@lynx-js/react';
 
 import { errorMessage } from '../../../../lib/api/client.js';
 import { type Entry, type Overview, generate, getKitchen } from '../../../../lib/api/kitchen.js';
 import { writeDoc } from '../../../../lib/cache.js';
 import { course, minutes } from '../../../../lib/course.js';
 import { t } from '../../../../lib/i18n/index.js';
+import {
+  type Item,
+  dishTime,
+  doneCount,
+  isCooking,
+  isDone,
+  items,
+} from '../../../../lib/kitchen-items.js';
 import { push } from '../../../../lib/nav.js';
 import { enqueue } from '../../../../lib/offline/queue.js';
 import { useResource } from '../../../../lib/use-resource.js';
 import { Button } from '../../../../ui/Button.js';
 import { Spinner } from '../../../../ui/Spinner.js';
 import { GenerateSheet } from './GenerateSheet.js';
+import { PlatSheet } from './PlatSheet.js';
 import './KitchenTab.css';
 
 export interface KitchenTabProps {
@@ -27,6 +36,9 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
   const [notice, setNotice] = useState<string | null>(null);
   const [sheet, setSheet] = useState(false);
   const [busy, setBusy] = useState(false);
+  // The composed dish whose recipes are being picked from, by id: the sheet
+  // reads the live item so statuses stay current while it is open.
+  const [platId, setPlatId] = useState<string | null>(null);
 
   useEffect(() => {
     if (data) setOverview(data);
@@ -51,6 +63,12 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
   const onRemove = useCallback((id: string) => {
     setNotice(null);
     void enqueue({ kind: 'list', id, in_list: false });
+  }, []);
+
+  const onRemoveDish = useCallback((id: string) => {
+    setNotice(null);
+    setPlatId(null);
+    void enqueue({ kind: 'dish_remove', id });
   }, []);
 
   if (!overview) {
@@ -136,11 +154,14 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
   const list = overview;
   const remaining = list.entries.filter((e) => e.status.status !== 'completed').length;
   const allCooked = list.total_count > 0 && list.completed_count === list.total_count;
-  // Still to cook first, in the server's order; cooked ones sink to the bottom.
-  const rows = [
-    ...list.entries.filter((e) => e.status.status !== 'completed'),
-    ...list.entries.filter((e) => e.status.status === 'completed'),
-  ];
+  // One row per loose recipe or composed dish. Still to cook first, in the
+  // server's order; cooked ones sink to the bottom.
+  const all = items(list);
+  const rows = [...all.filter((item) => !isDone(item)), ...all.filter(isDone)];
+  const plat =
+    all.find(
+      (item): item is Item & { kind: 'dish' } => item.kind === 'dish' && item.id === platId
+    ) ?? null;
 
   return (
     <scroll-view className="tab-scroll" scroll-orientation="vertical">
@@ -189,15 +210,26 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
             <text id="kt-hint" className="muted">
               {t('kitchen.swipe_hint')}
             </text>
-            {rows.map((entry, i) => (
-              <Row
-                key={entry.id}
-                id={i === 0 ? 'kt-row' : undefined}
-                entry={entry}
-                busy={busy}
-                onRemove={() => onRemove(entry.id)}
-              />
-            ))}
+            {rows.map((item, i) =>
+              item.kind === 'dish' ? (
+                <DishRow
+                  key={`dish:${item.id}`}
+                  id={i === 0 ? 'kt-row' : undefined}
+                  item={item}
+                  busy={busy}
+                  onOpen={() => setPlatId(item.id)}
+                  onRemove={() => onRemoveDish(item.id)}
+                />
+              ) : (
+                <Row
+                  key={item.entry.id}
+                  id={i === 0 ? 'kt-row' : undefined}
+                  entry={item.entry}
+                  busy={busy}
+                  onRemove={() => onRemove(item.entry.id)}
+                />
+              )
+            )}
             {list.prep_ahead.length > 0 && (
               <view className="kt-prep">
                 <text className="kt-prep__title">⏰ {t('kitchen.prep_ahead')}</text>
@@ -217,6 +249,16 @@ export function KitchenTab({ refreshKey, onAddRecipes }: KitchenTabProps) {
         remaining={remaining}
         onClose={() => setSheet(false)}
         onGenerate={onGenerate}
+      />
+      <PlatSheet
+        plat={plat}
+        busy={busy}
+        onClose={() => setPlatId(null)}
+        onCook={(id) => {
+          setPlatId(null);
+          void push('cooking', { id });
+        }}
+        onRemove={() => plat && onRemoveDish(plat.id)}
       />
     </scroll-view>
   );
@@ -264,32 +306,31 @@ function Chip({ tone, text }: { tone: 'herb' | 'main'; text: string }) {
   );
 }
 
-interface RowProps {
+interface SwipeableProps {
   /** Anchor for the guided tour (first row only). */
   id?: string;
-  entry: Entry;
-  busy: boolean;
-  onRemove: () => void;
+  /** The actions revealed by swiping left, right-aligned. */
+  actions: ReactNode;
+  /** How far a fully open row travels: the width of `actions`. */
+  reveal: number;
+  done: boolean;
+  onTap: () => void;
+  children: ReactNode;
 }
 
 /** Width of one action revealed by swiping a row left. */
 const ACTION = 88;
-/** Travel of a fully open row: the "Recipe" and "Remove" actions side by side. */
-const REVEAL = ACTION * 2;
 /** Horizontal travel before a touch counts as a swipe rather than a tap. */
 const SLOP = 8;
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 
 /**
- * A list entry: tap to cook it, swipe left to reveal "Recipe" and "Remove".
- * The offset is plain state, so the row follows the finger through the
- * background thread; the snap at the end animates through CSS.
+ * A list row: tap it, or swipe left to reveal its actions. The offset is
+ * plain state, so the row follows the finger through the background thread;
+ * the snap at the end animates through CSS.
  */
-function Row({ id, entry, busy, onRemove }: RowProps) {
-  const c = course(entry.recipe_type);
-  const done = entry.status.status === 'completed';
-  const cooking = entry.status.status === 'cooking';
+function Swipeable({ id, actions, reveal, done, onTap, children }: SwipeableProps) {
   const [dx, setDx] = useState(0);
   const [open, setOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -299,7 +340,7 @@ function Row({ id, entry, busy, onRemove }: RowProps) {
   const onTouchStart = (e: { touches: { clientX: number }[] }) => {
     const touch = e.touches[0];
     if (!touch) return;
-    start.current = { x: touch.clientX, dx: open ? -REVEAL : 0 };
+    start.current = { x: touch.clientX, dx: open ? -reveal : 0 };
     moved.current = false;
   };
   const onTouchMove = (e: { touches: { clientX: number }[] }) => {
@@ -310,18 +351,18 @@ function Row({ id, entry, busy, onRemove }: RowProps) {
       moved.current = true;
       setDragging(true);
     }
-    setDx(clamp(start.current.dx + delta, -REVEAL, 0));
+    setDx(clamp(start.current.dx + delta, -reveal, 0));
   };
   const onTouchEnd = () => {
     if (!start.current) return;
     start.current = null;
-    const snap = dx < -REVEAL / 2;
+    const snap = dx < -reveal / 2;
     setOpen(snap);
-    setDx(snap ? -REVEAL : 0);
+    setDx(snap ? -reveal : 0);
     setDragging(false);
   };
-  const onTap = () => {
-    // A swipe ends with a tap on some hosts; never treat it as a cook.
+  const tap = () => {
+    // A swipe ends with a tap on some hosts; never treat it as a tap.
     if (moved.current) {
       moved.current = false;
       return;
@@ -331,9 +372,7 @@ function Row({ id, entry, busy, onRemove }: RowProps) {
       setDx(0);
       return;
     }
-    // The cooking screen itself opens the original site for recipes that
-    // cannot be cooked in-app.
-    if (!busy) void push('cooking', { id: entry.id });
+    onTap();
   };
 
   const classes = ['kt-row'];
@@ -342,14 +381,107 @@ function Row({ id, entry, busy, onRemove }: RowProps) {
 
   return (
     <view id={id} className="kt-swipe">
-      <view className="kt-swipe__actions">
-        <view
-          className="kt-swipe__action kt-swipe__action--recipe"
-          bindtap={() => void push('recipe', { id: entry.id })}
+      <view className="kt-swipe__actions">{actions}</view>
+      <view
+        className={classes.join(' ')}
+        style={{ transform: `translateX(${dx}px)` }}
+        bindtap={tap}
+        bindtouchstart={onTouchStart}
+        bindtouchmove={onTouchMove}
+        bindtouchend={onTouchEnd}
+        bindtouchcancel={onTouchEnd}
+      >
+        {children}
+      </view>
+    </view>
+  );
+}
+
+interface RowProps {
+  id?: string;
+  entry: Entry;
+  busy: boolean;
+  onRemove: () => void;
+}
+
+/** A loose recipe: tap to cook it, swipe left to reveal "Recipe" and "Remove". */
+function Row({ id, entry, busy, onRemove }: RowProps) {
+  const c = course(entry.recipe_type);
+  const done = entry.status.status === 'completed';
+  const cooking = entry.status.status === 'cooking';
+
+  return (
+    <Swipeable
+      id={id}
+      reveal={ACTION * 2}
+      done={done}
+      // The cooking screen itself opens the original site for recipes that
+      // cannot be cooked in-app.
+      onTap={() => {
+        if (!busy) void push('cooking', { id: entry.id });
+      }}
+      actions={
+        <>
+          <view
+            className="kt-swipe__action kt-swipe__action--recipe"
+            bindtap={() => void push('recipe', { id: entry.id })}
+          >
+            <text className="kt-swipe__glyph">📖</text>
+            <text className="kt-swipe__text">{t('kitchen.recipe_short')}</text>
+          </view>
+          <view
+            className="kt-swipe__action kt-swipe__action--remove"
+            bindtap={busy ? undefined : onRemove}
+          >
+            <text className="kt-swipe__glyph">🗑</text>
+            <text className="kt-swipe__text">{t('kitchen.remove_short')}</text>
+          </view>
+        </>
+      }
+    >
+      <view className="kt-row__tile" style={{ backgroundColor: c.soft }}>
+        <text className="kt-row__emoji">{c.emoji}</text>
+      </view>
+      <view className="kt-row__body">
+        <text
+          className={done ? 'kt-row__name kt-row__name--done' : 'kt-row__name'}
+          text-maxline="1"
         >
-          <text className="kt-swipe__glyph">📖</text>
-          <text className="kt-swipe__text">{t('kitchen.recipe_short')}</text>
-        </view>
+          {entry.name}
+        </text>
+        <text className="kt-row__meta">
+          {c.label} · {minutes(entry.total_time)}
+        </text>
+      </view>
+      {done && <Chip tone="herb" text={`✓ ${t('kitchen.cooked_badge')}`} />}
+      {cooking && <Chip tone="main" text={`🔥 ${t('kitchen.cooking')}`} />}
+      <text className="kt-row__chevron">›</text>
+    </Swipeable>
+  );
+}
+
+interface DishRowProps {
+  id?: string;
+  item: Item & { kind: 'dish' };
+  busy: boolean;
+  onOpen: () => void;
+  onRemove: () => void;
+}
+
+/** A composed dish: tap to pick which of its recipes to cook, swipe left to remove it whole. */
+function DishRow({ id, item, busy, onOpen, onRemove }: DishRowProps) {
+  const done = isDone(item);
+  const cooking = isCooking(item);
+
+  return (
+    <Swipeable
+      id={id}
+      reveal={ACTION}
+      done={done}
+      onTap={() => {
+        if (!busy) onOpen();
+      }}
+      actions={
         <view
           className="kt-swipe__action kt-swipe__action--remove"
           bindtap={busy ? undefined : onRemove}
@@ -357,34 +489,32 @@ function Row({ id, entry, busy, onRemove }: RowProps) {
           <text className="kt-swipe__glyph">🗑</text>
           <text className="kt-swipe__text">{t('kitchen.remove_short')}</text>
         </view>
+      }
+    >
+      <view className="kt-row__tile kt-row__tile--dish">
+        <text className="kt-row__emoji">🍽️</text>
       </view>
-      <view
-        className={classes.join(' ')}
-        style={{ transform: `translateX(${dx}px)` }}
-        bindtap={onTap}
-        bindtouchstart={onTouchStart}
-        bindtouchmove={onTouchMove}
-        bindtouchend={onTouchEnd}
-        bindtouchcancel={onTouchEnd}
-      >
-        <view className="kt-row__tile" style={{ backgroundColor: c.soft }}>
-          <text className="kt-row__emoji">{c.emoji}</text>
-        </view>
-        <view className="kt-row__body">
-          <text
-            className={done ? 'kt-row__name kt-row__name--done' : 'kt-row__name'}
-            text-maxline="1"
-          >
-            {entry.name}
-          </text>
-          <text className="kt-row__meta">
-            {c.label} · {minutes(entry.total_time)}
-          </text>
-        </view>
-        {done && <Chip tone="herb" text={`✓ ${t('kitchen.cooked_badge')}`} />}
-        {cooking && <Chip tone="main" text={`🔥 ${t('kitchen.cooking')}`} />}
-        <text className="kt-row__chevron">›</text>
+      <view className="kt-row__body">
+        <text className="kt-row__eyebrow">{t('kitchen.dish')}</text>
+        <text
+          className={done ? 'kt-row__name kt-row__name--done' : 'kt-row__name'}
+          text-maxline="1"
+        >
+          {item.name}
+        </text>
+        <text className="kt-row__meta">
+          {t('kitchen.dish_recipes', { n: item.entries.length })} ·{' '}
+          {minutes(dishTime(item.entries))}
+        </text>
       </view>
-    </view>
+      {done && <Chip tone="herb" text={`✓ ${t('kitchen.cooked_badge')}`} />}
+      {cooking && <Chip tone="main" text={`🔥 ${t('kitchen.cooking')}`} />}
+      {!done && !cooking && (
+        <text className="kt-row__count">
+          {doneCount(item.entries)}/{item.entries.length}
+        </text>
+      )}
+      <text className="kt-row__chevron">›</text>
+    </Swipeable>
   );
 }
