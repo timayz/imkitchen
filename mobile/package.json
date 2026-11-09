@@ -4,7 +4,7 @@
   "description": "imkitchen native mobile app (Sparkling / Lynx)",
   "type": "module",
   "dependencies": {
-    "@lynx-js/react": "0.129.1",
+    "@lynx-js/react": "0.129.2",
     "sparkling-db": "file:methods/db",
     "sparkling-keep-awake": "file:methods/keep-awake",
     "sparkling-media": "2.0.1",
@@ -14,10 +14,10 @@
   },
   "devDependencies": {
     "@lynx-js/qrcode-rsbuild-plugin": "0.7.3",
-    "@lynx-js/react-rsbuild-plugin": "0.22.1",
-    "@lynx-js/rspeedy": "0.18.4",
+    "@lynx-js/react-rsbuild-plugin": "0.22.2",
+    "@lynx-js/rspeedy": "0.18.5",
     "@lynx-js/types": "4.4.2",
-    "@rsbuild/core": "2.3.0",
+    "@rsbuild/core": "2.3.1",
     "@testing-library/jest-dom": "7.0.1",
     "@types/react": "19.3.0",
     "@vitest/coverage-v8": "4.1.12",
