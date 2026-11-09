@@ -24,7 +24,7 @@
     "jsdom": "30.1.3",
     "prettier": "3.9.10",
     "sparkling-app-cli": "2.0.1",
-    "typescript": "6.0.3",
+    "typescript": "7.0.2",
     "vitest": "4.1.12"
   },
   "engines": {
