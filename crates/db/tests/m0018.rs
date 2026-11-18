@@ -1,4 +1,4 @@
-use evento::migrator::{Migrate, Plan};
+use evento::migrator::Plan;
 use evento::{Aggregate, WriteBuilder};
 use imkitchen_types::favorite::{Favorite, Saved, Unsaved};
 use sha3::{Digest, Sha3_256};

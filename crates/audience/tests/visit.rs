@@ -1,9 +1,6 @@
 use std::{path::PathBuf, str::FromStr};
 
-use evento::{
-    Sqlite,
-    migrator::{Migrate, Plan},
-};
+use evento::{Sqlite, migrator::Plan};
 use imkitchen_audience::daily_stat::BreakdownDim;
 use imkitchen_audience::{Module, RecordVisitInput, State};
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};

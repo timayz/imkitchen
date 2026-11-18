@@ -1,5 +1,5 @@
 use evento::Sqlite;
-use evento::migrator::{Migrate, Plan};
+use evento::migrator::Plan;
 use imkitchen_core::State;
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 use std::{path::PathBuf, str::FromStr};

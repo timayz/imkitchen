@@ -13,7 +13,7 @@ mod ua;
 pub use record_visit::RecordVisitInput;
 
 use evento::Executor;
-use sqlx_migrator::{Info, Migrator};
+use sqlx_migrator::{Migrator, migrator::SupportedDatabase};
 use std::ops::Deref;
 
 pub(crate) mod m0001 {
@@ -36,8 +36,9 @@ pub(crate) mod m0001 {
 /// Migrator for the dedicated audience database: evento's own schema plus the
 /// rollup table. Entirely separate from `imkitchen_db::migrator` — the two
 /// databases' migration state never mixes.
-pub fn migrator<DB: sqlx::Database>() -> Result<Migrator<DB>, sqlx_migrator::Error>
+pub fn migrator<DB: SupportedDatabase>() -> Result<Migrator<DB>, sqlx_migrator::Error>
 where
+    Migrator<DB>: Default,
     evento::sql_migrator::InitMigration: sqlx_migrator::Migration<DB>,
     evento::sql_migrator::M0002: sqlx_migrator::Migration<DB>,
     evento::sql_migrator::M0003: sqlx_migrator::Migration<DB>,
@@ -46,6 +47,9 @@ where
     evento::sql_migrator::M0006: sqlx_migrator::Migration<DB>,
     evento::sql_migrator::M0007: sqlx_migrator::Migration<DB>,
     evento::sql_migrator::M0008: sqlx_migrator::Migration<DB>,
+    evento::sql_migrator::M0009: sqlx_migrator::Migration<DB>,
+    evento::sql_migrator::M0010: sqlx_migrator::Migration<DB>,
+    evento::sql_migrator::M0011: sqlx_migrator::Migration<DB>,
     m0001::Migration: sqlx_migrator::Migration<DB>,
 {
     let mut migrator = evento::sql_migrator::new::<DB>()?;

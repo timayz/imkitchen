@@ -6,7 +6,7 @@
 
 use std::str::FromStr;
 
-use evento::migrator::{Migrate, Plan};
+use evento::migrator::Plan;
 use imkitchen_web_shared::AppState;
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 use temp_dir::TempDir;

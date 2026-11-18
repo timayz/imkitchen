@@ -1,9 +1,6 @@
 use std::{path::PathBuf, str::FromStr};
 
-use evento::{
-    Sqlite,
-    migrator::{Migrate, Plan},
-};
+use evento::{Sqlite, migrator::Plan};
 use imkitchen_core::State;
 use imkitchen_core::contact::SubmitFormInput;
 use imkitchen_types::contact::Subject;

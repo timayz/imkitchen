@@ -1,5 +1,5 @@
 use anyhow::Result;
-use evento::migrator::{Migrate, Plan};
+use evento::migrator::Plan;
 use sqlx::migrate::MigrateDatabase;
 
 /// Migrates the dedicated audience database (evento schema + rollup table).
