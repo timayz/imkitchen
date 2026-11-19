@@ -2,7 +2,7 @@ use std::io::Cursor;
 use std::str::FromStr;
 
 use evento::Sqlite;
-use evento::migrator::{Migrate, Plan};
+use evento::migrator::Plan;
 use image::{DynamicImage, ImageFormat, RgbImage};
 use imkitchen_core::State;
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};

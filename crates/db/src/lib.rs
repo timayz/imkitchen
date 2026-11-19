@@ -1,4 +1,4 @@
-use sqlx_migrator::{Info, Migrator};
+use sqlx_migrator::{Migrator, migrator::SupportedDatabase};
 
 pub(crate) mod m0001;
 pub(crate) mod m0002;
@@ -43,8 +43,9 @@ pub mod user_invoice_user;
 pub mod user_login;
 pub mod user_subscription;
 
-pub fn migrator<DB: sqlx::Database>() -> Result<Migrator<DB>, sqlx_migrator::Error>
+pub fn migrator<DB: SupportedDatabase>() -> Result<Migrator<DB>, sqlx_migrator::Error>
 where
+    Migrator<DB>: Default,
     evento::sql_migrator::InitMigration: sqlx_migrator::Migration<DB>,
     evento::sql_migrator::M0002: sqlx_migrator::Migration<DB>,
     evento::sql_migrator::M0003: sqlx_migrator::Migration<DB>,
@@ -53,6 +54,9 @@ where
     evento::sql_migrator::M0006: sqlx_migrator::Migration<DB>,
     evento::sql_migrator::M0007: sqlx_migrator::Migration<DB>,
     evento::sql_migrator::M0008: sqlx_migrator::Migration<DB>,
+    evento::sql_migrator::M0009: sqlx_migrator::Migration<DB>,
+    evento::sql_migrator::M0010: sqlx_migrator::Migration<DB>,
+    evento::sql_migrator::M0011: sqlx_migrator::Migration<DB>,
     m0001::Migration: sqlx_migrator::Migration<DB>,
     m0002::Migration: sqlx_migrator::Migration<DB>,
     m0003::Migration: sqlx_migrator::Migration<DB>,

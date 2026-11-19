@@ -61,11 +61,11 @@ pub struct UserView {
 #[derive(Debug, Default, Clone, FromRow, Cursor)]
 pub struct UserViewList {
     #[cursor(RecipeUser::Id, 1)]
-    #[cursor(by_difficulty, RecipeUser::Id, 1)]
+    #[cursor(by_difficulty(RecipeUser::Id, 1))]
     // Tiebreaker for relevance pagination. Keyed on `RecipeUserFts::Id` (not
     // `RecipeUser::Id`) only so both `by_relevance` columns share one enum, as
     // the cursor derive requires; the outer query resolves it to `sub.id`.
-    #[cursor(by_relevance, RecipeUserFts::Id, 1)]
+    #[cursor(by_relevance(RecipeUserFts::Id, 1))]
     pub id: String,
     pub owner_id: String,
     pub owner_name: Option<String>,
@@ -78,7 +78,7 @@ pub struct UserViewList {
     pub dietary_restrictions: sqlx::types::Json<Vec<DietaryRestriction>>,
     pub accepts_accompaniment: bool,
     pub is_shared: bool,
-    #[cursor(by_difficulty, RecipeUser::DifficultyScore, 2)]
+    #[cursor(by_difficulty(RecipeUser::DifficultyScore, 2))]
     pub difficulty_score: u16,
     #[cursor(RecipeUser::CreatedAt, 2)]
     pub created_at: u64,
@@ -88,7 +88,7 @@ pub struct UserViewList {
     // `#[sqlx(default)]` leaves it 0.0 for the other sorts, which never select
     // it. Primary key (order 2) of the `by_relevance` cursor — bm25 is
     // more-negative for better matches, so ascending order is best-first.
-    #[cursor(by_relevance, RecipeUserFts::Rank, 2)]
+    #[cursor(by_relevance(RecipeUserFts::Rank, 2))]
     #[sqlx(default)]
     pub rank: f64,
 }

@@ -1,7 +1,4 @@
-use evento::{
-    Sqlite,
-    migrator::{Migrate, Plan},
-};
+use evento::{Sqlite, migrator::Plan};
 use imkitchen_core::State;
 use imkitchen_core::recipe::ImportInput;
 use imkitchen_types::recipe::{Ingredient, IngredientCategory, IngredientUnit, RecipeType};
