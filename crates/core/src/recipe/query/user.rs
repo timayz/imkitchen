@@ -58,6 +58,8 @@ pub struct UserView {
     pub blur_placeholder: Option<String>,
 }
 
+// Each named cursor repeats the same `(column, order)` tiebreaker on `id`.
+#[allow(clippy::duplicated_attributes)]
 #[derive(Debug, Default, Clone, FromRow, Cursor)]
 pub struct UserViewList {
     #[cursor(RecipeUser::Id, 1)]

@@ -42,6 +42,8 @@ pub(crate) async fn load<E: Executor>(
         .await
 }
 
+// Each named cursor repeats the same `(column, order)` tiebreaker on `id`.
+#[allow(clippy::duplicated_attributes)]
 #[evento::projection(FromRow, Cursor, Debug)]
 pub struct AdminView {
     #[cursor(by_recently_joined, UserAdmin::Id, 1)]
