@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 45
     services:
       maildev:
-        image: maildev/maildev:2.2.1
+        image: maildev/maildev:3.0.0
         ports:
           - 1025:1025
           - 1080:1080
