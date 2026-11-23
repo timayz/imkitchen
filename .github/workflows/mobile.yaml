@@ -75,7 +75,7 @@ jobs:
           packages: platforms;android-37.0 build-tools;37.0.0 platform-tools
           accept-android-sdk-licenses: true
           log-accepted-android-sdk-licenses: false
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Build
         working-directory: mobile/android
         run: ./gradlew assembleDebug --console=plain
