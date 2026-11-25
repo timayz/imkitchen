@@ -1,7 +1,11 @@
+mod helpers;
+
 use std::net::SocketAddr;
 use std::time::Duration;
 
+use helpers::{TestCluster, TestNode};
 use imkitchen_api::server;
+use tempfile::TempDir;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::oneshot;
@@ -11,21 +15,44 @@ struct TestServer {
     addr: SocketAddr,
     shutdown: oneshot::Sender<()>,
     served: JoinHandle<anyhow::Result<()>>,
+    /// The node's store lives here.
+    _dir: TempDir,
 }
 
+/// The api over a node alone.
 async fn start(shutdown_timeout: Duration) -> TestServer {
-    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-    let addr = listener.local_addr().unwrap();
-    let (shutdown, stop) = oneshot::channel::<()>();
-    let served = tokio::spawn(server::serve(listener, shutdown_timeout, async {
-        let _ = stop.await;
-    }));
+    let (node, dir) = TestNode::alone().await;
+    let (addr, shutdown, served) = serve(&node, shutdown_timeout).await;
 
     TestServer {
         addr,
         shutdown,
         served,
+        _dir: dir,
     }
+}
+
+async fn serve(
+    node: &TestNode,
+    shutdown_timeout: Duration,
+) -> (
+    SocketAddr,
+    oneshot::Sender<()>,
+    JoinHandle<anyhow::Result<()>>,
+) {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let (shutdown, stop) = oneshot::channel::<()>();
+    let served = tokio::spawn(server::serve(
+        listener,
+        node.state(),
+        shutdown_timeout,
+        async {
+            let _ = stop.await;
+        },
+    ));
+
+    (addr, shutdown, served)
 }
 
 /// One request on its own connection; returns the raw response.
@@ -54,6 +81,34 @@ async fn health_answers_ok() {
         "{response}"
     );
     assert!(response.ends_with(r#"{"status":"ok"}"#), "{response}");
+}
+
+#[tokio::test]
+async fn a_node_alone_is_ready() {
+    let server = start(Duration::from_secs(5)).await;
+
+    let response = get(server.addr, "/ready").await;
+
+    assert!(response.starts_with("HTTP/1.1 200 OK"), "{response}");
+    assert!(response.contains(r#""status":"ok""#), "{response}");
+    assert!(response.contains(r#""nodes":1"#), "{response}");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn every_node_of_a_cluster_is_ready() {
+    let cluster = TestCluster::start(3).await;
+
+    for (id, node) in cluster.nodes.iter().enumerate() {
+        let (addr, _shutdown, _served) = serve(node, Duration::from_secs(5)).await;
+
+        let response = get(addr, "/ready").await;
+
+        assert!(response.starts_with("HTTP/1.1 200 OK"), "{response}");
+        assert!(response.contains(&format!(r#""node":{id},"#)), "{response}");
+        assert!(response.contains(r#""nodes":3"#), "{response}");
+    }
+
+    cluster.shutdown().await;
 }
 
 #[tokio::test]

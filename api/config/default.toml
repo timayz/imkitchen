@@ -10,6 +10,27 @@ port = 3000
 # server to stop, in seconds. Past it the process exits anyway.
 shutdown_timeout_secs = 30
 
+[database]
+# This node's store: one Turso file holding the events, the subscription
+# cursors and the cluster journal. `migrate` creates it; `serve` refuses to
+# start without it. The node keeps its cluster state in the same directory.
+path = "data/imkitchen.db"
+
+# Without this section the node runs alone. With it, the api instances listed
+# in `peers` replicate every write between them (evento cluster): each runs
+# over a store of its own and a majority of them must be up for a write to go
+# through. See `config/cluster.toml` for a local three-node cluster.
+#
+# [cluster]
+# node_id = 0                        # this node's index into `peers`
+# peers = ["api-0.api:7000", "api-1.api:7000", "api-2.api:7000"]
+# listen = "0.0.0.0:7000"            # required when this node's peer is a name
+#
+# [cluster.tls]                      # mutual TLS between the nodes
+# ca = "/etc/imkitchen/tls/ca.crt"
+# cert = "/etc/imkitchen/tls/tls.crt"
+# key = "/etc/imkitchen/tls/tls.key"
+
 [monitoring]
 # A `tracing_subscriber::EnvFilter` directive, e.g. "info,tower_http=debug".
 log_level = "info"

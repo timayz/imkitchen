@@ -5,15 +5,29 @@
 //! then the defaults set in [`Config::load`]. `config/default.toml` documents
 //! the full shape.
 
+use std::path::PathBuf;
 use std::time::Duration;
 
 use config::{ConfigError, Environment, File};
+use evento::cluster::Settings;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct Config {
     pub server: ServerConfig,
+    pub database: DatabaseConfig,
+    /// This node's place among the api instances that replicate the store
+    /// (`node_id`, `peers`, …). Absent: a node alone, talking to no one.
+    #[serde(default)]
+    pub cluster: Option<Settings>,
     pub monitoring: MonitoringConfig,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct DatabaseConfig {
+    /// This node's store: one Turso file, created by `migrate`. The node
+    /// keeps its cluster state in the same directory.
+    pub path: PathBuf,
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
@@ -46,6 +60,7 @@ impl Config {
             .set_default("server.host", "0.0.0.0")?
             .set_default("server.port", 3000)?
             .set_default("server.shutdown_timeout_secs", 30)?
+            .set_default("database.path", "data/imkitchen.db")?
             .set_default("monitoring.log_level", "info")?
             .set_default("monitoring.log_json", false)?
             .set_default("monitoring.log_target", true)?
@@ -55,10 +70,18 @@ impl Config {
             builder = builder.add_source(File::with_name(path).required(true));
         }
 
-        builder
+        let config: Self = builder
             .add_source(Environment::with_prefix("imkitchen_api").separator("__"))
             .build()?
-            .try_deserialize()
+            .try_deserialize()?;
+
+        if let Some(cluster) = &config.cluster {
+            cluster
+                .validate()
+                .map_err(|err| ConfigError::Message(err.to_string()))?;
+        }
+
+        Ok(config)
     }
 }
 
@@ -87,6 +110,22 @@ mod tests {
 
         assert_eq!(config.server.port, 3100);
         assert_eq!(config.server.host, "0.0.0.0");
+    }
+
+    #[test]
+    fn cluster_section_is_read_and_validated() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("cluster.toml");
+        let peers = r#"peers = ["127.0.0.1:7000", "127.0.0.1:7001", "127.0.0.1:7002"]"#;
+
+        std::fs::write(&path, format!("[cluster]\nnode_id = 1\n{peers}\n")).unwrap();
+        let cluster = Config::load(path.to_str()).unwrap().cluster.unwrap();
+        assert_eq!(cluster.node_id, 1);
+        assert_eq!(cluster.peers.len(), 3);
+
+        std::fs::write(&path, format!("[cluster]\nnode_id = 3\n{peers}\n")).unwrap();
+        let err = Config::load(path.to_str()).unwrap_err();
+        assert!(err.to_string().contains("cluster.node_id"), "{err}");
     }
 
     #[test]

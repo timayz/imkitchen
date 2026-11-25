@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -5,23 +6,36 @@ use axum::{Router, routing::get};
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
 
-use crate::health::health;
+use crate::cluster::{Cluster, Executor};
+use crate::health::{health, ready};
 
-pub fn router() -> Router {
+#[derive(Clone)]
+pub struct AppState {
+    /// This node of the cluster, for what it says about itself.
+    pub cluster: Arc<Cluster>,
+    /// The event store: writes go through the cluster, reads come from this
+    /// node's file.
+    pub executor: Executor,
+}
+
+pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(health))
+        .route("/ready", get(ready))
         .layer(TraceLayer::new_for_http())
+        .with_state(state)
 }
 
 /// Serves until `shutdown` resolves, then stops accepting connections and
 /// gives the requests in flight `shutdown_timeout` to finish.
 pub async fn serve(
     listener: TcpListener,
+    state: AppState,
     shutdown_timeout: Duration,
     shutdown: impl Future<Output = ()> + Send + 'static,
 ) -> Result<()> {
     let (stopping_tx, stopping_rx) = tokio::sync::oneshot::channel::<()>();
-    let server = axum::serve(listener, router()).with_graceful_shutdown(async move {
+    let server = axum::serve(listener, router(state)).with_graceful_shutdown(async move {
         shutdown.await;
         tracing::info!("shutting down");
         let _ = stopping_tx.send(());

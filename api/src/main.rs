@@ -1,9 +1,15 @@
+use std::time::Duration;
+
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use imkitchen_api::config::{Config, MonitoringConfig};
-use imkitchen_api::server;
+use imkitchen_api::server::{self, AppState};
+use imkitchen_api::{cluster, db};
 use tokio::net::TcpListener;
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
+
+/// How often the node looks at what it keeps for the nodes that are away.
+const CLUSTER_WATCH: Duration = Duration::from_secs(30);
 
 /// imkitchen api
 #[derive(Parser)]
@@ -30,6 +36,8 @@ enum Commands {
         #[arg(long)]
         port: Option<u16>,
     },
+    /// Create the store if needed and apply its pending migrations
+    Migrate,
 }
 
 #[tokio::main]
@@ -44,24 +52,44 @@ async fn main() -> Result<()> {
         port: None,
     }) {
         Commands::Serve { host, port } => serve(config, host, port).await,
+        Commands::Migrate => migrate(config).await,
     }
+}
+
+async fn migrate(config: Config) -> Result<()> {
+    // Closed again right away.
+    drop(db::migrate(&config.database.path).await?);
+    Ok(())
 }
 
 async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Result<()> {
     let host = host.unwrap_or_else(|| config.server.host.clone());
     let port = port.unwrap_or(config.server.port);
+    let store = db::open(&config.database.path).await?;
+    let (cluster, executor) = cluster::open(config.cluster, &config.database.path, store).await?;
+    // Warns when this node nears the writes it may keep for a node that is
+    // away, and about each node it stopped waiting for.
+    let watch = cluster.watch(CLUSTER_WATCH);
     let listener = TcpListener::bind((host.as_str(), port))
         .await
         .with_context(|| format!("failed to bind {host}:{port}"))?;
 
     tracing::info!("listening on http://{}", listener.local_addr()?);
 
-    server::serve(
+    let served = server::serve(
         listener,
+        AppState {
+            cluster: cluster.clone(),
+            executor,
+        },
         config.server.shutdown_timeout(),
         server::shutdown_signal(),
     )
-    .await
+    .await;
+
+    watch.abort();
+    cluster.shutdown().await;
+    served
 }
 
 fn init_tracing(monitoring: &MonitoringConfig) -> Result<()> {
