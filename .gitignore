@@ -6,6 +6,8 @@ coverage/
 *.db
 *.db-shm
 *.db-wal
+*.db-log
+/data/
 
 # Config
 config/*.local.toml

@@ -1,0 +1,6 @@
+# A three-node cluster on localhost, for `make cluster.node0` … `cluster.node2`.
+# Each node says which one it is, where it serves HTTP and where its store is
+# through the environment (see the Makefile).
+
+[cluster]
+peers = ["127.0.0.1:7000", "127.0.0.1:7001", "127.0.0.1:7002"]

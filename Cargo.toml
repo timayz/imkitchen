@@ -21,6 +21,9 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 clap = { version = "4.6", features = ["derive", "env"] }
 config = { version = "0.15", default-features = false, features = ["toml"] }
+evento = { version = "2.0.0-alpha.43", features = ["turso", "cluster"] }
+bitcode = "0.6"
+tempfile = "3.27"
 
 [profile.release]
 codegen-units = 1

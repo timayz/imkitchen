@@ -14,6 +14,13 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 clap.workspace = true
 config.workspace = true
+evento.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["io-util"] }
+bitcode.workspace = true
+tempfile.workspace = true
+
+[package.metadata.cargo-machete]
+# Named by the code `#[evento::aggregate]` generates.
+ignored = ["bitcode"]
