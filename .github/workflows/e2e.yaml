@@ -3,12 +3,11 @@ name: E2E
 # Playwright end-to-end tests against a freshly built server on a throwaway
 # SQLite database, with MailDev receiving the outgoing mail (password reset).
 # Reports and failure artifacts (screenshots, videos, traces) are uploaded.
+#
+# Off until #780: this suite drives the previous web application, which the
+# workspace no longer builds.
 
-on:
-  pull_request:
-  push:
-    branches:
-      - main
+on: workflow_dispatch
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
