@@ -1,0 +1,18 @@
+# Full configuration shape. Every key here has a built-in default; a file given
+# with `--config` (or IMKITCHEN_API_CONFIG) overrides it, and
+# IMKITCHEN_API__<SECTION>__<KEY> environment variables override both
+# (e.g. IMKITCHEN_API__SERVER__PORT=3100).
+
+[server]
+host = "0.0.0.0"
+port = 3000
+# How long requests in flight get to finish once Ctrl+C or SIGTERM asked the
+# server to stop, in seconds. Past it the process exits anyway.
+shutdown_timeout_secs = 30
+
+[monitoring]
+# A `tracing_subscriber::EnvFilter` directive, e.g. "info,tower_http=debug".
+log_level = "info"
+log_json = false
+log_target = true
+log_line_number = true

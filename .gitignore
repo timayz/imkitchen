@@ -9,6 +9,7 @@ coverage/
 
 # Config
 config/*.local.toml
+api/config/*.local.toml
 
 # Environment
 .env

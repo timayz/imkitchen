@@ -1,43 +1,20 @@
-.PHONY: css css-watch dev lint fmt fmt-fix test check machete 
+.PHONY: dev run health lint fmt-check fmt test machete check
 
-start: up dev
+# Optional local overrides for the api, ignored by git.
+API_CONFIG := $(wildcard api/config/dev.local.toml)
+API_ARGS := $(if $(API_CONFIG),--config $(API_CONFIG) )serve
 
-# Build CSS once
-css:
-	tailwindcss -i tailwind.css -o static/css/main.css --minify
-
-# Watch CSS for changes
-css-watch:
-	tailwindcss -i tailwind.css -o static/css/main.css --watch
-
-cert:
-	mkdir -p .docker/traefik/certs
-	sudo mkcert -key-file .docker/traefik/certs/imkitchen.key -cert-file .docker/traefik/certs/imkitchen.crt traefik.localhost docker.imkitchen.localhost imkitchen.localhost
-
-cert.install:
-		sudo mkcert -install
-
-up:
-	DOCKER_GID=$(getent group docker | cut -d: -f3) docker compose up -d --remove-orphans
-
-stop:
-	DOCKER_GID=$(getent group docker | cut -d: -f3) docker compose stop
-
-down:
-	DOCKER_GID=$(getent group docker | cut -d: -f3) docker compose down -v --rmi local --remove-orphans
-
-# Watch and run server on code changes
+# Run the api, restarting it on code changes
 dev:
-	cargo watch -x "run -- --config config/dev.local.toml serve"
+	cargo watch -w api -w Cargo.toml -x "run -p imkitchen-api -- $(API_ARGS)"
 
-reset:
-	cargo run -- --config config/dev.local.toml reset
+# Run the api once
+run:
+	cargo run -p imkitchen-api -- $(API_ARGS)
 
-migrate:
-	cargo run -- --config config/dev.local.toml migrate
-
-clean:
-	cargo clean -p imkitchen
+# Ask the running api for its health (PORT=3100 make health)
+health:
+	curl -fsS http://localhost:$(or $(PORT),3000)/health
 
 # Run Clippy linter for code quality
 lint:
@@ -51,29 +28,14 @@ fmt-check:
 fmt:
 	cargo fmt --all
 
-# Run ALL tests (sequential - use test-parallel for faster execution)
 test:
 	cargo test --workspace
 
-# ============================================================================
-# Parallel Test Execution (optimized for speed)
-# ============================================================================
-# Analysis: 111.92s sequential → ~19.9s parallel (5.6x speedup with make -j)
-# Total: 476 tests across 46 test suites
-# Usage: make test-parallel -j
-#        make test-parallel -j10  (limit to 10 parallel jobs)
-# ============================================================================
-
-# Check for unused dependencies (optional: install with 'cargo install cargo-machete')
+# Check for unused dependencies. Scoped to the workspace members: the previous
+# code base is still on disk until #780 and no longer resolves.
 machete:
-	@if command -v cargo-machete >/dev/null 2>&1; then \
-		cargo machete --with-metadata; \
-	else \
-		echo "⚠ cargo-machete not installed. Skipping unused dependency check."; \
-		echo "  Install with: cargo install cargo-machete"; \
-	fi
+	cargo machete --with-metadata api www admin app
 
 # Run all checks: format, lint, machete, and test (CI-ready)
-check: test lint fmt-fix machete
+check: fmt-check lint machete test
 	@echo "✓ All checks passed!"
-
