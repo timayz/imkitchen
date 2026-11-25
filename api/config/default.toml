@@ -31,6 +31,30 @@ path = "data/imkitchen.db"
 # cert = "/etc/imkitchen/tls/tls.crt"
 # key = "/etc/imkitchen/tls/tls.key"
 
+[auth]
+# How long a session lasts once signed in, in seconds (30 days). A session in
+# use past half of it is extended for as long again.
+session_lifetime_secs = 2592000
+# What the one-time codes mailed to prove an address derive from: 32
+# characters or more, kept out of the store, the same on every node. Required
+# with [cluster]; without it a node alone draws one each time it starts, and
+# the codes mailed before a restart stop working.
+# secret = "…"
+#
+# The root account: the administrator nobody registers, signed in with this
+# address and password and no mailed code, and the only one who makes
+# administrators. `imkitchen-api hash-password` prints the hash of a password.
+#
+# [auth.root]
+# email = "root@example.com"
+# password_hash = "$argon2id$…"
+
+[mail]
+# The server the one-time codes are mailed through: smtp://host:port (plain),
+# smtp://host:587?tls=required (STARTTLS) or smtps://user:password@host:465.
+smtp_url = "smtp://localhost:1025"
+from = "imkitchen <no-reply@imkitchen.localhost>"
+
 [monitoring]
 # A `tracing_subscriber::EnvFilter` directive, e.g. "info,tower_http=debug".
 log_level = "info"

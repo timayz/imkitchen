@@ -1,5 +1,11 @@
+pub mod account;
+mod admin;
+pub mod auth;
 pub mod cluster;
 pub mod config;
 pub mod db;
+pub mod error;
 mod health;
+pub mod mail;
 pub mod server;
+pub mod subscriptions;

@@ -10,7 +10,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use evento::cluster::Settings;
+use imkitchen_api::auth::Auth;
 use imkitchen_api::cluster::{self, Cluster, Executor};
+use imkitchen_api::config::{AuthConfig, RootConfig, Secret};
 use imkitchen_api::db::{self, Store};
 use imkitchen_api::server::AppState;
 use tempfile::TempDir;
@@ -18,6 +20,28 @@ use tempfile::TempDir;
 /// How long a test waits for what the nodes do on their own time: confirming
 /// each other, applying a write another node took, a subscription's pass.
 pub const SETTLE: Duration = Duration::from_secs(30);
+
+/// The root account of the tests' configuration.
+pub const ROOT_EMAIL: &str = "root@example.com";
+pub const ROOT_PASSWORD: &str = "root test password";
+/// The argon2 hash of [`ROOT_PASSWORD`].
+const ROOT_PASSWORD_HASH: &str = "$argon2id$v=19$m=19456,t=2,p=1$diXOV+PTSdOCfHj2wDAlMA$iVEeQUJsww/h81mHmrcmcJRWuZs2mY3bopNrchI/yog";
+
+/// What signing in goes by on every test node: one secret, so the nodes of
+/// a cluster check each other's codes, and the root account above.
+pub fn auth(session_lifetime_secs: u64) -> Arc<Auth> {
+    Arc::new(
+        Auth::new(&AuthConfig {
+            secret: Some(Secret::new("a secret of the tests, 32 characters")),
+            session_lifetime_secs,
+            root: Some(RootConfig {
+                email: ROOT_EMAIL.to_owned(),
+                password_hash: Secret::new(ROOT_PASSWORD_HASH),
+            }),
+        })
+        .unwrap(),
+    )
+}
 
 pub struct TestNode {
     pub cluster: Arc<Cluster>,
@@ -57,6 +81,8 @@ impl TestNode {
         AppState {
             cluster: self.cluster.clone(),
             executor: self.executor.clone(),
+            auth: auth(3600),
+            sign_ins: Arc::default(),
         }
     }
 }
