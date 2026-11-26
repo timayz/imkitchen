@@ -1,0 +1,20 @@
+{{- if and (include "api.clustered" .) .Values.cluster.tls.enabled .Values.cluster.tls.issuerRef }}
+# One certificate for every node: it names each of them as the others reach
+# it, and each presents it both ways.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "api.nodes" . }}
+  labels:
+    {{- include "api.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "api.nodesTlsSecret" . }}
+  commonName: {{ include "api.nodes" . }}
+  dnsNames:
+    {{- include "api.peerHosts" . | fromJsonArray | toYaml | nindent 4 }}
+  usages:
+    - server auth
+    - client auth
+  issuerRef:
+    {{- toYaml .Values.cluster.tls.issuerRef | nindent 4 }}
+{{- end }}

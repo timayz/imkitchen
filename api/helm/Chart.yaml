@@ -1,0 +1,13 @@
+apiVersion: v2
+name: imkitchen-api
+description: The imkitchen api, one node or a cluster of them
+type: application
+version: 0.1.0
+# The image tag deployed when image.tag is left empty.
+appVersion: "1.13.0"
+home: https://imkitchen.app
+sources:
+  - https://github.com/timayz/imkitchen
+maintainers:
+  - name: Timada
+    url: https://imkitchen.app

@@ -14,3 +14,25 @@ on:
 jobs:
   test:
     uses: timayz/.github/.github/workflows/rust-test.yml@v3
+
+  # The image of the api builds; it is pushed when a version is tagged
+  # (publish.yaml). A branch keeps its layers for the builds that follow,
+  # a pull request only reads them.
+  api-image:
+    uses: ./.github/workflows/api-image.yaml
+    with:
+      cache: ${{ github.event_name == 'push' }}
+    secrets:
+      DOCKER_REGISTRY_USER: ${{ secrets.DOCKER_REGISTRY_USER }}
+      DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+
+  # The chart of the api renders, for a cluster and for a node alone.
+  api-chart:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: |
+          for values in api/helm/ci/*-values.yaml; do
+            helm lint --strict api/helm -f "$values"
+            helm template imkitchen api/helm -f "$values" > /dev/null
+          done

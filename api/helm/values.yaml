@@ -1,0 +1,135 @@
+# How many nodes of the api run. Each one keeps every event in a store of its
+# own and a write goes through once a majority of them agreed on it, so three
+# nodes keep serving with one down, five with two. One runs alone.
+#
+# Set once, at install: the cluster is founded with these nodes, and the api
+# has no command yet to add one to a cluster that lives or to take one out.
+replicaCount: 3
+
+image:
+  repository: timayz/imkitchen-api
+  # Empty: the chart's appVersion.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# The non-secret part of the api's configuration (api/config/default.toml
+# says what each key does). The store, the pictures, the ports and the peers
+# of the cluster are the chart's to say.
+config:
+  server:
+    # How long requests in flight get to finish when a pod is asked to stop.
+    shutdownTimeoutSecs: 30
+  auth:
+    # 30 days.
+    sessionLifetimeSecs: 2592000
+    # The address of the root account; its password hash goes in secretEnv
+    # (IMKITCHEN_API__AUTH__ROOT__PASSWORD_HASH). Empty: no root account.
+    rootEmail: ""
+  mail:
+    from: "imkitchen <no-reply@imkitchen.app>"
+  monitoring:
+    logLevel: "info"
+    logJson: true
+    logTarget: true
+    logLineNumber: true
+
+# The secret part of the configuration, as the environment variables the api
+# reads. Kept in a Secret the chart makes:
+#
+#   IMKITCHEN_API__AUTH__SECRET                what the mailed codes derive from, 32
+#                                              characters or more; required with
+#                                              more than one node
+#   IMKITCHEN_API__AUTH__ROOT__PASSWORD_HASH   `imkitchen-api hash-password`
+#   IMKITCHEN_API__MAIL__SMTP_URL              smtps://user:password@host:465
+#   IMKITCHEN_API__SIDECARS__TOKENS__WWW       with sidecars.enabled, 32 characters
+#   IMKITCHEN_API__SIDECARS__TOKENS__ADMIN     or more, one each
+secretEnv: {}
+
+# A Secret made elsewhere that holds the same variables, in place of the one
+# the chart makes from secretEnv.
+existingSecret: ""
+
+# More environment variables, in plain text.
+extraEnv: {}
+
+cluster:
+  # Where the nodes talk to each other, on the headless service: the store
+  # and the pictures they copy to one another.
+  port: 7000
+  imagesPort: 7100
+  # Mutual TLS between the nodes. Without it they talk in clear: for a
+  # network that is theirs alone.
+  tls:
+    enabled: false
+    # The Secret every node mounts: `tls.crt` and `tls.key`, a certificate
+    # that names each node as the others reach it
+    # (<fullname>-0.<fullname>-nodes, <fullname>-1.<fullname>-nodes, …), and
+    # `ca.crt`, the authority it is issued by. Empty: <fullname>-nodes-tls.
+    secretName: ""
+    # With an issuer, the chart asks cert-manager for that certificate:
+    # { kind: ClusterIssuer, name: internal-ca }. It must be a CA issuer,
+    # one that fills `ca.crt`.
+    issuerRef: {}
+
+# The port www and admin follow the events on (evento's remote protocol, not
+# HTTP), each with its token (secretEnv).
+sidecars:
+  enabled: false
+  port: 4000
+  tls:
+    # A Secret with `tls.crt` and `tls.key`. Empty: the tokens travel in
+    # clear.
+    secretName: ""
+
+service:
+  type: ClusterIP
+  port: 3000
+
+# Publishes the api through a Gateway (HTTPRoute), with a certificate for
+# its hostname asked of cert-manager beside the Gateway.
+route:
+  enabled: false
+  hostname: ""
+  parentRef:
+    name: envoy
+    namespace: envoy-gateway-system
+  certificate:
+    enabled: true
+    issuerRef:
+      kind: ClusterIssuer
+      name: letsencrypt
+    annotations: {}
+
+# Each node's own volume: its store and its copy of every picture.
+persistence:
+  size: 15Gi
+  # Empty: the cluster's default class. Local disks suit it: the nodes
+  # replicate the store themselves, and fsync latency is what a write waits
+  # for.
+  storageClassName: ""
+  labels: {}
+
+# CPU and memory each node asks for and may use, as Kubernetes writes it.
+resources: {}
+
+# Longer than config.server.shutdownTimeoutSecs: the node also stops its
+# subscriptions and closes its store.
+terminationGracePeriodSeconds: 60
+
+# Nodes that may be down at once on purpose (a drain, an upgrade). More than
+# a minority of them and writes stop.
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+
+podAnnotations: {}
+podLabels: {}
+nodeSelector: {}
+tolerations: []
+# Empty: the nodes are spread over the machines when there are enough of
+# them.
+affinity: {}

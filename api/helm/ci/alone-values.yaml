@@ -1,0 +1,2 @@
+# What CI renders the chart with: a node alone, nothing on.
+replicaCount: 1
