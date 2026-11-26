@@ -3,6 +3,8 @@
 
 use bitcode::{Decode, Encode};
 
+use crate::image::RecipeImage;
+
 /// One recipe of one user, under a fresh id (`evento::create`). Times are
 /// minutes, 0 when the recipe says none.
 #[evento::aggregate(name = "imkitchen/Recipe")]
@@ -29,8 +31,12 @@ pub enum Recipe {
         cook_minutes: u32,
         servings: u32,
     },
-    /// Gone for good.
+    /// Gone for good, its picture let go of.
     Deleted,
+    /// Shown with a picture, in place of the one it had if it had one.
+    ImageSet { image: RecipeImage },
+    /// Shown without a picture again.
+    ImageRemoved,
 }
 
 /// What a recipe takes of one thing. Persisted in events: its fields are

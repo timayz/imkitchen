@@ -66,6 +66,13 @@ reqwest = { version = "0.13", default-features = false, features = ["rustls", "h
 encoding_rs = "0.8"
 scraper = { version = "0.29", default-features = false }
 html5ever = "0.40"
+# The pictures of the recipes: an upload is decoded, bounded to the two sizes
+# kept and encoded as WebP; imagesize reads a header before anything is
+# decoded.
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "gif"] }
+webp = "0.3"
+imagesize = "0.14"
+bytes = "1"
 
 [profile.release]
 codegen-units = 1

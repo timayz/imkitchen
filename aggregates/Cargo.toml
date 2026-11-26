@@ -8,3 +8,4 @@ authors.workspace = true
 evento.workspace = true
 bitcode.workspace = true
 timada-identity.workspace = true
+timada-core.workspace = true

@@ -31,12 +31,13 @@ pub type Store = Turso;
 /// migration that was released is never edited.
 pub const MIGRATIONS: Migrations<'static> = Migrations::new(
     "imkitchen-api",
-    &[Migration::up(
-        "0001_recipes",
-        // One row per recipe that is not deleted, for its owner's list.
-        // `search` is what a search looks in: the title and the names of
-        // the ingredients, lowercased and without accents.
-        "CREATE TABLE recipes (
+    &[
+        Migration::up(
+            "0001_recipes",
+            // One row per recipe that is not deleted, for its owner's list.
+            // `search` is what a search looks in: the title and the names of
+            // the ingredients, lowercased and without accents.
+            "CREATE TABLE recipes (
             id TEXT NOT NULL PRIMARY KEY,
             owner_id TEXT NOT NULL,
             title TEXT NOT NULL,
@@ -49,11 +50,26 @@ pub const MIGRATIONS: Migrations<'static> = Migrations::new(
             updated_at INTEGER NOT NULL
         );
         CREATE INDEX recipes_listed ON recipes (owner_id, created_at DESC, id DESC);",
-    )],
+        ),
+        Migration::up(
+            "0002_images",
+            // `recipes.image`: the picture a recipe shows, as JSON, when it
+            // shows one. `images`: one row per picture that is used, the id
+            // its files are named after on the nodes and what they are
+            // (JSON), for a node to check the copy it takes from another.
+            "ALTER TABLE recipes ADD COLUMN image TEXT;
+            CREATE TABLE images (
+                file_id TEXT NOT NULL PRIMARY KEY,
+                image_id TEXT NOT NULL,
+                picture TEXT NOT NULL
+            );
+            CREATE INDEX images_of ON images (image_id);",
+        ),
+    ],
 );
 
 /// The tables [`MIGRATIONS`] creates: all of them read models.
-const READ_MODELS: &[&str] = &["recipes"];
+const READ_MODELS: &[&str] = &["recipes", "images"];
 
 /// Every list of migrations the store's schema is made of.
 const SCHEMA: [&Migrations<'static>; 3] = [

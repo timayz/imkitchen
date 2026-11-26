@@ -34,7 +34,75 @@ pub struct Config {
     pub sidecars: Option<SidecarsConfig>,
     pub auth: AuthConfig,
     pub mail: MailConfig,
+    pub images: ImagesConfig,
     pub monitoring: MonitoringConfig,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct ImagesConfig {
+    /// Where this node keeps the pictures of the recipes: files beside the
+    /// store, every node holding its own copy of each.
+    pub dir: PathBuf,
+    /// Where each node takes the pictures the others copy to it, in the
+    /// order of `cluster.peers`, this node included: `http://host:port`, or
+    /// `https://` when the nodes talk over TLS (`[cluster.tls]`). Required
+    /// with more than one node.
+    #[serde(default)]
+    pub peers: Vec<String>,
+    /// The address to bind for the other nodes. Defaults to this node's
+    /// entry in `peers` when that is an address, and is required when it is
+    /// a name; `0.0.0.0:<port>` in a container.
+    #[serde(default)]
+    pub listen: Option<SocketAddr>,
+}
+
+impl ImagesConfig {
+    /// Where this node takes the other nodes' requests, when it has peers:
+    /// `listen`, or the address of its own entry in `peers`.
+    pub fn listen_addr(&self, cluster: Option<&Settings>) -> Option<SocketAddr> {
+        let cluster = cluster.filter(|cluster| cluster.peers.len() > 1)?;
+        self.listen.or_else(|| {
+            let own = self.peers.get(usize::try_from(cluster.node_id).ok()?)?;
+            let (_, address) = own.split_once("://")?;
+            address.trim_end_matches('/').parse().ok()
+        })
+    }
+
+    fn validate(&self, cluster: Option<&Settings>) -> Result<(), ConfigError> {
+        let Some(cluster) = cluster.filter(|cluster| cluster.peers.len() > 1) else {
+            return Ok(());
+        };
+        if self.peers.len() != cluster.peers.len() {
+            return Err(ConfigError::Message(format!(
+                "images.peers must list where each of the {} nodes of cluster.peers takes pictures, in the same order",
+                cluster.peers.len()
+            )));
+        }
+        // A certificate is checked or it is not: the same on every link.
+        let scheme = match cluster.tls {
+            Some(_) => "https://",
+            None => "http://",
+        };
+        for url in &self.peers {
+            if !url.starts_with(scheme) {
+                return Err(ConfigError::Message(format!(
+                    "images.peers: '{url}' must start with {scheme}: the nodes talk {} [cluster.tls]",
+                    if cluster.tls.is_some() {
+                        "over the TLS of"
+                    } else {
+                        "in clear without"
+                    }
+                )));
+            }
+        }
+        if self.listen_addr(Some(cluster)).is_none() {
+            return Err(ConfigError::Message(
+                "images.listen is required: this node's entry in images.peers gives no address to bind (0.0.0.0:<port> in a container)"
+                    .to_owned(),
+            ));
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
@@ -219,6 +287,7 @@ impl Config {
             .set_default("auth.session_lifetime_secs", 30 * 24 * 3600)?
             .set_default("mail.smtp_url", "smtp://localhost:1025")?
             .set_default("mail.from", "imkitchen <no-reply@imkitchen.localhost>")?
+            .set_default("images.dir", "data/images")?
             .set_default("monitoring.log_level", "info")?
             .set_default("monitoring.log_json", false)?
             .set_default("monitoring.log_target", true)?
@@ -241,6 +310,7 @@ impl Config {
         if let Some(sidecars) = &config.sidecars {
             sidecars.validate()?;
         }
+        config.images.validate(config.cluster.as_ref())?;
         match &config.auth.secret {
             Some(secret) if secret.expose().chars().count() < SECRET_MIN_LEN => {
                 return Err(ConfigError::Message(format!(
@@ -295,8 +365,9 @@ mod tests {
         let path = dir.path().join("cluster.toml");
         let peers = r#"peers = ["127.0.0.1:7000", "127.0.0.1:7001", "127.0.0.1:7002"]"#;
         let peers = format!(
-            "{peers}\n[auth]\nsecret = \"{}\"",
-            "s".repeat(SECRET_MIN_LEN)
+            "{peers}\n[auth]\nsecret = \"{}\"\n[images]\npeers = [{}]",
+            "s".repeat(SECRET_MIN_LEN),
+            r#""http://127.0.0.1:7100", "http://127.0.0.1:7101", "http://127.0.0.1:7102""#
         );
 
         std::fs::write(&path, format!("[cluster]\nnode_id = 1\n{peers}\n")).unwrap();
@@ -339,10 +410,62 @@ mod tests {
         assert!(err.to_string().contains("auth.root"), "{err}");
 
         // The nodes of a cluster check each other's codes.
+        // One peer: a node alone, which copies its pictures to nobody.
         let cluster = "[cluster]\nnode_id = 0\npeers = [\"127.0.0.1:7000\"]\n";
         let err = load(cluster).unwrap_err();
         assert!(err.to_string().contains("auth.secret"), "{err}");
         assert!(load(&format!("{cluster}[auth]\nsecret = \"{secret}\"\n")).is_ok());
+    }
+
+    #[test]
+    fn images_section_is_read_and_validated() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("images.toml");
+        let load = |content: &str| {
+            std::fs::write(&path, content).unwrap();
+            Config::load(path.to_str())
+        };
+        let cluster = format!(
+            "[cluster]\nnode_id = 1\npeers = [\"api-0:7000\", \"api-1:7000\", \"api-2:7000\"]\n\
+             listen = \"0.0.0.0:7000\"\n[auth]\nsecret = \"{}\"\n",
+            "s".repeat(SECRET_MIN_LEN)
+        );
+
+        // A node alone keeps its pictures and asks nobody.
+        let alone = Config::load(None).unwrap();
+        assert_eq!(alone.images.dir, PathBuf::from("data/images"));
+        assert_eq!(alone.images.listen_addr(alone.cluster.as_ref()), None);
+
+        // With peers, every node says where it takes the others' copies.
+        let err = load(&cluster).unwrap_err();
+        assert!(err.to_string().contains("images.peers"), "{err}");
+        let addresses = r#"peers = ["http://127.0.0.1:7100", "http://127.0.0.1:7101", "http://127.0.0.1:7102"]"#;
+        let config = load(&format!("{cluster}[images]\n{addresses}\n")).unwrap();
+        assert_eq!(
+            config.images.listen_addr(config.cluster.as_ref()),
+            Some("127.0.0.1:7101".parse().unwrap())
+        );
+
+        // A name says where to reach a node, not what to bind.
+        let names = r#"peers = ["http://api-0:7100", "http://api-1:7100", "http://api-2:7100"]"#;
+        let err = load(&format!("{cluster}[images]\n{names}\n")).unwrap_err();
+        assert!(err.to_string().contains("images.listen"), "{err}");
+        let config = load(&format!(
+            "{cluster}[images]\n{names}\nlisten = \"0.0.0.0:7100\"\n"
+        ))
+        .unwrap();
+        assert_eq!(
+            config.images.listen_addr(config.cluster.as_ref()),
+            Some("0.0.0.0:7100".parse().unwrap())
+        );
+
+        // Without [cluster.tls] the nodes talk in clear, here as there.
+        let tls = names.replace("http://", "https://");
+        let err = load(&format!(
+            "{cluster}[images]\n{tls}\nlisten = \"0.0.0.0:7100\"\n"
+        ))
+        .unwrap_err();
+        assert!(err.to_string().contains("http://"), "{err}");
     }
 
     #[test]

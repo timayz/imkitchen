@@ -36,6 +36,9 @@ errors:
   recipe_not_found: Cette recette n'existe pas.
   page_unreachable: Cette page n'a pas pu être lue. Vérifiez son adresse.
   no_recipe_on_page: Aucune recette n'a été trouvée sur cette page.
+  unsupported_image: Ce n'est pas une image que l'api accepte. Envoyez un JPEG, un PNG, un WebP ou un GIF.
+  image_too_large: Cette image est trop lourde. Elle doit peser 8 Mo au plus.
+  image_too_many_pixels: Cette image est trop grande. Elle doit compter 25 mégapixels au plus.
 
 fields:
   invalid: Cette valeur n'est pas valide.

@@ -8,7 +8,7 @@ use imkitchen_api::config::{Config, MonitoringConfig};
 use imkitchen_api::mail::Smtp;
 use imkitchen_api::recipes::Web;
 use imkitchen_api::server::{self, AppState};
-use imkitchen_api::{cluster, db, sidecars, subscriptions};
+use imkitchen_api::{cluster, db, images, sidecars, subscriptions};
 use tokio::net::TcpListener;
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -92,9 +92,36 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
     let pages = Arc::new(Web::new()?);
     let store = db::open(&config.database.path).await?;
     let db = db::Db::from(store.clone());
-    let (cluster, executor) = cluster::open(config.cluster, &config.database.path, store).await?;
+    let node_tls = cluster::node_tls(config.cluster.as_ref())?;
+    let images = Arc::new(images::open(
+        &config.images,
+        config.cluster.as_ref(),
+        node_tls.clone(),
+    )?);
+    let images_listen = config.images.listen_addr(config.cluster.as_ref());
+    let (cluster, executor) = cluster::open(
+        config.cluster,
+        node_tls.clone(),
+        &config.database.path,
+        store,
+    )
+    .await?;
+    // Where the other nodes copy pictures to this one, and take those they
+    // lack: open before this node's subscriptions ask the same of them.
+    let images_port = match images_listen {
+        Some(listen) => {
+            let listener = TcpListener::bind(listen)
+                .await
+                .with_context(|| format!("failed to bind images.listen {listen}"))?;
+            tracing::info!(addr = %listener.local_addr()?, "listening for the other nodes' pictures");
+            let nodes = node_tls.map(|tls| (tls, cluster.clone()));
+            Some(images::port::serve(listener, nodes, images.clone()))
+        }
+        None => None,
+    };
     let node = format!("api-{}", cluster.health().id.0);
-    let subscriptions = subscriptions::start(&executor, &db, &auth, mailer, &node).await?;
+    let subscriptions =
+        subscriptions::start(&executor, &db, &auth, mailer, images.clone(), &node).await?;
     // Warns when this node nears the writes it may keep for a node that is
     // away, and about each node it stopped waiting for.
     let watch = cluster.watch(CLUSTER_WATCH);
@@ -122,6 +149,7 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
             auth,
             sign_ins: Arc::default(),
             pages,
+            images,
         },
         config.server.shutdown_timeout(),
         server::shutdown_signal(),
@@ -132,6 +160,9 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
         sidecars.shutdown().await;
     }
     subscriptions::shutdown(subscriptions).await;
+    if let Some(port) = images_port {
+        port.shutdown().await;
+    }
     watch.abort();
     cluster.shutdown().await;
     served

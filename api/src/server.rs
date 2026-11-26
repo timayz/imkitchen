@@ -15,6 +15,7 @@ use crate::cluster::{Cluster, Executor};
 use crate::db::Db;
 use crate::error::{method_not_allowed, not_found};
 use crate::health::{__path_health, __path_ready, health, ready};
+use crate::images::Images;
 use crate::locale::localize;
 use crate::openapi::{self, Document, VERSION};
 use crate::recipes::Pages;
@@ -33,6 +34,8 @@ pub struct AppState {
     pub sign_ins: Arc<SignInAttempts>,
     /// The pages of the web recipes are imported from.
     pub pages: Arc<dyn Pages>,
+    /// The files of the recipes' pictures, on this node and the others.
+    pub images: Arc<Images>,
 }
 
 /// Every route of the api: the probes of the node, then the commands and
@@ -47,7 +50,8 @@ pub fn router(state: AppState) -> Router {
             OpenApiRouter::new()
                 .merge(crate::account::routes())
                 .merge(crate::admin::routes())
-                .merge(crate::recipes::routes()),
+                .merge(crate::recipes::routes())
+                .merge(crate::images::routes()),
         )
         .split_for_parts();
     openapi::describe_refusals(&mut document);

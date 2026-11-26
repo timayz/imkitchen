@@ -8,6 +8,11 @@
 //! A recipe is written by hand or imported from a page of the web
 //! ([`import`]); once it is there, nothing tells the two apart.
 //!
+//! A recipe may show a picture: the one its owner uploads
+//! (`PUT /v1/recipes/{id}/image`), or the one of the page it was imported
+//! from. The picture is kept by `crate::images`, once however many recipes
+//! show it; the recipe names the use it makes of it.
+//!
 //! One recipe is read from its stream, so it is as the last command left
 //! it. The list is read from a table a subscription fills from the streams
 //! ([`subscription`]), a moment behind them.
@@ -18,8 +23,12 @@ mod read_model;
 
 use axum::Json;
 use axum::extract::{DefaultBodyLimit, Path, State};
+use axum::http::HeaderMap;
 use axum::http::StatusCode;
+use axum::http::header::CONTENT_LENGTH;
+use imkitchen_aggregates::image::RecipeImage;
 use serde::{Deserialize, Serialize};
+use timada_core::Rendition;
 use timada_core::page::Cursor;
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::router::{OpenApiRouter, UtoipaMethodRouterExt};
@@ -33,7 +42,8 @@ use self::model::{Content, RecipeState};
 use self::read_model::RecipeRow;
 pub use self::read_model::{SUBSCRIPTION, subscription};
 use crate::auth::Session;
-use crate::error::{ApiResult, Body, Params, or_default, trimmed, trimmed_opt};
+use crate::error::{ApiError, ApiResult, Body, Params, or_default, trimmed, trimmed_opt};
+use crate::images::{self, IMAGE_TOO_LARGE, MAX_IMAGE_BYTES};
 use crate::openapi::RECIPES;
 use crate::server::AppState;
 
@@ -47,6 +57,57 @@ pub fn routes() -> OpenApiRouter<AppState> {
         // what it holds, for what JSON adds to it.
         .routes(routes!(import).layer(DefaultBodyLimit::max(2 * import::PAGE_MAX)))
         .routes(routes!(recipe, edit, delete))
+        // A picture is read to its own bound, which says so in the words
+        // of a refusal.
+        .routes(routes!(set_image, remove_image).layer(DefaultBodyLimit::disable()))
+}
+
+/// The recipes' pictures a recipe showed and let go of, for
+/// `crate::images` to give back.
+pub async fn images_let_go<E: evento::Executor>(
+    executor: &E,
+    recipe_id: &str,
+) -> anyhow::Result<Vec<RecipeImage>> {
+    let recipe = model::load(executor, recipe_id).await?;
+    Ok(recipe.map(|recipe| recipe.let_go).unwrap_or_default())
+}
+
+/// One size of a picture.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct ImageFile {
+    /// Its address, from the root of the api. It never changes: another
+    /// picture is another address.
+    #[schema(example = "/v1/images/400/01JDQ0B6V5K1X5C3E8W4T9Z2YH.webp")]
+    url: String,
+    width: u32,
+    height: u32,
+}
+
+/// The picture a recipe shows, in the two sizes it is kept in: neither is
+/// larger than what was given.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
+pub struct Image {
+    /// For lists and cards: 400 pixels on its longest side at most.
+    small: ImageFile,
+    /// For the recipe itself: 1200 pixels on its longest side at most.
+    large: ImageFile,
+}
+
+impl From<&RecipeImage> for Image {
+    fn from(image: &RecipeImage) -> Self {
+        let file = |rendition: Rendition| {
+            let file = image.picture.rendition(rendition);
+            ImageFile {
+                url: images::path(rendition.dir(), &image.file_id),
+                width: file.width,
+                height: file.height,
+            }
+        };
+        Self {
+            small: file(Rendition::Listing),
+            large: file(Rendition::Page),
+        }
+    }
 }
 
 /// What a recipe takes of one thing.
@@ -169,6 +230,9 @@ struct Recipe {
     prep_minutes: u32,
     cook_minutes: u32,
     servings: u32,
+    /// Its picture, when it shows one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    image: Option<Image>,
     created_at: u64,
     updated_at: u64,
 }
@@ -178,6 +242,7 @@ impl From<RecipeState> for Recipe {
         let content = recipe.content;
         Self {
             id: recipe.id,
+            image: recipe.image.as_ref().map(Image::from),
             title: content.title,
             description: Some(content.description).filter(|text| !text.is_empty()),
             ingredients: content
@@ -214,6 +279,9 @@ struct RecipeSummary {
     prep_minutes: i64,
     cook_minutes: i64,
     servings: i64,
+    /// Its picture, when it shows one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    image: Option<Image>,
     created_at: i64,
     updated_at: i64,
 }
@@ -227,6 +295,7 @@ impl From<RecipeRow> for RecipeSummary {
             prep_minutes: row.prep_minutes,
             cook_minutes: row.cook_minutes,
             servings: row.servings,
+            image: row.image.map(|image| image.0),
             created_at: row.created_at,
             updated_at: row.updated_at,
         }
@@ -281,9 +350,30 @@ async fn create(
     Body(form): Body<RecipeBody>,
 ) -> ApiResult<(StatusCode, Json<Recipe>)> {
     let owner_id = &session.user.id;
-    let id = model::create(&state.executor, owner_id, form.into()).await?;
+    let id = model::create(&state.executor, owner_id, form.into(), None).await?;
     let recipe = model::load_own(&state.executor, owner_id, &id).await?;
     Ok((StatusCode::CREATED, Json(recipe.into())))
+}
+
+/// Gives a use of a picture back when the recipe it was for was not
+/// written: nothing names it.
+async fn or_give_back<T>(
+    state: &AppState,
+    image: Option<&RecipeImage>,
+    written: ApiResult<T>,
+) -> ApiResult<T> {
+    // A refusal wrote nothing; any other failure may have, and a recipe
+    // must never name a use that was given back.
+    if let (Some(image), Err(ApiError::Refused(..))) = (image, &written)
+        && let Err(err) = images::release(&state.executor, &image.image_id, &image.use_id).await
+    {
+        tracing::warn!(
+            err = format!("{err:#}"),
+            image = image.image_id,
+            "a picture no recipe was given stays used"
+        );
+    }
+    written
 }
 
 /// Imports a recipe from a page of the web
@@ -291,6 +381,8 @@ async fn create(
 /// The recipe the page holds becomes one of the user's, theirs to
 /// rewrite like one they wrote; nothing links it to the page. What the page
 /// does not say is left out (the times), or taken as usual (4 servings).
+/// The picture the page gives its recipe comes with it when it can be
+/// fetched; the recipe is imported without one otherwise.
 /// A site that refuses the api answers the browser of the client: the
 /// page it got is sent as `html`, and the api reads that instead of
 /// fetching. Refused with `page_unreachable` when the page cannot be read, and with
@@ -309,8 +401,13 @@ async fn import(
     Body(form): Body<ImportBody>,
 ) -> ApiResult<(StatusCode, Json<Recipe>)> {
     let owner_id = &session.user.id;
-    let content = import::content(state.pages.as_ref(), &form.url, form.html).await?;
-    let id = model::create(&state.executor, owner_id, content).await?;
+    let page = import::page(state.pages.as_ref(), &form.url, form.html).await?;
+    let image = match &page.image {
+        Some(url) => import::image(&state, url).await,
+        None => None,
+    };
+    let created = model::create(&state.executor, owner_id, page.content, image.clone()).await;
+    let id = or_give_back(&state, image.as_ref(), created).await?;
     let recipe = model::load_own(&state.executor, owner_id, &id).await?;
     Ok((StatusCode::CREATED, Json(recipe.into())))
 }
@@ -391,6 +488,66 @@ async fn edit(
     Body(form): Body<RecipeBody>,
 ) -> ApiResult<StatusCode> {
     model::edit(&state.executor, &session.user.id, &id, form.into()).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Gives a recipe of the user its picture
+///
+/// The body is the picture itself, not JSON: a JPEG, PNG, WebP or GIF of
+/// 8 MiB and 25 megapixels at most. It takes the place of the picture the
+/// recipe had. What is kept of it is two sizes of it, which the recipe then
+/// answers under `image`. Refused with `unsupported_image`,
+/// `image_too_large` or `image_too_many_pixels`.
+#[utoipa::path(
+    put,
+    path = "/recipes/{id}/image",
+    tag = RECIPES,
+    security(("session" = [])),
+    params(("id" = String, Path, description = "The recipe's id")),
+    request_body(content = Vec<u8>, content_type = "image/*", description = "The picture"),
+    responses((status = NO_CONTENT, description = "The recipe shows the picture"))
+)]
+async fn set_image(
+    State(state): State<AppState>,
+    session: Session,
+    Path(id): Path<String>,
+    headers: HeaderMap,
+    body: axum::body::Body,
+) -> ApiResult<StatusCode> {
+    let owner_id = &session.user.id;
+    // Before anything is read: someone else's recipe takes no picture.
+    model::load_own(&state.executor, owner_id, &id).await?;
+    let too_large = || ApiError::refused(StatusCode::UNPROCESSABLE_ENTITY, IMAGE_TOO_LARGE);
+    let announced = headers
+        .get(CONTENT_LENGTH)
+        .and_then(|length| length.to_str().ok()?.parse::<usize>().ok());
+    if announced.is_some_and(|length| length > MAX_IMAGE_BYTES) {
+        return Err(too_large());
+    }
+    let bytes = axum::body::to_bytes(body, MAX_IMAGE_BYTES)
+        .await
+        .map_err(|_| too_large())?;
+    let image = images::attach(&state.executor, &state.images, bytes).await?;
+    let set = model::set_image(&state.executor, owner_id, &id, image.clone()).await;
+    or_give_back(&state, Some(&image), set).await?;
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// Takes its picture off a recipe of the user
+#[utoipa::path(
+    delete,
+    path = "/recipes/{id}/image",
+    tag = RECIPES,
+    security(("session" = [])),
+    params(("id" = String, Path, description = "The recipe's id")),
+    responses((status = NO_CONTENT, description = "The recipe shows no picture"))
+)]
+async fn remove_image(
+    State(state): State<AppState>,
+    session: Session,
+    Path(id): Path<String>,
+) -> ApiResult<StatusCode> {
+    model::remove_image(&state.executor, &session.user.id, &id).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

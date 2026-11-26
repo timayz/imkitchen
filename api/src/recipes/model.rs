@@ -4,11 +4,19 @@
 //! The state folds every event of the stream (`strict()`), so the version
 //! it holds, which a write goes out at, is never stale. It is not
 //! snapshotted: a recipe is rewritten a few dozen times at most.
+//!
+//! A recipe names the use it makes of a picture (`crate::images`), written
+//! on the picture's stream before the recipe is given it. What it let go of
+//! is kept in the state ([`RecipeState::let_go`]) for the subscription that
+//! gives those uses back.
 
 use axum::http::StatusCode;
 use evento::metadata::Event;
 use evento::{Executor, Projection, ProjectionAggregate, WriteBuilder, WriteError};
-use imkitchen_aggregates::recipe::{Created, Deleted, Edited, Ingredient, Recipe};
+use imkitchen_aggregates::image::RecipeImage;
+use imkitchen_aggregates::recipe::{
+    Created, Deleted, Edited, ImageRemoved, ImageSet, Ingredient, Recipe,
+};
 
 use crate::error::{ApiError, ApiResult};
 
@@ -41,6 +49,11 @@ pub struct RecipeState {
     pub id: String,
     pub owner_id: String,
     pub content: Content,
+    /// The picture it shows, when it shows one.
+    pub image: Option<RecipeImage>,
+    /// The pictures it showed and let go of: given another, shown without
+    /// one, or deleted.
+    pub let_go: Vec<RecipeImage>,
     /// Unix seconds of `Created`.
     pub created_at: u64,
     /// Unix seconds of the last event.
@@ -53,6 +66,8 @@ fn projection<E: Executor>() -> Projection<E, RecipeState> {
         .handler(on_created())
         .handler(on_edited())
         .handler(on_deleted())
+        .handler(on_image_set())
+        .handler(on_image_removed())
         .strict()
 }
 
@@ -94,6 +109,25 @@ async fn on_edited(event: Event<Edited>, recipe: &mut RecipeState) -> anyhow::Re
 #[evento::handler]
 async fn on_deleted(event: Event<Deleted>, recipe: &mut RecipeState) -> anyhow::Result<()> {
     recipe.deleted = true;
+    recipe.let_go.extend(recipe.image.take());
+    recipe.updated_at = event.timestamp;
+    Ok(())
+}
+
+#[evento::handler]
+async fn on_image_set(event: Event<ImageSet>, recipe: &mut RecipeState) -> anyhow::Result<()> {
+    let before = recipe.image.replace(event.data.image.to_owned());
+    recipe.let_go.extend(before);
+    recipe.updated_at = event.timestamp;
+    Ok(())
+}
+
+#[evento::handler]
+async fn on_image_removed(
+    event: Event<ImageRemoved>,
+    recipe: &mut RecipeState,
+) -> anyhow::Result<()> {
+    recipe.let_go.extend(recipe.image.take());
     recipe.updated_at = event.timestamp;
     Ok(())
 }
@@ -116,26 +150,29 @@ pub async fn load_own<E: Executor>(
         .ok_or(ApiError::refused(StatusCode::NOT_FOUND, RECIPE_NOT_FOUND))
 }
 
-/// Writes a recipe of `owner_id` under a fresh id, which it answers.
+/// Writes a recipe of `owner_id` under a fresh id, which it answers, shown
+/// with `image` when there is one.
 pub async fn create<E: Executor>(
     executor: &E,
     owner_id: &str,
     content: Content,
+    image: Option<RecipeImage>,
 ) -> ApiResult<String> {
-    let id = evento::create()
-        .event(&Created {
-            owner_id: owner_id.to_owned(),
-            title: content.title,
-            description: content.description,
-            ingredients: content.ingredients,
-            instructions: content.instructions,
-            prep_minutes: content.prep_minutes,
-            cook_minutes: content.cook_minutes,
-            servings: content.servings,
-        })
-        .commit(executor)
-        .await?;
-    Ok(id)
+    let mut write = evento::create();
+    write.event(&Created {
+        owner_id: owner_id.to_owned(),
+        title: content.title,
+        description: content.description,
+        ingredients: content.ingredients,
+        instructions: content.instructions,
+        prep_minutes: content.prep_minutes,
+        cook_minutes: content.cook_minutes,
+        servings: content.servings,
+    });
+    if let Some(image) = image {
+        write.event(&ImageSet { image });
+    }
+    Ok(write.commit(executor).await?)
 }
 
 /// Rewrites the recipe `id` of `owner_id` as `content`; the same as it
@@ -160,6 +197,36 @@ pub async fn edit<E: Executor>(
             cook_minutes: content.cook_minutes,
             servings: content.servings,
         });
+        true
+    })
+    .await
+}
+
+/// Shows the recipe `id` of `owner_id` with `image`, in place of the picture
+/// it had.
+pub async fn set_image<E: Executor>(
+    executor: &E,
+    owner_id: &str,
+    id: &str,
+    image: RecipeImage,
+) -> ApiResult<()> {
+    write(executor, owner_id, id, |_, write| {
+        write.event(&ImageSet {
+            image: image.clone(),
+        });
+        true
+    })
+    .await
+}
+
+/// Shows the recipe `id` of `owner_id` without a picture; one that has none
+/// writes nothing.
+pub async fn remove_image<E: Executor>(executor: &E, owner_id: &str, id: &str) -> ApiResult<()> {
+    write(executor, owner_id, id, |recipe, write| {
+        if recipe.image.is_none() {
+            return false;
+        }
+        write.event(&ImageRemoved);
         true
     })
     .await

@@ -5,8 +5,10 @@ use std::sync::{Arc, Mutex};
 
 use axum::Router;
 use axum::body::Body;
+use axum::http::HeaderMap;
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
 use axum::http::{Method, Request, StatusCode};
+use bytes::Bytes;
 use evento::subscription::Subscription;
 use http_body_util::BodyExt;
 use imkitchen_api::locale::Locale;
@@ -79,10 +81,16 @@ impl Api {
             auth: auth(lifetime),
             ..node.state()
         };
-        let subscriptions =
-            subscriptions::start(&node.executor, &state.db, &state.auth, outbox, name)
-                .await
-                .unwrap();
+        let subscriptions = subscriptions::start(
+            &node.executor,
+            &state.db,
+            &state.auth,
+            outbox,
+            state.images.clone(),
+            name,
+        )
+        .await
+        .unwrap();
         Self {
             router: server::router(state.clone()),
             state,
@@ -117,6 +125,41 @@ impl Api {
             serde_json::from_slice(&bytes).unwrap()
         };
         (status, body)
+    }
+
+    /// Sends `bytes` as they are, the way a picture is sent, and answers
+    /// as [`Api::call`] does.
+    pub async fn put_bytes(
+        &self,
+        path: &str,
+        token: Option<&str>,
+        bytes: Vec<u8>,
+    ) -> (StatusCode, Value) {
+        let mut request = Request::builder().method(Method::PUT).uri(path);
+        if let Some(token) = token {
+            request = request.header(AUTHORIZATION, format!("Bearer {token}"));
+        }
+        let request = request.body(Body::from(bytes)).unwrap();
+        let (status, _, bytes) = self.send(request).await;
+        let body = match bytes.is_empty() {
+            true => Value::Null,
+            false => serde_json::from_slice(&bytes).unwrap(),
+        };
+        (status, body)
+    }
+
+    /// What is at `path` for someone who sends no token, as it is: a
+    /// picture, with what it says to the caches.
+    pub async fn get_bytes(&self, path: &str) -> (StatusCode, HeaderMap, Bytes) {
+        let request = Request::builder().uri(path).body(Body::empty()).unwrap();
+        self.send(request).await
+    }
+
+    async fn send(&self, request: Request<Body>) -> (StatusCode, HeaderMap, Bytes) {
+        let response = self.router.clone().oneshot(request).await.unwrap();
+        let (status, headers) = (response.status(), response.headers().clone());
+        let bytes = response.into_body().collect().await.unwrap().to_bytes();
+        (status, headers, bytes)
     }
 
     pub async fn post(&self, path: &str, token: Option<&str>, body: Value) -> (StatusCode, Value) {

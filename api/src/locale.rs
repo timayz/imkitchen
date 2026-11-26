@@ -13,7 +13,7 @@ use std::collections::BTreeMap;
 
 use axum::extract::Request;
 use axum::http::HeaderMap;
-use axum::http::header::{ACCEPT_LANGUAGE, CONTENT_LANGUAGE};
+use axum::http::header::{ACCEPT_LANGUAGE, CACHE_CONTROL, CONTENT_LANGUAGE};
 use axum::middleware::Next;
 use axum::response::Response;
 use serde_json::Value;
@@ -105,7 +105,12 @@ pub async fn localize(request: Request, next: Next) -> Response {
         return response;
     };
     if locale != Locale::default() {
+        // What the refusal says to the caches is said in every language.
+        let cached = response.headers_mut().remove(CACHE_CONTROL);
         response = refusal.render(locale);
+        if let Some(cached) = cached {
+            response.headers_mut().insert(CACHE_CONTROL, cached);
+        }
     }
     response
         .headers_mut()

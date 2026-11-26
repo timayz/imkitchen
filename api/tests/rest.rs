@@ -257,10 +257,12 @@ async fn the_reference_describes_what_the_api_serves() {
         [
             "DELETE /v1/admin/users/{id}",
             "DELETE /v1/recipes/{id}",
+            "DELETE /v1/recipes/{id}/image",
             "GET /health",
             "GET /ready",
             "GET /v1/account",
             "GET /v1/admin/users/{id}",
+            "GET /v1/images/{size}/{file}",
             "GET /v1/recipes",
             "GET /v1/recipes/{id}",
             "POST /v1/account/sign-out-everywhere",
@@ -275,6 +277,7 @@ async fn the_reference_describes_what_the_api_serves() {
             "PUT /v1/account/profile",
             "PUT /v1/admin/users/{id}/role",
             "PUT /v1/recipes/{id}",
+            "PUT /v1/recipes/{id}/image",
         ]
     );
 
