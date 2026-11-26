@@ -2567,12 +2567,15 @@ name = "imkitchen-admin"
 version = "1.13.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "clap",
  "config",
  "evento",
  "imkitchen-aggregates",
  "imkitchen-api",
+ "reqwest",
  "serde",
+ "serde_json",
  "tempfile",
  "timada-core",
  "timada-identity",
@@ -5428,6 +5431,7 @@ dependencies = [
  "topcoat-router-macro",
  "topcoat-runtime",
  "topcoat-runtime-macro",
+ "topcoat-session",
  "topcoat-tailwind",
  "topcoat-view",
  "topcoat-view-macro",
@@ -5736,6 +5740,22 @@ dependencies = [
  "quote",
  "syn 3.0.10",
  "topcoat-runtime-grammar",
+]
+
+[[package]]
+name = "topcoat-session"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d705011dbdf07ea9e3f74397f177cf3224a2fa0ff600a2514c11837ef04e1858"
+dependencies = [
+ "base64 0.22.1",
+ "getrandom 0.4.3",
+ "sha2 0.11.2",
+ "thiserror",
+ "tokio",
+ "topcoat-cookie",
+ "topcoat-core",
+ "web-time",
 ]
 
 [[package]]

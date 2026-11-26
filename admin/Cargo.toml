@@ -12,7 +12,7 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 clap.workspace = true
 config.workspace = true
-topcoat = { workspace = true, features = ["anyhow", "asset", "compression", "discover", "metadata", "router", "serve", "tailwind", "view"] }
+topcoat = { workspace = true, features = ["anyhow", "asset", "compression", "cookie", "discover", "metadata", "router", "serve", "tailwind", "view"] }
 # The store of the read models, and the client of the api's listener.
 evento = { workspace = true, features = ["turso", "remote"] }
 imkitchen-aggregates.workspace = true
@@ -20,6 +20,8 @@ imkitchen-aggregates.workspace = true
 timada-identity.workspace = true
 timada-core.workspace = true
 tokio-rustls.workspace = true
+# The client of the api, for who signs in.
+reqwest = { workspace = true, features = ["json"] }
 
 [build-dependencies]
 topcoat = { workspace = true, features = ["tailwind"] }
@@ -28,3 +30,5 @@ topcoat = { workspace = true, features = ["tailwind"] }
 # The listener admin follows, as the api serves it.
 imkitchen-api = { path = "../api" }
 tempfile.workspace = true
+async-trait.workspace = true
+serde_json.workspace = true

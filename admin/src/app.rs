@@ -1,33 +1,46 @@
-//! The pages: `/` is the dashboard, and `/health` is for the probes.
+//! The pages: `/` is the dashboard, `/sign-in` is where an administrator
+//! says who they are, and `/health` is for the probes.
+//!
+//! Only an administrator reads admin: every page is declared under
+//! [`_admin`], which lets nobody else through, but the one that signs in.
 //!
 //! admin is read by the people who run imkitchen, in English: its sentences
 //! are in the pages. No search engine is to list any of them.
 
+pub mod _admin;
 pub mod health;
+pub mod sign_in;
 
 use topcoat::{
-    Error, Result,
+    Result,
     asset::Asset,
     context::{Cx, context},
+    cookie::CookieLayer,
     metadata::Metadata,
-    router::{
-        RouterBuilder, Slot, error::NotFoundError, href, layout, module_router, not_found, page,
-    },
+    router::{RouterBuilder, Slot, error::see_other, href, layout, module_router, route},
     tailwind,
-    view::{View, error_boundary, view},
+    view::{View, view},
 };
 
+use crate::api::Api;
 use crate::db::Db;
 use crate::events::Events;
-use crate::users;
+use crate::session::{self, Secure, Sessions};
 
 /// The stylesheet of every page, as `build.rs` compiles it.
 pub const STYLESHEET: Asset = tailwind::stylesheet!();
 
-/// The pages of admin, read from `db` and saying how admin stands with the
-/// api through `events`. Give the result its assets, then build it.
-pub fn router(db: Db, events: Events) -> RouterBuilder {
-    module_router!().with(db).with(events)
+/// The pages of admin, read from `db`, saying how admin stands with the
+/// api through `events`, asking `api` who reads them and keeping the
+/// sessions as `sessions` says. Give the result its assets, then build it.
+pub fn router(db: Db, events: Events, api: Api, sessions: Sessions) -> RouterBuilder {
+    module_router!()
+        .layer(CookieLayer::new())
+        .with(db)
+        .with(events)
+        .with(api)
+        .with(sessions.key)
+        .with(Secure(sessions.secure))
 }
 
 /// The read models of admin.
@@ -35,8 +48,10 @@ pub(crate) fn db(cx: &Cx) -> &Db {
     context(cx)
 }
 
-// Anything else is the "not found" page.
-not_found!();
+/// The api, for who reads the pages.
+pub(crate) fn api(cx: &Cx) -> &Api {
+    context(cx)
+}
 
 #[layout(with(Metadata::new().title("imkitchen admin")))]
 async fn root(cx: &Cx, slot: Slot<'_>) -> Result<impl View> {
@@ -49,50 +64,21 @@ async fn root(cx: &Cx, slot: Slot<'_>) -> Result<impl View> {
                 <link rel="stylesheet" href=(STYLESHEET)>
                 topcoat::dev::script()
             </head>
-            <body class="min-h-screen bg-stone-50 text-stone-900 antialiased">
-                <header class="mx-auto flex max-w-5xl items-center justify-between px-4 py-6">
-                    <a class="text-xl font-semibold tracking-tight" href=(href!(dashboard))>
-                        "imkitchen admin"
-                    </a>
-                </header>
-                error_boundary(
-                    fallback: |error| {
-                        if error.downcast_ref::<NotFoundError>().is_none() {
-                            return Err(error);
-                        }
-
-                        Ok(
-                            view! {
-                                (topcoat::router::StatusCode::NOT_FOUND)
-                                <main class="mx-auto max-w-5xl px-4 py-16">
-                                    <h1 class="text-3xl font-bold">"This page does not exist"</h1>
-                                    <p class="mt-4 text-stone-600">
-                                        "The address may have changed, or never was one."
-                                    </p>
-                                </main>
-                            },
-                        )
-                    },
-                    (slot)
-                )
-            </body>
+            <body class="min-h-screen bg-stone-50 text-stone-900 antialiased">(slot)</body>
         </html>
     })
 }
 
-#[page]
-pub async fn dashboard(cx: &Cx) -> Result<impl View> {
-    let users = users::count(db(cx)).await.map_err(Error::from_anyhow)?;
-
-    Ok(view! {
-        <main class="mx-auto max-w-5xl px-4 py-10">
-            <h1 class="text-3xl font-bold tracking-tight">"Dashboard"</h1>
-            <dl class="mt-8 grid gap-4 sm:grid-cols-3">
-                <div class="rounded-lg border border-stone-200 bg-white p-6">
-                    <dt class="text-sm text-stone-500">"Users"</dt>
-                    <dd class="mt-2 text-3xl font-semibold" data-users=(users)>(users)</dd>
-                </div>
-            </dl>
-        </main>
-    })
+/// Ends the session of the browser, at the api and on it. Whoever asks is
+/// signed out, the api answering or not: a session it could not be told to
+/// end lasts until it expires, with nothing left that opens it.
+#[route(POST "./sign-out")]
+async fn sign_out(cx: &Cx) -> Result<()> {
+    if let Some(kept) = session::kept(cx) {
+        if let Err(err) = api(cx).sign_out(&kept.token).await {
+            tracing::warn!(err = format!("{err:#}"), "a session was not ended");
+        }
+        session::forget(cx);
+    }
+    Err(see_other(href!(sign_in::sign_in).resolve(cx)).into())
 }

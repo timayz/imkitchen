@@ -6,6 +6,9 @@
 [server]
 host = "0.0.0.0"
 port = 3020
+# The address administrators reach admin at. Over https, the cookie of a
+# session is only ever sent encrypted.
+url = "http://localhost:3020"
 # How long requests in flight get to finish once Ctrl+C or SIGTERM asked the
 # server to stop, in seconds.
 shutdown_timeout_secs = 30
@@ -18,6 +21,9 @@ shutdown_timeout_secs = 30
 path = "data/admin.db"
 
 [api]
+# Where the api answers HTTP: where administrators are signed in and out,
+# and asked about on every page.
+url = "http://127.0.0.1:3000"
 # Where admin follows the api's events: the `[sidecars]` listener of the api
 # (evento's remote protocol over TCP, not HTTP). One node, or a name in front
 # of several, looked up again on every reconnect.
@@ -34,6 +40,12 @@ events = "127.0.0.1:4000"
 # The name the listener's certificate must carry: the host of `events` when
 # left out.
 # tls_server_name = "api"
+
+[session]
+# What the cookie of a session is encrypted under: 32 bytes or more, the same
+# for every replica of admin. Left out, one is drawn each time admin starts,
+# and whoever was signed in signs in again.
+# key = "…"
 
 [monitoring]
 # A `tracing_subscriber::EnvFilter` directive, e.g. "info,evento=debug".
