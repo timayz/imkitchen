@@ -1,4 +1,4 @@
-.PHONY: cert cert.install up stop down dev run migrate cluster.all www.dev www.run www.migrate health ready lint fmt-check fmt test machete l10n check
+.PHONY: dev run migrate cluster.all www.dev www.run www.migrate cert cert.install up stop down health ready lint fmt-check fmt test machete l10n check
 
 # Optional local overrides for the api, ignored by git.
 API_CONFIG := $(wildcard api/config/dev.local.toml)
@@ -32,28 +32,6 @@ CLUSTER_NODE_ENV = IMKITCHEN_API_CONFIG=api/config/cluster.toml \
 	IMKITCHEN_API__DATABASE__PATH=data/node$*/imkitchen.db \
 	IMKITCHEN_API__IMAGES__DIR=data/node$*/images \
 	$(call API_SIDECARS_ENV,400$*)
-
-# The certificate Traefik serves the local addresses with (.docker/traefik).
-# `make cert.install` once makes the browser trust it.
-cert:
-	mkdir -p .docker/traefik/certs
-	sudo mkcert -key-file .docker/traefik/certs/imkitchen.key -cert-file .docker/traefik/certs/imkitchen.crt traefik.localhost imkitchen.localhost '*.imkitchen.localhost'
-
-cert.install:
-	sudo mkcert -install
-
-# Traefik in front of what runs on the host, and the mail catcher:
-# https://imkitchen.localhost is www (`make www.dev`),
-# https://admin.imkitchen.localhost admin, and the api (`make dev`) both
-# https://api.imkitchen.localhost and https://app.imkitchen.localhost/api.
-up:
-	DOCKER_GID=$$(getent group docker | cut -d: -f3) docker compose up -d --remove-orphans
-
-stop:
-	DOCKER_GID=$$(getent group docker | cut -d: -f3) docker compose stop
-
-down:
-	DOCKER_GID=$$(getent group docker | cut -d: -f3) docker compose down -v --rmi local --remove-orphans
 
 # Run the api, restarting it on code changes
 dev: migrate
@@ -93,6 +71,28 @@ www.run: www.migrate
 # Create www's store if needed and apply its pending migrations
 www.migrate:
 	$(WWW_ENV) cargo run -p imkitchen-www -- migrate
+
+# The certificate Traefik serves the local addresses with (.docker/traefik).
+# `make cert.install` once makes the browser trust it.
+cert:
+	mkdir -p .docker/traefik/certs
+	sudo mkcert -key-file .docker/traefik/certs/imkitchen.key -cert-file .docker/traefik/certs/imkitchen.crt traefik.localhost imkitchen.localhost '*.imkitchen.localhost'
+
+cert.install:
+	sudo mkcert -install
+
+# Traefik in front of what runs on the host, and the mail catcher:
+# https://imkitchen.localhost is www (`make www.dev`),
+# https://admin.imkitchen.localhost admin, and the api (`make dev`) both
+# https://api.imkitchen.localhost and https://app.imkitchen.localhost/api.
+up:
+	DOCKER_GID=$$(getent group docker | cut -d: -f3) docker compose up -d --remove-orphans
+
+stop:
+	DOCKER_GID=$$(getent group docker | cut -d: -f3) docker compose stop
+
+down:
+	DOCKER_GID=$$(getent group docker | cut -d: -f3) docker compose down -v --rmi local --remove-orphans
 
 # Ask the running api for its health (PORT=3100 make health)
 health:
