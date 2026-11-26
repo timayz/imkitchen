@@ -2,14 +2,20 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
-use axum::{Router, routing::get};
+use axum::Router;
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
+use utoipa::OpenApi;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
 
 use crate::account::SignInAttempts;
 use crate::auth::Auth;
 use crate::cluster::{Cluster, Executor};
-use crate::health::{health, ready};
+use crate::error::{method_not_allowed, not_found};
+use crate::health::{__path_health, __path_ready, health, ready};
+use crate::locale::localize;
+use crate::openapi::{self, Document, VERSION};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -23,12 +29,27 @@ pub struct AppState {
     pub sign_ins: Arc<SignInAttempts>,
 }
 
+/// Every route of the api: the probes of the node, then the commands and
+/// reads under their version, each described in the document served next to
+/// them (see `api/README.md` for what they all follow).
 pub fn router(state: AppState) -> Router {
-    Router::new()
-        .route("/health", get(health))
-        .route("/ready", get(ready))
-        .merge(crate::account::routes())
-        .merge(crate::admin::routes())
+    let (routes, mut document) = OpenApiRouter::with_openapi(Document::openapi())
+        .routes(routes!(health))
+        .routes(routes!(ready))
+        .nest(
+            VERSION,
+            OpenApiRouter::new()
+                .merge(crate::account::routes())
+                .merge(crate::admin::routes()),
+        )
+        .split_for_parts();
+    openapi::describe_refusals(&mut document);
+
+    routes
+        .merge(openapi::routes(document))
+        .fallback(not_found)
+        .method_not_allowed_fallback(method_not_allowed)
+        .layer(axum::middleware::from_fn(localize))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }

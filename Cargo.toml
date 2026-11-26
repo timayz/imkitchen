@@ -39,6 +39,15 @@ lettre = { version = "0.11", default-features = false, features = ["builder", "h
 async-trait = "0.1"
 tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"
+# What a command's body must hold, said field by field.
+validator = { version = "0.21", features = ["derive"] }
+# The refusals' sentences, in each language the api speaks (api/locales).
+rust-i18n = "4.2"
+# The OpenAPI document, generated from the handlers the router serves, and
+# the page that shows it.
+utoipa = "6.0"
+utoipa-axum = "0.3"
+utoipa-scalar = "0.4"
 
 [profile.release]
 codegen-units = 1

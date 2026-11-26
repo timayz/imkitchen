@@ -1,0 +1,47 @@
+# Les phrases des refus de l'api, par code. Voir en.yml.
+_version: 1
+
+errors:
+  refused: La demande a été refusée.
+  internal: Une erreur est survenue de notre côté. Réessayez dans un instant.
+  invalid_request: L'api ne comprend pas cette demande.
+  validation_failed: Certains champs ne sont pas valides.
+  not_found: Il n'y a rien à cette adresse.
+  method_not_allowed: Cette adresse n'accepte pas cette méthode.
+  sign_in_required: Connectez-vous pour continuer.
+  signed_out: Votre session a pris fin. Reconnectez-vous.
+  not_allowed: Vous n'êtes pas autorisé à faire cela.
+  invalid_state: Cette demande ne correspond plus au compte. Recommencez.
+  too_many_sign_ins: Trop de tentatives de connexion. Réessayez plus tard.
+  writes_paused: Le service n'accepte pas de modifications pour le moment. Réessayez dans un instant.
+  write_not_taken: La modification n'a pas pu être enregistrée. Réessayez.
+  not_registered: Ce compte n'existe pas.
+  already_registered: Ce compte existe déjà.
+  already_linked: Ce compte est déjà lié à un autre utilisateur.
+  session_changed: La session a changé depuis le début de cette étape.
+  signed_in: Vous êtes déjà connecté.
+  last_method: Le dernier moyen de connexion ne peut pas être retiré.
+  too_many_passkeys: Ce compte a trop de clés d'accès.
+  invalid_credentials: L'adresse e-mail ou le mot de passe est incorrect.
+  invalid_code: Ce code n'est pas le bon.
+  code_expired: Ce code a expiré.
+  too_many_attempts: Trop de codes erronés. Demandez-en un nouveau.
+  code_recently_sent: Un code vient d'être envoyé. Patientez avant d'en demander un autre.
+  invalid_email: Cette adresse e-mail n'est pas valide.
+  weak_password: Le mot de passe doit contenir entre 8 et 128 caractères.
+  wrong_password: Le mot de passe actuel est incorrect.
+  invitation_invalid: Cette invitation n'est plus valide.
+  invitation_other_address: Cette invitation est destinée à une autre adresse e-mail.
+  signup_closed: Les comptes sont créés sur invitation.
+
+fields:
+  invalid: Cette valeur n'est pas valide.
+  required: Ce champ est obligatoire.
+  length: Ce champ doit contenir entre %{min} et %{max} caractères.
+  too_short: Ce champ doit contenir au moins %{min} caractères.
+  too_long: Ce champ doit contenir au plus %{max} caractères.
+  range: Cette valeur doit être comprise entre %{min} et %{max}.
+  too_small: Cette valeur doit être au moins %{min}.
+  too_large: Cette valeur doit être au plus %{max}.
+  invalid_email: Cette adresse e-mail n'est pas valide.
+  weak_password: Le mot de passe doit contenir entre %{min} et %{max} caractères.
