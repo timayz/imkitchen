@@ -1,10 +1,10 @@
 name: Builder
 
-# The image the release build of the api starts from
-# (timayz/imkitchen:api-builder): the toolchain and a build of the api, so
-# a release only compiles what changed since. Built again when the
-# dependencies move on a release branch, the commit of a release aside, or
-# by hand.
+# The images the release builds of the api and of www start from
+# (timayz/imkitchen:api-builder, :www-builder): the toolchain and a build of
+# the application, so a release only compiles what changed since. Built
+# again when the dependencies move on a release branch, the commit of a
+# release aside, or by hand.
 on:
   workflow_dispatch:
   push:
@@ -16,6 +16,7 @@ on:
     paths:
       - "Cargo.lock"
       - "api/builder.Dockerfile"
+      - "www/builder.Dockerfile"
 
 jobs:
   build:
@@ -23,10 +24,14 @@ jobs:
     # (`cargo update`), and the release that follows it builds from the
     # image as it stands.
     if: ${{ !startsWith(github.event.head_commit.message, 'chore(release)') }}
-    # One tag for every branch: the last build is the one that stays, and a
-    # build a newer one overtakes is not worth finishing.
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [api, www]
+    # One tag an application for every branch: the last build is the one
+    # that stays, and a build a newer one overtakes is not worth finishing.
     concurrency:
-      group: builder
+      group: builder-${{ matrix.app }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
@@ -41,7 +46,7 @@ jobs:
           labels: |
             org.opencontainers.image.vendor=Timada
           tags: |
-            type=raw,value=api-builder
+            type=raw,value=${{ matrix.app }}-builder
 
       - uses: docker/login-action@v4
         with:
@@ -50,7 +55,7 @@ jobs:
 
       - uses: docker/build-push-action@v7
         with:
-          file: "api/builder.Dockerfile"
+          file: "${{ matrix.app }}/builder.Dockerfile"
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

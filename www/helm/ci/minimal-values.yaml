@@ -1,0 +1,6 @@
+# What CI renders the chart with: the least a release needs.
+secretEnv:
+  IMKITCHEN_WWW__API__TOKEN: "the token of www in ci, 32 characters"
+config:
+  server:
+    url: https://www.example.com

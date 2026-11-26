@@ -1,0 +1,30 @@
+# What CI renders the chart with: everything on.
+existingSecret: imkitchen-www-env
+replicaCount: 3
+config:
+  api:
+    url: "http://api:3000"
+    events: "api:4000"
+    tls:
+      secretName: api-sidecars-ca
+      serverName: api
+  app:
+    googlePlay: "https://play.google.com/store/apps/details?id=app.imkitchen"
+    appStore: "https://apps.apple.com/app/imkitchen/id0000000000"
+    desktop: "https://example.com/download"
+  contact:
+    email: hello@example.com
+extraEnv:
+  IMKITCHEN_WWW__MONITORING__LOG_LEVEL: "info,evento=debug"
+route:
+  enabled: true
+  hostname: www.example.com
+persistence:
+  size: 2Gi
+  storageClassName: local-path
+  labels:
+    app.kubernetes.io/part-of: imkitchen
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi

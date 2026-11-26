@@ -1,0 +1,13 @@
+apiVersion: v2
+name: imkitchen-www
+description: imkitchen www, the public and landing pages
+type: application
+version: 0.1.0
+# The version of www deployed when image.tag is left empty (www-<it>).
+appVersion: "1.13.0"
+home: https://imkitchen.app
+sources:
+  - https://github.com/timayz/imkitchen
+maintainers:
+  - name: Timada
+    url: https://imkitchen.app

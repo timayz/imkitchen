@@ -15,13 +15,17 @@ jobs:
   test:
     uses: timayz/.github/.github/workflows/rust-test.yml@v3
 
-  # The chart of the api renders, for a cluster and for a node alone.
-  api-chart:
+  # The charts render: the api's for a cluster and for a node alone, www's
+  # with the least a release needs and with everything on.
+  charts:
     runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        app: [api, www]
     steps:
       - uses: actions/checkout@v7
       - run: |
-          for values in api/helm/ci/*-values.yaml; do
-            helm lint --strict api/helm -f "$values"
-            helm template imkitchen api/helm -f "$values" > /dev/null
+          for values in ${{ matrix.app }}/helm/ci/*-values.yaml; do
+            helm lint --strict ${{ matrix.app }}/helm -f "$values"
+            helm template imkitchen ${{ matrix.app }}/helm -f "$values" > /dev/null
           done

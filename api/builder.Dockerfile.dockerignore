@@ -9,6 +9,6 @@
 !admin
 !app
 **/target
-api/helm
-api/*Dockerfile*
-api/config/*.local.toml
+*/helm
+*/*Dockerfile*
+*/config/*.local.toml
