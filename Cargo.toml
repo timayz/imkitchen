@@ -1,6 +1,7 @@
 [workspace]
 members = [
 	"api",
+	"aggregates",
 	"www",
 	"admin",
 	"app",
@@ -21,7 +22,11 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 clap = { version = "4.6", features = ["derive", "env"] }
 config = { version = "0.15", default-features = false, features = ["toml"] }
-evento = { version = "2.0.0-alpha.43", features = ["turso", "cluster"] }
+# Each crate turns on the features it needs: the api its store, its cluster
+# and the listener of the sidecars, the aggregates crate none.
+evento = "2.0.0-alpha.43"
+# The aggregates the api writes and the sidecars follow.
+imkitchen-aggregates = { path = "aggregates" }
 bitcode = "0.6"
 tempfile = "3.27"
 # Identity: users, their sign-in methods and their sessions, event-sourced.
@@ -37,6 +42,12 @@ base64 = "0.23"
 # Mails the one-time codes.
 lettre = { version = "0.11", default-features = false, features = ["builder", "hostname", "smtp-transport", "tokio1", "tokio1-rustls-tls", "pool"] }
 async-trait = "0.1"
+# The worker ids of the executor the sidecars are served.
+ulid = "3.0"
+# TLS on the listener of the sidecars.
+tokio-rustls = "0.26"
+# The certificate of the tests' listener.
+rcgen = "0.14"
 tower = { version = "0.5", features = ["util"] }
 http-body-util = "0.1"
 # What a command's body must hold, said field by field.

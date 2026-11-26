@@ -63,7 +63,7 @@ test:
 # Check for unused dependencies. Scoped to the workspace members: the previous
 # code base is still on disk until #780 and no longer resolves.
 machete:
-	cargo machete --with-metadata api www admin app
+	cargo machete --with-metadata api aggregates www admin app
 
 # Run all checks: format, lint, machete, and test (CI-ready)
 check: fmt-check lint machete test

@@ -7,7 +7,7 @@ use imkitchen_api::auth::Auth;
 use imkitchen_api::config::{Config, MonitoringConfig};
 use imkitchen_api::mail::Smtp;
 use imkitchen_api::server::{self, AppState};
-use imkitchen_api::{cluster, db, subscriptions};
+use imkitchen_api::{cluster, db, sidecars, subscriptions};
 use tokio::net::TcpListener;
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -95,6 +95,15 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
     // Warns when this node nears the writes it may keep for a node that is
     // away, and about each node it stopped waiting for.
     let watch = cluster.watch(CLUSTER_WATCH);
+    let sidecars = match &config.sidecars {
+        Some(config) => {
+            let listener = TcpListener::bind(config.listen)
+                .await
+                .with_context(|| format!("failed to bind sidecars.listen {}", config.listen))?;
+            Some(sidecars::serve(listener, config, &executor)?)
+        }
+        None => None,
+    };
     let listener = TcpListener::bind((host.as_str(), port))
         .await
         .with_context(|| format!("failed to bind {host}:{port}"))?;
@@ -114,6 +123,9 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
     )
     .await;
 
+    if let Some(sidecars) = sidecars {
+        sidecars.shutdown().await;
+    }
     subscriptions::shutdown(subscriptions).await;
     watch.abort();
     cluster.shutdown().await;

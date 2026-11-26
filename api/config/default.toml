@@ -31,6 +31,21 @@ path = "data/imkitchen.db"
 # cert = "/etc/imkitchen/tls/tls.crt"
 # key = "/etc/imkitchen/tls/tls.key"
 
+# Without this section no sidecar is served. With it, www and admin connect
+# here to follow the events they build their read models from (evento's
+# remote protocol over TCP, not HTTP), each with its own token. A sidecar
+# reads the aggregates `imkitchen-aggregates` lists for it and writes
+# nothing; one without a token is refused.
+#
+# [sidecars]
+# listen = "0.0.0.0:4000"
+# tls_cert = "/etc/imkitchen/sidecars/tls.crt"   # both or neither; without
+# tls_key = "/etc/imkitchen/sidecars/tls.key"    # them tokens travel in clear
+#
+# [sidecars.tokens]                  # 32 characters or more, the same on
+# www = "…"                          # every node
+# admin = "…"
+
 [auth]
 # How long a session lasts once signed in, in seconds (30 days). A session in
 # use past half of it is extended for as long again.

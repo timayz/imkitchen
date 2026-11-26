@@ -114,6 +114,37 @@ Messages are worded in the language the request asks for with
 and French (`fr`). The answer says which it used with `Content-Language`.
 Codes are the same in every language.
 
+## Events for www and admin
+
+www and admin keep read models of their own and build them from the api's
+events. They do not ask for them over HTTP: with a `[sidecars]` section in
+its configuration, the api listens on a second port that speaks evento's
+remote protocol, and each of them follows it as an evento `Sidecar`, the
+events read from the api, the cursors of its subscriptions and its read
+models kept in a store of its own.
+
+```rust
+let client = evento::RemoteClient::builder("api:4000")
+    .token(token)          // sidecars.tokens.www or .admin
+    .connect_lazy();       // the sidecar starts whether the api answers or not
+let executor = evento::Sidecar::new(client, local_store);
+subscription.supervised().start(&executor).await?;
+```
+
+- A connection opens with the token of its sidecar and is refused without
+  one. With `tls_cert` and `tls_key` the listener speaks TLS; without them
+  the token travels in clear text.
+- A sidecar reads the aggregates the `imkitchen-aggregates` crate lists for
+  it (`Sidecar::reads`), which is also where their event types are. Anything
+  else is refused.
+- Nothing is written this way: an event, a cursor or a snapshot. Commands go
+  through the HTTP endpoints.
+- A sidecar that was away, or whose api was, goes on from its own cursor
+  once it is connected again. It may connect to any node of the cluster.
+
+An aggregate is exposed by adding it to `imkitchen-aggregates` and to the
+list of the sidecars that need it.
+
 ## Adding a command
 
 1. Give its body a struct deriving `Deserialize`, `Validate` and `ToSchema`,
