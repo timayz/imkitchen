@@ -1,0 +1,49 @@
+# The sentences of the api's refusals, by their code. `errors` words a
+# refusal as a whole, `fields` what one field of a body does not hold;
+# %{name} stands for a parameter of the refusal. Every key is in every file.
+_version: 1
+
+errors:
+  refused: The request was refused.
+  internal: Something went wrong on our side. Try again in a moment.
+  invalid_request: The request is not one the api understands.
+  validation_failed: Some fields are not valid.
+  not_found: There is nothing at this address.
+  method_not_allowed: This address does not take this method.
+  sign_in_required: Sign in to continue.
+  signed_out: Your session has ended. Sign in again.
+  not_allowed: You are not allowed to do this.
+  invalid_state: This request no longer fits the account. Start again.
+  too_many_sign_ins: Too many sign-in attempts. Try again later.
+  writes_paused: The service is not taking changes for the moment. Try again in a moment.
+  write_not_taken: The change could not be saved. Try again.
+  not_registered: This account is not registered.
+  already_registered: This account is already registered.
+  already_linked: This account is already linked to another user.
+  session_changed: The session changed since this step was started.
+  signed_in: You are already signed in.
+  last_method: The last sign-in method cannot be removed.
+  too_many_passkeys: There are too many passkeys on this account.
+  invalid_credentials: The e-mail address or the password is wrong.
+  invalid_code: This code is not right.
+  code_expired: This code has expired.
+  too_many_attempts: Too many wrong codes. Ask for a new one.
+  code_recently_sent: A code was sent a moment ago. Wait before asking for another.
+  invalid_email: This is not a valid e-mail address.
+  weak_password: The password must be between 8 and 128 characters.
+  wrong_password: The current password is wrong.
+  invitation_invalid: This invitation is no longer valid.
+  invitation_other_address: This invitation is for another e-mail address.
+  signup_closed: Accounts are created by invitation.
+
+fields:
+  invalid: This value is not valid.
+  required: This field is required.
+  length: This must be between %{min} and %{max} characters.
+  too_short: This must be at least %{min} characters.
+  too_long: This must be at most %{max} characters.
+  range: This must be between %{min} and %{max}.
+  too_small: This must be at least %{min}.
+  too_large: This must be at most %{max}.
+  invalid_email: This is not a valid e-mail address.
+  weak_password: The password must be between %{min} and %{max} characters.

@@ -2,20 +2,24 @@ use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use serde::Serialize;
+use utoipa::ToSchema;
+
+use crate::openapi::NODE;
 
 use crate::server::AppState;
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub(crate) struct Health {
     status: &'static str,
 }
 
-/// Liveness: the process is up and answers HTTP.
+/// Liveness: the process is up and answers HTTP
+#[utoipa::path(get, path = "/health", tag = NODE, responses((status = OK, body = Health)))]
 pub(crate) async fn health() -> Json<Health> {
     Json(Health { status: "ok" })
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub(crate) struct Ready {
     status: &'static str,
     node: u64,
@@ -27,9 +31,20 @@ pub(crate) struct Ready {
     restart_required: bool,
 }
 
-/// Readiness: this node takes writes. A node whose peers have not confirmed
-/// it yet, that was removed from the cluster, or that fell too far behind
-/// answers 503 so a balancer leaves it out while the others serve.
+/// Readiness: this node takes writes
+///
+/// A node whose peers have not confirmed it yet, that was removed from the
+/// cluster, or that fell too far behind answers 503 so a balancer leaves it
+/// out while the others serve.
+#[utoipa::path(
+    get,
+    path = "/ready",
+    tag = NODE,
+    responses(
+        (status = OK, body = Ready),
+        (status = SERVICE_UNAVAILABLE, description = "The node does not take writes", body = Ready),
+    )
+)]
 pub(crate) async fn ready(State(state): State<AppState>) -> (StatusCode, Json<Ready>) {
     let node = state.cluster.health();
     let serving = node.serving();

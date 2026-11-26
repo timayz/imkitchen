@@ -1,4 +1,4 @@
-//! `/auth/*` and `/account/*`: creating an account, signing in and out, and
+//! `/v1/auth/*` and `/v1/account/*`: creating an account, signing in and out, and
 //! what a user does with their own account.
 //!
 //! An address is proven with a mailed code before it creates an account,
@@ -11,75 +11,109 @@
 use std::collections::HashMap;
 use std::sync::Mutex;
 
+use axum::Json;
 use axum::extract::State;
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Response};
-use axum::routing::{get, post, put};
-use axum::{Json, Router};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use timada_core::unix_now;
 use timada_identity::{
     ChallengePurpose, ChangePassword, IdentityError, PASSWORD_MAX_LEN, PASSWORD_MIN_LEN,
     RegisterWithPassword, ResetPassword, SignInRoot, SignInWithPassword, hash_password,
     normalize_email,
 };
+use utoipa::ToSchema;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_axum::routes;
+use validator::{Validate, ValidationError};
 
-use crate::auth::{Account, Session, login_context, sign_in, token_hash};
-use crate::error::{ApiError, ApiResult, Body, INVALID_REQUEST};
+use crate::auth::{Account, Session, SignedIn, login_context, sign_in, token_hash};
+use crate::error::{ApiError, ApiResult, Body, INVALID_REQUEST, trimmed};
+use crate::openapi::{ACCOUNT, AUTH};
 use crate::server::AppState;
 
 /// The refusal when an address tried too many passwords.
 pub const TOO_MANY_SIGN_INS: &str = "too_many_sign_ins";
-pub const INVALID_NAME: &str = "invalid_name";
 
-/// The longest name an account shows.
-const NAME_MAX_LEN: usize = 255;
-
-pub fn routes() -> Router<AppState> {
-    Router::new()
-        .route("/auth/register", post(register))
-        .route("/auth/sign-in", post(sign_in_with_password))
-        .route("/auth/password-reset", post(reset_password))
-        .route("/auth/sign-out", post(sign_out))
-        .route("/account", get(account))
-        .route("/account/profile", put(update_profile))
-        .route("/account/password", put(change_password))
-        .route("/account/sign-out-everywhere", post(sign_out_everywhere))
+pub fn routes() -> OpenApiRouter<AppState> {
+    OpenApiRouter::new()
+        .routes(routes!(register))
+        .routes(routes!(sign_in_with_password))
+        .routes(routes!(reset_password))
+        .routes(routes!(sign_out))
+        .routes(routes!(account))
+        .routes(routes!(update_profile))
+        .routes(routes!(change_password))
+        .routes(routes!(sign_out_everywhere))
 }
 
-/// 202: the code is on its way, the same request with it finishes.
+/// The code is on its way: the same request with it finishes.
+#[derive(Serialize, ToSchema)]
+struct CodeSent {
+    #[schema(example = "code_sent")]
+    status: &'static str,
+}
+
 fn code_sent() -> Response {
-    (StatusCode::ACCEPTED, Json(json!({ "status": "code_sent" }))).into_response()
+    (
+        StatusCode::ACCEPTED,
+        Json(CodeSent {
+            status: "code_sent",
+        }),
+    )
+        .into_response()
 }
 
 fn created<T: Serialize>(body: T) -> Response {
     (StatusCode::CREATED, Json(body)).into_response()
 }
 
-/// Whether the password fits the policy, said before a code is mailed for
-/// nothing; hashing it checks again.
-fn check_password_policy(password: &str) -> Result<(), IdentityError> {
-    if (PASSWORD_MIN_LEN..=PASSWORD_MAX_LEN).contains(&password.chars().count()) {
-        Ok(())
-    } else {
-        Err(IdentityError::WeakPassword)
-    }
+fn valid_email(email: &str) -> Result<(), ValidationError> {
+    normalize_email(email)
+        .map(drop)
+        .map_err(|_| ValidationError::new("invalid_email"))
 }
 
-#[derive(Deserialize)]
-struct Credentials {
+/// Whether the password fits the policy, said before a code is mailed for
+/// nothing; hashing it checks again.
+fn valid_password(password: &str) -> Result<(), ValidationError> {
+    if (PASSWORD_MIN_LEN..=PASSWORD_MAX_LEN).contains(&password.chars().count()) {
+        return Ok(());
+    }
+    let mut error = ValidationError::new("weak_password");
+    error.add_param("min".into(), &PASSWORD_MIN_LEN);
+    error.add_param("max".into(), &PASSWORD_MAX_LEN);
+    Err(error)
+}
+
+#[derive(Deserialize, Validate, ToSchema)]
+struct Registration {
+    #[validate(custom(function = "valid_email"))]
     email: String,
+    #[validate(custom(function = "valid_password"))]
     password: String,
+    /// The mailed code: left out to ask for it, given to finish.
     code: Option<String>,
 }
 
-/// `POST /auth/register`: an account from an address and a password. The
-/// new user is signed in.
+/// Creates an account from an address and a password
+///
+/// Asked without `code`, mails one to the address and answers 202. Asked
+/// again with it, creates the account and signs the new user in.
+#[utoipa::path(
+    post,
+    path = "/auth/register",
+    tag = AUTH,
+    request_body = Registration,
+    responses(
+        (status = ACCEPTED, description = "The code is on its way", body = CodeSent),
+        (status = CREATED, description = "The account is created and signed in", body = SignedIn),
+    )
+)]
 async fn register(
     State(state): State<AppState>,
     headers: HeaderMap,
-    Body(form): Body<Credentials>,
+    Body(form): Body<Registration>,
 ) -> ApiResult<Response> {
     let identity = state.identity();
     let email = normalize_email(&form.email)?;
@@ -97,7 +131,6 @@ async fn register(
         if identity.load_email_account(&email).await?.is_some() {
             return Err(IdentityError::AlreadyRegistered.into());
         }
-        check_password_policy(&form.password)?;
         identity
             .issue_email_code(&email, ChallengePurpose::Register, unix_now())
             .await?;
@@ -121,9 +154,32 @@ async fn register(
     ))
 }
 
-/// `POST /auth/sign-in`: the password is checked at both steps, the mailed
-/// code finishes the second. An address is counted before its password is
-/// looked at, so a password cannot be guessed by trying.
+/// What signs in. Nothing of it is checked as a field: a wrong address is
+/// refused the way a wrong password is.
+#[derive(Deserialize, Validate, ToSchema)]
+struct Credentials {
+    email: String,
+    password: String,
+    /// The mailed code: left out to ask for it, given to finish.
+    code: Option<String>,
+}
+
+/// Signs in with an address and its password
+///
+/// The password is checked at both steps, the mailed code finishes the
+/// second: without `code` the answer is 202, with it 201 and the session.
+/// The root account needs no code. An address is counted before its
+/// password is looked at, so a password cannot be guessed by trying.
+#[utoipa::path(
+    post,
+    path = "/auth/sign-in",
+    tag = AUTH,
+    request_body = Credentials,
+    responses(
+        (status = ACCEPTED, description = "The code is on its way", body = CodeSent),
+        (status = CREATED, description = "Signed in", body = SignedIn),
+    )
+)]
 async fn sign_in_with_password(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -181,18 +237,32 @@ async fn sign_in_with_password(
     Ok(created(sign_in(&state, &done.user_id, context).await?))
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Validate, ToSchema)]
 struct Reset {
+    #[validate(custom(function = "valid_email"))]
     email: String,
     /// The new password, with the code.
+    #[validate(custom(function = "valid_password"))]
     password: Option<String>,
+    /// The mailed code: left out to ask for it, given to finish.
     code: Option<String>,
 }
 
-/// `POST /auth/password-reset`: a new password for whoever reads the
-/// address. The first step answers the same for an address nobody
-/// registered, so it tells nothing about who has an account. The second
-/// ends every session of the user and signs them in.
+/// Sets a new password for whoever reads the address
+///
+/// The first step answers the same for an address nobody registered, so it
+/// tells nothing about who has an account. The second, with `code` and
+/// `password`, ends every session of the user and signs them in.
+#[utoipa::path(
+    post,
+    path = "/auth/password-reset",
+    tag = AUTH,
+    request_body = Reset,
+    responses(
+        (status = ACCEPTED, description = "The code is on its way, if the address has an account", body = CodeSent),
+        (status = CREATED, description = "The password is changed and the user signed in", body = SignedIn),
+    )
+)]
 async fn reset_password(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -246,7 +316,14 @@ async fn reset_password(
     Ok(created(signed_in))
 }
 
-/// `POST /auth/sign-out`: ends the session the request's token opened.
+/// Ends the session the request's token opened
+#[utoipa::path(
+    post,
+    path = "/auth/sign-out",
+    tag = AUTH,
+    security(("session" = [])),
+    responses((status = NO_CONTENT, description = "Signed out"))
+)]
 async fn sign_out(State(state): State<AppState>, session: Session) -> ApiResult<StatusCode> {
     state.identity().end_session(&session.token_hash).await?;
     Ok(StatusCode::NO_CONTENT)
@@ -254,13 +331,20 @@ async fn sign_out(State(state): State<AppState>, session: Session) -> ApiResult<
 
 /// Who a token signs in, and until when (unix seconds) if it is not used
 /// again.
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 struct Me {
     expires_at: u64,
     user: Account,
 }
 
-/// `GET /account`
+/// Who the request's token signs in
+#[utoipa::path(
+    get,
+    path = "/account",
+    tag = ACCOUNT,
+    security(("session" = [])),
+    responses((status = OK, body = Me))
+)]
 async fn account(session: Session) -> Json<Me> {
     Json(Me {
         expires_at: session.expires_at,
@@ -268,39 +352,53 @@ async fn account(session: Session) -> Json<Me> {
     })
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Validate, ToSchema)]
 struct Profile {
+    /// The name the account shows.
+    #[serde(deserialize_with = "trimmed")]
+    #[validate(length(min = 1, max = 255))]
     name: String,
 }
 
-/// `PUT /account/profile`: the name the account shows.
+/// Sets the name the account shows
+#[utoipa::path(
+    put,
+    path = "/account/profile",
+    tag = ACCOUNT,
+    security(("session" = [])),
+    request_body = Profile,
+    responses((status = NO_CONTENT, description = "The profile is updated"))
+)]
 async fn update_profile(
     State(state): State<AppState>,
     session: Session,
     Body(form): Body<Profile>,
 ) -> ApiResult<StatusCode> {
-    let name = form.name.trim();
-    if name.is_empty() || name.len() > NAME_MAX_LEN {
-        return Err(ApiError::refused(
-            StatusCode::UNPROCESSABLE_ENTITY,
-            INVALID_NAME,
-        ));
-    }
     state
         .identity()
-        .update_profile(&session.user.id, &session.user.account, name)
+        .update_profile(&session.user.id, &session.user.account, &form.name)
         .await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Validate, ToSchema)]
 struct NewPassword {
     current_password: String,
+    #[validate(custom(function = "valid_password"))]
     password: String,
 }
 
-/// `PUT /account/password`: a new password for who knows the current one.
+/// Sets a new password for who knows the current one
+///
 /// Every other session of the user ends; this one stays signed in.
+#[utoipa::path(
+    put,
+    path = "/account/password",
+    tag = ACCOUNT,
+    security(("session" = [])),
+    request_body = NewPassword,
+    responses((status = NO_CONTENT, description = "The password is changed"))
+)]
 async fn change_password(
     State(state): State<AppState>,
     session: Session,
@@ -318,8 +416,16 @@ async fn change_password(
     Ok(StatusCode::NO_CONTENT)
 }
 
-/// `POST /account/sign-out-everywhere`: ends every other session of the
-/// user; this one stays signed in.
+/// Ends every other session of the user
+///
+/// This one stays signed in.
+#[utoipa::path(
+    post,
+    path = "/account/sign-out-everywhere",
+    tag = ACCOUNT,
+    security(("session" = [])),
+    responses((status = NO_CONTENT, description = "The other sessions are ended"))
+)]
 async fn sign_out_everywhere(
     State(state): State<AppState>,
     session: Session,
@@ -388,8 +494,8 @@ mod tests {
 
     #[test]
     fn the_password_policy_is_said_before_a_code_is_mailed() {
-        assert!(check_password_policy("correct horse").is_ok());
-        assert!(check_password_policy("short").is_err());
-        assert!(check_password_policy(&"x".repeat(PASSWORD_MAX_LEN + 1)).is_err());
+        assert!(valid_password("correct horse").is_ok());
+        assert!(valid_password("short").is_err());
+        assert!(valid_password(&"x".repeat(PASSWORD_MAX_LEN + 1)).is_err());
     }
 }

@@ -13,6 +13,7 @@ use axum::http::{Method, Request, StatusCode};
 use evento::subscription::Subscription;
 use helpers::{ROOT_EMAIL, ROOT_PASSWORD, TestCluster, TestNode, auth, eventually};
 use http_body_util::BodyExt;
+use imkitchen_api::locale::Locale;
 use imkitchen_api::mail::{MailError, Mailer};
 use imkitchen_api::server::{self, AppState};
 use imkitchen_api::subscriptions;
@@ -151,13 +152,17 @@ fn credentials(email: &str, password: &str, code: Option<&str>) -> Value {
 /// and the user's id.
 async fn register(api: &Api, outbox: &Outbox, email: &str) -> (String, String) {
     let (status, body) = api
-        .post("/auth/register", None, credentials(email, PASSWORD, None))
+        .post(
+            "/v1/auth/register",
+            None,
+            credentials(email, PASSWORD, None),
+        )
         .await;
     assert_eq!(status, StatusCode::ACCEPTED, "{body}");
     let code = outbox.code(email, outbox.mails_to(email).len()).await;
     let (status, body) = api
         .post(
-            "/auth/register",
+            "/v1/auth/register",
             None,
             credentials(email, PASSWORD, Some(&code)),
         )
@@ -173,7 +178,7 @@ async fn register(api: &Api, outbox: &Outbox, email: &str) -> (String, String) {
 async fn sign_in_root(api: &Api) -> String {
     let (status, body) = api
         .post(
-            "/auth/sign-in",
+            "/v1/auth/sign-in",
             None,
             credentials(ROOT_EMAIL, ROOT_PASSWORD, None),
         )
@@ -183,8 +188,19 @@ async fn sign_in_root(api: &Api) -> String {
     body["token"].as_str().unwrap().to_owned()
 }
 
+/// What a refusal answers to a request that names no language.
 fn refusal(code: &str) -> Value {
-    json!({ "error": code })
+    let message = Locale::En.sentence(&format!("errors.{code}")).unwrap();
+    json!({ "error": { "code": code, "message": message } })
+}
+
+/// The refusal of a body whose fields do not hold what the command asks.
+fn invalid(fields: Value) -> Value {
+    json!({ "error": {
+        "code": "validation_failed",
+        "message": "Some fields are not valid.",
+        "fields": fields,
+    } })
 }
 
 #[tokio::test]
@@ -194,7 +210,7 @@ async fn a_user_registers_signs_out_and_signs_in() {
     // Nothing is created before the address is proven.
     let (status, body) = api
         .post(
-            "/auth/register",
+            "/v1/auth/register",
             None,
             credentials(" Alice@Example.com ", PASSWORD, None),
         )
@@ -207,7 +223,7 @@ async fn a_user_registers_signs_out_and_signs_in() {
 
     let (status, body) = api
         .post(
-            "/auth/register",
+            "/v1/auth/register",
             None,
             credentials("alice@example.com", PASSWORD, Some(&code)),
         )
@@ -218,15 +234,15 @@ async fn a_user_registers_signs_out_and_signs_in() {
     assert_eq!(body["user"]["role"], "user");
     assert!(body["expires_at"].as_u64().unwrap() > timada_core::unix_now());
 
-    let (status, me) = api.get("/account", Some(&token)).await;
+    let (status, me) = api.get("/v1/account", Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "{me}");
     assert_eq!(me["user"], body["user"]);
 
     let (status, _) = api
-        .call(Method::POST, "/auth/sign-out", Some(&token), None)
+        .call(Method::POST, "/v1/auth/sign-out", Some(&token), None)
         .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
-    let (status, body) = api.get("/account", Some(&token)).await;
+    let (status, body) = api.get("/v1/account", Some(&token)).await;
     assert_eq!(
         (status, body),
         (StatusCode::UNAUTHORIZED, refusal("signed_out"))
@@ -235,7 +251,7 @@ async fn a_user_registers_signs_out_and_signs_in() {
     // Signing in: the password, then the code it had mailed.
     let (status, body) = api
         .post(
-            "/auth/sign-in",
+            "/v1/auth/sign-in",
             None,
             credentials("alice@example.com", PASSWORD, None),
         )
@@ -244,7 +260,7 @@ async fn a_user_registers_signs_out_and_signs_in() {
     let code = outbox.code("alice@example.com", 1).await;
     let (status, body) = api
         .post(
-            "/auth/sign-in",
+            "/v1/auth/sign-in",
             None,
             credentials("alice@example.com", PASSWORD, Some(&code)),
         )
@@ -252,9 +268,9 @@ async fn a_user_registers_signs_out_and_signs_in() {
     assert_eq!(status, StatusCode::CREATED, "{body}");
     let again = body["token"].as_str().unwrap();
     assert_ne!(again, token);
-    let (status, _) = api.get("/account", Some(again)).await;
+    let (status, _) = api.get("/v1/account", Some(again)).await;
     assert_eq!(status, StatusCode::OK);
-    let (status, _) = api.get("/account", Some(&token)).await;
+    let (status, _) = api.get("/v1/account", Some(&token)).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED, "the old token stays out");
 
     api.shutdown().await;
@@ -264,25 +280,30 @@ async fn a_user_registers_signs_out_and_signs_in() {
 async fn what_a_person_can_correct_is_refused_with_its_code() {
     let (api, outbox, _node, _dir) = start().await;
 
-    for (body, code) in [
+    for (body, refusal) in [
         (
-            credentials("not an address", PASSWORD, None),
-            "invalid_email",
-        ),
-        (
-            credentials("bob@example.com", "short", None),
-            "weak_password",
+            credentials("not an address", "short", None),
+            invalid(json!([
+                {
+                    "field": "email",
+                    "code": "invalid_email",
+                    "message": "This is not a valid e-mail address.",
+                },
+                {
+                    "field": "password",
+                    "code": "weak_password",
+                    "message": "The password must be between 8 and 128 characters.",
+                    "params": { "min": 8, "max": 128 },
+                },
+            ])),
         ),
         (
             credentials(ROOT_EMAIL, PASSWORD, None),
-            "already_registered",
+            refusal("already_registered"),
         ),
     ] {
-        let (status, body) = api.post("/auth/register", None, body).await;
-        assert_eq!(
-            (status, body),
-            (StatusCode::UNPROCESSABLE_ENTITY, refusal(code))
-        );
+        let (status, body) = api.post("/v1/auth/register", None, body).await;
+        assert_eq!((status, body), (StatusCode::UNPROCESSABLE_ENTITY, refusal));
     }
     assert!(
         outbox.mails.lock().unwrap().is_empty(),
@@ -291,13 +312,15 @@ async fn what_a_person_can_correct_is_refused_with_its_code() {
 
     // A body that is not one.
     let (status, body) = api
-        .post("/auth/register", None, json!({ "email": 1 }))
+        .post("/v1/auth/register", None, json!({ "email": 1 }))
         .await;
     assert_eq!(
         (status, body),
         (StatusCode::UNPROCESSABLE_ENTITY, refusal("invalid_request"))
     );
-    let (status, body) = api.call(Method::POST, "/auth/register", None, None).await;
+    let (status, body) = api
+        .call(Method::POST, "/v1/auth/register", None, None)
+        .await;
     assert_eq!(
         (status, body),
         (StatusCode::BAD_REQUEST, refusal("invalid_request"))
@@ -305,7 +328,7 @@ async fn what_a_person_can_correct_is_refused_with_its_code() {
 
     let (status, _) = api
         .post(
-            "/auth/register",
+            "/v1/auth/register",
             None,
             credentials("bob@example.com", PASSWORD, None),
         )
@@ -315,7 +338,7 @@ async fn what_a_person_can_correct_is_refused_with_its_code() {
     // Asked again within the minute: the code on its way is the one.
     let (status, body) = api
         .post(
-            "/auth/register",
+            "/v1/auth/register",
             None,
             credentials("bob@example.com", PASSWORD, None),
         )
@@ -327,7 +350,7 @@ async fn what_a_person_can_correct_is_refused_with_its_code() {
     let wrong = format!("{:06}", (code.parse::<u32>().unwrap() + 1) % 1_000_000);
     let (status, body) = api
         .post(
-            "/auth/register",
+            "/v1/auth/register",
             None,
             credentials("bob@example.com", PASSWORD, Some(&wrong)),
         )
@@ -338,7 +361,7 @@ async fn what_a_person_can_correct_is_refused_with_its_code() {
     );
     let (status, _) = api
         .post(
-            "/auth/register",
+            "/v1/auth/register",
             None,
             credentials("bob@example.com", PASSWORD, Some(&code)),
         )
@@ -349,7 +372,7 @@ async fn what_a_person_can_correct_is_refused_with_its_code() {
     // which of the two it is.
     let (status, body) = api
         .post(
-            "/auth/register",
+            "/v1/auth/register",
             None,
             credentials("bob@example.com", PASSWORD, None),
         )
@@ -367,7 +390,7 @@ async fn what_a_person_can_correct_is_refused_with_its_code() {
         (ROOT_EMAIL, "not root's password"),
     ] {
         let (status, body) = api
-            .post("/auth/sign-in", None, credentials(email, password, None))
+            .post("/v1/auth/sign-in", None, credentials(email, password, None))
             .await;
         assert_eq!(
             (status, body),
@@ -388,33 +411,33 @@ async fn unauthenticated_commands_are_refused() {
     let (token, user_id) = register(&api, &outbox, "alice@example.com").await;
 
     let routes = [
-        (Method::POST, "/auth/sign-out".to_owned(), None),
-        (Method::GET, "/account".to_owned(), None),
+        (Method::POST, "/v1/auth/sign-out".to_owned(), None),
+        (Method::GET, "/v1/account".to_owned(), None),
         (
             Method::PUT,
-            "/account/profile".to_owned(),
+            "/v1/account/profile".to_owned(),
             Some(json!({ "name": "Mallory" })),
         ),
         (
             Method::PUT,
-            "/account/password".to_owned(),
+            "/v1/account/password".to_owned(),
             Some(json!({ "current_password": PASSWORD, "password": "another password" })),
         ),
         (
             Method::POST,
-            "/account/sign-out-everywhere".to_owned(),
+            "/v1/account/sign-out-everywhere".to_owned(),
             None,
         ),
-        (Method::GET, format!("/admin/users/{user_id}"), None),
-        (Method::DELETE, format!("/admin/users/{user_id}"), None),
+        (Method::GET, format!("/v1/admin/users/{user_id}"), None),
+        (Method::DELETE, format!("/v1/admin/users/{user_id}"), None),
         (
             Method::PUT,
-            format!("/admin/users/{user_id}/role"),
+            format!("/v1/admin/users/{user_id}/role"),
             Some(json!({ "role": "admin" })),
         ),
         (
             Method::POST,
-            format!("/admin/users/{user_id}/sign-out"),
+            format!("/v1/admin/users/{user_id}/sign-out"),
             None,
         ),
     ];
@@ -436,7 +459,7 @@ async fn unauthenticated_commands_are_refused() {
     }
 
     // Nothing of it happened.
-    let (status, me) = api.get("/account", Some(&token)).await;
+    let (status, me) = api.get("/v1/account", Some(&token)).await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(me["user"]["name"], "alice@example.com");
     assert_eq!(me["user"]["role"], "user");
@@ -452,14 +475,14 @@ async fn admin_endpoints_refuse_who_is_not_an_administrator() {
 
     let admin_routes = |id: &str| {
         [
-            (Method::GET, format!("/admin/users/{id}"), None),
-            (Method::DELETE, format!("/admin/users/{id}"), None),
+            (Method::GET, format!("/v1/admin/users/{id}"), None),
+            (Method::DELETE, format!("/v1/admin/users/{id}"), None),
             (
                 Method::PUT,
-                format!("/admin/users/{id}/role"),
+                format!("/v1/admin/users/{id}/role"),
                 Some(json!({ "role": "admin" })),
             ),
-            (Method::POST, format!("/admin/users/{id}/sign-out"), None),
+            (Method::POST, format!("/v1/admin/users/{id}/sign-out"), None),
         ]
     };
     for (method, path, body) in admin_routes(&bob_id) {
@@ -474,45 +497,45 @@ async fn admin_endpoints_refuse_who_is_not_an_administrator() {
     let (status, _) = api
         .call(
             Method::PUT,
-            &format!("/admin/users/{alice_id}/role"),
+            &format!("/v1/admin/users/{alice_id}/role"),
             Some(&alice),
             Some(json!({ "role": "admin" })),
         )
         .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
-    let (status, _) = api.get("/account", Some(&bob)).await;
+    let (status, _) = api.get("/v1/account", Some(&bob)).await;
     assert_eq!(status, StatusCode::OK, "bob is still there, signed in");
 
     // Root makes alice an administrator.
     let root = sign_in_root(&api).await;
     let (status, body) = api
-        .get(&format!("/admin/users/{alice_id}"), Some(&root))
+        .get(&format!("/v1/admin/users/{alice_id}"), Some(&root))
         .await;
     assert_eq!(status, StatusCode::OK, "{body}");
     assert_eq!(body["role"], "user");
     let (status, _) = api
         .call(
             Method::PUT,
-            &format!("/admin/users/{alice_id}/role"),
+            &format!("/v1/admin/users/{alice_id}/role"),
             Some(&root),
             Some(json!({ "role": "admin" })),
         )
         .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
-    let (_, me) = api.get("/account", Some(&alice)).await;
+    let (_, me) = api.get("/v1/account", Some(&alice)).await;
     assert_eq!(me["user"]["role"], "admin");
 
     // An administrator reads and signs out the others, but only root makes
     // administrators, and nobody touches root.
     let (status, body) = api
-        .get(&format!("/admin/users/{bob_id}"), Some(&alice))
+        .get(&format!("/v1/admin/users/{bob_id}"), Some(&alice))
         .await;
     assert_eq!(status, StatusCode::OK, "{body}");
     assert_eq!(body["email"], "bob@example.com");
     let (status, body) = api
         .call(
             Method::PUT,
-            &format!("/admin/users/{bob_id}/role"),
+            &format!("/v1/admin/users/{bob_id}/role"),
             Some(&alice),
             Some(json!({ "role": "admin" })),
         )
@@ -522,10 +545,10 @@ async fn admin_endpoints_refuse_who_is_not_an_administrator() {
         (StatusCode::FORBIDDEN, refusal("not_allowed"))
     );
     let (status, _) = api
-        .call(Method::DELETE, "/admin/users/root", Some(&alice), None)
+        .call(Method::DELETE, "/v1/admin/users/root", Some(&alice), None)
         .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
-    let (status, body) = api.get("/admin/users/nobody", Some(&alice)).await;
+    let (status, body) = api.get("/v1/admin/users/nobody", Some(&alice)).await;
     assert_eq!(
         (status, body),
         (StatusCode::NOT_FOUND, refusal("not_registered"))
@@ -534,27 +557,27 @@ async fn admin_endpoints_refuse_who_is_not_an_administrator() {
     let (status, _) = api
         .call(
             Method::POST,
-            &format!("/admin/users/{bob_id}/sign-out"),
+            &format!("/v1/admin/users/{bob_id}/sign-out"),
             Some(&alice),
             None,
         )
         .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
-    let (status, _) = api.get("/account", Some(&bob)).await;
+    let (status, _) = api.get("/v1/account", Some(&bob)).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 
     // Deleted, bob is gone and his address is free again.
     let (status, _) = api
         .call(
             Method::DELETE,
-            &format!("/admin/users/{bob_id}"),
+            &format!("/v1/admin/users/{bob_id}"),
             Some(&alice),
             None,
         )
         .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (status, _) = api
-        .get(&format!("/admin/users/{bob_id}"), Some(&alice))
+        .get(&format!("/v1/admin/users/{bob_id}"), Some(&alice))
         .await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     let (_, new_bob_id) = register(&api, &outbox, "bob@example.com").await;
@@ -564,14 +587,14 @@ async fn admin_endpoints_refuse_who_is_not_an_administrator() {
     let (status, _) = api
         .call(
             Method::PUT,
-            &format!("/admin/users/{alice_id}/role"),
+            &format!("/v1/admin/users/{alice_id}/role"),
             Some(&root),
             Some(json!({ "role": "user" })),
         )
         .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     let (status, _) = api
-        .get(&format!("/admin/users/{new_bob_id}"), Some(&alice))
+        .get(&format!("/v1/admin/users/{new_bob_id}"), Some(&alice))
         .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 
@@ -586,13 +609,13 @@ async fn a_user_manages_their_account() {
 
     // A second session, as from another device.
     let (status, _) = api
-        .post("/auth/sign-in", None, credentials(email, PASSWORD, None))
+        .post("/v1/auth/sign-in", None, credentials(email, PASSWORD, None))
         .await;
     assert_eq!(status, StatusCode::ACCEPTED);
     let code = outbox.code(email, 1).await;
     let (_, body) = api
         .post(
-            "/auth/sign-in",
+            "/v1/auth/sign-in",
             None,
             credentials(email, PASSWORD, Some(&code)),
         )
@@ -602,41 +625,49 @@ async fn a_user_manages_their_account() {
     let (status, _) = api
         .call(
             Method::PUT,
-            "/account/profile",
+            "/v1/account/profile",
             Some(&first),
             Some(json!({ "name": " Alice " })),
         )
         .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
-    let (_, me) = api.get("/account", Some(&second)).await;
+    let (_, me) = api.get("/v1/account", Some(&second)).await;
     assert_eq!(me["user"]["name"], "Alice");
     assert_eq!(me["user"]["email"], email);
     let (status, body) = api
         .call(
             Method::PUT,
-            "/account/profile",
+            "/v1/account/profile",
             Some(&first),
             Some(json!({ "name": "  " })),
         )
         .await;
     assert_eq!(
         (status, body),
-        (StatusCode::UNPROCESSABLE_ENTITY, refusal("invalid_name"))
+        (
+            StatusCode::UNPROCESSABLE_ENTITY,
+            invalid(json!([{
+                "field": "name",
+                "code": "length",
+                "message": "This must be between 1 and 255 characters.",
+                "params": { "min": 1, "max": 255 },
+            }]))
+        )
     );
 
     // Signing out everywhere spares the session that asks.
     let (status, _) = api
         .call(
             Method::POST,
-            "/account/sign-out-everywhere",
+            "/v1/account/sign-out-everywhere",
             Some(&first),
             None,
         )
         .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
-    let (status, _) = api.get("/account", Some(&first)).await;
+    let (status, _) = api.get("/v1/account", Some(&first)).await;
     assert_eq!(status, StatusCode::OK);
-    let (status, _) = api.get("/account", Some(&second)).await;
+    let (status, _) = api.get("/v1/account", Some(&second)).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 
     // A new password takes the current one.
@@ -644,7 +675,7 @@ async fn a_user_manages_their_account() {
     let (status, body) = api
         .call(
             Method::PUT,
-            "/account/password",
+            "/v1/account/password",
             Some(&first),
             Some(json!({ "current_password": "not it", "password": new_password })),
         )
@@ -656,16 +687,16 @@ async fn a_user_manages_their_account() {
     let (status, _) = api
         .call(
             Method::PUT,
-            "/account/password",
+            "/v1/account/password",
             Some(&first),
             Some(json!({ "current_password": PASSWORD, "password": new_password })),
         )
         .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
-    let (status, _) = api.get("/account", Some(&first)).await;
+    let (status, _) = api.get("/v1/account", Some(&first)).await;
     assert_eq!(status, StatusCode::OK);
     let (status, _) = api
-        .post("/auth/sign-in", None, credentials(email, PASSWORD, None))
+        .post("/v1/auth/sign-in", None, credentials(email, PASSWORD, None))
         .await;
     assert_eq!(
         status,
@@ -685,7 +716,7 @@ async fn a_forgotten_password_is_reset_with_a_code() {
     // An address nobody registered is answered the same, and mailed nothing.
     let (status, body) = api
         .post(
-            "/auth/password-reset",
+            "/v1/auth/password-reset",
             None,
             json!({ "email": "nobody@example.com" }),
         )
@@ -696,7 +727,7 @@ async fn a_forgotten_password_is_reset_with_a_code() {
     );
 
     let (status, _) = api
-        .post("/auth/password-reset", None, json!({ "email": email }))
+        .post("/v1/auth/password-reset", None, json!({ "email": email }))
         .await;
     assert_eq!(status, StatusCode::ACCEPTED);
     let code = outbox.code(email, 1).await;
@@ -705,7 +736,7 @@ async fn a_forgotten_password_is_reset_with_a_code() {
     let new_password = "another long password";
     let (status, body) = api
         .post(
-            "/auth/password-reset",
+            "/v1/auth/password-reset",
             None,
             json!({ "email": email, "code": code }),
         )
@@ -716,7 +747,7 @@ async fn a_forgotten_password_is_reset_with_a_code() {
     );
     let (status, body) = api
         .post(
-            "/auth/password-reset",
+            "/v1/auth/password-reset",
             None,
             json!({ "email": email, "code": code, "password": new_password }),
         )
@@ -726,13 +757,13 @@ async fn a_forgotten_password_is_reset_with_a_code() {
     let new = body["token"].as_str().unwrap();
 
     // Whoever held the old password is out; the session of the reset stays.
-    let (status, _) = api.get("/account", Some(&old)).await;
+    let (status, _) = api.get("/v1/account", Some(&old)).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
-    let (status, _) = api.get("/account", Some(new)).await;
+    let (status, _) = api.get("/v1/account", Some(new)).await;
     assert_eq!(status, StatusCode::OK);
     let (status, _) = api
         .post(
-            "/auth/sign-in",
+            "/v1/auth/sign-in",
             None,
             credentials(email, new_password, None),
         )
@@ -749,7 +780,11 @@ async fn an_address_the_server_refuses_may_ask_again_at_once() {
 
     outbox.refuse_with(Some(MailError::Undeliverable("no such mailbox".to_owned())));
     let (status, _) = api
-        .post("/auth/register", None, credentials(email, PASSWORD, None))
+        .post(
+            "/v1/auth/register",
+            None,
+            credentials(email, PASSWORD, None),
+        )
         .await;
     assert_eq!(status, StatusCode::ACCEPTED);
     let identity = api.state.identity();
@@ -779,16 +814,16 @@ async fn a_session_in_use_is_extended() {
     let api = Api::over(&node, "api-0", outbox.clone(), 6).await;
     let (token, _) = register(&api, &outbox, "alice@example.com").await;
 
-    let (_, me) = api.get("/account", Some(&token)).await;
+    let (_, me) = api.get("/v1/account", Some(&token)).await;
     let expires_at = me["expires_at"].as_u64().unwrap();
     tokio::time::sleep(Duration::from_secs(4)).await;
-    let (status, me) = api.get("/account", Some(&token)).await;
+    let (status, me) = api.get("/v1/account", Some(&token)).await;
     assert_eq!(status, StatusCode::OK, "{me}");
     assert!(me["expires_at"].as_u64().unwrap() > expires_at, "{me}");
 
     // Left alone for its whole lifetime, it signs nobody in.
     tokio::time::sleep(Duration::from_secs(7)).await;
-    let (status, body) = api.get("/account", Some(&token)).await;
+    let (status, body) = api.get("/v1/account", Some(&token)).await;
     assert_eq!(
         (status, body),
         (StatusCode::UNAUTHORIZED, refusal("signed_out"))
@@ -805,7 +840,7 @@ async fn an_address_tries_only_so_many_passwords() {
     for _ in 0..11 {
         (last, _) = api
             .post(
-                "/auth/sign-in",
+                "/v1/auth/sign-in",
                 None,
                 credentials(ROOT_EMAIL, "not root's password", None),
             )
@@ -815,7 +850,7 @@ async fn an_address_tries_only_so_many_passwords() {
     // The right one is not looked at either.
     let (status, body) = api
         .post(
-            "/auth/sign-in",
+            "/v1/auth/sign-in",
             None,
             credentials(ROOT_EMAIL, ROOT_PASSWORD, None),
         )
@@ -840,20 +875,24 @@ async fn a_cluster_mails_a_code_once_and_every_node_knows_the_session() {
 
     // Asked of one node, finished on another, used on the third.
     let (status, _) = apis[0]
-        .post("/auth/register", None, credentials(email, PASSWORD, None))
+        .post(
+            "/v1/auth/register",
+            None,
+            credentials(email, PASSWORD, None),
+        )
         .await;
     assert_eq!(status, StatusCode::ACCEPTED);
     let code = outbox.code(email, 0).await;
     let (status, body) = apis[1]
         .post(
-            "/auth/register",
+            "/v1/auth/register",
             None,
             credentials(email, PASSWORD, Some(&code)),
         )
         .await;
     assert_eq!(status, StatusCode::CREATED, "{body}");
     let token = body["token"].as_str().unwrap();
-    let (status, me) = apis[2].get("/account", Some(token)).await;
+    let (status, me) = apis[2].get("/v1/account", Some(token)).await;
     assert_eq!(status, StatusCode::OK, "{me}");
     assert_eq!(me["user"]["email"], email);
 

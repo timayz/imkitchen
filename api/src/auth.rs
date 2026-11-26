@@ -26,6 +26,7 @@ use timada_core::unix_now;
 use timada_identity::{
     CodeVerifier, Command, HmacCodeVerifier, LoginContext, RootAccount, UserState,
 };
+use utoipa::ToSchema;
 
 use crate::cluster::Executor;
 use crate::config::AuthConfig;
@@ -86,7 +87,7 @@ pub fn token_hash(token: &str) -> TokenHash {
 
 /// A session just opened, as the client is told of it: the only time the
 /// token is said.
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct SignedIn {
     pub token: String,
     /// Unix seconds.
@@ -95,7 +96,7 @@ pub struct SignedIn {
 }
 
 /// A user as they are told of themself.
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct Account {
     pub id: String,
     /// The address they sign in with.
@@ -104,7 +105,7 @@ pub struct Account {
     pub role: Role,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, serde::Deserialize, ToSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum Role {
     User,
