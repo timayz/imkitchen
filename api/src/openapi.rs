@@ -30,6 +30,7 @@ pub const PLATS: &str = "plats";
 pub const SETTINGS: &str = "settings";
 pub const LIST: &str = "list";
 pub const GROCERIES: &str = "groceries";
+pub const TUTORIAL: &str = "tutorial";
 pub const IMAGES: &str = "images";
 pub const NODE: &str = "node";
 
@@ -49,6 +50,7 @@ const SESSION: &str = "session";
         (name = SETTINGS, description = "How a user's list is generated, and the language they read"),
         (name = LIST, description = "The meals a user plans to cook, generated or picked"),
         (name = GROCERIES, description = "What a user has to buy to cook their list"),
+        (name = TUTORIAL, description = "How far a user is through what the app walks them through"),
         (name = IMAGES, description = "The pictures of the recipes"),
         (name = NODE, description = "The probes of the node; no version, not for clients"),
     ),
