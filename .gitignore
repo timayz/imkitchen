@@ -12,6 +12,7 @@ coverage/
 # Config
 config/*.local.toml
 api/config/*.local.toml
+www/config/*.local.toml
 
 # Environment
 .env

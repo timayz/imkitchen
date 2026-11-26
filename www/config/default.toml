@@ -1,0 +1,43 @@
+# Full configuration shape. Every key here has a built-in default; a file given
+# with `--config` (or IMKITCHEN_WWW_CONFIG) overrides it, and
+# IMKITCHEN_WWW__<SECTION>__<KEY> environment variables override both
+# (e.g. IMKITCHEN_WWW__SERVER__PORT=3110).
+
+[server]
+host = "0.0.0.0"
+port = 3010
+# How long requests in flight get to finish once Ctrl+C or SIGTERM asked the
+# server to stop, in seconds.
+shutdown_timeout_secs = 30
+
+[database]
+# The store of www: one Turso file holding its read models and the cursors
+# of the subscriptions that fill them. Nothing in it is written anywhere
+# else: lost, it is built again from the api's events. `migrate` creates it;
+# `serve` refuses to start without it. Each replica of www has its own.
+path = "data/www.db"
+
+[api]
+# Where www follows the api's events: the `[sidecars]` listener of the api
+# (evento's remote protocol over TCP, not HTTP). One node, or a name in front
+# of several, looked up again on every reconnect.
+events = "127.0.0.1:4000"
+# What www opens its connections with: `sidecars.tokens.www` of the api, 32
+# characters or more. Required to serve.
+# token = "…"
+#
+# The certificate the listener's is checked against (its own, or the
+# authority that signed it), as a PEM file, when the api gives its listener
+# one (`sidecars.tls_cert`). Without it the connection is not encrypted and
+# the token travels in clear text.
+# tls_ca = "/etc/imkitchen/sidecars/ca.crt"
+# The name the listener's certificate must carry: the host of `events` when
+# left out.
+# tls_server_name = "api"
+
+[monitoring]
+# A `tracing_subscriber::EnvFilter` directive, e.g. "info,evento=debug".
+log_level = "info"
+log_json = false
+log_target = true
+log_line_number = true

@@ -1,3 +1,13 @@
+# The local addresses of imkitchen, each to what runs on the host:
+#
+#   https://imkitchen.localhost          www   (make www.dev, 3010)
+#   https://admin.imkitchen.localhost    admin (3020)
+#   https://app.imkitchen.localhost/api  api   (make dev, 3000), for the app
+#                                        in a browser: its own origin
+#   https://api.imkitchen.localhost      api, for the mobile apps
+#
+# `make cert` writes the certificate they are served with.
+
 tls:
   certificates:
     - certFile: /etc/traefik/certs/imkitchen.crt
@@ -10,16 +20,56 @@ tls:
 
 http:
   routers:
-    imkitchen-dev:
+    www:
       rule: "Host(`imkitchen.localhost`)"
       tls: true
-      service: imkitchen-dev
-      priority: 25
+      service: www
       entryPoints:
         - https
 
+    admin:
+      rule: "Host(`admin.imkitchen.localhost`)"
+      tls: true
+      service: admin
+      entryPoints:
+        - https
+
+    # The api at an address of its own, for the mobile apps.
+    api:
+      rule: "Host(`api.imkitchen.localhost`)"
+      tls: true
+      service: api
+      entryPoints:
+        - https
+
+    # The api under /api of the app's address, which the api itself knows
+    # nothing of (/api/v1/recipes is its /v1/recipes): the app in a browser
+    # then calls its own origin, and needs no CORS.
+    app-api:
+      rule: "Host(`app.imkitchen.localhost`) && PathPrefix(`/api`)"
+      tls: true
+      service: api
+      middlewares:
+        - api-prefix
+      entryPoints:
+        - https
+
+  middlewares:
+    api-prefix:
+      stripPrefix:
+        prefixes:
+          - "/api"
+
   services:
-    imkitchen-dev:
+    www:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:3010"
+    admin:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:3020"
+    api:
       loadBalancer:
         servers:
           - url: "http://host.docker.internal:3000"
