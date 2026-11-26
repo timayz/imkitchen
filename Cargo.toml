@@ -27,8 +27,8 @@ tempfile = "3.27"
 # Identity: users, their sign-in methods and their sessions, event-sourced.
 # Not on crates.io: pinned to a commit of the repository, both from the same
 # one so they share `timada-core`.
-timada-identity = { git = "https://github.com/timayz/timada", rev = "0ddc933391c77f7b84c4a628fce3d7a3e8406ab7" }
-timada-core = { git = "https://github.com/timayz/timada", rev = "0ddc933391c77f7b84c4a628fce3d7a3e8406ab7" }
+timada-identity = { git = "https://github.com/timayz/timada", rev = "f4d99e82684ae038aea40022db9caaf4b45358c6" }
+timada-core = { git = "https://github.com/timayz/timada", rev = "f4d99e82684ae038aea40022db9caaf4b45358c6" }
 serde_json = "1.0"
 # The session tokens: random bytes, handed out as base64, kept as their hash.
 rand = "0.10"
