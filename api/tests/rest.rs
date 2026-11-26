@@ -256,19 +256,24 @@ async fn the_reference_describes_what_the_api_serves() {
         operations,
         [
             "DELETE /v1/admin/users/{id}",
+            "DELETE /v1/recipes/{id}",
             "GET /health",
             "GET /ready",
             "GET /v1/account",
             "GET /v1/admin/users/{id}",
+            "GET /v1/recipes",
+            "GET /v1/recipes/{id}",
             "POST /v1/account/sign-out-everywhere",
             "POST /v1/admin/users/{id}/sign-out",
             "POST /v1/auth/password-reset",
             "POST /v1/auth/register",
             "POST /v1/auth/sign-in",
             "POST /v1/auth/sign-out",
+            "POST /v1/recipes",
             "PUT /v1/account/password",
             "PUT /v1/account/profile",
             "PUT /v1/admin/users/{id}/role",
+            "PUT /v1/recipes/{id}",
         ]
     );
 

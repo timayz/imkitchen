@@ -3,6 +3,8 @@
 //! `db::open`), alone or as a cluster talking over TCP on localhost.
 #![allow(dead_code)]
 
+pub mod api;
+
 use std::future::Future;
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -13,7 +15,7 @@ use evento::cluster::Settings;
 use imkitchen_api::auth::Auth;
 use imkitchen_api::cluster::{self, Cluster, Executor};
 use imkitchen_api::config::{AuthConfig, RootConfig, Secret};
-use imkitchen_api::db::{self, Store};
+use imkitchen_api::db::{self, Db, Store};
 use imkitchen_api::server::AppState;
 use tempfile::TempDir;
 
@@ -81,6 +83,7 @@ impl TestNode {
         AppState {
             cluster: self.cluster.clone(),
             executor: self.executor.clone(),
+            db: Db::from(self.store.clone()),
             auth: auth(3600),
             sign_ins: Arc::default(),
         }

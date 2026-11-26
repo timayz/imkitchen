@@ -34,6 +34,7 @@ done with it.
 | Command | Method and address | Answer |
 | --- | --- | --- |
 | Create a thing | `POST /v1/recipes` | `201` and the thing, with its `id` |
+| Set a thing to what the body says, as a whole | `PUT /v1/recipes/{id}` | `204` |
 | Set a part of a thing to what the body says | `PUT /v1/recipes/{id}/{part}` | `204` |
 | Delete a thing | `DELETE /v1/recipes/{id}` | `204` |
 | Anything else that is done to a thing | `POST /v1/recipes/{id}/{verb}` | `204`, or `201` and what it created |
@@ -47,8 +48,23 @@ done with it.
   finishes it.
 - `GET` reads and never changes anything.
 
-A command has answered once its events are written. The lists www and admin
-build from those events follow a moment later.
+A command has answered once its events are written, and the thing it wrote
+reads as it left it (`GET /v1/recipes/{id}`). The lists follow a moment
+later: the api's own (`GET /v1/recipes`) and those www and admin build from
+the events.
+
+## Lists
+
+A list is read a page at a time, the most recent first.
+
+- `limit` is how many things a page holds at most.
+- The answer holds the things under their plural name and, while there is a
+  page beyond, `next`: what `after` takes to read it.
+- `q` keeps the things what was typed is found in, whatever the case and the
+  accents.
+
+What belongs to a user is theirs alone: someone else's thing is answered as
+one that does not exist (`404`), read or written.
 
 ## Bodies
 
@@ -90,13 +106,13 @@ Whenever the api does not do what was asked, it answers with a status of
   version.
 - `message` is the same thing said to a person, ready to be shown.
 - `fields` is only there with `validation_failed`. Each entry names a field
-  of the body by its path (`name`, `ingredients[2].quantity`), with a code
+  of the body, or a parameter of a list, by its path (`name`, `ingredients[2].quantity`), with a code
   and a message of its own and, when the value is held to bounds, the bounds
   in `params`.
 
 | Status | Meaning | Codes |
 | --- | --- | --- |
-| `400` | The body is not JSON | `invalid_request` |
+| `400` | The body is not JSON, or what follows the `?` cannot be read | `invalid_request` |
 | `401` | Nobody is signed in: sign in (again) | `sign_in_required`, `signed_out` |
 | `403` | The user may not do this | `not_allowed` |
 | `404` | Nothing at this address, or the thing does not exist | `not_found`, … |
@@ -157,3 +173,7 @@ list of the sidecars that need it.
    `routes!(handler)`: the router only takes handlers that are described, so
    the reference cannot fall behind the code.
 4. Give every new code its sentence in each file of `locales/`.
+
+A list takes its parameters as `Params<T>`, checked the way a body is, and
+reads a table of the store a subscription fills from the events: the table
+goes in `db::MIGRATIONS`, the subscription in `subscriptions::start`.

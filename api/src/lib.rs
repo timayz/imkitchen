@@ -9,6 +9,7 @@ mod health;
 pub mod locale;
 pub mod mail;
 pub mod openapi;
+pub mod recipes;
 pub mod server;
 pub mod sidecars;
 pub mod subscriptions;

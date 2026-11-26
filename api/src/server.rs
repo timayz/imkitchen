@@ -12,6 +12,7 @@ use utoipa_axum::routes;
 use crate::account::SignInAttempts;
 use crate::auth::Auth;
 use crate::cluster::{Cluster, Executor};
+use crate::db::Db;
 use crate::error::{method_not_allowed, not_found};
 use crate::health::{__path_health, __path_ready, health, ready};
 use crate::locale::localize;
@@ -24,6 +25,8 @@ pub struct AppState {
     /// The event store: writes go through the cluster, reads come from this
     /// node's file.
     pub executor: Executor,
+    /// The read models of this node: what the lists are read from.
+    pub db: Db,
     pub auth: Arc<Auth>,
     /// The password sign-ins tried on this node, per address.
     pub sign_ins: Arc<SignInAttempts>,
@@ -40,7 +43,8 @@ pub fn router(state: AppState) -> Router {
             VERSION,
             OpenApiRouter::new()
                 .merge(crate::account::routes())
-                .merge(crate::admin::routes()),
+                .merge(crate::admin::routes())
+                .merge(crate::recipes::routes()),
         )
         .split_for_parts();
     openapi::describe_refusals(&mut document);

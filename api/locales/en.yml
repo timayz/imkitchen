@@ -35,6 +35,7 @@ errors:
   invitation_invalid: This invitation is no longer valid.
   invitation_other_address: This invitation is for another e-mail address.
   signup_closed: Accounts are created by invitation.
+  recipe_not_found: This recipe does not exist.
 
 fields:
   invalid: This value is not valid.
@@ -47,3 +48,5 @@ fields:
   too_large: This must be at most %{max}.
   invalid_email: This is not a valid e-mail address.
   weak_password: The password must be between %{min} and %{max} characters.
+  invalid_cursor: This is not a place in the list.
+  too_many: There must be at most %{max} of these.

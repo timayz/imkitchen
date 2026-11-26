@@ -6,4 +6,5 @@ authors.workspace = true
 
 [dependencies]
 evento.workspace = true
+bitcode.workspace = true
 timada-identity.workspace = true
