@@ -2,8 +2,10 @@ use std::time::Duration;
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
+use imkitchen_admin::api::Api;
 use imkitchen_admin::config::{Config, MonitoringConfig};
 use imkitchen_admin::events::Events;
+use imkitchen_admin::session::Sessions;
 use imkitchen_admin::{app, db, subscriptions};
 use tokio::net::TcpListener;
 use topcoat::asset::{AssetBundle, RouterBuilderAssetExt};
@@ -72,6 +74,8 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
     let assets = AssetBundle::load().context(
         "cannot load the assets: bundle them with `topcoat asset bundle -p imkitchen-admin`",
     )?;
+    let api = Api::new(&config.api)?;
+    let sessions = Sessions::new(&config.session, &config.server);
     let store = db::open(&config.database.path).await?;
     let db = db::Db::from(store.clone());
     let events = Events::connect(&config.api, store)?;
@@ -90,8 +94,12 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
 
     tracing::info!("listening on http://{}", listener.local_addr()?);
 
-    let service = RouterService::new(app::router(db, events).assets(assets).build())
-        .shutdown_timeout(config.server.shutdown_timeout());
+    let service = RouterService::new(
+        app::router(db, events, api, sessions)
+            .assets(assets)
+            .build(),
+    )
+    .shutdown_timeout(config.server.shutdown_timeout());
     // Stops on Ctrl+C or SIGTERM, the requests in flight given
     // `server.shutdown_timeout_secs` to finish.
     let served = topcoat::serve(listener, service).await;

@@ -7,8 +7,8 @@ admin owns no aggregate and no command. What it shows of imkitchen it derives
 from the api's events, which it follows as an evento sidecar into a store of
 its own.
 
-Nothing asks who reads its pages yet (#766): until then it shows a count and
-nothing of anyone, and is not deployed.
+Only an administrator reads it: every page asks the api who its reader is,
+and sends anyone else to sign in. It is not deployed yet.
 
 ## Running it
 
@@ -22,6 +22,11 @@ serves, rebuilds on a change and reloads the page (`topcoat dev`). The two
 share a token of the Makefile's, for local use only. admin starts whether the
 api runs or not: it serves what its store holds and catches up once the api
 answers. `GET /health` says how it stands with it (`"api": "connected"`).
+
+Sign in at <http://localhost:3020/sign-in> with an administrator's address
+and password. Locally that is the root account of the api, which needs no
+mailed code: give the api one in `api/config/dev.local.toml` (`[auth.root]`,
+`api/config/default.toml` says how).
 
 With `make up` (Traefik, after `make cert` once) admin is also at
 <https://admin.imkitchen.localhost>.
@@ -40,6 +45,13 @@ the version of the workspace's `topcoat`.
 `IMKITCHEN_ADMIN__<SECTION>__<KEY>` environment variables override both.
 `admin/config/dev.local.toml`, ignored by git, is picked up by the Makefile.
 
+- `server.url`: the address administrators reach admin at. Over `https`
+  the cookie of a session is `Secure`.
+- `session.key`: what the cookie of a session is encrypted under, 32 bytes
+  or more, the same for every replica. Without it admin draws one when it
+  starts, and whoever was signed in signs in again.
+- `api.url`: where the api answers HTTP, for signing in and out and for
+  asking who reads a page.
 - `api.events`: the `[sidecars]` listener of the api (evento's remote
   protocol over TCP, not HTTP). One node, or a name in front of several.
 - `api.token`: `sidecars.tokens.admin` of the api.
@@ -55,7 +67,10 @@ migrations; `serve` refuses a store that is not there or not migrated.
 
 | Path | Contents |
 | --- | --- |
-| `src/app.rs`, `src/app/` | The pages: the router, the layout, each page at the address of its module. |
+| `src/app.rs`, `src/app/` | The pages: the router, the layout, signing in and out. |
+| `src/app/_admin.rs` | What an administrator reads: the guard, and each page at the address of its module. |
+| `src/api.rs` | The client of the api: signing in and out, and who a session is. |
+| `src/session.rs` | The cookie a browser keeps its session in. |
 | `src/events.rs` | The connection to the api's events. |
 | `src/users.rs` | A read model: its subscription and what the pages read from it. |
 | `src/subscriptions.rs` | Every subscription admin runs. |
@@ -67,7 +82,30 @@ migrations; `serve` refuses a store that is not there or not migrated.
 admin is read by the people who run imkitchen, in English: the sentences are
 in the pages, and no search engine is to list any of them (`noindex`).
 
+A page is declared in `src/app/_admin.rs` or in a module below it: that is
+what puts it behind the guard, and the module adds nothing to its address.
+Only signing in, signing out and `/health` are declared outside.
+
 Classes are Tailwind's, found in the `.rs` files when the crate is built.
+
+## Who reads admin
+
+Identity is the api's (`timada-identity`): admin holds no account, no
+password and no session.
+
+- Signing in posts the address and the password to `POST /v1/auth/sign-in`.
+  The api mails a code to the address, and the same again with the code
+  opens a session (root needs none). The password is typed at both steps: it
+  is never written into a page or kept anywhere. Someone the api signs in
+  who is not an administrator is signed out at once.
+- The browser keeps the token of the session in a private (encrypted,
+  authenticated) cookie, `HttpOnly` and `SameSite=Lax`, for as long as the
+  api says the session lasts.
+- Every page asks `GET /v1/account` whose token it is. A session that ended
+  sends the browser to sign in; one whose user is an administrator no more
+  is ended and forgotten; while the api does not answer, nobody is let
+  through (503).
+- Signing out ends the session at the api and forgets the cookie.
 
 ## Read models
 
