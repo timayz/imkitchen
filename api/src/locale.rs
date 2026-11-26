@@ -16,11 +16,14 @@ use axum::http::HeaderMap;
 use axum::http::header::{ACCEPT_LANGUAGE, CACHE_CONTROL, CONTENT_LANGUAGE};
 use axum::middleware::Next;
 use axum::response::Response;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use utoipa::ToSchema;
 
 use crate::error::Refusal;
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "lowercase")]
 pub enum Locale {
     #[default]
     En,
@@ -40,7 +43,7 @@ impl Locale {
     }
 
     /// From a language tag, by its primary subtag: `fr-CA` is French.
-    fn from_tag(tag: &str) -> Option<Self> {
+    pub fn from_tag(tag: &str) -> Option<Self> {
         let primary = tag.split(['-', '_']).next()?;
         Self::ALL
             .into_iter()

@@ -12,6 +12,7 @@ pub mod identity;
 pub mod image;
 pub mod plat;
 pub mod recipe;
+pub mod settings;
 mod sidecar;
 
 pub use sidecar::Sidecar;

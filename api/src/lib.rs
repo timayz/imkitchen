@@ -13,6 +13,7 @@ pub mod openapi;
 pub mod plats;
 pub mod recipes;
 pub mod server;
+pub mod settings;
 pub mod sidecars;
 pub mod subscriptions;
 

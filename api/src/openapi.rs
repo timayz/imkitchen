@@ -27,6 +27,7 @@ pub const ACCOUNT: &str = "account";
 pub const ADMIN: &str = "admin";
 pub const RECIPES: &str = "recipes";
 pub const PLATS: &str = "plats";
+pub const SETTINGS: &str = "settings";
 pub const IMAGES: &str = "images";
 pub const NODE: &str = "node";
 
@@ -43,6 +44,7 @@ const SESSION: &str = "session";
         (name = ADMIN, description = "What an administrator does with the accounts of others"),
         (name = RECIPES, description = "A user's own recipes"),
         (name = PLATS, description = "The plats a user composes of their recipes"),
+        (name = SETTINGS, description = "How a user's list is generated, and the language they read"),
         (name = IMAGES, description = "The pictures of the recipes"),
         (name = NODE, description = "The probes of the node; no version, not for clients"),
     ),
