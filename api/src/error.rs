@@ -18,7 +18,8 @@
 //! The status says whose doing it is: 400 for a body that is not one, 401
 //! for a request that no longer signs anyone in (`sign_in_required` without
 //! a token, `signed_out` with one that stopped working: the client forgets
-//! it), 403 for a role the user does not have, 404 and 405 for an address
+//! it), 403 for a role the user does not have or an account that is
+//! suspended, 404 and 405 for an address
 //! or a method the api does not serve, 409 for what no longer fits the
 //! state of things, 422 for what the person can correct (a field, a wrong
 //! code), 429 for what is asked again too soon and 503 for a store that is
@@ -453,6 +454,8 @@ mod tests {
             crate::images::UNSUPPORTED_IMAGE,
             crate::images::IMAGE_TOO_LARGE,
             crate::images::IMAGE_TOO_MANY_PIXELS,
+            crate::images::IMAGE_NOT_FOUND,
+            crate::suspension::ACCOUNT_SUSPENDED,
             timada_core::WRITES_PAUSED,
             timada_core::WRITE_NOT_TAKEN,
             "refused",

@@ -22,7 +22,7 @@ path = "data/admin.db"
 
 [api]
 # Where the api answers HTTP: where administrators are signed in and out,
-# and asked about on every page.
+# asked about on every page, and what they do is sent as commands.
 url = "http://127.0.0.1:3000"
 # Where the browsers of the administrators reach the api: what the pictures
 # of the recipes are shown from. Left out, admin shows no picture.

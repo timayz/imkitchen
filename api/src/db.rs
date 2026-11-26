@@ -81,6 +81,19 @@ pub const MIGRATIONS: Migrations<'static> = Migrations::new(
             );
             CREATE INDEX plats_listed ON plats (owner_id, created_at DESC, id DESC);",
         ),
+        Migration::up(
+            "0004_recipes_shown",
+            // `recipes.image_id`: the picture a recipe shows, by the stream
+            // it is known under, for an administrator to take a picture off
+            // every recipe that shows it. The rows written before are given
+            // theirs from the files their `image` names.
+            "ALTER TABLE recipes ADD COLUMN image_id TEXT;
+            CREATE INDEX recipes_shown ON recipes (image_id);
+            UPDATE recipes SET image_id = (
+                SELECT images.image_id FROM images
+                WHERE instr(recipes.image, images.file_id) > 0
+            ) WHERE image IS NOT NULL;",
+        ),
     ],
 );
 

@@ -1,5 +1,6 @@
-//! The write side of a recipe: what its stream says of it, and the commands
-//! of its owner.
+//! The write side of a recipe: what its stream says of it, the commands of
+//! its owner and the two an administrator has over anyone's ([`remove`],
+//! [`remove_image_shown`]).
 //!
 //! The state folds every event of the stream (`strict()`), so the version
 //! it holds, which a write goes out at, is never stale. It is not
@@ -150,6 +151,15 @@ pub async fn load_own<E: Executor>(
         .ok_or(ApiError::refused(StatusCode::NOT_FOUND, RECIPE_NOT_FOUND))
 }
 
+/// The recipe `id`, whoever's it is: an administrator's to ask for. One
+/// that does not exist or was deleted is refused.
+async fn load_live<E: Executor>(executor: &E, id: &str) -> ApiResult<RecipeState> {
+    load(executor, id)
+        .await?
+        .filter(|recipe| !recipe.deleted)
+        .ok_or(ApiError::refused(StatusCode::NOT_FOUND, RECIPE_NOT_FOUND))
+}
+
 /// Writes a recipe of `owner_id` under a fresh id, which it answers, shown
 /// with `image` when there is one.
 pub async fn create<E: Executor>(
@@ -183,7 +193,7 @@ pub async fn edit<E: Executor>(
     id: &str,
     content: Content,
 ) -> ApiResult<()> {
-    write(executor, owner_id, id, |recipe, write| {
+    write(executor, Some(owner_id), id, |recipe, write| {
         if recipe.content == content {
             return false;
         }
@@ -210,7 +220,7 @@ pub async fn set_image<E: Executor>(
     id: &str,
     image: RecipeImage,
 ) -> ApiResult<()> {
-    write(executor, owner_id, id, |_, write| {
+    write(executor, Some(owner_id), id, |_, write| {
         write.event(&ImageSet {
             image: image.clone(),
         });
@@ -222,7 +232,7 @@ pub async fn set_image<E: Executor>(
 /// Shows the recipe `id` of `owner_id` without a picture; one that has none
 /// writes nothing.
 pub async fn remove_image<E: Executor>(executor: &E, owner_id: &str, id: &str) -> ApiResult<()> {
-    write(executor, owner_id, id, |recipe, write| {
+    write(executor, Some(owner_id), id, |recipe, write| {
         if recipe.image.is_none() {
             return false;
         }
@@ -234,25 +244,57 @@ pub async fn remove_image<E: Executor>(executor: &E, owner_id: &str, id: &str) -
 
 /// Deletes the recipe `id` of `owner_id` for good.
 pub async fn delete<E: Executor>(executor: &E, owner_id: &str, id: &str) -> ApiResult<()> {
-    write(executor, owner_id, id, |_, write| {
+    write(executor, Some(owner_id), id, |_, write| {
         write.event(&Deleted);
         true
     })
     .await
 }
 
-/// Appends what `change` adds to the recipe `id` of `owner_id`, at the
-/// version it was loaded at; `change` answers `false` when there is nothing
-/// to write. A write another one got ahead of is made again over the recipe
-/// as it now stands.
+/// Deletes the recipe `id` for good, whoever's it is: an administrator's
+/// to do.
+pub async fn remove<E: Executor>(executor: &E, id: &str) -> ApiResult<()> {
+    write(executor, None, id, |_, write| {
+        write.event(&Deleted);
+        true
+    })
+    .await
+}
+
+/// Shows the recipe `id` without a picture, whoever's it is, when the one
+/// it shows is `image_id`: an administrator's to do. One that shows another
+/// picture or none writes nothing.
+pub async fn remove_image_shown<E: Executor>(
+    executor: &E,
+    id: &str,
+    image_id: &str,
+) -> ApiResult<()> {
+    write(executor, None, id, |recipe, write| {
+        let shown = recipe.image.as_ref();
+        if shown.is_none_or(|image| image.image_id != image_id) {
+            return false;
+        }
+        write.event(&ImageRemoved);
+        true
+    })
+    .await
+}
+
+/// Appends what `change` adds to the recipe `id`, at the version it was
+/// loaded at: one of `owner_id`'s, or anyone's without one. `change`
+/// answers `false` when there is nothing to write. A write another one got
+/// ahead of is made again over the recipe as it now stands.
 async fn write<E: Executor>(
     executor: &E,
-    owner_id: &str,
+    owner_id: Option<&str>,
     id: &str,
     change: impl Fn(&RecipeState, &mut WriteBuilder) -> bool,
 ) -> ApiResult<()> {
     for _ in 0..WRITE_ATTEMPTS {
-        let recipe = load_own(executor, owner_id, id).await?;
+        let recipe = match owner_id {
+            Some(owner_id) => load_own(executor, owner_id, id).await?,
+            None => load_live(executor, id).await?,
+        };
         let mut write = recipe.write()?;
         if !change(&recipe, &mut write) {
             return Ok(());

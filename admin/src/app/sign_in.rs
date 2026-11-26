@@ -19,7 +19,7 @@ use topcoat::{
 };
 
 use super::{_admin, api};
-use crate::api::{Credentials, SignIn, SignInError};
+use crate::api::{CommandError, Credentials, SignIn};
 use crate::session::{self, Kept};
 
 /// In the address of the page: someone signed in who is not an
@@ -94,11 +94,11 @@ async fn submit(cx: &Cx, Form(posted): Form<Posted>) -> Result<impl View> {
             Outcome::NotAdmin
         }
         Ok(SignIn::CodeSent) => Outcome::CodeSent,
-        Err(SignInError::Refused(refusal)) => Outcome::Refused {
+        Err(CommandError::Refused(refusal)) => Outcome::Refused {
             status: refusal.status,
             message: refusal.message,
         },
-        Err(SignInError::Unreachable(err)) => {
+        Err(CommandError::Unreachable(err)) => {
             tracing::warn!(
                 err = format!("{err:#}"),
                 "a sign-in was not handed to the api"

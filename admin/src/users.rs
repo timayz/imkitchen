@@ -1,17 +1,20 @@
-//! What admin knows of the users: who they are, how they sign in and the
-//! sessions they have.
+//! What admin knows of the users: who they are, how they sign in, the
+//! sessions they have and whether an administrator suspended them.
 //!
 //! admin keeps one row per user, deleted or not (a deleted account says
 //! so), and one per session. Whatever the event, the handler reads the
 //! user or the session again from its events, through the api, and leaves
 //! the row as it stands: an event delivered twice (the subscription is
-//! at-least-once) changes nothing.
+//! at-least-once) changes nothing. A suspension is a row of its own, there
+//! for as long as it lasts.
 
 use std::collections::HashMap;
 
+use evento::metadata::Event;
 use evento::metadata::RawEvent;
 use evento::subscription::{Context, SubscriptionBuilder};
 use imkitchen_aggregates::identity::{Session, User};
+use imkitchen_aggregates::suspension::{Reactivated, Suspended};
 use timada_core::db::{FromRow, execute, params_from_iter, placeholders, search_key};
 use timada_core::like_contains;
 use timada_identity::{UserState, session_projection, user_projection};
@@ -21,12 +24,14 @@ use crate::db::Db;
 /// The cursor identity of the subscription, in the store.
 pub const SUBSCRIPTION: &str = "imkitchen-admin/users";
 
-/// Follows the users and their sessions into `db`.
+/// Follows the users, their sessions and their suspensions into `db`.
 pub fn subscription<E: evento::Executor>(db: Db) -> SubscriptionBuilder<E> {
     SubscriptionBuilder::new(SUBSCRIPTION)
         .data(db)
         .handler(on_user_event())
         .handler(on_session_event())
+        .handler(on_suspended())
+        .handler(on_reactivated())
 }
 
 #[evento::subscription_all]
@@ -134,6 +139,41 @@ async fn on_session_event<E: evento::Executor>(
     Ok(())
 }
 
+// A user is suspended, then reactivated, then suspended again, in that
+// order: the row is that of the last suspension, and gone once it is over.
+#[evento::subscription]
+async fn on_suspended<E: evento::Executor>(
+    context: &Context<'_, E>,
+    event: Event<Suspended>,
+) -> anyhow::Result<()> {
+    let db: Db = context.extract();
+    db.execute(
+        "INSERT INTO user_suspensions (user_id, by_id, at) VALUES (?1, ?2, ?3)
+         ON CONFLICT (user_id) DO UPDATE SET by_id = excluded.by_id, at = excluded.at",
+        (
+            event.aggregate_id.as_str(),
+            event.data.by.as_str(),
+            event.timestamp as i64,
+        ),
+    )
+    .await?;
+    Ok(())
+}
+
+#[evento::subscription]
+async fn on_reactivated<E: evento::Executor>(
+    context: &Context<'_, E>,
+    event: Event<Reactivated>,
+) -> anyhow::Result<()> {
+    let db: Db = context.extract();
+    db.execute(
+        "DELETE FROM user_suspensions WHERE user_id = ?1",
+        (event.aggregate_id.as_str(),),
+    )
+    .await?;
+    Ok(())
+}
+
 /// A user.
 #[derive(Debug, Clone, FromRow, PartialEq, Eq)]
 pub struct UserRow {
@@ -154,10 +194,22 @@ pub struct UserRow {
     pub oauth2_count: i64,
     pub passkey_count: i64,
     pub has_password: bool,
+    /// Unix seconds: since when they are suspended, when they are.
+    pub suspended_at: Option<i64>,
+    /// The administrator who suspended them.
+    pub suspended_by: Option<String>,
+}
+
+impl UserRow {
+    pub fn is_suspended(&self) -> bool {
+        self.suspended_at.is_some()
+    }
 }
 
 const ROW: &str = "SELECT id, account, label, is_admin, deleted, registered_at, last_sign_in_at,
-        sign_in_count, oauth2_count, passkey_count, has_password
+        sign_in_count, oauth2_count, passkey_count, has_password,
+        (SELECT s.at FROM user_suspensions s WHERE s.user_id = users.id) AS suspended_at,
+        (SELECT s.by_id FROM user_suspensions s WHERE s.user_id = users.id) AS suspended_by
     FROM users";
 
 /// A session of a user.

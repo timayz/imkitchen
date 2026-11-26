@@ -251,6 +251,26 @@ async fn unauthenticated_commands_are_refused() {
             format!("/v1/admin/users/{user_id}/sign-out"),
             None,
         ),
+        (
+            Method::PUT,
+            format!("/v1/admin/users/{user_id}/suspension"),
+            None,
+        ),
+        (
+            Method::DELETE,
+            format!("/v1/admin/users/{user_id}/suspension"),
+            None,
+        ),
+        (
+            Method::DELETE,
+            "/v1/admin/recipes/a-recipe".to_owned(),
+            None,
+        ),
+        (
+            Method::DELETE,
+            "/v1/admin/images/a-picture".to_owned(),
+            None,
+        ),
     ];
     for (method, path, body) in routes {
         let (status, answer) = api.call(method.clone(), &path, None, body.clone()).await;
@@ -294,6 +314,16 @@ async fn admin_endpoints_refuse_who_is_not_an_administrator() {
                 Some(json!({ "role": "admin" })),
             ),
             (Method::POST, format!("/v1/admin/users/{id}/sign-out"), None),
+            (
+                Method::PUT,
+                format!("/v1/admin/users/{id}/suspension"),
+                None,
+            ),
+            (
+                Method::DELETE,
+                format!("/v1/admin/users/{id}/suspension"),
+                None,
+            ),
         ]
     };
     for (method, path, body) in admin_routes(&bob_id) {
@@ -408,6 +438,122 @@ async fn admin_endpoints_refuse_who_is_not_an_administrator() {
         .get(&format!("/v1/admin/users/{new_bob_id}"), Some(&alice))
         .await;
     assert_eq!(status, StatusCode::FORBIDDEN);
+
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn an_administrator_suspends_a_user_and_reactivates_them() {
+    let (api, outbox, _node, _dir) = start().await;
+    let (alice, alice_id) = register(&api, &outbox, "alice@example.com").await;
+    let (bob, bob_id) = register(&api, &outbox, "bob@example.com").await;
+    let root = sign_in_root(&api).await;
+    let role = format!("/v1/admin/users/{alice_id}/role");
+    let admin = Some(json!({ "role": "admin" }));
+    let (status, _) = api.call(Method::PUT, &role, Some(&root), admin).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let suspension = |id: &str| format!("/v1/admin/users/{id}/suspension");
+    let sign_in = || async {
+        let bob = credentials("bob@example.com", PASSWORD, None);
+        api.post("/v1/auth/sign-in", None, bob).await
+    };
+
+    // Suspended, as often as asked: bob is signed out everywhere, and not
+    // signed in again, though the password is his. No code is mailed.
+    for _ in 0..2 {
+        let (status, body) = api
+            .call(Method::PUT, &suspension(&bob_id), Some(&alice), None)
+            .await;
+        assert_eq!(status, StatusCode::NO_CONTENT, "{body}");
+    }
+    let (status, body) = api.get("/v1/account", Some(&bob)).await;
+    assert_eq!(
+        (status, body),
+        (StatusCode::UNAUTHORIZED, refusal("signed_out"))
+    );
+    let mailed = outbox.mails_to("bob@example.com").len();
+    let (status, body) = sign_in().await;
+    assert_eq!(
+        (status, body),
+        (StatusCode::FORBIDDEN, refusal("account_suspended"))
+    );
+    assert_eq!(outbox.mails_to("bob@example.com").len(), mailed);
+    // A wrong password tells nothing of it.
+    let wrong = credentials("bob@example.com", "not the password", None);
+    let (status, body) = api.post("/v1/auth/sign-in", None, wrong).await;
+    assert_eq!(
+        (status, body),
+        (
+            StatusCode::UNPROCESSABLE_ENTITY,
+            refusal("invalid_credentials")
+        )
+    );
+    // A new password does not let him in either.
+    let reset = json!({ "email": "bob@example.com" });
+    let (status, _) = api.post("/v1/auth/password-reset", None, reset).await;
+    assert_eq!(status, StatusCode::ACCEPTED);
+    let code = outbox.code("bob@example.com", mailed).await;
+    let reset = json!({ "email": "bob@example.com", "password": PASSWORD, "code": code });
+    let (status, body) = api.post("/v1/auth/password-reset", None, reset).await;
+    assert_eq!(
+        (status, body),
+        (StatusCode::FORBIDDEN, refusal("account_suspended"))
+    );
+    // His account is still there.
+    let (status, body) = api
+        .get(&format!("/v1/admin/users/{bob_id}"), Some(&alice))
+        .await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+
+    // Reactivated, as often as asked, he signs in as before.
+    for _ in 0..2 {
+        let (status, body) = api
+            .call(Method::DELETE, &suspension(&bob_id), Some(&alice), None)
+            .await;
+        assert_eq!(status, StatusCode::NO_CONTENT, "{body}");
+    }
+    let (status, body) = sign_in().await;
+    assert_eq!(status, StatusCode::ACCEPTED, "{body}");
+    let code = outbox.code("bob@example.com", mailed + 1).await;
+    let bob = credentials("bob@example.com", PASSWORD, Some(&code));
+    let (status, body) = api.post("/v1/auth/sign-in", None, bob).await;
+    assert_eq!(status, StatusCode::CREATED, "{body}");
+
+    // Nobody suspends themself, root or someone who does not exist, and
+    // only root an administrator.
+    for (token, id, refused) in [
+        (&alice, alice_id.as_str(), StatusCode::FORBIDDEN),
+        (&alice, "root", StatusCode::FORBIDDEN),
+        (&root, "root", StatusCode::FORBIDDEN),
+        (&alice, "nobody", StatusCode::NOT_FOUND),
+    ] {
+        for method in [Method::PUT, Method::DELETE] {
+            let (status, _) = api.call(method, &suspension(id), Some(token), None).await;
+            assert_eq!(status, refused, "{id}");
+        }
+    }
+    let (status, _) = api
+        .call(
+            Method::PUT,
+            &role.replace(&alice_id, &bob_id),
+            Some(&root),
+            Some(json!({ "role": "admin" })),
+        )
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, body) = api
+        .call(Method::PUT, &suspension(&bob_id), Some(&alice), None)
+        .await;
+    assert_eq!(
+        (status, body),
+        (StatusCode::FORBIDDEN, refusal("not_allowed"))
+    );
+    let (status, _) = api
+        .call(Method::PUT, &suspension(&alice_id), Some(&root), None)
+        .await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    let (status, _) = api.get("/v1/account", Some(&alice)).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
 
     api.shutdown().await;
 }

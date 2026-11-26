@@ -1,6 +1,7 @@
 //! admin against an api: its sidecar following the api's listener into a
 //! store of its own, from scratch, as events come and after either was away,
-//! the pages read from what it followed, and who the api lets read them.
+//! the pages read from what it followed, who the api lets read them, and
+//! what an administrator does from them, handed to the api.
 
 use std::future::Future;
 use std::net::SocketAddr;
@@ -117,7 +118,10 @@ struct Http {
     url: String,
     client: reqwest::Client,
     outbox: Arc<Outbox>,
-    mailing: Subscription,
+    /// What the api does on its own time, of what the tests need: its
+    /// codes mailed, and the list of the recipes it finds the recipes that
+    /// show a picture in.
+    subscriptions: Vec<Subscription>,
     stop: oneshot::Sender<()>,
     served: JoinHandle<()>,
 }
@@ -177,10 +181,15 @@ impl Api {
                 .start(&self.executor)
                 .await
                 .unwrap();
+        let db = imkitchen_api::db::Db::from(self.store.clone());
+        let listing = imkitchen_api::recipes::subscription(db.clone())
+            .start(&self.executor.local_reads())
+            .await
+            .unwrap();
         let state = AppState {
             cluster: self.cluster.clone(),
             executor: self.executor.clone(),
-            db: imkitchen_api::db::Db::from(self.store.clone()),
+            db,
             auth,
             sign_ins: Arc::default(),
             pages: Arc::new(Web::new().unwrap()),
@@ -201,7 +210,7 @@ impl Api {
             url: url.clone(),
             client: reqwest::Client::new(),
             outbox,
-            mailing,
+            subscriptions: vec![mailing, listing],
             stop,
             served,
         });
@@ -455,7 +464,9 @@ impl Api {
 
     async fn shutdown(self) {
         if let Some(http) = self.http {
-            http.mailing.shutdown().await.unwrap();
+            for subscription in http.subscriptions {
+                subscription.shutdown().await.unwrap();
+            }
             let _ = http.stop.send(());
             http.served.await.unwrap();
         }
@@ -1540,6 +1551,192 @@ async fn each_screen_is_read_from_what_admin_followed() {
         assert_eq!(answer.status, StatusCode::NOT_FOUND, "{path}");
         assert!(answer.body.contains("This page does not exist"), "{path}");
     }
+
+    admin.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn what_an_administrator_does_is_handed_to_the_api() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let kitchen = Kitchen::fill(&api).await;
+    let mut admin = Admin::start(api.addr, &dir.path().join("admin.db")).await;
+    admin.api = api.serve_http().await;
+    kitchen.followed(&admin).await;
+    let carol = api.sign_up("carol@example.com").await;
+    let router = admin.router();
+    let Kitchen {
+        pancakes, crepes, ..
+    } = &kitchen;
+    let has = |page: &str, what: &str| assert!(page.contains(what), "{what}: {page}");
+    let lacks = |page: &str, what: &str| assert!(!page.contains(what), "{what}: {page}");
+    let sign_in = || async {
+        let carol = json!({ "email": "carol@example.com", "password": PASSWORD });
+        let path = "/v1/auth/sign-in";
+        let (status, body) = api.call(reqwest::Method::POST, path, None, carol).await;
+        (status, body["error"]["code"].as_str().map(str::to_owned))
+    };
+
+    // Nobody does anything without signing in.
+    let commands = [
+        format!("/users/{carol}/suspend"),
+        format!("/users/{carol}/reactivate"),
+        format!("/users/{carol}/delete"),
+        format!("/recipes/{pancakes}/delete"),
+        format!("/images/{PICTURE}/remove"),
+    ];
+    for command in &commands {
+        let answer = Browser::default().post(&router, command, &[]).await;
+        assert_eq!(answer.status, StatusCode::SEE_OTHER, "{command}");
+        assert_eq!(answer.location, "/sign-in", "{command}");
+    }
+    assert_eq!(recipes::count(&admin.db, None).await.unwrap(), 2);
+
+    let mut root = Browser::default();
+    let answer = root
+        .sign_in(&router, &api, ROOT_EMAIL, ROOT_PASSWORD, 0)
+        .await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    eventually("admin to know carol and root", || async {
+        let known = users::get(&admin.db, &carol).await.unwrap().is_some()
+            && users::get(&admin.db, "root").await.unwrap().is_some();
+        known.then_some(())
+    })
+    .await;
+
+    // Suspended: the page says so once the api did it, and the api signs
+    // carol in no more.
+    let user = format!("/users/{carol}");
+    let page = root.get(&router, &user).await.body;
+    has(&page, "data-action=\"suspend\"");
+    has(&page, "data-action=\"delete\"");
+    lacks(&page, "data-action=\"reactivate\"");
+    let answer = root.post(&router, &commands[0], &[]).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    assert_eq!(answer.location, format!("{user}?done=suspended"));
+    let page = root.get(&router, &answer.location).await.body;
+    has(&page, "data-done=\"suspended\"");
+    has(&page, "<dd data-role=\"\">Suspended</dd>");
+    has(&page, "data-suspended=\"\"");
+    has(&page, "href=\"/users/root\"");
+    has(&page, "data-action=\"reactivate\"");
+    lacks(&page, "data-action=\"suspend\"");
+    assert_eq!(sign_in().await, (403, Some("account_suspended".to_owned())));
+    has(&root.get(&router, "/users").await.body, "Suspended");
+
+    // Reactivated, she signs in again.
+    let answer = root.post(&router, &commands[1], &[]).await;
+    assert_eq!(answer.location, format!("{user}?done=reactivated"));
+    let page = root.get(&router, &answer.location).await.body;
+    has(&page, "data-done=\"reactivated\"");
+    has(&page, "<dd data-role=\"\">User</dd>");
+    has(&page, "data-action=\"suspend\"");
+    assert_eq!(sign_in().await.0, 202);
+
+    // What the api refuses is said in its words, and nothing is done:
+    // nobody suspends root, who is offered no button for it.
+    let page = root.get(&router, "/users/root").await.body;
+    lacks(&page, "data-action=");
+    let answer = root.post(&router, "/users/root/suspend", &[]).await;
+    assert_eq!(answer.status, StatusCode::FORBIDDEN, "{}", answer.body);
+    has(&answer.body, "data-not-done=\"\"");
+    has(&answer.body, "You are not allowed to do this.");
+    has(&answer.body, "href=\"/users/root\"");
+    let answer = root.post(&router, "/users/nobody/delete", &[]).await;
+    assert_eq!(answer.status, StatusCode::NOT_FOUND, "{}", answer.body);
+    has(&answer.body, "data-not-done=\"\"");
+
+    // Deleted, the account says so and takes no more.
+    let answer = root.post(&router, &commands[2], &[]).await;
+    assert_eq!(answer.location, format!("{user}?done=deleted"));
+    let page = root.get(&router, &answer.location).await.body;
+    has(&page, "data-done=\"deleted\"");
+    has(&page, "<dd data-role=\"\">Deleted</dd>");
+    lacks(&page, "data-action=");
+    assert_eq!(
+        sign_in().await,
+        (422, Some("invalid_credentials".to_owned()))
+    );
+
+    // The picture is taken off the two recipes that show it, which stay.
+    let picture = format!("/images/{PICTURE}");
+    has(
+        &root.get(&router, &picture).await.body,
+        "data-action=\"remove\"",
+    );
+    eventually("the api to list the recipes with their picture", || async {
+        let shown: i64 = imkitchen_api::db::Db::from(api.store.clone())
+            .fetch_scalar(
+                "SELECT count(*) FROM recipes WHERE image_id = ?1",
+                (PICTURE,),
+            )
+            .await
+            .unwrap();
+        (shown == 2).then_some(())
+    })
+    .await;
+    let answer = root.post(&router, &commands[4], &[]).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    assert_eq!(answer.location, "/images?done=removed");
+    has(
+        &root.get(&router, &answer.location).await.body,
+        "data-done=\"removed\"",
+    );
+    assert!(
+        recipes::showing(&admin.db, PICTURE, 10)
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    for recipe in [pancakes, crepes] {
+        let page = root.get(&router, &format!("/recipes/{recipe}")).await;
+        assert_eq!(page.status, StatusCode::OK);
+        lacks(&page.body, &picture);
+    }
+
+    // The recipe is deleted, once: there is none to delete after that.
+    let recipe = format!("/recipes/{pancakes}");
+    has(
+        &root.get(&router, &recipe).await.body,
+        "data-action=\"delete\"",
+    );
+    let answer = root.post(&router, &commands[3], &[]).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    assert_eq!(answer.location, "/recipes?done=deleted");
+    let page = root.get(&router, &answer.location).await.body;
+    has(&page, "data-done=\"deleted\"");
+    lacks(&page, &recipe);
+    has(&page, &format!("/recipes/{crepes}"));
+    let answer = root.get(&router, &recipe).await;
+    assert_eq!(answer.status, StatusCode::NOT_FOUND);
+    let answer = root.post(&router, &commands[3], &[]).await;
+    assert_eq!(answer.status, StatusCode::NOT_FOUND, "{}", answer.body);
+    has(&answer.body, "This recipe does not exist.");
+
+    // A session the api ended does nothing more, and signs in again.
+    let (_, session) = api
+        .call(
+            reqwest::Method::POST,
+            "/v1/auth/sign-in",
+            None,
+            json!({ "email": ROOT_EMAIL, "password": ROOT_PASSWORD }),
+        )
+        .await;
+    let (status, _) = api
+        .call(
+            reqwest::Method::POST,
+            "/v1/account/sign-out-everywhere",
+            session["token"].as_str(),
+            Value::Null,
+        )
+        .await;
+    assert_eq!(status, 204);
+    let command = format!("/recipes/{crepes}/delete");
+    let answer = root.post(&router, &command, &[]).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER);
+    assert_eq!(answer.location, "/sign-in");
+    assert!(recipes::get(&admin.db, crepes).await.unwrap().is_some());
 
     admin.stop().await;
     api.shutdown().await;

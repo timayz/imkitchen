@@ -1,15 +1,19 @@
-//! Who reads admin, as the api says, over HTTP.
+//! The api over HTTP: who reads admin, and what an administrator does.
 //!
 //! admin knows nobody itself: an administrator signs in at the api, which
 //! answers a session token (`api/README.md` says how), and admin asks the
-//! api whose token it is on every page. What the api refuses of a sign-in
-//! comes back as it worded it ([`Refusal`]).
+//! api whose token it is on every page.
+//!
+//! admin writes nothing itself either: what an administrator does to a
+//! user, a recipe or a picture is a command of the api's (`/v1/admin`),
+//! sent with the token of who asks, so that the api decides whether they
+//! may. What the api refuses comes back as it worded it ([`Refusal`]).
 
 use std::time::Duration;
 
 use anyhow::{Context, anyhow};
 use reqwest::header::{ACCEPT_LANGUAGE, USER_AGENT};
-use reqwest::{RequestBuilder, Response, StatusCode};
+use reqwest::{Method, RequestBuilder, Response, StatusCode, Url};
 use serde::{Deserialize, Serialize};
 
 use crate::config::ApiConfig;
@@ -20,7 +24,8 @@ const TIMEOUT: Duration = Duration::from_secs(10);
 /// The language admin is read in: what the api words its refusals in.
 const LANGUAGE: &str = "en";
 
-/// The api, for the sessions of admin.
+/// The api, for the sessions of admin and the commands of its
+/// administrators.
 #[derive(Debug, Clone)]
 pub struct Api {
     http: reqwest::Client,
@@ -31,12 +36,13 @@ pub struct Api {
     public_url: Option<String>,
 }
 
-/// Why a sign-in was not done.
+/// Why the api did not do what it was asked: a sign-in, or a command.
 #[derive(Debug)]
-pub enum SignInError {
+pub enum CommandError {
     /// The api refused it, and says why.
     Refused(Refusal),
-    /// The api did not answer, or not the way it answers.
+    /// The api did not answer, or not the way it answers: whether it did
+    /// what was asked is not known.
     Unreachable(anyhow::Error),
 }
 
@@ -150,13 +156,16 @@ impl Api {
         &self,
         credentials: &Credentials,
         user_agent: Option<&str>,
-    ) -> Result<SignIn, SignInError> {
+    ) -> Result<SignIn, CommandError> {
         let path = "/v1/auth/sign-in";
         let mut request = self.http.post(self.at(path)).json(credentials);
         if let Some(user_agent) = user_agent {
             request = request.header(USER_AGENT, user_agent);
         }
-        let response = self.send(request).await.map_err(SignInError::Unreachable)?;
+        let response = self
+            .send(request)
+            .await
+            .map_err(CommandError::Unreachable)?;
         let status = response.status();
         match status {
             StatusCode::ACCEPTED => Ok(SignIn::CodeSent),
@@ -165,20 +174,8 @@ impl Api {
                 .await
                 .map(SignIn::Done)
                 .with_context(|| format!("{path} answered {status}, and not a session"))
-                .map_err(SignInError::Unreachable),
-            _ => {
-                let refusal = response
-                    .json::<ErrorBody>()
-                    .await
-                    .with_context(|| {
-                        format!("{path} answered {status}, and not as the api refuses")
-                    })
-                    .map_err(SignInError::Unreachable)?;
-                Err(SignInError::Refused(Refusal {
-                    status: status.as_u16(),
-                    ..refusal.error
-                }))
-            }
+                .map_err(CommandError::Unreachable),
+            _ => Err(refused(path, response).await),
         }
     }
 
@@ -212,6 +209,72 @@ impl Api {
         }
     }
 
+    /// Suspends the user `id`, as the administrator `token` signs in asks:
+    /// they are signed out everywhere, and not signed in again.
+    pub async fn suspend_user(&self, token: &str, id: &str) -> Result<(), CommandError> {
+        let thing = ["admin", "users", id, "suspension"];
+        self.command(Method::PUT, &thing, token).await
+    }
+
+    /// Lets the user `id` sign in again.
+    pub async fn reactivate_user(&self, token: &str, id: &str) -> Result<(), CommandError> {
+        let thing = ["admin", "users", id, "suspension"];
+        self.command(Method::DELETE, &thing, token).await
+    }
+
+    /// Deletes the account of the user `id`.
+    pub async fn delete_user(&self, token: &str, id: &str) -> Result<(), CommandError> {
+        let thing = ["admin", "users", id];
+        self.command(Method::DELETE, &thing, token).await
+    }
+
+    /// Deletes the recipe `id`, whoever's it is.
+    pub async fn delete_recipe(&self, token: &str, id: &str) -> Result<(), CommandError> {
+        let thing = ["admin", "recipes", id];
+        self.command(Method::DELETE, &thing, token).await
+    }
+
+    /// Takes the picture `id` off every recipe that shows it.
+    pub async fn delete_image(&self, token: &str, id: &str) -> Result<(), CommandError> {
+        let thing = ["admin", "images", id];
+        self.command(Method::DELETE, &thing, token).await
+    }
+
+    /// Sends the command `method` on `thing` (the segments of its address
+    /// under `/v1`, an id among them written as it is) as whoever `token`
+    /// signs in. Done is a 204.
+    async fn command(
+        &self,
+        method: Method,
+        thing: &[&str],
+        token: &str,
+    ) -> Result<(), CommandError> {
+        let path = format!("/v1/{}", thing.join("/"));
+        // An id comes from the address of a page: it stays one segment
+        // whatever it holds.
+        let url = Url::parse(&self.url)
+            .ok()
+            .and_then(|mut url| {
+                url.path_segments_mut()
+                    .ok()?
+                    .pop_if_empty()
+                    .push("v1")
+                    .extend(thing);
+                Some(url)
+            })
+            .ok_or_else(|| anyhow!("{} is not an address commands are sent to", self.url))
+            .map_err(CommandError::Unreachable)?;
+        let request = self.http.request(method, url).bearer_auth(token);
+        let response = self
+            .send(request)
+            .await
+            .map_err(CommandError::Unreachable)?;
+        match response.status() {
+            StatusCode::NO_CONTENT => Ok(()),
+            _ => Err(refused(&path, response).await),
+        }
+    }
+
     fn at(&self, path: &str) -> String {
         format!("{}{path}", self.url)
     }
@@ -222,5 +285,20 @@ impl Api {
             .send()
             .await
             .with_context(|| format!("the api does not answer at {}", self.url))
+    }
+}
+
+/// What `path` answered when it did not do what was asked: the refusal of
+/// the api, or an answer that is not one of its own.
+async fn refused(path: &str, response: Response) -> CommandError {
+    let status = response.status();
+    match response.json::<ErrorBody>().await {
+        Ok(body) => CommandError::Refused(Refusal {
+            status: status.as_u16(),
+            ..body.error
+        }),
+        Err(err) => CommandError::Unreachable(anyhow::Error::new(err).context(format!(
+            "{path} answered {status}, and not as the api refuses"
+        ))),
     }
 }

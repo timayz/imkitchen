@@ -32,6 +32,7 @@ use crate::cluster::Executor;
 use crate::config::AuthConfig;
 use crate::error::{ApiError, ApiResult, NOT_ALLOWED, SIGN_IN_REQUIRED, SIGNED_OUT};
 use crate::server::AppState;
+use crate::suspension;
 
 /// What the one-time codes are derived under, from the configured secret.
 const CODE_PURPOSE: &str = "email-code";
@@ -140,7 +141,8 @@ pub fn login_context(headers: &HeaderMap) -> LoginContext {
     }
 }
 
-/// Opens a session for `user_id`, who just proved who they are.
+/// Opens a session for `user_id`, who just proved who they are. A user who
+/// is suspended is refused (`account_suspended`).
 pub async fn sign_in(
     state: &AppState,
     user_id: &str,
@@ -149,9 +151,21 @@ pub async fn sign_in(
     let identity = state.identity();
     let token = URL_SAFE_NO_PAD.encode(rand::rng().random::<[u8; 32]>());
     let expires_at = unix_now() + state.auth.session_lifetime_secs;
+    let hash = token_hash(&token);
     identity
-        .start_session(&token_hash(&token), user_id, expires_at, context)
+        .start_session(&hash, user_id, expires_at, context)
         .await?;
+    // Looked at once the session is there: a suspension written meanwhile
+    // is either seen here or ends this session with the others.
+    if suspension::is_suspended(&state.executor, user_id).await? {
+        if let Err(err) = identity.end_session(&hash).await {
+            tracing::warn!(%err, "cannot end the session of a suspended user");
+        }
+        return Err(ApiError::refused(
+            StatusCode::FORBIDDEN,
+            suspension::ACCOUNT_SUSPENDED,
+        ));
+    }
     let user = identity
         .load_user(user_id)
         .await?

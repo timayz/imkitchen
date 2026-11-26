@@ -1,6 +1,6 @@
 //! `/images`: the pictures of the recipes, all that are used or only those
-//! several recipes share, and `/images/{image_id}`: one of them and the
-//! recipes that show it.
+//! several recipes share, and `/images/{image_id}`: one of them, the
+//! recipes that show it and the button that takes it off them all.
 
 use topcoat::{
     Result,
@@ -11,7 +11,10 @@ use topcoat::{
 
 use super::recipes::{self, recipe_id};
 use super::users::{self, user_id};
-use super::{H1, H2, LINK, MAIN, TABLE, TD, TH, pager, read, when};
+use super::{
+    ACTIONS, DONE, H1, H2, LINK, MAIN, TABLE, TD, TH, act_for_good, done, followed, not_done,
+    notice, pager, read, token, when,
+};
 use crate::app::{api, db};
 use crate::listing::{PAGE_SIZE, Pages};
 
@@ -25,6 +28,8 @@ struct Query {
     /// Only the pictures used more than once.
     shared: Option<String>,
     page: Option<u32>,
+    /// What was just done to a picture.
+    done: Option<String>,
 }
 
 /// A weight in bytes, as a person reads it.
@@ -41,6 +46,7 @@ pub async fn list(cx: &Cx) -> Result<impl View> {
     let db = db(cx);
     let query = query_params::<Query>(cx).ok();
     let shared = query.is_some_and(|query| query.shared.is_some());
+    let removed = query.is_some_and(|query| query.done.as_deref() == Some("removed"));
     let pages = Pages::new(
         query.and_then(|query| query.page),
         read(crate::images::count(db, shared).await)?,
@@ -63,6 +69,12 @@ pub async fn list(cx: &Cx) -> Result<impl View> {
             <p class="mt-2 text-stone-600">
                 "A picture is stored once however many recipes show it."
             </p>
+            if removed {
+                notice(
+                    what: "removed",
+                    message: "The picture is taken off the recipes that showed it. It leaves this list once its files are deleted.",
+                )
+            }
             <nav class="mt-6 flex flex-wrap gap-2 text-sm" aria-label="Which pictures">
                 <a
                     class=(class!(tab, "border-stone-900 font-semibold" if !shared, "border-stone-300" if shared))
@@ -143,6 +155,15 @@ pub async fn show(cx: &Cx) -> Result<impl View> {
                 </div>
             </dl>
 
+            <div class=(ACTIONS)>
+                act_for_good(
+                    action: href!(remove, image_id: image.image_id.as_str()).resolve(cx),
+                    what: "remove",
+                    label: "Take it off the recipes",
+                    warning: "Every recipe that shows this picture is left without one, and its files are deleted. The recipes stay. Nothing keeps someone from giving the same picture to a recipe again.",
+                )
+            </div>
+
             <h2 class=(H2)>"Shown by"</h2>
             if shown_by.is_empty() {
                 <p class="mt-4 text-sm text-stone-600">"No recipe."</p>
@@ -163,4 +184,16 @@ pub async fn show(cx: &Cx) -> Result<impl View> {
             }
         </main>
     })
+}
+
+#[page(POST "./{image_id}/remove")]
+async fn remove(cx: &Cx) -> Result<impl View> {
+    let (db, id) = (db(cx), image_id(cx));
+    let outcome = api(cx).delete_image(&token(cx)?, id).await;
+    if outcome.is_ok() {
+        followed(|| async { Ok(crate::recipes::showing(db, id, 1).await?.is_empty()) }).await;
+    }
+    let then = href!(list).query([(DONE, "removed")]).resolve(cx);
+    let failure = done(cx, outcome, then)?;
+    Ok(view! { not_done(failure: failure, back: href!(show, image_id: id).resolve(cx)) })
 }

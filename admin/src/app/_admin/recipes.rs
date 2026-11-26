@@ -1,5 +1,6 @@
 //! `/recipes`: every recipe, searched by title or by ingredient, and
-//! `/recipes/{recipe_id}`: one of them, all it says.
+//! `/recipes/{recipe_id}`: one of them, all it says, and the button that
+//! deletes it.
 
 use topcoat::{
     Result,
@@ -10,7 +11,10 @@ use topcoat::{
 
 use super::images::{self, image_id};
 use super::users::{self, user_id};
-use super::{H1, H2, LINK, MAIN, TABLE, TD, TH, pager, read, search, when};
+use super::{
+    ACTIONS, DONE, H1, H2, LINK, MAIN, TABLE, TD, TH, act_for_good, done, followed, not_done,
+    notice, pager, read, search, token, when,
+};
 use crate::app::{api, db};
 use crate::listing::{PAGE_SIZE, Pages, searched};
 use crate::recipes::Ingredient;
@@ -21,6 +25,8 @@ path_param!(pub recipe_id);
 struct Query {
     q: Option<String>,
     page: Option<u32>,
+    /// What was just done to a recipe.
+    done: Option<String>,
 }
 
 #[page]
@@ -28,6 +34,7 @@ pub async fn list(cx: &Cx) -> Result<impl View> {
     let db = db(cx);
     let query = query_params::<Query>(cx).ok();
     let q = searched(query.and_then(|query| query.q.as_deref()));
+    let deleted = query.is_some_and(|query| query.done.as_deref() == Some("deleted"));
     let pages = Pages::new(
         query.and_then(|query| query.page),
         read(crate::recipes::count(db, q).await)?,
@@ -46,6 +53,9 @@ pub async fn list(cx: &Cx) -> Result<impl View> {
     Ok(view! {
         <main class=(MAIN)>
             <h1 class=(H1)>"Recipes"</h1>
+            if deleted {
+                notice(what: "deleted", message: "The recipe is deleted.")
+            }
             search(
                 action: href!(list).resolve(cx),
                 q: q.unwrap_or_default().to_owned(),
@@ -164,6 +174,15 @@ pub async fn show(cx: &Cx) -> Result<impl View> {
                 <p class="mt-6 whitespace-pre-line text-stone-700">(recipe.description.as_str())</p>
             }
 
+            <div class=(ACTIONS)>
+                act_for_good(
+                    action: href!(delete, recipe_id: recipe.id.as_str()).resolve(cx),
+                    what: "delete",
+                    label: "Delete the recipe",
+                    warning: "The recipe is gone for good, for its owner too: it leaves their plats and their list, and its picture goes unless another recipe shows it.",
+                )
+            </div>
+
             <h2 class=(H2)>"Ingredients"</h2>
             <ul class="mt-4 list-disc pl-6 text-sm" data-ingredients=(recipe.ingredients.0.len())>
                 for ingredient in &recipe.ingredients.0 {
@@ -179,4 +198,16 @@ pub async fn show(cx: &Cx) -> Result<impl View> {
             </ol>
         </main>
     })
+}
+
+#[page(POST "./{recipe_id}/delete")]
+async fn delete(cx: &Cx) -> Result<impl View> {
+    let (db, id) = (db(cx), recipe_id(cx));
+    let outcome = api(cx).delete_recipe(&token(cx)?, id).await;
+    if outcome.is_ok() {
+        followed(|| async { Ok(crate::recipes::get(db, id).await?.is_none()) }).await;
+    }
+    let then = href!(list).query([(DONE, "deleted")]).resolve(cx);
+    let failure = done(cx, outcome, then)?;
+    Ok(view! { not_done(failure: failure, back: href!(show, recipe_id: id).resolve(cx)) })
 }

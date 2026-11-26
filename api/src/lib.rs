@@ -19,6 +19,7 @@ pub mod server;
 pub mod settings;
 pub mod sidecars;
 pub mod subscriptions;
+pub mod suspension;
 pub mod tutorial;
 
 // The sentences of `locales/`, for `locale::Locale` to read.

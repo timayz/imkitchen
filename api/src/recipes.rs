@@ -125,6 +125,31 @@ pub async fn ids_of(db: &Db, owner_id: &str) -> anyhow::Result<Vec<String>> {
     read_model::ids_of(db, owner_id).await
 }
 
+/// Deletes the recipe `id` for good, whoever's it is: an administrator's
+/// to do. One that does not exist or was deleted is refused
+/// (`recipe_not_found`).
+pub async fn remove<E: evento::Executor>(executor: &E, id: &str) -> ApiResult<()> {
+    model::remove(executor, id).await
+}
+
+/// Takes the picture `image_id` off every recipe this node's list knows to
+/// show it, whoever's they are: an administrator's to do. A recipe given
+/// the picture a moment ago is not among them yet, and one that changed
+/// picture or was deleted meanwhile is left as it is.
+pub async fn remove_image_shown<E: evento::Executor>(
+    executor: &E,
+    db: &Db,
+    image_id: &str,
+) -> ApiResult<()> {
+    for id in read_model::showing(db, image_id).await? {
+        match model::remove_image_shown(executor, &id, image_id).await {
+            Err(ApiError::Refused(StatusCode::NOT_FOUND, _)) => {}
+            done => done?,
+        }
+    }
+    Ok(())
+}
+
 /// One size of a picture.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct ImageFile {

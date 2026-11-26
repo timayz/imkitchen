@@ -18,6 +18,7 @@ pub mod recipe;
 pub mod recipe_import;
 pub mod settings;
 mod sidecar;
+pub mod suspension;
 pub mod tutorial;
 
 pub use sidecar::Sidecar;
