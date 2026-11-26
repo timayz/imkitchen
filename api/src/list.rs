@@ -50,6 +50,15 @@ pub fn routes() -> OpenApiRouter<AppState> {
         .routes(routes!(replace, remove))
 }
 
+/// The meals of the list of `owner_id` as their last command left it, in
+/// the order they were planned: what their groceries are worked out from.
+pub async fn entries_of<E: evento::Executor>(
+    executor: &E,
+    owner_id: &str,
+) -> anyhow::Result<Vec<imkitchen_aggregates::list::Entry>> {
+    Ok(model::load(executor, owner_id).await?.entries)
+}
+
 /// A meal to plan: a recipe of the user or one of their plats, one of the
 /// two.
 #[derive(Deserialize, Validate, ToSchema)]

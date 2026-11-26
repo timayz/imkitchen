@@ -98,6 +98,20 @@ pub async fn owner_of<E: evento::Executor>(
     Ok(recipe.map(|recipe| recipe.owner_id))
 }
 
+/// What the recipe `id` takes, and how many people that feeds, when it is
+/// one of `owner_id`'s: `None` for one that does not exist, was deleted or
+/// is someone else's.
+pub async fn ingredients_of<E: evento::Executor>(
+    executor: &E,
+    owner_id: &str,
+    id: &str,
+) -> anyhow::Result<Option<(Vec<imkitchen_aggregates::recipe::Ingredient>, u32)>> {
+    let recipe = model::load(executor, id).await?;
+    Ok(recipe
+        .filter(|recipe| !recipe.deleted && recipe.owner_id == owner_id)
+        .map(|recipe| (recipe.content.ingredients, recipe.content.servings)))
+}
+
 /// Those of the recipes `ids` this node's list knows, in no order: one just
 /// written is there a moment later, one deleted is not.
 pub async fn listed(db: &Db, ids: &[String]) -> anyhow::Result<Vec<RecipeSummary>> {

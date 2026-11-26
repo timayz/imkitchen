@@ -40,6 +40,7 @@ errors:
   list_entry_not_found: This meal is not on your list.
   list_full: Your list is full. Take a meal off before adding another.
   nothing_to_generate: There is nothing to generate a list from yet. Add recipes or plats first.
+  grocery_item_not_found: This item is not in your groceries.
   page_unreachable: This page could not be read. Check its address.
   no_recipe_on_page: No recipe was found on this page.
   unsupported_image: This is not a picture the api takes. Send a JPEG, PNG, WebP or GIF.
