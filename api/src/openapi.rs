@@ -26,6 +26,7 @@ pub const AUTH: &str = "auth";
 pub const ACCOUNT: &str = "account";
 pub const ADMIN: &str = "admin";
 pub const RECIPES: &str = "recipes";
+pub const PLATS: &str = "plats";
 pub const IMAGES: &str = "images";
 pub const NODE: &str = "node";
 
@@ -41,6 +42,7 @@ const SESSION: &str = "session";
         (name = ACCOUNT, description = "What a user does with their own account"),
         (name = ADMIN, description = "What an administrator does with the accounts of others"),
         (name = RECIPES, description = "A user's own recipes"),
+        (name = PLATS, description = "The plats a user composes of their recipes"),
         (name = IMAGES, description = "The pictures of the recipes"),
         (name = NODE, description = "The probes of the node; no version, not for clients"),
     ),

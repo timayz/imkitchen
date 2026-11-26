@@ -42,6 +42,13 @@ pub async fn start(
             .start(&executor.local_reads())
             .await
             .context("cannot start the recipes subscription")?,
+        // Its list, and the recipes that were deleted taken out of the
+        // plats they were part of: writes, so through the cluster.
+        crate::plats::subscription(db.clone())
+            .supervised()
+            .start(executor)
+            .await
+            .context("cannot start the plats subscription")?,
         // This node's copies of the pictures, from its own file too.
         crate::images::subscription(db.clone(), images)
             .supervised()
