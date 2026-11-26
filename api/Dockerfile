@@ -4,8 +4,9 @@
 #
 #   docker build -f api/Dockerfile -t timayz/imkitchen-api .
 #
-# The dependencies are built in a layer of their own (cargo-chef), which
-# only changes with Cargo.lock: a change to the code builds the api alone.
+# The dependencies are built in a stage of their own, `deps` (cargo-chef),
+# which only changes with Cargo.lock: a change to the code builds the api
+# alone. CI keeps that stage between runs, and nothing after it.
 
 FROM rust:1.100-alpine AS chef
 
@@ -13,7 +14,7 @@ FROM rust:1.100-alpine AS chef
 # clang-libs is what the store's bindings generator looks for.
 RUN apk add --no-cache musl-dev build-base cmake perl clang-libs ca-certificates
 
-RUN cargo install cargo-chef --locked --version 0.1.77
+RUN cargo install cargo-chef --locked --version 0.1.78
 
 WORKDIR /app
 
@@ -23,7 +24,7 @@ COPY . .
 
 RUN cargo chef prepare --recipe-path recipe.json
 
-FROM chef AS builder
+FROM chef AS deps
 
 ARG USER=imkitchen
 ARG UID=10001
@@ -45,6 +46,8 @@ RUN addgroup -g "${GID}" -S "${USER}" && \
 COPY --from=planner /app/recipe.json recipe.json
 
 RUN cargo chef cook --release --locked --recipe-path recipe.json -p imkitchen-api
+
+FROM deps AS builder
 
 COPY . .
 

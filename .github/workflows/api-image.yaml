@@ -9,7 +9,7 @@ on:
         required: false
         type: boolean
       cache:
-        description: Keep the layers of this build in the registry for the next ones
+        description: Keep the dependencies this build compiled for the next ones
         default: false
         required: false
         type: boolean
@@ -40,16 +40,27 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
 
-      - if: ${{ inputs.push || inputs.cache }}
+      - if: ${{ inputs.push }}
         uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_REGISTRY_USER }}
           password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
 
-      # The dependencies are a layer of their own (cargo-chef): a change to
-      # the code builds the api alone. The layers are kept in the registry,
-      # under a tag of their own, not in the cache of the repository: that
-      # one is the tests', and they fill it.
+      # The dependencies are a stage of their own (cargo-chef), and the only
+      # one that is kept: it changes with Cargo.lock, where a layer of the
+      # build after it would be another few hundred megabytes of cache at
+      # every push.
+      - if: ${{ inputs.cache }}
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: api/Dockerfile
+          target: deps
+          cache-from: type=gha,scope=api-image
+          cache-to: type=gha,scope=api-image,mode=max
+
+      # From the dependencies this job just built, or from those a branch
+      # kept: a pull request reads the cache of the branch it targets.
       - uses: docker/build-push-action@v7
         with:
           context: .
@@ -57,5 +68,4 @@ jobs:
           push: ${{ inputs.push }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=timayz/imkitchen-api:buildcache
-          cache-to: ${{ inputs.cache && 'type=registry,ref=timayz/imkitchen-api:buildcache,mode=max' || '' }}
+          cache-from: type=gha,scope=api-image
