@@ -11,6 +11,7 @@ use std::time::Duration;
 
 use config::{ConfigError, Environment, File};
 use serde::Deserialize;
+use topcoat::context::BaseUrl;
 
 /// The least the token of www may be, in characters: what the api asks of
 /// `sidecars.tokens.www`.
@@ -21,6 +22,9 @@ pub struct Config {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub api: ApiConfig,
+    #[serde(default)]
+    pub app: AppConfig,
+    pub contact: ContactConfig,
     pub monitoring: MonitoringConfig,
 }
 
@@ -28,6 +32,9 @@ pub struct Config {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
+    /// The address visitors reach www at, without a path of the pages: what
+    /// the addresses a search engine is given start with.
+    pub url: String,
     /// How long requests in flight get to finish once the server was asked
     /// to stop, in seconds.
     pub shutdown_timeout_secs: u64,
@@ -36,6 +43,16 @@ pub struct ServerConfig {
 impl ServerConfig {
     pub fn shutdown_timeout(&self) -> Duration {
         Duration::from_secs(self.shutdown_timeout_secs)
+    }
+
+    /// `url`, for the pages to build their addresses on.
+    pub fn base_url(&self) -> Result<BaseUrl, ConfigError> {
+        BaseUrl::new(&self.url).map_err(|err| {
+            ConfigError::Message(format!(
+                "server.url must be the address of www, not '{}': {err}",
+                self.url
+            ))
+        })
     }
 }
 
@@ -108,6 +125,61 @@ impl ApiConfig {
     }
 }
 
+/// Where the application is got. A listing that is left out is not live
+/// yet: the pages do not link to it, and say the application is coming
+/// while none is.
+#[derive(Debug, Default, Deserialize, Clone, PartialEq)]
+pub struct AppConfig {
+    /// The listing on Google Play.
+    #[serde(default)]
+    pub google_play: Option<String>,
+    /// The listing on the App Store.
+    #[serde(default)]
+    pub app_store: Option<String>,
+    /// Where the desktop packages are downloaded.
+    #[serde(default)]
+    pub desktop: Option<String>,
+}
+
+impl AppConfig {
+    fn validate(&self) -> Result<(), ConfigError> {
+        for (key, link) in [
+            ("google_play", &self.google_play),
+            ("app_store", &self.app_store),
+            ("desktop", &self.desktop),
+        ] {
+            if let Some(link) = link
+                && !link.starts_with("https://")
+                && !link.starts_with("http://")
+            {
+                return Err(ConfigError::Message(format!(
+                    "app.{key} must be an http(s) address, not '{link}'"
+                )));
+            }
+        }
+        Ok(())
+    }
+}
+
+/// How a visitor writes to imkitchen.
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct ContactConfig {
+    /// The address the contact and legal pages give.
+    pub email: String,
+}
+
+impl ContactConfig {
+    fn validate(&self) -> Result<(), ConfigError> {
+        match self.email.split_once('@') {
+            Some((name, host)) if !name.is_empty() && !host.is_empty() => Ok(()),
+            _ => Err(ConfigError::Message(format!(
+                "contact.email must be an email address, not '{}'",
+                self.email
+            ))),
+        }
+    }
+}
+
 /// A value of the configuration that is never printed.
 #[derive(Deserialize, Clone, PartialEq)]
 #[serde(transparent)]
@@ -143,9 +215,11 @@ impl Config {
         let mut builder = config::Config::builder()
             .set_default("server.host", "0.0.0.0")?
             .set_default("server.port", 3010)?
+            .set_default("server.url", "http://localhost:3010")?
             .set_default("server.shutdown_timeout_secs", 30)?
             .set_default("database.path", "data/www.db")?
             .set_default("api.events", "127.0.0.1:4000")?
+            .set_default("contact.email", "contact@imkitchen.app")?
             .set_default("monitoring.log_level", "info")?
             .set_default("monitoring.log_json", false)?
             .set_default("monitoring.log_target", true)?
@@ -160,7 +234,10 @@ impl Config {
             .build()?
             .try_deserialize()?;
 
+        config.server.base_url()?;
         config.api.validate()?;
+        config.app.validate()?;
+        config.contact.validate()?;
 
         Ok(config)
     }
@@ -228,6 +305,47 @@ mod tests {
 
         let err = load("[api]\ntls_server_name = \"api\"\n").unwrap_err();
         assert!(err.to_string().contains("api.tls_ca"), "{err}");
+    }
+
+    #[test]
+    fn site_sections_are_read_and_validated() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("site.toml");
+        let load = |content: &str| {
+            std::fs::write(&path, content).unwrap();
+            Config::load(path.to_str())
+        };
+
+        // No listing is live until a deployment says so.
+        let config = Config::load(None).unwrap();
+        assert_eq!(config.app, AppConfig::default());
+        assert_eq!(
+            config.server.base_url().unwrap().as_str(),
+            "http://localhost:3010"
+        );
+
+        let config = load(
+            "[server]\nurl = \"https://imkitchen.app/\"\n\
+             [app]\ngoogle_play = \"https://play.google.com/store/apps/details?id=app.imkitchen\"\n\
+             [contact]\nemail = \"hello@imkitchen.app\"\n",
+        )
+        .unwrap();
+        assert_eq!(
+            config.server.base_url().unwrap().as_str(),
+            "https://imkitchen.app"
+        );
+        assert!(config.app.google_play.is_some());
+        assert_eq!(config.app.app_store, None);
+        assert_eq!(config.contact.email, "hello@imkitchen.app");
+
+        let err = load("[server]\nurl = \"imkitchen.app\"\n").unwrap_err();
+        assert!(err.to_string().contains("server.url"), "{err}");
+
+        let err = load("[app]\napp_store = \"apps.apple.com/app\"\n").unwrap_err();
+        assert!(err.to_string().contains("app.app_store"), "{err}");
+
+        let err = load("[contact]\nemail = \"nobody\"\n").unwrap_err();
+        assert!(err.to_string().contains("contact.email"), "{err}");
     }
 
     #[test]

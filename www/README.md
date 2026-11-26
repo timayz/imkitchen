@@ -40,6 +40,12 @@ the version of the workspace's `topcoat`.
 
 What a deployment sets:
 
+- `server.url`: the address visitors reach www at. The addresses a search
+  engine is given start with it.
+- `app.google_play`, `app.app_store`, `app.desktop`: where the application
+  is got. A listing is linked once it is set; while none is, the home says
+  the application is coming.
+- `contact.email`: the address the contact and legal pages give.
 - `api.events`: the `[sidecars]` listener of the api (evento's remote
   protocol over TCP, not HTTP). One node, or a name in front of several.
 - `api.token`: `sidecars.tokens.www` of the api.
@@ -56,6 +62,7 @@ migrations; `serve` refuses a store that is not there or not migrated.
 | Path | Contents |
 | --- | --- |
 | `src/app.rs`, `src/app/` | The pages: the router, the layout, each page at the address of its module. |
+| `src/app/language.rs`, `src/app/language/` | The pages of a language: the home, the terms, the privacy page, the contact. |
 | `src/app/l10n/` | The sentences of the pages, one Fluent file per language. |
 | `src/events.rs` | The connection to the api's events. |
 | `src/recipes.rs` | A read model: its subscription and what the pages read from it. |
@@ -73,6 +80,17 @@ A page names a sentence by its key, `t!(home_title)`, and the sentence is
 read in the language of the address. A language is spoken once it has a file
 in `src/app/l10n/`. `make l10n` tells a key a language lacks, a sentence no
 page uses and an argument a page does not give.
+
+A page added under `src/app/language/` is also added to `language::PAGES`:
+the sitemap (`/sitemap.xml`, which `/robots.txt` points to) lists it in every
+language, and the layout names it in the other languages (`hreflang`) next
+to its canonical address. Its title and description are the `Metadata` of
+its `#[page]`.
+
+No page loads a script, a picture or anything from another site, and none
+reports a visit: the tests read every page for it, and for the words of what
+imkitchen no longer is (ads, premium, payment, sharing, chefs). Sentences
+are written around them.
 
 Classes are Tailwind's, found in the `.rs` files when the crate is built.
 

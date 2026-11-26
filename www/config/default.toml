@@ -6,6 +6,10 @@
 [server]
 host = "0.0.0.0"
 port = 3010
+# The address visitors reach www at, without a path of the pages. The
+# addresses a search engine is given (the canonical address of a page, its
+# other languages, the sitemap) start with it.
+url = "http://localhost:3010"
 # How long requests in flight get to finish once Ctrl+C or SIGTERM asked the
 # server to stop, in seconds.
 shutdown_timeout_secs = 30
@@ -34,6 +38,18 @@ events = "127.0.0.1:4000"
 # The name the listener's certificate must carry: the host of `events` when
 # left out.
 # tls_server_name = "api"
+
+[app]
+# Where the application is got. A listing that is left out is not live yet:
+# the pages do not link to it, and say the application is coming while none
+# is.
+# google_play = "https://play.google.com/store/apps/details?id=…"
+# app_store = "https://apps.apple.com/app/…"
+# desktop = "https://…"
+
+[contact]
+# The address the contact and legal pages give.
+email = "contact@imkitchen.app"
 
 [monitoring]
 # A `tracing_subscriber::EnvFilter` directive, e.g. "info,evento=debug".

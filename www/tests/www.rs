@@ -14,7 +14,7 @@ use imkitchen_aggregates::recipe::{Created, Deleted, Ingredient};
 use imkitchen_api::cluster::{self, Cluster, Executor};
 use imkitchen_api::config::{Secret, SidecarTokens, SidecarsConfig};
 use imkitchen_api::sidecars;
-use imkitchen_www::config::ApiConfig;
+use imkitchen_www::config::{ApiConfig, AppConfig, ContactConfig};
 use imkitchen_www::db::{self, Db};
 use imkitchen_www::events::Events;
 use imkitchen_www::{app, config, recipes, subscriptions};
@@ -23,11 +23,19 @@ use tokio::net::TcpListener;
 use topcoat::asset::{
     AssetConfig, MANIFEST_VERSION, Manifest, ManifestEntry, RouterBuilderAssetExt,
 };
+use topcoat::context::BaseUrl;
 use topcoat::router::header::{ACCEPT_LANGUAGE, LOCATION};
 use topcoat::router::request::Request;
 use topcoat::router::{Body, Router, StatusCode, to_bytes};
 
 const WWW_TOKEN: &str = "the token of www in the tests, 32 characters";
+
+/// Where the visitors of the tests reach www, and where they write.
+const SITE: &str = "https://www.test";
+const CONTACT: &str = "hello@www.test";
+
+/// The pages of a language, as what follows its code in their address.
+const PAGES: [&str; 4] = ["", "/terms", "/privacy", "/contact"];
 
 /// How long a test waits for what www does on its own time.
 const SETTLE: Duration = Duration::from_secs(30);
@@ -180,8 +188,14 @@ impl Www {
         .await;
     }
 
-    /// The pages, their stylesheet at an address of the tests.
+    /// The pages, their stylesheet at an address of the tests, while no
+    /// listing of the application is live.
     fn router(&self) -> Router {
+        self.router_with(AppConfig::default())
+    }
+
+    /// The pages, the application got at `app`.
+    fn router_with(&self, app: AppConfig) -> Router {
         let manifest = Manifest {
             version: MANIFEST_VERSION,
             assets: vec![ManifestEntry {
@@ -191,7 +205,14 @@ impl Www {
                 content_type: "text/css".to_owned(),
             }],
         };
-        app::router(self.db.clone(), self.events.clone())
+        let site = app::Site {
+            url: BaseUrl::new(SITE).unwrap(),
+            app,
+            contact: ContactConfig {
+                email: CONTACT.to_owned(),
+            },
+        };
+        app::router(self.db.clone(), self.events.clone(), site)
             .assets(AssetConfig::hosted_at("https://assets.test", manifest))
             .build()
     }
@@ -373,15 +394,24 @@ async fn the_pages_are_read_in_the_language_of_their_address() {
     );
     // Each language links to the other.
     assert!(page.contains("href=\"/en\" hreflang=\"en\""), "{page}");
+    // And a page to itself in the other.
+    let (_, _, page) = get(&router, "/fr/terms", "en").await;
+    assert!(
+        page.contains("href=\"/en/terms\" hreflang=\"en\""),
+        "{page}"
+    );
 
     // Nothing else under a language: its own "not found".
     let (status, _, page) = get(&router, "/fr/nowhere", "en").await;
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert!(page.contains("Cette page n’existe pas"), "{page}");
 
-    // A language www has no sentences for is no address.
-    let (status, _, _) = get(&router, "/de", "de").await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
+    // A language www has no sentences for is no address, nor is another
+    // way to write one it has.
+    for path in ["/de", "/EN", "/en-US/terms"] {
+        let (status, _, _) = get(&router, path, "de").await;
+        assert_eq!(status, StatusCode::NOT_FOUND, "{path}");
+    }
 
     www.stop().await;
     api.shutdown().await;
@@ -397,6 +427,242 @@ async fn health_says_how_www_stands_with_the_api() {
     let (status, _, body) = get(&www.router(), "/health", "en").await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body, r#"{"status":"ok","api":"connected"}"#);
+
+    www.stop().await;
+    api.shutdown().await;
+}
+
+/// The words of `page`, tags and addresses included, in lower case.
+fn words(page: &str) -> Vec<String> {
+    page.to_lowercase()
+        .split(|c: char| !c.is_alphabetic())
+        .filter(|word| !word.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+#[tokio::test]
+async fn every_page_is_there_in_every_language() {
+    let dir = dir();
+    let api = Api::start(dir.path()).await;
+    let www = Www::start(api.addr, &dir.path().join("www.db")).await;
+    let router = www.router();
+
+    // What the rewrite dropped, in the languages www speaks.
+    let dropped = [
+        "ad",
+        "ads",
+        "advert",
+        "adverts",
+        "advertising",
+        "advertisement",
+        "advertisements",
+        "premium",
+        "subscription",
+        "subscriptions",
+        "subscribe",
+        "pay",
+        "paid",
+        "payment",
+        "payments",
+        "billing",
+        "share",
+        "shared",
+        "shares",
+        "sharing",
+        "chef",
+        "chefs",
+        "pub",
+        "pubs",
+        "publicité",
+        "publicités",
+        "abonnement",
+        "abonnements",
+        "abonner",
+        "payer",
+        "payant",
+        "paiement",
+        "paiements",
+        "facturation",
+        "partage",
+        "partages",
+        "partager",
+        "partagé",
+    ];
+
+    for (language, title) in [("en", "Terms of use"), ("fr", "Conditions d’utilisation")] {
+        let mut read = Vec::new();
+        for page in PAGES {
+            let path = format!("/{language}{page}");
+            let (status, _, html) = get(&router, &path, "de").await;
+            assert_eq!(status, StatusCode::OK, "{path}");
+            assert!(
+                html.starts_with(&format!("<!DOCTYPE html><html lang=\"{language}\"")),
+                "{path}: {html}"
+            );
+            // No sentence is missing: one that is shows as its key.
+            assert!(
+                !html.contains("_title") && !html.contains("_text"),
+                "{path}: {html}"
+            );
+
+            // What a search engine is told: the one address of the page,
+            // and the page in each language.
+            assert!(
+                html.contains(&format!("<link rel=\"canonical\" href=\"{SITE}{path}\">")),
+                "{path}: {html}"
+            );
+            for other in ["en", "fr"] {
+                assert!(
+                    html.contains(&format!(
+                        "<link rel=\"alternate\" hreflang=\"{other}\" href=\"{SITE}/{other}{page}\">"
+                    )),
+                    "{path}: {html}"
+                );
+            }
+            assert!(
+                html.contains("<meta name=\"description\" content=\""),
+                "{path}"
+            );
+            assert!(!html.contains("noindex"), "{path}");
+
+            // Nothing tells anyone the page was read: no script, and
+            // nothing fetched but the stylesheet.
+            for fetching in [
+                "<script",
+                "<img",
+                "<iframe",
+                "<object",
+                "<embed",
+                "<video",
+                "<audio",
+                "ping=",
+                "src=",
+                "http-equiv",
+            ] {
+                assert!(!html.contains(fetching), "{path} holds {fetching}: {html}");
+            }
+            assert_eq!(
+                html.matches("<link rel=\"stylesheet\"").count(),
+                1,
+                "{path}"
+            );
+            assert_eq!(html.matches("https://assets.test").count(), 1, "{path}");
+
+            let words = words(&html);
+            for word in dropped {
+                assert!(
+                    !words.iter().any(|read| read == word),
+                    "{path} says \"{word}\": {html}"
+                );
+            }
+
+            // Every page leads to the legal pages and to the contact.
+            for linked in ["/terms", "/privacy", "/contact"] {
+                assert!(
+                    html.contains(&format!("href=\"/{language}{linked}\"")),
+                    "{path} does not link to {linked}"
+                );
+            }
+            read.push(html);
+        }
+
+        // The home alone is where a visitor without a language lands.
+        let default = format!("<link rel=\"alternate\" hreflang=\"x-default\" href=\"{SITE}/\">");
+        assert!(read[0].contains(&default), "{}", read[0]);
+        assert!(!read[1].contains(&default), "{}", read[1]);
+
+        assert!(
+            read[1].contains(&format!(
+                "<h1 class=\"text-4xl font-bold tracking-tight\">{title}</h1>"
+            )),
+            "{}",
+            read[1]
+        );
+        // Who publishes imkitchen, and where they are written to.
+        assert!(read[1].contains("SIRET"), "{}", read[1]);
+        assert!(read[1].contains(CONTACT), "{}", read[1]);
+        assert!(read[2].contains(CONTACT), "{}", read[2]);
+        assert!(
+            read[3].contains(&format!("href=\"mailto:{CONTACT}\"")),
+            "{}",
+            read[3]
+        );
+    }
+
+    www.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn the_home_links_to_the_listings_that_are_live() {
+    let dir = dir();
+    let api = Api::start(dir.path()).await;
+    let www = Www::start(api.addr, &dir.path().join("www.db")).await;
+
+    // None is: the application is coming, and nothing is linked.
+    let (_, _, page) = get(&www.router(), "/en", "en").await;
+    assert!(page.contains("data-get=\"coming\""), "{page}");
+    assert!(page.contains("href=\"/en#get\""), "{page}");
+    assert!(!page.contains("Google Play"), "{page}");
+
+    let play = "https://play.google.com/store/apps/details?id=app.imkitchen";
+    let router = www.router_with(AppConfig {
+        google_play: Some(play.to_owned()),
+        app_store: None,
+        desktop: Some("https://imkitchen.app/download".to_owned()),
+    });
+    let (_, _, page) = get(&router, "/fr", "fr").await;
+    assert!(!page.contains("data-get=\"coming\""), "{page}");
+    assert!(
+        page.contains(&format!(
+            "href=\"{play}\" rel=\"noopener\">Disponible sur Google Play</a>"
+        )),
+        "{page}"
+    );
+    assert!(
+        page.contains("href=\"https://imkitchen.app/download\""),
+        "{page}"
+    );
+    assert!(!page.contains("App Store"), "{page}");
+
+    www.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn a_search_engine_is_given_every_page() {
+    let dir = dir();
+    let api = Api::start(dir.path()).await;
+    let www = Www::start(api.addr, &dir.path().join("www.db")).await;
+    let router = www.router();
+
+    let (status, _, robots) = get(&router, "/robots.txt", "en").await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(
+        robots,
+        format!("User-agent: *\nAllow: /\n\nSitemap: {SITE}/sitemap.xml\n")
+    );
+
+    let (status, _, sitemap) = get(&router, "/sitemap.xml", "en").await;
+    assert_eq!(status, StatusCode::OK);
+    let listed: Vec<&str> = sitemap
+        .split("<loc>")
+        .skip(1)
+        .map(|rest| rest.split_once("</loc>").unwrap().0)
+        .collect();
+    assert_eq!(listed.len(), 2 * PAGES.len(), "{sitemap}");
+    for language in ["en", "fr"] {
+        for page in PAGES {
+            let address = format!("{SITE}/{language}{page}");
+            assert!(listed.contains(&address.as_str()), "{address}: {sitemap}");
+        }
+    }
+    // What is listed is there.
+    for address in listed {
+        let (status, _, _) = get(&router, address.strip_prefix(SITE).unwrap(), "en").await;
+        assert_eq!(status, StatusCode::OK, "{address}");
+    }
 
     www.stop().await;
     api.shutdown().await;

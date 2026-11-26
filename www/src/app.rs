@@ -1,10 +1,16 @@
 //! The pages: `/` sends a visitor to the home of their language, `/en` and
-//! `/fr` are that home, and `/health` is for the probes.
+//! `/fr` are that home, with the legal and contact pages under them, and
+//! `/health` is for the probes.
 //!
 //! Every page is under its language, the first part of its address
 //! ([`language`]), so each language has addresses of its own for a search
-//! engine to list. The sentences are in `app/l10n`, one file per language:
-//! a language is spoken once its file is there.
+//! engine to list: `/sitemap.xml` lists them, `/robots.txt` points to it,
+//! and each page names its canonical address and itself in the other
+//! languages. The sentences are in `app/l10n`, one file per language: a
+//! language is spoken once its file is there.
+//!
+//! No page loads a script or anything from another site: nothing tells
+//! anyone a page was read.
 
 pub mod health;
 pub mod language;
@@ -12,13 +18,15 @@ pub mod language;
 use topcoat::{
     Result,
     asset::Asset,
-    context::{Cx, context},
+    context::{BaseUrl, Cx, base_url, context},
     l10n::{Locale, accept_language, locale, negotiate},
-    metadata::Metadata,
+    metadata::{Metadata, OpenGraph, Url},
     router::{
         Body, Next, RouterBuilder, Slot,
+        content::sitemap::{Sitemap, SitemapUrl},
         error::{NotFoundError, redirect},
         href, layer, layout, module_router,
+        request::uri,
         response::Response,
         route,
     },
@@ -26,6 +34,7 @@ use topcoat::{
     view::{View, class, error_boundary, view},
 };
 
+use crate::config::{AppConfig, ContactConfig};
 use crate::db::Db;
 use crate::events::Events;
 
@@ -37,14 +46,35 @@ pub const STYLESHEET: Asset = tailwind::stylesheet!();
 /// The language of a visitor whose browser asks for none www speaks.
 const DEFAULT_LOCALE: Locale = locale!("en");
 
-/// The pages of www, read from `db` and saying how www stands with the api
-/// through `events`. Give the result its assets, then build it.
-pub fn router(db: Db, events: Events) -> RouterBuilder {
-    module_router!().with(db).with(events)
+/// What the pages say of imkitchen that a deployment decides.
+#[derive(Debug, Clone)]
+pub struct Site {
+    /// The address visitors reach www at.
+    pub url: BaseUrl,
+    /// Where the application is got.
+    pub app: AppConfig,
+    /// How a visitor writes to imkitchen.
+    pub contact: ContactConfig,
+}
+
+/// The pages of www, read from `db`, saying how www stands with the api
+/// through `events` and what `site` says of imkitchen. Give the result its
+/// assets, then build it.
+pub fn router(db: Db, events: Events, site: Site) -> RouterBuilder {
+    module_router!()
+        .with(db)
+        .with(events)
+        .with(site.url.clone())
+        .with(site)
 }
 
 /// The read models of www.
 pub(crate) fn db(cx: &Cx) -> &Db {
+    context(cx)
+}
+
+/// What a deployment says of imkitchen.
+pub(crate) fn site(cx: &Cx) -> &Site {
     context(cx)
 }
 
@@ -70,21 +100,66 @@ async fn index(cx: &Cx) -> Result<()> {
     Err(redirect(home.resolve(cx)).into())
 }
 
-#[layout(with(Metadata::new().title(t!(site_title)).description(t!(site_description))))]
+/// Every page may be listed, and the list is the sitemap.
+#[route(GET "./robots.txt")]
+async fn robots(cx: &Cx) -> Result<String> {
+    Ok(format!(
+        "User-agent: *\nAllow: /\n\nSitemap: {}\n",
+        href!(sitemap).absolute().resolve(cx)
+    ))
+}
+
+/// Every page, in every language.
+#[route(GET "./sitemap.xml")]
+async fn sitemap(cx: &Cx) -> Result<Sitemap> {
+    Ok(Sitemap::new().urls(locales().iter().flat_map(|language| {
+        language::PAGES.iter().map(move |page| {
+            SitemapUrl::new(language::address(language, page)).priority(if page.is_empty() {
+                1.0
+            } else {
+                0.5
+            })
+        })
+    })))
+}
+
+#[layout(with(
+    Metadata::new()
+        .title(t!(site_title))
+        .description(t!(site_description))
+        .canonical(Url::Current)
+        .open_graph(OpenGraph::new().site_name("imkitchen"))
+))]
 async fn root(cx: &Cx, slot: Slot<'_>) -> Result<impl View> {
     let current = locale(cx);
+    // What is being read, when it is a page: each language has it at the
+    // same address under its code.
+    let page = language::page(uri(cx).path(), current);
+    let home = page == Some("");
 
     Ok(view! {
         <!DOCTYPE html>
         <html lang=(current.id()) dir=(current.id().direction())>
             <head>
                 topcoat::metadata::tags()
+                if let Some(page) = page {
+                    for spoken in locales() {
+                        <link
+                            rel="alternate"
+                            hreflang=(spoken.id())
+                            href=(base_url(cx).join(&language::address(spoken, page)))
+                        >
+                    }
+                    if home {
+                        <link rel="alternate" hreflang="x-default" href=(base_url(cx).join("/"))>
+                    }
+                }
                 <link rel="stylesheet" href=(STYLESHEET)>
                 topcoat::dev::script()
             </head>
-            <body class="min-h-screen bg-stone-50 text-stone-900 antialiased">
+            <body class="flex min-h-screen flex-col bg-stone-50 text-stone-900 antialiased">
                 <header
-                    class="mx-auto flex max-w-3xl items-center justify-between px-4 py-6"
+                    class="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-4 py-6"
                 >
                     <a
                         class="text-xl font-semibold tracking-tight"
@@ -92,38 +167,83 @@ async fn root(cx: &Cx, slot: Slot<'_>) -> Result<impl View> {
                     >
                         "imkitchen"
                     </a>
-                    <nav class="flex gap-4 text-sm" aria-label=(t!(languages))>
-                        for spoken in locales() {
+                    <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+                        <nav class="flex gap-4" aria-label=(t!(nav_pages))>
                             <a
-                                class=(class!("hover:underline", "font-semibold" if spoken == current))
-                                href=(href!(language::home, language: spoken))
-                                hreflang=(spoken.id())
-                                lang=(spoken.id())
-                                aria-current=((spoken == current).then_some("page"))
+                                class="hover:underline"
+                                href=(href!(language::home, language: current).fragment("get"))
                             >
-                                (t!(language_name).resolve_in(spoken))
+                                (t!(nav_get))
                             </a>
-                        }
-                    </nav>
+                            <a
+                                class="hover:underline"
+                                href=(href!(language::contact::contact, language: current))
+                            >
+                                (t!(nav_contact))
+                            </a>
+                        </nav>
+                        <nav class="flex gap-3 text-stone-500" aria-label=(t!(languages))>
+                            for spoken in locales() {
+                                <a
+                                    class=(class!("hover:underline", "font-semibold text-stone-900" if spoken == current))
+                                    href=(language::address(spoken, page.unwrap_or_default()))
+                                    hreflang=(spoken.id())
+                                    lang=(spoken.id())
+                                    aria-current=((spoken == current).then_some("page"))
+                                >
+                                    (t!(language_name).resolve_in(spoken))
+                                </a>
+                            }
+                        </nav>
+                    </div>
                 </header>
-                error_boundary(
-                    fallback: |error| {
-                        if error.downcast_ref::<NotFoundError>().is_none() {
-                            return Err(error);
-                        }
+                <div class="flex-1">
+                    error_boundary(
+                        fallback: |error| {
+                            if error.downcast_ref::<NotFoundError>().is_none() {
+                                return Err(error);
+                            }
 
-                        Ok(
-                            view! {
-                                (topcoat::router::StatusCode::NOT_FOUND)
-                                <main class="mx-auto max-w-3xl px-4 py-16">
-                                    <h1 class="text-3xl font-bold">(t!(not_found_title))</h1>
-                                    <p class="mt-4 text-stone-600">(t!(not_found_text))</p>
-                                </main>
-                            },
-                        )
-                    },
-                    (slot)
-                )
+                            Ok(
+                                view! {
+                                    (topcoat::router::StatusCode::NOT_FOUND)
+                                    <main class="mx-auto max-w-3xl px-4 py-16">
+                                        <h1 class="text-3xl font-bold">(t!(not_found_title))</h1>
+                                        <p class="mt-4 text-stone-600">(t!(not_found_text))</p>
+                                    </main>
+                                },
+                            )
+                        },
+                        (slot)
+                    )
+                </div>
+                <footer class="border-t border-stone-200">
+                    <div
+                        class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-8 text-sm text-stone-600"
+                    >
+                        <p>"© 2026 imkitchen · " (t!(footer_tagline))</p>
+                        <nav class="flex flex-wrap gap-4" aria-label=(t!(footer_pages))>
+                            <a
+                                class="hover:underline"
+                                href=(href!(language::terms::terms, language: current))
+                            >
+                                (t!(terms_title))
+                            </a>
+                            <a
+                                class="hover:underline"
+                                href=(href!(language::privacy::privacy, language: current))
+                            >
+                                (t!(privacy_title))
+                            </a>
+                            <a
+                                class="hover:underline"
+                                href=(href!(language::contact::contact, language: current))
+                            >
+                                (t!(contact_title))
+                            </a>
+                        </nav>
+                    </div>
+                </footer>
             </body>
         </html>
     })
