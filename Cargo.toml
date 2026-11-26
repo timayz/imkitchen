@@ -24,6 +24,21 @@ config = { version = "0.15", default-features = false, features = ["toml"] }
 evento = { version = "2.0.0-alpha.43", features = ["turso", "cluster"] }
 bitcode = "0.6"
 tempfile = "3.27"
+# Identity: users, their sign-in methods and their sessions, event-sourced.
+# Not on crates.io: pinned to a commit of the repository, both from the same
+# one so they share `timada-core`.
+timada-identity = { git = "https://github.com/timayz/timada", rev = "f4d99e82684ae038aea40022db9caaf4b45358c6" }
+timada-core = { git = "https://github.com/timayz/timada", rev = "f4d99e82684ae038aea40022db9caaf4b45358c6" }
+serde_json = "1.0"
+# The session tokens: random bytes, handed out as base64, kept as their hash.
+rand = "0.10"
+sha2 = "0.11"
+base64 = "0.23"
+# Mails the one-time codes.
+lettre = { version = "0.11", default-features = false, features = ["builder", "hostname", "smtp-transport", "tokio1", "tokio1-rustls-tls", "pool"] }
+async-trait = "0.1"
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
 
 [profile.release]
 codegen-units = 1

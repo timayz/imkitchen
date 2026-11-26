@@ -5,12 +5,17 @@
 //! then the defaults set in [`Config::load`]. `config/default.toml` documents
 //! the full shape.
 
+use std::fmt;
 use std::path::PathBuf;
 use std::time::Duration;
 
 use config::{ConfigError, Environment, File};
 use evento::cluster::Settings;
 use serde::Deserialize;
+use timada_identity::RootAccount;
+
+/// The least an `auth.secret` may be, in characters.
+const SECRET_MIN_LEN: usize = 32;
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct Config {
@@ -20,7 +25,76 @@ pub struct Config {
     /// (`node_id`, `peers`, …). Absent: a node alone, talking to no one.
     #[serde(default)]
     pub cluster: Option<Settings>,
+    pub auth: AuthConfig,
+    pub mail: MailConfig,
     pub monitoring: MonitoringConfig,
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct AuthConfig {
+    /// What the one-time codes mailed to prove an address derive from. It
+    /// never enters the store, and every node of a cluster holds the same
+    /// one. Absent: a node alone draws one each time it starts.
+    #[serde(default)]
+    pub secret: Option<Secret>,
+    /// How long a session lasts once signed in, in seconds. A session in
+    /// use past half of it is extended for as long again.
+    pub session_lifetime_secs: u64,
+    /// The root account: the administrator nobody registers, and the only
+    /// one who makes administrators. Absent: there is none.
+    #[serde(default)]
+    pub root: Option<RootConfig>,
+}
+
+impl AuthConfig {
+    /// The root account, its address and password hash checked.
+    pub fn root_account(&self) -> Result<Option<RootAccount>, ConfigError> {
+        self.root
+            .as_ref()
+            .map(|root| {
+                RootAccount::new(&root.email, root.password_hash.expose())
+                    .map_err(|err| ConfigError::Message(format!("auth.root: {err}")))
+            })
+            .transpose()
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct RootConfig {
+    pub email: String,
+    /// An argon2 PHC string, as `imkitchen-api hash-password` prints one.
+    pub password_hash: Secret,
+}
+
+/// A value of the configuration that is never printed.
+#[derive(Deserialize, Clone, PartialEq)]
+#[serde(transparent)]
+pub struct Secret(String);
+
+impl Secret {
+    pub fn new(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+
+    pub fn expose(&self) -> &str {
+        &self.0
+    }
+}
+
+impl fmt::Debug for Secret {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("******")
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct MailConfig {
+    /// The server the one-time codes are mailed through, as a URL:
+    /// `smtp://host:port` (plain), `smtp://host:587?tls=required`
+    /// (STARTTLS) or `smtps://user:password@host:465` (TLS).
+    pub smtp_url: Secret,
+    /// Who the mails come from: `name <address>`.
+    pub from: String,
 }
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
@@ -61,6 +135,9 @@ impl Config {
             .set_default("server.port", 3000)?
             .set_default("server.shutdown_timeout_secs", 30)?
             .set_default("database.path", "data/imkitchen.db")?
+            .set_default("auth.session_lifetime_secs", 30 * 24 * 3600)?
+            .set_default("mail.smtp_url", "smtp://localhost:1025")?
+            .set_default("mail.from", "imkitchen <no-reply@imkitchen.localhost>")?
             .set_default("monitoring.log_level", "info")?
             .set_default("monitoring.log_json", false)?
             .set_default("monitoring.log_target", true)?
@@ -80,6 +157,22 @@ impl Config {
                 .validate()
                 .map_err(|err| ConfigError::Message(err.to_string()))?;
         }
+        match &config.auth.secret {
+            Some(secret) if secret.expose().chars().count() < SECRET_MIN_LEN => {
+                return Err(ConfigError::Message(format!(
+                    "auth.secret must be at least {SECRET_MIN_LEN} characters"
+                )));
+            }
+            // A code is mailed by one node and checked by another.
+            None if config.cluster.is_some() => {
+                return Err(ConfigError::Message(
+                    "auth.secret is required with [cluster]: every node derives the codes from it"
+                        .to_owned(),
+                ));
+            }
+            _ => {}
+        }
+        config.auth.root_account()?;
 
         Ok(config)
     }
@@ -117,6 +210,10 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("cluster.toml");
         let peers = r#"peers = ["127.0.0.1:7000", "127.0.0.1:7001", "127.0.0.1:7002"]"#;
+        let peers = format!(
+            "{peers}\n[auth]\nsecret = \"{}\"",
+            "s".repeat(SECRET_MIN_LEN)
+        );
 
         std::fs::write(&path, format!("[cluster]\nnode_id = 1\n{peers}\n")).unwrap();
         let cluster = Config::load(path.to_str()).unwrap().cluster.unwrap();
@@ -126,6 +223,42 @@ mod tests {
         std::fs::write(&path, format!("[cluster]\nnode_id = 3\n{peers}\n")).unwrap();
         let err = Config::load(path.to_str()).unwrap_err();
         assert!(err.to_string().contains("cluster.node_id"), "{err}");
+    }
+
+    #[test]
+    fn auth_section_is_read_and_validated() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("auth.toml");
+        let load = |content: &str| {
+            std::fs::write(&path, content).unwrap();
+            Config::load(path.to_str())
+        };
+        let secret = "s".repeat(SECRET_MIN_LEN);
+        let hash = "$argon2id$v=19$m=19456,t=2,p=1$diXOV+PTSdOCfHj2wDAlMA$iVEeQUJsww/h81mHmrcmcJRWuZs2mY3bopNrchI/yog";
+
+        let config = load(&format!(
+            "[auth]\nsecret = \"{secret}\"\n[auth.root]\nemail = \"Root@Example.com\"\npassword_hash = \"{hash}\"\n"
+        ))
+        .unwrap();
+        let root = config.auth.root_account().unwrap().unwrap();
+        assert_eq!(root.email(), "root@example.com");
+        let printed = format!("{config:?}");
+        assert!(!printed.contains(&secret), "{printed}");
+        assert!(!printed.contains("argon2"), "{printed}");
+
+        let err = load("[auth]\nsecret = \"short\"\n").unwrap_err();
+        assert!(err.to_string().contains("auth.secret"), "{err}");
+
+        let err =
+            load("[auth.root]\nemail = \"root@example.com\"\npassword_hash = \"a password\"\n")
+                .unwrap_err();
+        assert!(err.to_string().contains("auth.root"), "{err}");
+
+        // The nodes of a cluster check each other's codes.
+        let cluster = "[cluster]\nnode_id = 0\npeers = [\"127.0.0.1:7000\"]\n";
+        let err = load(cluster).unwrap_err();
+        assert!(err.to_string().contains("auth.secret"), "{err}");
+        assert!(load(&format!("{cluster}[auth]\nsecret = \"{secret}\"\n")).is_ok());
     }
 
     #[test]

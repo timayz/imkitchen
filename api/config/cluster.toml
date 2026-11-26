@@ -4,3 +4,8 @@
 
 [cluster]
 peers = ["127.0.0.1:7000", "127.0.0.1:7001", "127.0.0.1:7002"]
+
+# The nodes check each other's one-time codes, so they share the secret the
+# codes derive from. This one is for the local cluster only.
+[auth]
+secret = "local-cluster-only-not-a-secret-0000"

@@ -1,10 +1,13 @@
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
+use imkitchen_api::auth::Auth;
 use imkitchen_api::config::{Config, MonitoringConfig};
+use imkitchen_api::mail::Smtp;
 use imkitchen_api::server::{self, AppState};
-use imkitchen_api::{cluster, db};
+use imkitchen_api::{cluster, db, subscriptions};
 use tokio::net::TcpListener;
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -38,22 +41,40 @@ enum Commands {
     },
     /// Create the store if needed and apply its pending migrations
     Migrate,
+    /// Print the hash of the password read from standard input, for auth.root.password_hash
+    HashPassword,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
+    let command = cli.command.unwrap_or(Commands::Serve {
+        host: None,
+        port: None,
+    });
+    // Needs no configuration: its output goes into one.
+    if matches!(command, Commands::HashPassword) {
+        return hash_password().await;
+    }
     let config = Config::load(cli.config.as_deref())?;
 
     init_tracing(&config.monitoring)?;
 
-    match cli.command.unwrap_or(Commands::Serve {
-        host: None,
-        port: None,
-    }) {
+    match command {
         Commands::Serve { host, port } => serve(config, host, port).await,
         Commands::Migrate => migrate(config).await,
+        Commands::HashPassword => unreachable!("handled above"),
     }
+}
+
+async fn hash_password() -> Result<()> {
+    let mut password = String::new();
+    std::io::stdin()
+        .read_line(&mut password)
+        .context("cannot read the password from standard input")?;
+    let password = password.trim_end_matches(['\r', '\n']);
+    println!("{}", timada_identity::hash_password(password).await?);
+    Ok(())
 }
 
 async fn migrate(config: Config) -> Result<()> {
@@ -65,8 +86,12 @@ async fn migrate(config: Config) -> Result<()> {
 async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Result<()> {
     let host = host.unwrap_or_else(|| config.server.host.clone());
     let port = port.unwrap_or(config.server.port);
+    let auth = Arc::new(Auth::new(&config.auth)?);
+    let mailer = Arc::new(Smtp::new(&config.mail)?);
     let store = db::open(&config.database.path).await?;
     let (cluster, executor) = cluster::open(config.cluster, &config.database.path, store).await?;
+    let node = format!("api-{}", cluster.health().id.0);
+    let subscriptions = subscriptions::start(&executor, &auth, mailer, &node).await?;
     // Warns when this node nears the writes it may keep for a node that is
     // away, and about each node it stopped waiting for.
     let watch = cluster.watch(CLUSTER_WATCH);
@@ -81,12 +106,15 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
         AppState {
             cluster: cluster.clone(),
             executor,
+            auth,
+            sign_ins: Arc::default(),
         },
         config.server.shutdown_timeout(),
         server::shutdown_signal(),
     )
     .await;
 
+    subscriptions::shutdown(subscriptions).await;
     watch.abort();
     cluster.shutdown().await;
     served

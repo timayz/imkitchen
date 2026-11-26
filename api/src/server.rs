@@ -6,6 +6,8 @@ use axum::{Router, routing::get};
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
 
+use crate::account::SignInAttempts;
+use crate::auth::Auth;
 use crate::cluster::{Cluster, Executor};
 use crate::health::{health, ready};
 
@@ -16,12 +18,17 @@ pub struct AppState {
     /// The event store: writes go through the cluster, reads come from this
     /// node's file.
     pub executor: Executor,
+    pub auth: Arc<Auth>,
+    /// The password sign-ins tried on this node, per address.
+    pub sign_ins: Arc<SignInAttempts>,
 }
 
 pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/ready", get(ready))
+        .merge(crate::account::routes())
+        .merge(crate::admin::routes())
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
