@@ -26,6 +26,9 @@ pub struct Api {
     http: reqwest::Client,
     /// Where the api answers HTTP, without a trailing slash.
     url: String,
+    /// Where it answers the browsers, without a trailing slash, when admin
+    /// is told.
+    public_url: Option<String>,
 }
 
 /// Why a sign-in was not done.
@@ -126,7 +129,19 @@ impl Api {
         Ok(Self {
             http,
             url: config.url.trim_end_matches('/').to_owned(),
+            public_url: config
+                .public_url
+                .as_deref()
+                .map(|url| url.trim_end_matches('/').to_owned()),
         })
+    }
+
+    /// Where a browser gets the picture whose files are named after
+    /// `file_id`, in the size the lists show, when admin knows where the
+    /// api answers the browsers. The api asks no token for a picture.
+    pub fn picture(&self, file_id: &str) -> Option<String> {
+        let api = self.public_url.as_deref()?;
+        Some(format!("{api}/v1/images/400/{file_id}.webp"))
     }
 
     /// Signs in with `credentials`, from the browser that names itself

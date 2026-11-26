@@ -15,6 +15,7 @@ pub mod image;
 pub mod list;
 pub mod plat;
 pub mod recipe;
+pub mod recipe_import;
 pub mod settings;
 mod sidecar;
 pub mod tutorial;

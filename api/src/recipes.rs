@@ -443,7 +443,7 @@ async fn or_give_back<T>(
 /// Imports a recipe from a page of the web
 ///
 /// The recipe the page holds becomes one of the user's, theirs to
-/// rewrite like one they wrote; nothing links it to the page. What the page
+/// rewrite like one they wrote; the recipe says nothing of the page. What the page
 /// does not say is left out (the times), or taken as usual (4 servings).
 /// The picture the page gives its recipe comes with it when it can be
 /// fetched; the recipe is imported without one otherwise.
@@ -465,15 +465,32 @@ async fn import(
     Body(form): Body<ImportBody>,
 ) -> ApiResult<(StatusCode, Json<Recipe>)> {
     let owner_id = &session.user.id;
-    let page = import::page(state.pages.as_ref(), &form.url, form.html).await?;
+    let tried = import::Try {
+        user_id: owner_id,
+        url: &form.url,
+        page_sent: form.html.is_some(),
+    };
+    let imported = import_page(&state, owner_id, &form.url, form.html).await;
+    import::note(&state, tried, imported.as_deref()).await;
+    let recipe = model::load_own(&state.executor, owner_id, &imported?).await?;
+    Ok((StatusCode::CREATED, Json(recipe.into())))
+}
+
+/// Makes a recipe of `owner_id` out of the page at `url`, read on `html`
+/// when the client sent it: the id of the recipe.
+async fn import_page(
+    state: &AppState,
+    owner_id: &str,
+    url: &str,
+    html: Option<String>,
+) -> ApiResult<String> {
+    let page = import::page(state.pages.as_ref(), url, html).await?;
     let image = match &page.image {
-        Some(url) => import::image(&state, url).await,
+        Some(url) => import::image(state, url).await,
         None => None,
     };
     let created = model::create(&state.executor, owner_id, page.content, image.clone()).await;
-    let id = or_give_back(&state, image.as_ref(), created).await?;
-    let recipe = model::load_own(&state.executor, owner_id, &id).await?;
-    Ok((StatusCode::CREATED, Json(recipe.into())))
+    or_give_back(state, image.as_ref(), created).await
 }
 
 /// The recipes of the user, the most recent first

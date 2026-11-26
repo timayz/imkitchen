@@ -3,8 +3,12 @@
 //! The page is fetched ([`page`]) and the recipe is read out of it: the one
 //! it describes to machines when it does ([`schema_org`]), the one it shows
 //! to people otherwise ([`article`]). That becomes a recipe of the user
-//! like one they wrote: nothing is kept of where it came from, and the same
-//! page imported twice, by one user or by two, is two recipes.
+//! like one they wrote: the recipe says nothing of where it came from, and
+//! the same page imported twice, by one user or by two, is two recipes.
+//!
+//! Each try is noted apart ([`note`]), whether it gave a recipe or not: what
+//! admin tells the sites that are imported from, and those the api fails to
+//! read, by.
 //!
 //! The picture the page gives its recipe is fetched too and comes with the
 //! recipe ([`image`]). Two recipes imported from the same page show the
@@ -22,12 +26,13 @@ mod schema_org;
 use anyhow::Context as _;
 use axum::http::StatusCode;
 use imkitchen_aggregates::image::RecipeImage;
+use imkitchen_aggregates::recipe_import::{Failed, Imported};
 use reqwest::Url;
 use validator::ValidationError;
 
 pub use self::page::{PageError, Pages, Web};
 use super::model::Content;
-use crate::error::{ApiError, ApiResult};
+use crate::error::{ApiError, ApiResult, INTERNAL, VALIDATION_FAILED};
 use crate::images;
 use crate::server::AppState;
 
@@ -159,6 +164,44 @@ pub fn valid_page_url(url: &str) -> Result<(), ValidationError> {
     page_url(url)
         .map(drop)
         .ok_or(ValidationError::new("invalid_url"))
+}
+
+/// A try at importing the page at `url` for `user_id`: `page_sent` when the
+/// client sent the page in place of the api fetching it.
+pub struct Try<'a> {
+    pub user_id: &'a str,
+    pub url: &'a str,
+    pub page_sent: bool,
+}
+
+/// Notes how a try went: the recipe it gave, or why it gave none. Whatever
+/// happens here, the import went as it went: a try that could not be noted
+/// is logged and no more.
+pub async fn note(state: &AppState, tried: Try<'_>, outcome: Result<&str, &ApiError>) {
+    let (user_id, url) = (tried.user_id.to_owned(), tried.url.to_owned());
+    let mut write = evento::create();
+    match outcome {
+        Ok(recipe_id) => write.event(&Imported {
+            user_id,
+            url,
+            page_sent: tried.page_sent,
+            recipe_id: recipe_id.to_owned(),
+        }),
+        Err(err) => write.event(&Failed {
+            user_id,
+            url,
+            page_sent: tried.page_sent,
+            reason: match err {
+                ApiError::Refused(_, code) => code,
+                ApiError::Invalid(_) => VALIDATION_FAILED,
+                ApiError::Internal(_) => INTERNAL,
+            }
+            .to_owned(),
+        }),
+    };
+    if let Err(err) = write.commit(&state.executor).await {
+        tracing::warn!(%err, "an import was not noted");
+    }
 }
 
 /// The most a page may weigh, fetched or sent, in bytes.

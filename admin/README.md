@@ -52,6 +52,8 @@ the version of the workspace's `topcoat`.
   starts, and whoever was signed in signs in again.
 - `api.url`: where the api answers HTTP, for signing in and out and for
   asking who reads a page.
+- `api.public_url`: where the browsers reach the api, for the pictures of
+  the recipes. Without it admin shows none.
 - `api.events`: the `[sidecars]` listener of the api (evento's remote
   protocol over TCP, not HTTP). One node, or a name in front of several.
 - `api.token`: `sidecars.tokens.admin` of the api.
@@ -68,11 +70,12 @@ migrations; `serve` refuses a store that is not there or not migrated.
 | Path | Contents |
 | --- | --- |
 | `src/app.rs`, `src/app/` | The pages: the router, the layout, signing in and out. |
-| `src/app/_admin.rs` | What an administrator reads: the guard, and each page at the address of its module. |
+| `src/app/_admin.rs`, `src/app/_admin/` | What an administrator reads: the guard, the dashboard, and each screen at the address of its module. |
 | `src/api.rs` | The client of the api: signing in and out, and who a session is. |
 | `src/session.rs` | The cookie a browser keeps its session in. |
 | `src/events.rs` | The connection to the api's events. |
-| `src/users.rs` | A read model: its subscription and what the pages read from it. |
+| `src/users.rs`, `recipes.rs`, `imports.rs`, `images.rs`, `messages.rs` | The read models: each its subscription and what the pages read from it. |
+| `src/listing.rs` | How the lists are read: a page at a time, and searched. |
 | `src/subscriptions.rs` | Every subscription admin runs. |
 | `src/db.rs` | The store and the migrations of its tables. |
 | `styles.css`, `build.rs` | The Tailwind stylesheet, compiled at build time. |
@@ -107,11 +110,39 @@ password and no session.
   through (503).
 - Signing out ends the session at the api and forgets the cookie.
 
+## Screens
+
+| Address | What it shows |
+| --- | --- |
+| `/` | The key numbers: users, administrators, recipes, imports and those that failed, sources, pictures and those that are shared, messages. Nothing of who visits. |
+| `/users`, `/users/{id}` | The users, searched by address or name; one of them, their recipes and their sessions. |
+| `/recipes`, `/recipes/{id}` | The recipes, searched by title or ingredient; one of them with all it says, its owner, its picture and the page it was imported from. |
+| `/imports`, `/imports/sources` | Each try at importing a recipe (`?failed=1` those that gave none, `?host=` those of a site); the sites they are made from. |
+| `/images`, `/images/{id}` | The pictures that are used (`?shared=1` those several recipes show); one of them and the recipes that show it. |
+| `/messages`, `/messages/{id}` | What was written to imkitchen; one message, as it was written. |
+
+A list shows 50 rows a page (`?page=`), and `?q=` searches it whatever the
+case and the accents. With `api.public_url` the pictures are shown, from the
+api, which asks no token for them; without it the screens name them.
+
 ## Read models
 
-admin reads the aggregates `imkitchen-aggregates` lists for it
-(`Sidecar::Admin`); the api refuses it anything else, and every write. Today
-that is the users, of whom admin keeps how many there are.
+Every screen is read from the store of admin and from nothing else: no page
+asks the api for what it shows. admin reads the aggregates
+`imkitchen-aggregates` lists for it (`Sidecar::Admin`); the api refuses it
+anything else, and every write.
+
+| Read model | Tables | Follows |
+| --- | --- | --- |
+| `users` | `users`, `user_sessions` | `timada-identity/User`, `timada-identity/Session` |
+| `recipes` | `recipes` | `imkitchen/Recipe` |
+| `imports` | `recipe_imports` | `imkitchen/RecipeImport` |
+| `images` | `images`, `image_uses` | `imkitchen/Image` |
+| `messages` | `contact_messages` | `imkitchen/ContactMessage` |
+
+Each has a subscription and a cursor of its own, so one that fails holds no
+other up. A store that is lost, or one given a new path, is built again from
+the first event of the api: delete `data/admin.db`, run `migrate`, serve.
 
 To show something else of imkitchen:
 
@@ -119,3 +150,4 @@ To show something else of imkitchen:
 2. Give its table a migration in `db::MIGRATIONS`.
 3. Write its subscription, whose handlers leave the table as it should be
    when an event is delivered twice, and start it in `subscriptions::start`.
+4. Give it a screen under `src/app/_admin/`.
