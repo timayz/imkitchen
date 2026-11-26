@@ -20,6 +20,10 @@ token of the Makefile's, for local use only. www starts whether the api runs
 or not: it serves what its store holds and catches up once the api answers.
 `GET /health` says how it stands with it (`"api": "connected"`).
 
+With `make up` (Traefik, after `make cert` once) www is also at
+<https://imkitchen.localhost>, and the api at
+<https://app.imkitchen.localhost/api>.
+
 `make www.run` runs it once, without the reload. The stylesheet is an asset
 bundled next to the binary (`topcoat asset bundle -p imkitchen-www`): a plain
 `cargo run -p imkitchen-www` refuses to start without the bundle.
