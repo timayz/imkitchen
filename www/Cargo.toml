@@ -12,7 +12,7 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 clap.workspace = true
 config.workspace = true
-topcoat = { workspace = true, features = ["anyhow", "asset", "compression", "discover", "l10n-fluent", "metadata", "router", "serve", "tailwind", "view"] }
+topcoat = { workspace = true, features = ["anyhow", "asset", "compression", "discover", "l10n-fluent", "metadata", "router", "serve", "sitemap", "tailwind", "view"] }
 # The store of the read models, and the client of the api's listener.
 evento = { workspace = true, features = ["turso", "remote"] }
 imkitchen-aggregates.workspace = true

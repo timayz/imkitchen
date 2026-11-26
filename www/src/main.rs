@@ -84,13 +84,18 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
         );
     }
     let subscriptions = subscriptions::start(events.executor(), &db).await?;
+    let site = app::Site {
+        url: config.server.base_url()?,
+        app: config.app.clone(),
+        contact: config.contact.clone(),
+    };
     let listener = TcpListener::bind((host.as_str(), port))
         .await
         .with_context(|| format!("failed to bind {host}:{port}"))?;
 
     tracing::info!("listening on http://{}", listener.local_addr()?);
 
-    let service = RouterService::new(app::router(db, events).assets(assets).build())
+    let service = RouterService::new(app::router(db, events, site).assets(assets).build())
         .shutdown_timeout(config.server.shutdown_timeout());
     // Stops on Ctrl+C or SIGTERM, the requests in flight given
     // `server.shutdown_timeout_secs` to finish.
