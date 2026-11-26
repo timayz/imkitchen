@@ -1,4 +1,7 @@
-.PHONY: dev run migrate cluster.all www.dev www.run www.migrate cert cert.install up stop down health ready lint fmt-check fmt test machete l10n check
+.PHONY: start dev run migrate cluster.all www.dev www.run www.migrate cert cert.install up stop down health ready lint fmt-check fmt test machete l10n check
+
+# Traefik and the mail catcher, then the api: what a bare `make` runs.
+start: up dev
 
 # Optional local overrides for the api, ignored by git.
 API_CONFIG := $(wildcard api/config/dev.local.toml)
