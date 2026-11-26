@@ -1,5 +1,6 @@
 # How many pods of www run. Each one follows the api's events into a store
-# of its own and serves from it, so they are added and taken away at will.
+# of its own, on a volume of its own, and serves from it: they are added
+# and taken away at will.
 replicaCount: 2
 
 image:
@@ -86,12 +87,16 @@ route:
       name: letsencrypt
     annotations: {}
 
-# The store of each pod: its read models, built from the api's events. It
-# lives as long as the pod does: a new pod builds its own from the first
-# event, and serves what it has while it catches up.
-store:
-  # How large it may grow, as Kubernetes writes it. Empty: no limit.
-  sizeLimit: ""
+# Each pod's own volume: its store, the read models it builds from the
+# api's events and how far it followed them. A pod that starts again goes on
+# from where it stopped. Nothing in it is written anywhere else: a pod that
+# lost its volume builds its store again from the first event, and serves
+# what it has while it catches up.
+persistence:
+  size: 1Gi
+  # Empty: the cluster's default class.
+  storageClassName: ""
+  labels: {}
 
 # CPU and memory each pod asks for and may use, as Kubernetes writes it.
 resources: {}
@@ -100,8 +105,8 @@ resources: {}
 # subscriptions.
 terminationGracePeriodSeconds: 45
 
-# Pods that may be down at once on purpose (a drain). Only with more than
-# one pod.
+# Pods that may be down at once on purpose (a drain, an upgrade). Only with
+# more than one pod.
 podDisruptionBudget:
   enabled: true
   maxUnavailable: 1

@@ -19,8 +19,11 @@ extraEnv:
 route:
   enabled: true
   hostname: www.example.com
-store:
-  sizeLimit: 1Gi
+persistence:
+  size: 2Gi
+  storageClassName: local-path
+  labels:
+    app.kubernetes.io/part-of: imkitchen
 resources:
   requests:
     cpu: 50m

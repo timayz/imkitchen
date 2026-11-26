@@ -63,8 +63,8 @@ migrations; `serve` refuses a store that is not there or not migrated.
 
 `www/Dockerfile` builds the image (`timayz/imkitchen:www-<version>`): the
 binary and, next to it, its assets. `www/helm` is its chart, whose README
-says what it runs and what to set. A pod keeps nothing: its store is built
-from the api's events each time it starts.
+says what it runs and what to set: a StatefulSet, each pod keeping its
+store on a volume of its own.
 
 ```sh
 docker build -f www/builder.Dockerfile -t timayz/imkitchen:www-builder .   # once

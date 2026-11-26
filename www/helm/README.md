@@ -1,7 +1,8 @@
 # imkitchen www chart
 
-Deploys www as a Deployment: two pods by default, each following the api's
-events into a store of its own and serving the pages from it.
+Deploys www as a StatefulSet: two pods by default, each following the api's
+events into a store of its own, on a volume of its own, and serving the
+pages from it.
 `values.yaml` says what each value does.
 
 ```sh
@@ -12,18 +13,25 @@ helm install imkitchen-www www/helm \
 
 ## What it runs
 
-- **Pods that hold nothing of their own.** The store of a pod is an
-  `emptyDir`: its read models, built from the api's events, and gone with
-  the pod. A new pod builds its own from the first event and serves what it
-  has meanwhile, so pods are added, replaced and taken away at will.
-- **`migrate` runs before `serve`**, as an init container, on the pod's
-  store.
+- **A volume per pod** (`persistence`), mounted at `/var/lib/imkitchen`: its
+  store, the read models it builds from the api's events and how far it
+  followed them. A pod that starts again goes on from where it stopped.
+- **Pods that hold nothing of their own.** Everything in a store comes from
+  the api: a pod that lost its volume, or a new one, builds its store from
+  the first event and serves what it has meanwhile. `replicaCount` is
+  changed at will; the volume of a pod that was taken away stays until it
+  is deleted.
+- **All pods start at once** (`podManagementPolicy: Parallel`): none waits
+  on another.
+- **`migrate` runs before `serve`**, as an init container, on the pod's own
+  volume.
 - **`/health` is every probe.** www answers whether the api does or not: a
   pod is not taken out of the service for an api that is away, it serves
   what its store holds and catches up once the api is back. `/health` says
   how it stands with it (`"api": "connected"`).
-- **An upgrade starts a new pod before it stops an old one**, and a
-  PodDisruptionBudget keeps a drain from taking more than one at a time.
+- **An upgrade replaces one pod at a time**, each ready again before the
+  next, and a PodDisruptionBudget keeps a drain from taking more than one.
+  With a single pod, www is away for the time it takes to start again.
 
 ## What to set
 
