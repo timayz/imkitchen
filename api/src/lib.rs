@@ -5,6 +5,7 @@ pub mod cluster;
 pub mod config;
 pub mod db;
 pub mod error;
+pub mod groceries;
 mod health;
 pub mod images;
 pub mod list;

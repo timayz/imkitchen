@@ -449,6 +449,7 @@ mod tests {
             crate::list::LIST_ENTRY_NOT_FOUND,
             crate::list::LIST_FULL,
             crate::list::NOTHING_TO_GENERATE,
+            crate::groceries::GROCERY_ITEM_NOT_FOUND,
             crate::images::UNSUPPORTED_IMAGE,
             crate::images::IMAGE_TOO_LARGE,
             crate::images::IMAGE_TOO_MANY_PIXELS,

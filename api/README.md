@@ -179,6 +179,45 @@ with its `recipe` or its `plat`, as it now stands:
   other meals as they were.
 - Changing the settings changes nothing of the list as it stands.
 
+## Groceries
+
+A user has one set of groceries: what their list takes, as it stands.
+`GET /v1/groceries` works it out at every read from the list and from its
+recipes, so there is nothing to generate and nothing to wait for: a meal
+picked, replaced or taken off, a list generated again or a recipe rewritten
+is in the next answer.
+
+```json
+{
+  "items": [
+    { "id": "5e0f…", "name": "eggs", "quantity": 6, "checked": true },
+    { "id": "9b1c…", "name": "flour", "unit": "g", "quantity": 530, "adjusted_quantity": 1000, "checked": false },
+    { "id": "c47a…", "name": "salt", "checked": false }
+  ]
+}
+```
+
+- Every ingredient of a meal is scaled to the people the meal is cooked for
+  (`servings` of its entry over those of the recipe); a plat is each of its
+  recipes. Amounts are rounded to the thousandth.
+- The same thing in the same unit is one item, of the sum: names and units
+  are the same whatever their case and their spacing. No unit is turned
+  into another: "200 g" and "1 cup" of flour are two items. An ingredient
+  no recipe gives an amount of ("salt") has no `quantity`.
+- Items come by name. An item's `id` says what it is of and in what unit:
+  it is the same whatever the list holds.
+- `PUT /v1/groceries/items/{id}/check` puts an item in the basket, `DELETE`
+  takes it out. `PUT /v1/groceries/items/{id}/quantity` sets how much of it
+  the user buys (`adjusted_quantity`, next to what the list calls for),
+  `DELETE` goes back to what the list calls for. Each may be sent again:
+  the same as it stands writes nothing.
+- What is said of an item is said of the amount the list then called for,
+  and holds for as long as it calls for that much. A list change that
+  leaves an item as it was leaves it checked and adjusted; one that changes
+  how much is needed has it to buy again, as the list calls for it.
+- An item the list does not call for is refused
+  (`grocery_item_not_found`).
+
 ## Who asks
 
 Signing in answers a token. It is sent back with every request as

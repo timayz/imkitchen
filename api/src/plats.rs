@@ -174,6 +174,20 @@ pub async fn is_own<E: evento::Executor>(
     Ok(plat.is_some_and(|plat| !plat.deleted && plat.owner_id == owner_id))
 }
 
+/// The ids of the recipes the plat `id` is made of, in the order they are
+/// served, when it is one of `owner_id`'s: `None` for one that does not
+/// exist, was deleted or is someone else's.
+pub async fn recipe_ids_of<E: evento::Executor>(
+    executor: &E,
+    owner_id: &str,
+    id: &str,
+) -> anyhow::Result<Option<Vec<String>>> {
+    let plat = model::load(executor, id).await?;
+    Ok(plat
+        .filter(|plat| !plat.deleted && plat.owner_id == owner_id)
+        .map(|plat| plat.composition.recipe_ids))
+}
+
 /// Whose the plat `id` is, or was when it was deleted; `None` for one that
 /// was never composed.
 pub async fn owner_of<E: evento::Executor>(
