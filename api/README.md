@@ -120,6 +120,29 @@ it, as the recipe now stands.
   plat left with no recipe stays, for its owner to recompose or delete.
 - Deleting a plat deletes none of its recipes.
 
+## Settings
+
+A user has one set of settings, there from the start: `GET /v1/settings`
+answers the defaults until they set something. Each part is set as a whole,
+on every device they sign in on.
+
+```json
+{
+  "list": { "servings": 4, "meals": 7, "sources": "plats_and_recipes" },
+  "language": "fr"
+}
+```
+
+- `PUT /v1/settings/list` sets how their list is generated: how many people
+  it is cooked for (`servings`, 1 to 1000, 4 by default), how many meals it
+  holds (`meals`, 1 to 31, 7 by default) and what they are drawn from
+  (`sources`: `plats_and_recipes` by default, `plats` or `recipes`). The
+  list as it stands is left as it is: the next one generated follows.
+- `PUT /v1/settings/language` sets the language they read, one of those the
+  api speaks. Without one (`language` left out, as it is until it is set),
+  each device goes by its own. It is for the clients to show themselves in:
+  the api words its refusals as `Accept-Language` asks, whatever it says.
+
 ## Who asks
 
 Signing in answers a token. It is sent back with every request as

@@ -268,6 +268,7 @@ async fn the_reference_describes_what_the_api_serves() {
             "GET /v1/plats/{id}",
             "GET /v1/recipes",
             "GET /v1/recipes/{id}",
+            "GET /v1/settings",
             "POST /v1/account/sign-out-everywhere",
             "POST /v1/admin/users/{id}/sign-out",
             "POST /v1/auth/password-reset",
@@ -283,6 +284,8 @@ async fn the_reference_describes_what_the_api_serves() {
             "PUT /v1/plats/{id}",
             "PUT /v1/recipes/{id}",
             "PUT /v1/recipes/{id}/image",
+            "PUT /v1/settings/language",
+            "PUT /v1/settings/list",
         ]
     );
 
