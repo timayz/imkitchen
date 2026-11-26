@@ -38,7 +38,8 @@ impl Sidecar {
             // Nothing of a user is public: of the recipes www keeps and
             // shows how many there are, and nothing they say.
             Sidecar::Www => vec![Recipe::aggregate_type()],
-            // The list of users and their sessions: what
+            // The users, of whom admin keeps how many there are, with their
+            // sessions and the invitations: what
             // `timada_identity::read_model_subscription` follows.
             Sidecar::Admin => vec![
                 User::aggregate_type(),

@@ -1,7 +1,7 @@
 # The local addresses of imkitchen, each to what runs on the host:
 #
 #   https://imkitchen.localhost          www   (make www.dev, 3010)
-#   https://admin.imkitchen.localhost    admin (3020)
+#   https://admin.imkitchen.localhost    admin (make admin.dev, 3020)
 #   https://app.imkitchen.localhost/api  api   (make dev, 3000), for the app
 #                                        in a browser: its own origin
 #   https://api.imkitchen.localhost      api, for the mobile apps
