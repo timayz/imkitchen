@@ -7,11 +7,15 @@
 //! or reordering events; reads and subscriptions are served from this
 //! node's file. Without a `[cluster]` section the node talks to itself in
 //! memory, so the same code runs one instance and several.
+//!
+//! A node that was away for too long copies its store back from a peer at
+//! its next start. Its read models (`db::reset_read_models`) are emptied
+//! first, and its subscriptions fill them again from the copied events.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use evento::cluster::Settings;
 pub use evento::cluster::{Cluster, NodeHealth};
 
@@ -29,9 +33,17 @@ pub async fn open(
     store_path: &Path,
     store: Store,
 ) -> Result<(Arc<Cluster>, Executor)> {
+    // Derived from the events, in the same file: emptied with them, filled
+    // again by the subscriptions from the copy.
+    let read_models = store.clone();
     Cluster::builder(store)
         .settings(settings)
         .state_dir(state_dir(store_path))
+        .before_copy(move || async move {
+            crate::db::reset_read_models(&read_models)
+                .await
+                .context("cannot empty the read models before copying the store")
+        })
         .open()
         .await
 }

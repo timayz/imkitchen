@@ -88,3 +88,33 @@ async fn open_refuses_a_store_with_pending_migrations() {
 
     assert!(err.to_string().contains("evento-cluster: 1"), "{err}");
 }
+
+#[tokio::test]
+async fn a_reset_recreates_the_read_models_empty() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("imkitchen.db");
+    let store = db::migrate(&path).await.unwrap();
+    let read_models = db::Db::from(store.clone());
+    read_models
+        .execute(
+            "INSERT INTO recipes (id, owner_id, title, description, prep_minutes, cook_minutes, \
+             servings, search, created_at, updated_at) \
+             VALUES ('r1', 'u1', 'Pancakes', '', 0, 0, 4, 'pancakes', 1, 1)",
+            (),
+        )
+        .await
+        .unwrap();
+    let before = tables(&store).await;
+
+    db::reset_read_models(&store).await.unwrap();
+
+    let recipes: i64 = read_models
+        .fetch_scalar("SELECT count(*) FROM recipes", ())
+        .await
+        .unwrap();
+    assert_eq!(recipes, 0, "the rows are gone");
+    assert_eq!(tables(&store).await, before);
+    drop((read_models, store));
+    // The migrations are recorded again: nothing is left to apply.
+    db::open(&path).await.unwrap();
+}

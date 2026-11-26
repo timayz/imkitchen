@@ -30,9 +30,11 @@ use std::collections::BTreeMap;
 
 use axum::Json;
 use axum::extract::rejection::JsonRejection;
-use axum::extract::{FromRequest, Request};
+use axum::extract::{FromRequest, FromRequestParts, Query, Request};
 use axum::http::StatusCode;
+use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
+use evento::WriteError;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
@@ -98,6 +100,17 @@ impl From<IdentityError> for ApiError {
                 Self::Refused(StatusCode::SERVICE_UNAVAILABLE, code)
             }
             Some(code) => Self::Refused(status, code),
+            None => Self::Internal(err.into()),
+        }
+    }
+}
+
+impl From<WriteError> for ApiError {
+    fn from(err: WriteError) -> Self {
+        match timada_core::write_refusal(&err) {
+            // The store's doing, not the request's: sent again, it very
+            // likely goes through.
+            Some(code) => Self::Refused(StatusCode::SERVICE_UNAVAILABLE, code),
             None => Self::Internal(err.into()),
         }
     }
@@ -297,10 +310,50 @@ where
     }
 }
 
+/// What a read is asked with after the `?` of its address, read and checked
+/// the way a [`Body`] is: refused when it cannot be read as the read's
+/// parameters, or when they do not hold what the read asks.
+pub struct Params<T>(pub T);
+
+impl<S, T> FromRequestParts<S> for Params<T>
+where
+    S: Send + Sync,
+    T: DeserializeOwned + Validate,
+{
+    type Rejection = ApiError;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let Ok(Query(params)) = Query::<T>::from_request_parts(parts, state).await else {
+            return Err(ApiError::refused(StatusCode::BAD_REQUEST, INVALID_REQUEST));
+        };
+        params.validate()?;
+        Ok(Self(params))
+    }
+}
+
 /// Reads a text without the blanks around it (`#[serde(deserialize_with)]`),
 /// so that its length is checked on what is kept.
 pub fn trimmed<'de, D: Deserializer<'de>>(deserializer: D) -> Result<String, D::Error> {
     Ok(String::deserialize(deserializer)?.trim().to_owned())
+}
+
+/// Reads a text that may be left out, without the blanks around it
+/// (`#[serde(default, deserialize_with)]`): nothing but blanks is left out
+/// too.
+pub fn trimmed_opt<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Option<String>, D::Error> {
+    Ok(Option::<String>::deserialize(deserializer)?
+        .map(|text| text.trim().to_owned())
+        .filter(|text| !text.is_empty()))
+}
+
+/// Reads a field left out or set to `null` as its default
+/// (`#[serde(default, deserialize_with)]`): a list as an empty one.
+pub fn or_default<'de, D, T>(deserializer: D) -> Result<T, D::Error>
+where
+    D: Deserializer<'de>,
+    T: Default + Deserialize<'de>,
+{
+    Ok(Option::<T>::deserialize(deserializer)?.unwrap_or_default())
 }
 
 /// What an address the api does not serve answers.
@@ -380,6 +433,7 @@ mod tests {
             METHOD_NOT_ALLOWED,
             INTERNAL,
             crate::account::TOO_MANY_SIGN_INS,
+            crate::recipes::RECIPE_NOT_FOUND,
             timada_core::WRITES_PAUSED,
             timada_core::WRITE_NOT_TAKEN,
             "refused",

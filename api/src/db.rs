@@ -7,6 +7,11 @@
 //! written through [`evento::Turso::transaction`]. Two writes only collide
 //! when they change the same rows, and the one that lost is run again.
 //!
+//! The api's tables are read models ([`Db`]): what a list is read from,
+//! derived from the events of this node's file by a subscription every node
+//! runs for itself. Nothing else is kept in them, so they can be emptied and
+//! filled again ([`reset_read_models`]).
+//!
 //! The schema is created by migrations alone ([`migrate`], the `migrate`
 //! command); `serve` only opens what they left ([`open`]).
 
@@ -14,14 +19,41 @@ use std::path::Path;
 
 use anyhow::{Context, Result};
 use evento::Turso;
-use evento::turso::migrate::Migrations;
+use evento::turso::migrate::{MIGRATIONS_TABLE, Migration, Migrations};
 use evento::turso::{TursoJournal, turso::Connection};
+/// The read models' side of the store: the tables next to the events, read
+/// by the endpoints and written by the subscriptions.
+pub use timada_core::db::Db;
 
 pub type Store = Turso;
 
 /// The api's own tables, next to evento's in the same file. Append only: a
 /// migration that was released is never edited.
-pub const MIGRATIONS: Migrations<'static> = Migrations::new("imkitchen-api", &[]);
+pub const MIGRATIONS: Migrations<'static> = Migrations::new(
+    "imkitchen-api",
+    &[Migration::up(
+        "0001_recipes",
+        // One row per recipe that is not deleted, for its owner's list.
+        // `search` is what a search looks in: the title and the names of
+        // the ingredients, lowercased and without accents.
+        "CREATE TABLE recipes (
+            id TEXT NOT NULL PRIMARY KEY,
+            owner_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            prep_minutes INTEGER NOT NULL,
+            cook_minutes INTEGER NOT NULL,
+            servings INTEGER NOT NULL,
+            search TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        );
+        CREATE INDEX recipes_listed ON recipes (owner_id, created_at DESC, id DESC);",
+    )],
+);
+
+/// The tables [`MIGRATIONS`] creates: all of them read models.
+const READ_MODELS: &[&str] = &["recipes"];
 
 /// Every list of migrations the store's schema is made of.
 const SCHEMA: [&Migrations<'static>; 3] = [
@@ -59,6 +91,35 @@ pub async fn migrate(path: &Path) -> Result<Store> {
         })?;
     tracing::info!(path = %path.display(), "store ready");
     Ok(store)
+}
+
+/// Empties the read models: the node does it before it copies its store
+/// from a peer, and its subscriptions fill them again from the copied
+/// events. The tables are dropped and created again by their migrations
+/// rather than emptied row by row, which would write every row once more
+/// to the log. Nothing else may be using them.
+pub async fn reset_read_models(store: &Store) -> Result<()> {
+    let mut conn = store.connect()?;
+    for table in READ_MODELS {
+        conn.execute(&format!("DROP TABLE IF EXISTS {table}"), ())
+            .await
+            .with_context(|| format!("cannot drop {table}"))?;
+    }
+    conn.execute(
+        &format!("DELETE FROM {MIGRATIONS_TABLE} WHERE app = ?1"),
+        [MIGRATIONS.app()],
+    )
+    .await
+    .context("cannot forget the applied migrations")?;
+    MIGRATIONS
+        .to_latest(&mut conn)
+        .await
+        .map_err(|(applied, err)| {
+            anyhow::anyhow!(
+                "cannot create the read models again (after {applied} migrations): {err}"
+            )
+        })?;
+    Ok(())
 }
 
 /// Opens the store at `path` as [`migrate`] left it and changes nothing in

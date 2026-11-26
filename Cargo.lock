@@ -2151,6 +2151,7 @@ version = "1.13.0"
 name = "imkitchen-aggregates"
 version = "1.13.0"
 dependencies = [
+ "bitcode",
  "evento",
  "timada-identity",
 ]

@@ -7,13 +7,15 @@ use evento::subscription::Subscription;
 
 use crate::auth::Auth;
 use crate::cluster::Executor;
+use crate::db::Db;
 use crate::mail::{Mailer, code_mails_subscription};
 
-/// Starts every subscription of the api over `executor`. `node` names this
-/// node among those of the cluster, for the claims it writes. Keep the
-/// handles and hand them to [`shutdown`].
+/// Starts every subscription of the api over `executor`, the read models'
+/// writing to `db`. `node` names this node among those of the cluster, for
+/// the claims it writes. Keep the handles and hand them to [`shutdown`].
 pub async fn start(
     executor: &Executor,
+    db: &Db,
     auth: &Auth,
     mailer: Arc<dyn Mailer>,
     node: &str,
@@ -31,6 +33,13 @@ pub async fn start(
             .start(executor)
             .await
             .context("cannot start the code mails subscription")?,
+        // Reads this node's file as it stands: what its handler loads is
+        // behind the event it handles, and needs no round of the cluster.
+        crate::recipes::subscription(db.clone())
+            .supervised()
+            .start(&executor.local_reads())
+            .await
+            .context("cannot start the recipes subscription")?,
     ])
 }
 

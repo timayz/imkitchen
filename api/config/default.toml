@@ -12,8 +12,9 @@ shutdown_timeout_secs = 30
 
 [database]
 # This node's store: one Turso file holding the events, the subscription
-# cursors and the cluster journal. `migrate` creates it; `serve` refuses to
-# start without it. The node keeps its cluster state in the same directory.
+# cursors, the cluster journal and the tables the lists are read from.
+# `migrate` creates it; `serve` refuses to start without it. The node keeps
+# its cluster state in the same directory.
 path = "data/imkitchen.db"
 
 # Without this section the node runs alone. With it, the api instances listed

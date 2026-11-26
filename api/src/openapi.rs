@@ -25,6 +25,7 @@ pub const VERSION: &str = "/v1";
 pub const AUTH: &str = "auth";
 pub const ACCOUNT: &str = "account";
 pub const ADMIN: &str = "admin";
+pub const RECIPES: &str = "recipes";
 pub const NODE: &str = "node";
 
 /// The security scheme of the endpoints that need someone signed in, as
@@ -38,6 +39,7 @@ const SESSION: &str = "session";
         (name = AUTH, description = "Creating an account, signing in and out"),
         (name = ACCOUNT, description = "What a user does with their own account"),
         (name = ADMIN, description = "What an administrator does with the accounts of others"),
+        (name = RECIPES, description = "A user's own recipes"),
         (name = NODE, description = "The probes of the node; no version, not for clients"),
     ),
     components(schemas(ErrorBody)),

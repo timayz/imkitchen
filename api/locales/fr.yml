@@ -33,6 +33,7 @@ errors:
   invitation_invalid: Cette invitation n'est plus valide.
   invitation_other_address: Cette invitation est destinée à une autre adresse e-mail.
   signup_closed: Les comptes sont créés sur invitation.
+  recipe_not_found: Cette recette n'existe pas.
 
 fields:
   invalid: Cette valeur n'est pas valide.
@@ -45,3 +46,5 @@ fields:
   too_large: Cette valeur doit être au plus %{max}.
   invalid_email: Cette adresse e-mail n'est pas valide.
   weak_password: Le mot de passe doit contenir entre %{min} et %{max} caractères.
+  invalid_cursor: Ce n'est pas un endroit de la liste.
+  too_many: Il ne peut pas y en avoir plus de %{max}.

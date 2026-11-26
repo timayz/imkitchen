@@ -89,9 +89,10 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
     let auth = Arc::new(Auth::new(&config.auth)?);
     let mailer = Arc::new(Smtp::new(&config.mail)?);
     let store = db::open(&config.database.path).await?;
+    let db = db::Db::from(store.clone());
     let (cluster, executor) = cluster::open(config.cluster, &config.database.path, store).await?;
     let node = format!("api-{}", cluster.health().id.0);
-    let subscriptions = subscriptions::start(&executor, &auth, mailer, &node).await?;
+    let subscriptions = subscriptions::start(&executor, &db, &auth, mailer, &node).await?;
     // Warns when this node nears the writes it may keep for a node that is
     // away, and about each node it stopped waiting for.
     let watch = cluster.watch(CLUSTER_WATCH);
@@ -115,6 +116,7 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
         AppState {
             cluster: cluster.clone(),
             executor,
+            db,
             auth,
             sign_ins: Arc::default(),
         },
