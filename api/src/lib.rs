@@ -10,6 +10,7 @@ pub mod images;
 pub mod locale;
 pub mod mail;
 pub mod openapi;
+pub mod plats;
 pub mod recipes;
 pub mod server;
 pub mod sidecars;

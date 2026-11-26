@@ -51,6 +51,7 @@ pub fn router(state: AppState) -> Router {
                 .merge(crate::account::routes())
                 .merge(crate::admin::routes())
                 .merge(crate::recipes::routes())
+                .merge(crate::plats::routes())
                 .merge(crate::images::routes()),
         )
         .split_for_parts();

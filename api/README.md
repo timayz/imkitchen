@@ -106,6 +106,20 @@ dimensions:
   it: a picture is on a majority of the nodes before the recipe that shows
   it is written, and a node that lacks one takes it from another.
 
+## Plats
+
+A plat is a composed dish: a name and recipes of the user, in the order they
+are served (`recipe_ids`, 1 to 20, none twice). It holds nothing of its
+recipes: it answers each under `recipes` as the list of the recipes shows
+it, as the recipe now stands.
+
+- A plat is only composed of its owner's recipes: any other id is refused
+  under its field (`recipe_ids[1]`, `recipe_not_found`).
+- Deleting a recipe is never refused for the plats it is part of: the
+  recipe leaves each of them a moment later, the others as they were. A
+  plat left with no recipe stays, for its owner to recompose or delete.
+- Deleting a plat deletes none of its recipes.
+
 ## Who asks
 
 Signing in answers a token. It is sent back with every request as

@@ -38,6 +38,7 @@ use evento::WriteError;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
+use timada_core::page::Cursor;
 use timada_identity::IdentityError;
 use utoipa::ToSchema;
 use validator::{Validate, ValidationError, ValidationErrors, ValidationErrorsKind};
@@ -356,6 +357,14 @@ where
     Ok(Option::<T>::deserialize(deserializer)?.unwrap_or_default())
 }
 
+/// Holds the `after` of a list to what a `next` reads as
+/// (`#[validate(custom)]`).
+pub fn valid_cursor(after: &str) -> Result<(), ValidationError> {
+    Cursor::parse(after)
+        .map(drop)
+        .ok_or(ValidationError::new("invalid_cursor"))
+}
+
 /// What an address the api does not serve answers.
 pub async fn not_found() -> ApiError {
     ApiError::refused(StatusCode::NOT_FOUND, NOT_FOUND)
@@ -436,6 +445,7 @@ mod tests {
             crate::recipes::RECIPE_NOT_FOUND,
             crate::recipes::PAGE_UNREACHABLE,
             crate::recipes::NO_RECIPE_ON_PAGE,
+            crate::plats::PLAT_NOT_FOUND,
             crate::images::UNSUPPORTED_IMAGE,
             crate::images::IMAGE_TOO_LARGE,
             crate::images::IMAGE_TOO_MANY_PIXELS,

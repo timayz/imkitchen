@@ -34,6 +34,7 @@ errors:
   invitation_other_address: Cette invitation est destinée à une autre adresse e-mail.
   signup_closed: Les comptes sont créés sur invitation.
   recipe_not_found: Cette recette n'existe pas.
+  plat_not_found: Ce plat n'existe pas.
   page_unreachable: Cette page n'a pas pu être lue. Vérifiez son adresse.
   no_recipe_on_page: Aucune recette n'a été trouvée sur cette page.
   unsupported_image: Ce n'est pas une image que l'api accepte. Envoyez un JPEG, un PNG, un WebP ou un GIF.
@@ -54,3 +55,6 @@ fields:
   invalid_cursor: Ce n'est pas un endroit de la liste.
   too_many: Il ne peut pas y en avoir plus de %{max}.
   invalid_url: Ce n'est pas l'adresse d'une page web.
+  count: Il doit y en avoir entre %{min} et %{max}.
+  duplicate: Cet élément est présent plus d'une fois.
+  recipe_not_found: Ce n'est pas l'une de vos recettes.

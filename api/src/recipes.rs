@@ -33,7 +33,7 @@ use timada_core::page::Cursor;
 use utoipa::{IntoParams, ToSchema};
 use utoipa_axum::router::{OpenApiRouter, UtoipaMethodRouterExt};
 use utoipa_axum::routes;
-use validator::{Validate, ValidationError};
+use validator::Validate;
 
 use self::import::valid_page_url;
 pub use self::import::{NO_RECIPE_ON_PAGE, PAGE_UNREACHABLE, PageError, Pages, Web};
@@ -42,7 +42,10 @@ use self::model::{Content, RecipeState};
 use self::read_model::RecipeRow;
 pub use self::read_model::{SUBSCRIPTION, subscription};
 use crate::auth::Session;
-use crate::error::{ApiError, ApiResult, Body, Params, or_default, trimmed, trimmed_opt};
+use crate::db::Db;
+use crate::error::{
+    ApiError, ApiResult, Body, Params, or_default, trimmed, trimmed_opt, valid_cursor,
+};
 use crate::images::{self, IMAGE_TOO_LARGE, MAX_IMAGE_BYTES};
 use crate::openapi::RECIPES;
 use crate::server::AppState;
@@ -70,6 +73,36 @@ pub async fn images_let_go<E: evento::Executor>(
 ) -> anyhow::Result<Vec<RecipeImage>> {
     let recipe = model::load(executor, recipe_id).await?;
     Ok(recipe.map(|recipe| recipe.let_go).unwrap_or_default())
+}
+
+/// The recipe `id` as a list shows it, when it is one of `owner_id`'s:
+/// `None` for one that does not exist, was deleted or is someone else's.
+pub async fn own<E: evento::Executor>(
+    executor: &E,
+    owner_id: &str,
+    id: &str,
+) -> anyhow::Result<Option<RecipeSummary>> {
+    let recipe = model::load(executor, id).await?;
+    Ok(recipe
+        .filter(|recipe| !recipe.deleted && recipe.owner_id == owner_id)
+        .map(RecipeSummary::from))
+}
+
+/// Whose the recipe `id` is, or was when it was deleted; `None` for one
+/// that was never written.
+pub async fn owner_of<E: evento::Executor>(
+    executor: &E,
+    id: &str,
+) -> anyhow::Result<Option<String>> {
+    let recipe = model::load(executor, id).await?;
+    Ok(recipe.map(|recipe| recipe.owner_id))
+}
+
+/// Those of the recipes `ids` this node's list knows, in no order: one just
+/// written is there a moment later, one deleted is not.
+pub async fn listed(db: &Db, ids: &[String]) -> anyhow::Result<Vec<RecipeSummary>> {
+    let rows = read_model::recipes_in(db, ids).await?;
+    Ok(rows.into_iter().map(RecipeSummary::from).collect())
 }
 
 /// One size of a picture.
@@ -270,9 +303,9 @@ impl From<RecipeState> for Recipe {
 
 /// What the list shows of a recipe: everything but its ingredients and its
 /// steps.
-#[derive(Serialize, ToSchema)]
-struct RecipeSummary {
-    id: String,
+#[derive(Clone, Serialize, ToSchema)]
+pub struct RecipeSummary {
+    pub(crate) id: String,
     title: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     description: Option<String>,
@@ -302,6 +335,23 @@ impl From<RecipeRow> for RecipeSummary {
     }
 }
 
+impl From<RecipeState> for RecipeSummary {
+    fn from(recipe: RecipeState) -> Self {
+        let content = recipe.content;
+        Self {
+            id: recipe.id,
+            title: content.title,
+            description: Some(content.description).filter(|text| !text.is_empty()),
+            prep_minutes: content.prep_minutes.into(),
+            cook_minutes: content.cook_minutes.into(),
+            servings: content.servings.into(),
+            image: recipe.image.as_ref().map(Image::from),
+            created_at: recipe.created_at as i64,
+            updated_at: recipe.updated_at as i64,
+        }
+    }
+}
+
 /// A page of a user's recipes.
 #[derive(Serialize, ToSchema)]
 struct RecipeList {
@@ -310,12 +360,6 @@ struct RecipeList {
     /// last one.
     #[serde(skip_serializing_if = "Option::is_none")]
     next: Option<String>,
-}
-
-fn valid_cursor(after: &str) -> Result<(), ValidationError> {
-    Cursor::parse(after)
-        .map(drop)
-        .ok_or(ValidationError::new("invalid_cursor"))
 }
 
 /// Which of the user's recipes to list.

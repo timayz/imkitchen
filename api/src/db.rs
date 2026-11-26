@@ -65,11 +65,27 @@ pub const MIGRATIONS: Migrations<'static> = Migrations::new(
             );
             CREATE INDEX images_of ON images (image_id);",
         ),
+        Migration::up(
+            "0003_plats",
+            // One row per plat that is not deleted, for its owner's list.
+            // `recipe_ids` is the recipes it is made of, in order, as JSON;
+            // `search` its name, lowercased and without accents.
+            "CREATE TABLE plats (
+                id TEXT NOT NULL PRIMARY KEY,
+                owner_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                recipe_ids TEXT NOT NULL,
+                search TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+            );
+            CREATE INDEX plats_listed ON plats (owner_id, created_at DESC, id DESC);",
+        ),
     ],
 );
 
 /// The tables [`MIGRATIONS`] creates: all of them read models.
-const READ_MODELS: &[&str] = &["recipes", "images"];
+const READ_MODELS: &[&str] = &["recipes", "images", "plats"];
 
 /// Every list of migrations the store's schema is made of.
 const SCHEMA: [&Migrations<'static>; 3] = [

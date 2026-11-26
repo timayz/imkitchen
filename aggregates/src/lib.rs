@@ -10,6 +10,7 @@
 
 pub mod identity;
 pub mod image;
+pub mod plat;
 pub mod recipe;
 mod sidecar;
 

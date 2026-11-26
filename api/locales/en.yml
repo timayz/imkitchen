@@ -36,6 +36,7 @@ errors:
   invitation_other_address: This invitation is for another e-mail address.
   signup_closed: Accounts are created by invitation.
   recipe_not_found: This recipe does not exist.
+  plat_not_found: This plat does not exist.
   page_unreachable: This page could not be read. Check its address.
   no_recipe_on_page: No recipe was found on this page.
   unsupported_image: This is not a picture the api takes. Send a JPEG, PNG, WebP or GIF.
@@ -56,3 +57,6 @@ fields:
   invalid_cursor: This is not a place in the list.
   too_many: There must be at most %{max} of these.
   invalid_url: This is not the address of a web page.
+  count: There must be between %{min} and %{max} of these.
+  duplicate: This is there more than once.
+  recipe_not_found: This is not one of your recipes.

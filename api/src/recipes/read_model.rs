@@ -10,7 +10,7 @@
 use evento::metadata::RawEvent;
 use evento::subscription::{Context, SubscriptionBuilder};
 use imkitchen_aggregates::recipe::Recipe;
-use timada_core::db::{FromRow, Json, search_key};
+use timada_core::db::{FromRow, Json, params_from_iter, placeholders, search_key};
 use timada_core::like_contains;
 use timada_core::page::Cursor;
 
@@ -142,6 +142,23 @@ pub async fn recipes_of(
             q.map(|q| like_contains(&search_key(q))),
             limit,
         ),
+    )
+    .await
+}
+
+/// The rows of the recipes `ids`, in no order: those that have one.
+pub async fn recipes_in(db: &Db, ids: &[String]) -> anyhow::Result<Vec<RecipeRow>> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    db.fetch_all(
+        &format!(
+            "SELECT id, title, description, prep_minutes, cook_minutes, servings, created_at,
+                updated_at, image
+             FROM recipes WHERE id IN ({})",
+            placeholders(ids.len())
+        ),
+        params_from_iter(ids.iter().map(String::as_str)),
     )
     .await
 }
