@@ -45,8 +45,14 @@ contact_meta_title = Contact — imkitchen
 contact_description = Write to imkitchen: a question, an idea, a problem with your account.
 contact_title = Contact
 contact_text = A question, an idea, something that does not work? Write to us: every message is read.
-contact_email_label = By email
-contact_data_text = The same address is the one to write to for having what imkitchen keeps about you corrected or deleted.
+contact_name = Your name
+contact_email = Your email address
+contact_message = Your message
+contact_send = Send
+contact_sent = Your message is sent. Thank you: we answer at the address you gave.
+contact_failed = Your message could not be sent. Try again in a moment, or write to us by email.
+contact_email_label = Or by email
+contact_data_text = That address is also the one to write to for having what imkitchen keeps about you corrected or deleted.
 contact_privacy_link = What imkitchen keeps
 
 ## The legal pages
@@ -105,6 +111,7 @@ privacy_data_title = What is kept
 privacy_data_1 = Your account: your email address, the name you give, your password in a form that cannot be read back, and the language you read.
 privacy_data_2 = Your content: your recipes and their pictures, your dishes, your list, your groceries and your settings.
 privacy_data_3 = Your sessions: when you signed in, and the browser or the application you signed in from.
+privacy_data_4 = Your messages: when you write to us from the contact page, your name, your address and what you wrote.
 privacy_use_title = What it is used for
 privacy_use_1 = To run the service: show you your cookbook on your devices, generate your list, add up your groceries and mail you the codes that prove your address.
 privacy_use_2 = Nothing else: no profiling, no audience measurement, no mail you did not ask for.

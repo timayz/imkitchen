@@ -5,26 +5,35 @@
 use std::future::Future;
 use std::net::SocketAddr;
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use evento::metadata::Event;
 use evento::remote::ServerHandle;
-use evento::subscription::Subscription;
+use evento::subscription::{Context, Subscription, SubscriptionBuilder};
+use imkitchen_aggregates::contact::Sent;
 use imkitchen_aggregates::recipe::{Created, Deleted, Ingredient};
+use imkitchen_api::auth::Auth;
 use imkitchen_api::cluster::{self, Cluster, Executor};
-use imkitchen_api::config::{Secret, SidecarTokens, SidecarsConfig};
+use imkitchen_api::config::{AuthConfig, Secret, SidecarTokens, SidecarsConfig};
+use imkitchen_api::images::Images;
+use imkitchen_api::recipes::Web;
+use imkitchen_api::server::{self, AppState};
 use imkitchen_api::sidecars;
+use imkitchen_www::api::Api as Commands;
 use imkitchen_www::config::{ApiConfig, AppConfig, ContactConfig};
 use imkitchen_www::db::{self, Db};
 use imkitchen_www::events::Events;
 use imkitchen_www::{app, config, recipes, subscriptions};
 use tempfile::TempDir;
 use tokio::net::TcpListener;
+use tokio::sync::oneshot;
+use tokio::task::JoinHandle;
 use topcoat::asset::{
     AssetConfig, MANIFEST_VERSION, Manifest, ManifestEntry, RouterBuilderAssetExt,
 };
 use topcoat::context::BaseUrl;
-use topcoat::router::header::{ACCEPT_LANGUAGE, LOCATION};
+use topcoat::router::header::{ACCEPT_LANGUAGE, CONTENT_TYPE, LOCATION};
 use topcoat::router::request::Request;
 use topcoat::router::{Body, Router, StatusCode, to_bytes};
 
@@ -33,6 +42,9 @@ const WWW_TOKEN: &str = "the token of www in the tests, 32 characters";
 /// Where the visitors of the tests reach www, and where they write.
 const SITE: &str = "https://www.test";
 const CONTACT: &str = "hello@www.test";
+
+/// An address of the api's commands nothing answers at.
+const NOWHERE: &str = "http://127.0.0.1:1";
 
 /// The pages of a language, as what follows its code in their address.
 const PAGES: [&str; 4] = ["", "/terms", "/privacy", "/contact"];
@@ -59,14 +71,51 @@ where
     }
 }
 
+/// What was written to imkitchen, as the api kept it: who, where they are
+/// answered, what they wrote and the language they read.
+type Messages = Arc<Mutex<Vec<[String; 4]>>>;
+
+#[evento::subscription]
+async fn on_message_sent<E: evento::Executor>(
+    context: &Context<'_, E>,
+    event: Event<Sent>,
+) -> anyhow::Result<()> {
+    let messages: Messages = context.extract();
+    let Sent {
+        name,
+        email,
+        message,
+        language,
+    } = event.data;
+    messages
+        .lock()
+        .unwrap()
+        .push([name, email, message, language]);
+    Ok(())
+}
+
+/// The api's commands, served over HTTP as the api serves them.
+struct Http {
+    stop: oneshot::Sender<()>,
+    served: JoinHandle<()>,
+    /// The messages it took, as they come.
+    messages: Messages,
+    following: Subscription,
+}
+
 /// An api node alone, over a store created the way a deployment creates it,
 /// serving the sidecars as the api does.
 struct Api {
     cluster: Arc<Cluster>,
     executor: Executor,
+    store: imkitchen_api::db::Store,
+    /// Where it keeps its files.
+    dir: std::path::PathBuf,
     /// The sidecars' listener, while there is one.
     server: Option<ServerHandle>,
     addr: SocketAddr,
+    /// Its commands, once [`Api::serve_commands`] opened them.
+    http: Option<Http>,
 }
 
 impl Api {
@@ -74,14 +123,72 @@ impl Api {
         let path = dir.join("imkitchen.db");
         drop(imkitchen_api::db::migrate(&path).await.unwrap());
         let store = imkitchen_api::db::open(&path).await.unwrap();
-        let (cluster, executor) = cluster::open(None, None, &path, store).await.unwrap();
+        let (cluster, executor) = cluster::open(None, None, &path, store.clone())
+            .await
+            .unwrap();
         let (server, addr) = Self::listen(&executor, "127.0.0.1:0".parse().unwrap()).await;
         Self {
             cluster,
             executor,
+            store,
+            dir: dir.to_owned(),
             server: Some(server),
             addr,
+            http: None,
         }
+    }
+
+    /// Serves the commands over HTTP, and answers where.
+    async fn serve_commands(&mut self) -> String {
+        let auth = AuthConfig {
+            secret: None,
+            session_lifetime_secs: 3600,
+            root: None,
+        };
+        let state = AppState {
+            cluster: self.cluster.clone(),
+            executor: self.executor.clone(),
+            db: imkitchen_api::db::Db::from(self.store.clone()),
+            auth: Arc::new(Auth::new(&auth).unwrap()),
+            sign_ins: Arc::default(),
+            pages: Arc::new(Web::new().unwrap()),
+            images: Arc::new(Images::new(self.dir.join("images"), None)),
+        };
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        let (stop, stopped) = oneshot::channel();
+        let served = tokio::spawn(async move {
+            let stopped = async {
+                let _ = stopped.await;
+            };
+            server::serve(listener, state, Duration::from_secs(1), stopped)
+                .await
+                .unwrap();
+        });
+        let messages = Messages::default();
+        let following = SubscriptionBuilder::new("tests/contact-messages")
+            .data(messages.clone())
+            .handler(on_message_sent())
+            .start(&self.executor)
+            .await
+            .unwrap();
+        self.http = Some(Http {
+            stop,
+            served,
+            messages,
+            following,
+        });
+        url
+    }
+
+    /// Waits until the api took `expected` messages, and answers them.
+    async fn messages(&self, expected: usize) -> Vec<[String; 4]> {
+        let messages = &self.http.as_ref().unwrap().messages;
+        eventually(&format!("the api to take {expected} messages"), || async {
+            let messages = messages.lock().unwrap();
+            (messages.len() >= expected).then(|| messages.clone())
+        })
+        .await
     }
 
     async fn listen(executor: &Executor, addr: SocketAddr) -> (ServerHandle, SocketAddr) {
@@ -142,6 +249,11 @@ impl Api {
     }
 
     async fn shutdown(self) {
+        if let Some(http) = self.http {
+            http.following.shutdown().await.unwrap();
+            let _ = http.stop.send(());
+            http.served.await.unwrap();
+        }
         if let Some(server) = self.server {
             server.shutdown().await;
         }
@@ -154,6 +266,8 @@ struct Www {
     db: Db,
     events: Events,
     subscriptions: Vec<Subscription>,
+    /// Where its commands go: nowhere anything answers, until a test says.
+    commands: String,
 }
 
 impl Www {
@@ -166,6 +280,7 @@ impl Www {
         let store = db::open(path).await.unwrap();
         let db = Db::from(store.clone());
         let api = ApiConfig {
+            url: NOWHERE.to_owned(),
             events: addr.to_string(),
             token: Some(config::Secret::new(token)),
             tls_ca: None,
@@ -177,6 +292,7 @@ impl Www {
             db,
             events,
             subscriptions,
+            commands: NOWHERE.to_owned(),
         }
     }
 
@@ -212,7 +328,15 @@ impl Www {
                 email: CONTACT.to_owned(),
             },
         };
-        app::router(self.db.clone(), self.events.clone(), site)
+        let commands = Commands::new(&ApiConfig {
+            url: self.commands.clone(),
+            events: "127.0.0.1:1".to_owned(),
+            token: None,
+            tls_ca: None,
+            tls_server_name: None,
+        })
+        .unwrap();
+        app::router(self.db.clone(), self.events.clone(), commands, site)
             .assets(AssetConfig::hosted_at("https://assets.test", manifest))
             .build()
     }
@@ -229,6 +353,44 @@ async fn get(router: &Router, path: &str, language: &str) -> (StatusCode, String
         .uri(path)
         .header(ACCEPT_LANGUAGE, language)
         .body(Body::empty())
+        .unwrap();
+    let response = router.handle(request).await;
+    let status = response.status();
+    let location = response
+        .headers()
+        .get(LOCATION)
+        .map(|value| value.to_str().unwrap().to_owned())
+        .unwrap_or_default();
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    (status, location, String::from_utf8(body.to_vec()).unwrap())
+}
+
+/// Posts `fields` to `path` as a browser that reads `language` posts a
+/// form: the status, where it is sent on and the body.
+async fn post(
+    router: &Router,
+    path: &str,
+    language: &str,
+    fields: &[(&str, &str)],
+) -> (StatusCode, String, String) {
+    let encode = |text: &str| -> String {
+        text.bytes()
+            .map(|byte| match byte {
+                b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' => char::from(byte).to_string(),
+                _ => format!("%{byte:02X}"),
+            })
+            .collect()
+    };
+    let form: Vec<String> = fields
+        .iter()
+        .map(|(name, value)| format!("{name}={}", encode(value)))
+        .collect();
+    let request = Request::builder()
+        .method("POST")
+        .uri(path)
+        .header(ACCEPT_LANGUAGE, language)
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from(form.join("&")))
         .unwrap();
     let response = router.handle(request).await;
     let status = response.status();
@@ -663,6 +825,202 @@ async fn a_search_engine_is_given_every_page() {
         let (status, _, _) = get(&router, address.strip_prefix(SITE).unwrap(), "en").await;
         assert_eq!(status, StatusCode::OK, "{address}");
     }
+
+    www.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn the_contact_form_is_a_command_of_the_api() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut www = Www::start(api.addr, &dir.path().join("www.db")).await;
+    www.commands = api.serve_commands().await;
+    let router = www.router();
+
+    let (status, _, page) = get(&router, "/fr/contact", "en").await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        page.contains("method=\"post\" action=\"/fr/contact\""),
+        "{page}"
+    );
+
+    // Taken by the api, as written and in the language of the page: the
+    // visitor is sent on to a page that does not send it again.
+    let written = [
+        ("name", "Alice Dupont"),
+        ("email", "Alice@Example.com"),
+        (
+            "message",
+            "Bonjour,\nune question : où trouver l’application ?",
+        ),
+        ("website", ""),
+    ];
+    let (status, location, _) = post(&router, "/fr/contact", "en", &written).await;
+    assert_eq!(
+        (status, location.as_str()),
+        (StatusCode::SEE_OTHER, "/fr/contact?sent=1")
+    );
+    assert_eq!(
+        api.messages(1).await,
+        [[
+            "Alice Dupont".to_owned(),
+            "alice@example.com".to_owned(),
+            "Bonjour,\nune question : où trouver l’application ?".to_owned(),
+            "fr".to_owned(),
+        ]]
+    );
+    let (status, _, page) = get(&router, &location, "en").await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(page.contains("data-contact=\"sent\""), "{page}");
+    assert!(page.contains("Votre message est envoyé."), "{page}");
+    assert!(!page.contains("<form"), "{page}");
+
+    // What fills the field no person sees is not a person: it is told the
+    // same, and the api is asked nothing.
+    let (status, location, _) = post(
+        &router,
+        "/en/contact",
+        "en",
+        &[
+            ("name", "A robot"),
+            ("email", "robot@example.com"),
+            ("message", "Buy."),
+            ("website", "https://example.com"),
+        ],
+    )
+    .await;
+    assert_eq!(
+        (status, location.as_str()),
+        (StatusCode::SEE_OTHER, "/en/contact?sent=1")
+    );
+
+    // A second message of a person: the robot's never reached the api.
+    let (status, _, _) = post(
+        &router,
+        "/en/contact",
+        "fr",
+        &[
+            ("name", "Bob"),
+            ("email", "bob@example.com"),
+            ("message", "Hello!"),
+        ],
+    )
+    .await;
+    assert_eq!(status, StatusCode::SEE_OTHER);
+    let messages = api.messages(2).await;
+    assert_eq!(messages.len(), 2);
+    assert_eq!(messages[1][0], "Bob");
+    assert_eq!(messages[1][3], "en");
+
+    www.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn what_the_api_refuses_is_shown_on_the_form() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut www = Www::start(api.addr, &dir.path().join("www.db")).await;
+    www.commands = api.serve_commands().await;
+    let router = www.router();
+
+    // Each field the api refuses says so in its words, in the language of
+    // the page, over what the visitor typed.
+    let (status, location, page) = post(
+        &router,
+        "/fr/contact",
+        "en",
+        &[
+            ("name", "  "),
+            ("email", "nobody"),
+            ("message", "Une question <b>simple</b>"),
+        ],
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{page}");
+    assert_eq!(location, "");
+    assert!(page.contains("<html lang=\"fr\""), "{page}");
+    assert!(
+        page.contains(
+            "<p id=\"contact-name-error\" class=\"mt-1 text-sm text-red-700\">\
+             Ce champ doit contenir entre 1 et 100 caractères.</p>"
+        ),
+        "{page}"
+    );
+    assert!(page.contains("id=\"contact-email-error\""), "{page}");
+    assert!(page.contains("adresse e-mail n"), "{page}");
+    assert!(!page.contains("id=\"contact-message-error\""), "{page}");
+    assert!(page.contains("value=\"nobody\""), "{page}");
+    assert!(
+        page.contains(">Une question &lt;b&gt;simple&lt;/b&gt;</textarea>"),
+        "{page}"
+    );
+    assert!(
+        page.contains("aria-invalid=\"true\" aria-describedby=\"contact-email-error\""),
+        "{page}"
+    );
+    assert!(!page.contains("data-contact="), "{page}");
+
+    // The same in English.
+    let (status, _, page) = post(
+        &router,
+        "/en/contact",
+        "fr",
+        &[("name", "Alice"), ("email", "alice@example.com")],
+    )
+    .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{page}");
+    assert!(
+        page.contains("This must be between 1 and 4000 characters."),
+        "{page}"
+    );
+    assert!(page.contains("value=\"Alice\""), "{page}");
+
+    // Nothing of it was kept.
+    assert!(
+        api.http
+            .as_ref()
+            .unwrap()
+            .messages
+            .lock()
+            .unwrap()
+            .is_empty()
+    );
+
+    www.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn a_message_the_api_cannot_be_handed_is_kept_on_the_form() {
+    let dir = dir();
+    let api = Api::start(dir.path()).await;
+    // Its commands go where nothing answers.
+    let www = Www::start(api.addr, &dir.path().join("www.db")).await;
+    let router = www.router();
+
+    let (status, _, page) = post(
+        &router,
+        "/en/contact",
+        "en",
+        &[
+            ("name", "Alice"),
+            ("email", "alice@example.com"),
+            ("message", "Hello!"),
+        ],
+    )
+    .await;
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE, "{page}");
+    assert!(page.contains("data-contact=\"failed\""), "{page}");
+    assert!(page.contains("Your message could not be sent."), "{page}");
+    assert!(page.contains("value=\"Alice\""), "{page}");
+    assert!(page.contains(">Hello!</textarea>"), "{page}");
+    // The address to write to instead is still there.
+    assert!(
+        page.contains(&format!("href=\"mailto:{CONTACT}\"")),
+        "{page}"
+    );
 
     www.stop().await;
     api.shutdown().await;

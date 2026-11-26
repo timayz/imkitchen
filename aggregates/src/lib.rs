@@ -8,6 +8,7 @@
 //! Every variant and every field of an event is frozen once it ships
 //! (bitcode is positional): evolve by adding variants.
 
+pub mod contact;
 pub mod groceries;
 pub mod identity;
 pub mod image;

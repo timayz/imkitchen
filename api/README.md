@@ -218,6 +218,23 @@ is in the next answer.
 - An item the list does not call for is refused
   (`grocery_item_not_found`).
 
+## Contact messages
+
+`POST /v1/contact-messages` is how someone writes to imkitchen: a visitor of
+www, through its contact form, or a user. It needs no token.
+
+```json
+{ "name": "Alice", "email": "alice@example.com", "message": "Hello!" }
+```
+
+- `name` (1 to 100 characters) and `message` (1 to 4000) are kept without
+  the blanks around them; `email` is where the person is answered. Nothing
+  proves the address is theirs: no code is mailed.
+- The language of the request (`Accept-Language`) is kept with the message:
+  the one to answer in.
+- A message is an aggregate of its own (`imkitchen/ContactMessage`). The
+  api keeps no list of them: reading them is for admin, from the events.
+
 ## Tutorial
 
 The app walks a new user through five steps. How far they are is kept here,

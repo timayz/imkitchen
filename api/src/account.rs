@@ -68,7 +68,7 @@ fn created<T: Serialize>(body: T) -> Response {
     (StatusCode::CREATED, Json(body)).into_response()
 }
 
-fn valid_email(email: &str) -> Result<(), ValidationError> {
+pub(crate) fn valid_email(email: &str) -> Result<(), ValidationError> {
     normalize_email(email)
         .map(drop)
         .map_err(|_| ValidationError::new("invalid_email"))

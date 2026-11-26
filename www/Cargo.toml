@@ -18,6 +18,8 @@ evento = { workspace = true, features = ["turso", "remote"] }
 imkitchen-aggregates.workspace = true
 timada-core.workspace = true
 tokio-rustls.workspace = true
+# The client of the api's commands.
+reqwest = { workspace = true, features = ["json"] }
 
 [build-dependencies]
 topcoat = { workspace = true, features = ["tailwind"] }

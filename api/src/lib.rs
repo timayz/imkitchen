@@ -3,6 +3,7 @@ mod admin;
 pub mod auth;
 pub mod cluster;
 pub mod config;
+pub mod contact;
 pub mod db;
 pub mod error;
 pub mod groceries;

@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
+use imkitchen_www::api::Api;
 use imkitchen_www::config::{Config, MonitoringConfig};
 use imkitchen_www::events::Events;
 use imkitchen_www::{app, db, subscriptions};
@@ -89,13 +90,14 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
         app: config.app.clone(),
         contact: config.contact.clone(),
     };
+    let api = Api::new(&config.api)?;
     let listener = TcpListener::bind((host.as_str(), port))
         .await
         .with_context(|| format!("failed to bind {host}:{port}"))?;
 
     tracing::info!("listening on http://{}", listener.local_addr()?);
 
-    let service = RouterService::new(app::router(db, events, site).assets(assets).build())
+    let service = RouterService::new(app::router(db, events, api, site).assets(assets).build())
         .shutdown_timeout(config.server.shutdown_timeout());
     // Stops on Ctrl+C or SIGTERM, the requests in flight given
     // `server.shutdown_timeout_secs` to finish.
