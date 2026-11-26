@@ -6,6 +6,7 @@ use clap::{Parser, Subcommand};
 use imkitchen_api::auth::Auth;
 use imkitchen_api::config::{Config, MonitoringConfig};
 use imkitchen_api::mail::Smtp;
+use imkitchen_api::recipes::Web;
 use imkitchen_api::server::{self, AppState};
 use imkitchen_api::{cluster, db, sidecars, subscriptions};
 use tokio::net::TcpListener;
@@ -88,6 +89,7 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
     let port = port.unwrap_or(config.server.port);
     let auth = Arc::new(Auth::new(&config.auth)?);
     let mailer = Arc::new(Smtp::new(&config.mail)?);
+    let pages = Arc::new(Web::new()?);
     let store = db::open(&config.database.path).await?;
     let db = db::Db::from(store.clone());
     let (cluster, executor) = cluster::open(config.cluster, &config.database.path, store).await?;
@@ -119,6 +121,7 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
             db,
             auth,
             sign_ins: Arc::default(),
+            pages,
         },
         config.server.shutdown_timeout(),
         server::shutdown_signal(),

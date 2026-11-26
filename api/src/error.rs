@@ -434,6 +434,8 @@ mod tests {
             INTERNAL,
             crate::account::TOO_MANY_SIGN_INS,
             crate::recipes::RECIPE_NOT_FOUND,
+            crate::recipes::PAGE_UNREACHABLE,
+            crate::recipes::NO_RECIPE_ON_PAGE,
             timada_core::WRITES_PAUSED,
             timada_core::WRITE_NOT_TAKEN,
             "refused",

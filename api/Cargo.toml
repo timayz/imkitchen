@@ -31,6 +31,10 @@ utoipa-axum.workspace = true
 utoipa-scalar.workspace = true
 validator.workspace = true
 rust-i18n.workspace = true
+reqwest.workspace = true
+encoding_rs.workspace = true
+scraper.workspace = true
+html5ever.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["io-util"] }

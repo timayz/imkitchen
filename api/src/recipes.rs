@@ -5,10 +5,14 @@
 //! user it signs in; someone else's recipe is answered as one that does not
 //! exist (`recipe_not_found`), read or written.
 //!
+//! A recipe is written by hand or imported from a page of the web
+//! ([`import`]); once it is there, nothing tells the two apart.
+//!
 //! One recipe is read from its stream, so it is as the last command left
 //! it. The list is read from a table a subscription fills from the streams
 //! ([`subscription`]), a moment behind them.
 
+mod import;
 mod model;
 mod read_model;
 
@@ -22,6 +26,8 @@ use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use validator::{Validate, ValidationError};
 
+use self::import::valid_page_url;
+pub use self::import::{NO_RECIPE_ON_PAGE, PAGE_UNREACHABLE, PageError, Pages, Web};
 pub use self::model::RECIPE_NOT_FOUND;
 use self::model::{Content, RecipeState};
 use self::read_model::RecipeRow;
@@ -37,6 +43,7 @@ const PAGE: u32 = 20;
 pub fn routes() -> OpenApiRouter<AppState> {
     OpenApiRouter::new()
         .routes(routes!(create, list))
+        .routes(routes!(import))
         .routes(routes!(recipe, edit, delete))
 }
 
@@ -123,6 +130,21 @@ impl From<RecipeBody> for Content {
             servings: body.servings,
         }
     }
+}
+
+/// Where to import a recipe from.
+#[derive(Deserialize, Validate, ToSchema)]
+struct ImportBody {
+    /// The address of a page that holds a recipe: one that describes it
+    /// the way schema.org says to (`Recipe`, as JSON-LD or microdata), which
+    /// most recipe sites do, or an article that shows its ingredients and
+    /// its steps under headings that say so.
+    #[serde(deserialize_with = "trimmed")]
+    #[validate(length(max = 2000), custom(function = "valid_page_url"))]
+    #[schema(
+        example = "https://www.marmiton.org/recettes/recette_pancakes-faciles-et-rapides_81518.aspx"
+    )]
+    url: String,
 }
 
 /// A recipe as its owner is told of it. Times are minutes, 0 when the
@@ -252,6 +274,33 @@ async fn create(
 ) -> ApiResult<(StatusCode, Json<Recipe>)> {
     let owner_id = &session.user.id;
     let id = model::create(&state.executor, owner_id, form.into()).await?;
+    let recipe = model::load_own(&state.executor, owner_id, &id).await?;
+    Ok((StatusCode::CREATED, Json(recipe.into())))
+}
+
+/// Imports a recipe from a page of the web
+///
+/// The recipe the page holds becomes one of the user's, theirs to
+/// rewrite like one they wrote; nothing links it to the page. What the page
+/// does not say is left out (the times), or taken as usual (4 servings).
+/// Refused with `page_unreachable` when the page cannot be read, and with
+/// `no_recipe_on_page` when no recipe is read on it.
+#[utoipa::path(
+    post,
+    path = "/recipes/import",
+    tag = RECIPES,
+    security(("session" = [])),
+    request_body = ImportBody,
+    responses((status = CREATED, description = "The recipe is imported", body = Recipe))
+)]
+async fn import(
+    State(state): State<AppState>,
+    session: Session,
+    Body(form): Body<ImportBody>,
+) -> ApiResult<(StatusCode, Json<Recipe>)> {
+    let owner_id = &session.user.id;
+    let content = import::content(state.pages.as_ref(), &form.url).await?;
+    let id = model::create(&state.executor, owner_id, content).await?;
     let recipe = model::load_own(&state.executor, owner_id, &id).await?;
     Ok((StatusCode::CREATED, Json(recipe.into())))
 }

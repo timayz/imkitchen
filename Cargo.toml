@@ -59,6 +59,13 @@ rust-i18n = "4.2"
 utoipa = "6.0"
 utoipa-axum = "0.3"
 utoipa-scalar = "0.4"
+# Importing a recipe: the page is fetched, decoded as its server says it is
+# written, and read as HTML. html5ever is the parser scraper is built on,
+# named to feed it a page piece by piece: its version follows scraper's.
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "http2"] }
+encoding_rs = "0.8"
+scraper = { version = "0.29", default-features = false }
+html5ever = "0.40"
 
 [profile.release]
 codegen-units = 1
