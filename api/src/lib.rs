@@ -10,6 +10,7 @@ pub mod locale;
 pub mod mail;
 pub mod openapi;
 pub mod server;
+pub mod sidecars;
 pub mod subscriptions;
 
 // The sentences of `locales/`, for `locale::Locale` to read.

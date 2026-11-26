@@ -6,15 +6,18 @@
 //! the full shape.
 
 use std::fmt;
-use std::path::PathBuf;
+use std::net::SocketAddr;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use config::{ConfigError, Environment, File};
 use evento::cluster::Settings;
+use imkitchen_aggregates::Sidecar;
 use serde::Deserialize;
 use timada_identity::RootAccount;
 
-/// The least an `auth.secret` may be, in characters.
+/// The least an `auth.secret` or the token of a sidecar may be, in
+/// characters.
 const SECRET_MIN_LEN: usize = 32;
 
 #[derive(Debug, Deserialize, Clone, PartialEq)]
@@ -25,6 +28,10 @@ pub struct Config {
     /// (`node_id`, `peers`, …). Absent: a node alone, talking to no one.
     #[serde(default)]
     pub cluster: Option<Settings>,
+    /// Where www and admin read the events from. Absent: no sidecar is
+    /// served.
+    #[serde(default)]
+    pub sidecars: Option<SidecarsConfig>,
     pub auth: AuthConfig,
     pub mail: MailConfig,
     pub monitoring: MonitoringConfig,
@@ -84,6 +91,80 @@ impl Secret {
 impl fmt::Debug for Secret {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str("******")
+    }
+}
+
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct SidecarsConfig {
+    /// Where the sidecars connect: evento's remote protocol, not HTTP.
+    pub listen: SocketAddr,
+    /// The certificate chain and its key, as PEM files. Absent: connections
+    /// are not encrypted, and the tokens travel in clear text.
+    #[serde(default)]
+    pub tls_cert: Option<PathBuf>,
+    #[serde(default)]
+    pub tls_key: Option<PathBuf>,
+    #[serde(default)]
+    pub tokens: SidecarTokens,
+}
+
+/// What each sidecar opens its connections with. One without a token is
+/// not served.
+#[derive(Debug, Default, Deserialize, Clone, PartialEq)]
+pub struct SidecarTokens {
+    #[serde(default)]
+    pub www: Option<Secret>,
+    #[serde(default)]
+    pub admin: Option<Secret>,
+}
+
+impl SidecarsConfig {
+    /// The sidecars that are served, each with its token.
+    pub fn tokens(&self) -> impl Iterator<Item = (Sidecar, &Secret)> {
+        Sidecar::ALL.into_iter().filter_map(|sidecar| {
+            let token = match sidecar {
+                Sidecar::Www => &self.tokens.www,
+                Sidecar::Admin => &self.tokens.admin,
+            };
+            Some((sidecar, token.as_ref()?))
+        })
+    }
+
+    /// The certificate and key files, when connections are encrypted.
+    pub fn tls(&self) -> Option<(&Path, &Path)> {
+        Some((self.tls_cert.as_deref()?, self.tls_key.as_deref()?))
+    }
+
+    fn validate(&self) -> Result<(), ConfigError> {
+        let mut tokens: Vec<&str> = Vec::new();
+        for (sidecar, token) in self.tokens() {
+            let name = sidecar.name();
+            if token.expose().chars().count() < SECRET_MIN_LEN {
+                return Err(ConfigError::Message(format!(
+                    "sidecars.tokens.{name} must be at least {SECRET_MIN_LEN} characters"
+                )));
+            }
+            // A token says which sidecar connects.
+            if tokens.contains(&token.expose()) {
+                return Err(ConfigError::Message(format!(
+                    "sidecars.tokens.{name} is the token of another sidecar: each has its own"
+                )));
+            }
+            tokens.push(token.expose());
+        }
+        if tokens.is_empty() {
+            return Err(ConfigError::Message(
+                "[sidecars] needs a token under sidecars.tokens: without one nobody may connect"
+                    .to_owned(),
+            ));
+        }
+        if self.tls_cert.is_some() != self.tls_key.is_some() {
+            return Err(ConfigError::Message(
+                "sidecars.tls_cert and sidecars.tls_key go together: set both or neither"
+                    .to_owned(),
+            ));
+        }
+        Ok(())
     }
 }
 
@@ -156,6 +237,9 @@ impl Config {
             cluster
                 .validate()
                 .map_err(|err| ConfigError::Message(err.to_string()))?;
+        }
+        if let Some(sidecars) = &config.sidecars {
+            sidecars.validate()?;
         }
         match &config.auth.secret {
             Some(secret) if secret.expose().chars().count() < SECRET_MIN_LEN => {
@@ -259,6 +343,57 @@ mod tests {
         let err = load(cluster).unwrap_err();
         assert!(err.to_string().contains("auth.secret"), "{err}");
         assert!(load(&format!("{cluster}[auth]\nsecret = \"{secret}\"\n")).is_ok());
+    }
+
+    #[test]
+    fn sidecars_section_is_read_and_validated() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("sidecars.toml");
+        let load = |content: &str| {
+            std::fs::write(&path, content).unwrap();
+            Config::load(path.to_str())
+        };
+        let listen = "[sidecars]\nlisten = \"127.0.0.1:4000\"\n";
+        let www = "w".repeat(SECRET_MIN_LEN);
+        let admin = "a".repeat(SECRET_MIN_LEN);
+
+        assert_eq!(Config::load(None).unwrap().sidecars, None);
+
+        let config = load(&format!(
+            "{listen}[sidecars.tokens]\nwww = \"{www}\"\nadmin = \"{admin}\"\n"
+        ))
+        .unwrap();
+        let sidecars = config.sidecars.as_ref().unwrap();
+        assert_eq!(sidecars.listen.port(), 4000);
+        assert_eq!(sidecars.tls(), None);
+        let served: Vec<_> = sidecars.tokens().map(|(sidecar, _)| sidecar).collect();
+        assert_eq!(served, [Sidecar::Www, Sidecar::Admin]);
+        let printed = format!("{config:?}");
+        assert!(!printed.contains(&www), "{printed}");
+
+        // Only the sidecars given a token are served.
+        let config = load(&format!("{listen}[sidecars.tokens]\nadmin = \"{admin}\"\n")).unwrap();
+        let served: Vec<_> = config.sidecars.as_ref().unwrap().tokens().collect();
+        assert_eq!(served.len(), 1);
+        assert_eq!(served[0].0, Sidecar::Admin);
+
+        let err = load(listen).unwrap_err();
+        assert!(err.to_string().contains("sidecars.tokens"), "{err}");
+
+        let err = load(&format!("{listen}[sidecars.tokens]\nwww = \"short\"\n")).unwrap_err();
+        assert!(err.to_string().contains("sidecars.tokens.www"), "{err}");
+
+        let err = load(&format!(
+            "{listen}[sidecars.tokens]\nwww = \"{www}\"\nadmin = \"{www}\"\n"
+        ))
+        .unwrap_err();
+        assert!(err.to_string().contains("sidecars.tokens.admin"), "{err}");
+
+        let err = load(&format!(
+            "{listen}tls_cert = \"tls.crt\"\n[sidecars.tokens]\nwww = \"{www}\"\n"
+        ))
+        .unwrap_err();
+        assert!(err.to_string().contains("sidecars.tls_key"), "{err}");
     }
 
     #[test]
