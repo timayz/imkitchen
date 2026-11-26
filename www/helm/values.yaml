@@ -1,0 +1,115 @@
+# How many pods of www run. Each one follows the api's events into a store
+# of its own and serves from it, so they are added and taken away at will.
+replicaCount: 2
+
+image:
+  repository: timayz/imkitchen
+  # Empty: www-<the chart's appVersion>. Every application of imkitchen has
+  # its tags in the one repository.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# The non-secret part of www's configuration (www/config/default.toml says
+# what each key does). The store and the port are the chart's to say.
+config:
+  server:
+    # The address visitors reach www at, without a path: what the addresses
+    # a search engine is given start with. Empty: https://<route.hostname>.
+    url: ""
+    # How long requests in flight get to finish when a pod is asked to stop.
+    shutdownTimeoutSecs: 30
+  api:
+    # Where the api answers HTTP, for the commands of www (the contact
+    # form): its service.
+    url: "http://imkitchen-api:3000"
+    # Where www follows the api's events: the `sidecars` port of its service
+    # (evento's remote protocol, not HTTP). Its token goes in secretEnv.
+    events: "imkitchen-api:4000"
+    tls:
+      # A Secret whose `ca.crt` the certificate of the api's sidecars port
+      # is checked against, when the api gives it one. Empty: the
+      # connection is not encrypted and the token travels in clear.
+      secretName: ""
+      # The name that certificate must carry. Empty: the host of `events`.
+      serverName: ""
+  # Where the application is got. A listing left empty is not live yet: the
+  # pages do not link to it, and say the application is coming while none
+  # is.
+  app:
+    googlePlay: ""
+    appStore: ""
+    desktop: ""
+  contact:
+    # The address the contact and legal pages give.
+    email: "contact@imkitchen.app"
+  monitoring:
+    logLevel: "info"
+    logJson: true
+    logTarget: true
+    logLineNumber: true
+
+# The secret part of the configuration, as the environment variables www
+# reads. Kept in a Secret the chart makes:
+#
+#   IMKITCHEN_WWW__API__TOKEN   what www opens its connections to the api's
+#                               events with: the api's
+#                               IMKITCHEN_API__SIDECARS__TOKENS__WWW. Required.
+secretEnv: {}
+
+# A Secret made elsewhere that holds the same variables, in place of the one
+# the chart makes from secretEnv.
+existingSecret: ""
+
+# More environment variables, in plain text.
+extraEnv: {}
+
+service:
+  type: ClusterIP
+  port: 3010
+
+# Publishes www through a Gateway (HTTPRoute), with a certificate for its
+# hostname asked of cert-manager beside the Gateway.
+route:
+  enabled: false
+  hostname: ""
+  parentRef:
+    name: envoy
+    namespace: envoy-gateway-system
+  certificate:
+    enabled: true
+    issuerRef:
+      kind: ClusterIssuer
+      name: letsencrypt
+    annotations: {}
+
+# The store of each pod: its read models, built from the api's events. It
+# lives as long as the pod does: a new pod builds its own from the first
+# event, and serves what it has while it catches up.
+store:
+  # How large it may grow, as Kubernetes writes it. Empty: no limit.
+  sizeLimit: ""
+
+# CPU and memory each pod asks for and may use, as Kubernetes writes it.
+resources: {}
+
+# Longer than config.server.shutdownTimeoutSecs: the pod also stops its
+# subscriptions.
+terminationGracePeriodSeconds: 45
+
+# Pods that may be down at once on purpose (a drain). Only with more than
+# one pod.
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+
+podAnnotations: {}
+podLabels: {}
+nodeSelector: {}
+tolerations: []
+# Empty: the pods are spread over the machines when there are enough of
+# them.
+affinity: {}

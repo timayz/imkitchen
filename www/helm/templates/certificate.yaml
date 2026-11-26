@@ -1,0 +1,21 @@
+{{- if and .Values.route.enabled .Values.route.certificate.enabled }}
+# Beside the Gateway, which terminates TLS for the hostname.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "www.fullname" . }}
+  namespace: {{ .Values.route.parentRef.namespace }}
+  labels:
+    {{- include "www.labels" . | nindent 4 }}
+spec:
+  dnsNames:
+    - {{ .Values.route.hostname | quote }}
+  secretName: {{ include "www.fullname" . }}-tls
+  issuerRef:
+    {{- toYaml .Values.route.certificate.issuerRef | nindent 4 }}
+  {{- with .Values.route.certificate.annotations }}
+  secretTemplate:
+    annotations:
+      {{- toYaml . | nindent 6 }}
+  {{- end }}
+{{- end }}

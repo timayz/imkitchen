@@ -59,6 +59,24 @@ What a deployment sets:
 `imkitchen-www migrate` creates the store and applies its pending
 migrations; `serve` refuses a store that is not there or not migrated.
 
+## Deploying it
+
+`www/Dockerfile` builds the image (`timayz/imkitchen:www-<version>`): the
+binary and, next to it, its assets. `www/helm` is its chart, whose README
+says what it runs and what to set. A pod keeps nothing: its store is built
+from the api's events each time it starts.
+
+```sh
+docker build -f www/builder.Dockerfile -t timayz/imkitchen:www-builder .   # once
+docker build -f www/Dockerfile -t timayz/imkitchen:www-local .
+```
+
+The builder image holds the two tools the build needs besides cargo:
+`topcoat-cli`, at the version of `topcoat` in `Cargo.lock`, and the Tailwind
+CLI, pinned with its checksum (`TAILWIND_VERSION` in
+`www/builder.Dockerfile`, the release topcoat pins): the one to move by hand
+when topcoat moves its own.
+
 ## Where things are
 
 | Path | Contents |
@@ -71,6 +89,7 @@ migrations; `serve` refuses a store that is not there or not migrated.
 | `src/recipes.rs` | A read model: its subscription and what the pages read from it. |
 | `src/subscriptions.rs` | Every subscription www runs. |
 | `src/db.rs` | The store and the migrations of its tables. |
+| `Dockerfile`, `builder.Dockerfile`, `helm/` | The image and the chart www is deployed with. |
 | `styles.css`, `build.rs` | The Tailwind stylesheet, compiled at build time. |
 
 ## Pages and languages
