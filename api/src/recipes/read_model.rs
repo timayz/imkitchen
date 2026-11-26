@@ -162,3 +162,16 @@ pub async fn recipes_in(db: &Db, ids: &[String]) -> anyhow::Result<Vec<RecipeRow
     )
     .await
 }
+
+#[derive(FromRow)]
+struct Id {
+    id: String,
+}
+
+/// The ids of every recipe of `owner_id` the table knows, in no order.
+pub async fn ids_of(db: &Db, owner_id: &str) -> anyhow::Result<Vec<String>> {
+    let ids: Vec<Id> = db
+        .fetch_all("SELECT id FROM recipes WHERE owner_id = ?1", (owner_id,))
+        .await?;
+    Ok(ids.into_iter().map(|row| row.id).collect())
+}

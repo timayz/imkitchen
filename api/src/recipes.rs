@@ -105,6 +105,12 @@ pub async fn listed(db: &Db, ids: &[String]) -> anyhow::Result<Vec<RecipeSummary
     Ok(rows.into_iter().map(RecipeSummary::from).collect())
 }
 
+/// The ids of every recipe of `owner_id` this node's list knows, in no
+/// order: one just written is there a moment later.
+pub async fn ids_of(db: &Db, owner_id: &str) -> anyhow::Result<Vec<String>> {
+    read_model::ids_of(db, owner_id).await
+}
+
 /// One size of a picture.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ToSchema)]
 pub struct ImageFile {

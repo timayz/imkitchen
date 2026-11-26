@@ -35,6 +35,7 @@ pub use self::model::PLAT_NOT_FOUND;
 use self::model::{Composition, MAX_RECIPES, PlatState};
 pub use self::read_model::{SUBSCRIPTION, subscription};
 use crate::auth::Session;
+use crate::db::Db;
 use crate::error::{ApiResult, Body, Params, trimmed, trimmed_opt, valid_cursor};
 use crate::openapi::PLATS;
 use crate::recipes::{self, RecipeSummary};
@@ -86,7 +87,7 @@ impl From<PlatBody> for Composition {
 
 /// A plat as its owner is told of it. Moments are unix seconds.
 #[derive(Serialize, ToSchema)]
-struct Plat {
+pub struct Plat {
     id: String,
     name: String,
     /// The recipes it is made of, in the order they are served, each as the
@@ -128,9 +129,15 @@ struct Listing {
 /// out.
 async fn read(state: &AppState, owner_id: &str, id: &str) -> ApiResult<Plat> {
     let plat: PlatState = model::load_own(&state.executor, owner_id, id).await?;
+    Ok(shown(&state.executor, plat).await?)
+}
+
+/// `plat` as its owner is told of it: with its recipes, each as its stream
+/// leaves it.
+async fn shown<E: evento::Executor>(executor: &E, plat: PlatState) -> anyhow::Result<Plat> {
     let mut recipes = Vec::new();
     for recipe_id in &plat.composition.recipe_ids {
-        recipes.extend(recipes::own(&state.executor, owner_id, recipe_id).await?);
+        recipes.extend(recipes::own(executor, &plat.owner_id, recipe_id).await?);
     }
     Ok(Plat {
         id: plat.id,
@@ -139,6 +146,52 @@ async fn read(state: &AppState, owner_id: &str, id: &str) -> ApiResult<Plat> {
         created_at: plat.created_at,
         updated_at: plat.updated_at,
     })
+}
+
+/// The plat `id` as its owner is told of it, when it is one of
+/// `owner_id`'s: `None` for one that does not exist, was deleted or is
+/// someone else's.
+pub async fn own<E: evento::Executor>(
+    executor: &E,
+    owner_id: &str,
+    id: &str,
+) -> anyhow::Result<Option<Plat>> {
+    let plat = model::load(executor, id).await?;
+    match plat.filter(|plat| !plat.deleted && plat.owner_id == owner_id) {
+        Some(plat) => Ok(Some(shown(executor, plat).await?)),
+        None => Ok(None),
+    }
+}
+
+/// Whether `id` is a plat of `owner_id`: one that exists and was not
+/// deleted.
+pub async fn is_own<E: evento::Executor>(
+    executor: &E,
+    owner_id: &str,
+    id: &str,
+) -> anyhow::Result<bool> {
+    let plat = model::load(executor, id).await?;
+    Ok(plat.is_some_and(|plat| !plat.deleted && plat.owner_id == owner_id))
+}
+
+/// Whose the plat `id` is, or was when it was deleted; `None` for one that
+/// was never composed.
+pub async fn owner_of<E: evento::Executor>(
+    executor: &E,
+    id: &str,
+) -> anyhow::Result<Option<String>> {
+    let plat = model::load(executor, id).await?;
+    Ok(plat.map(|plat| plat.owner_id))
+}
+
+/// Every plat of `owner_id` this node's list knows, each with the ids of
+/// its recipes, in no order: one just composed is there a moment later.
+pub async fn composed_by(db: &Db, owner_id: &str) -> anyhow::Result<Vec<(String, Vec<String>)>> {
+    let plats = read_model::composed_by(db, owner_id).await?;
+    Ok(plats
+        .into_iter()
+        .map(|plat| (plat.id, plat.recipe_ids.0))
+        .collect())
 }
 
 /// Composes a plat of recipes of the user
