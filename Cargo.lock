@@ -2565,6 +2565,23 @@ checksum = "09e54e57b4c48b40f7aec75635392b12b3421fa26fe8b4332e63138ed278459c"
 [[package]]
 name = "imkitchen-admin"
 version = "1.13.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "config",
+ "evento",
+ "imkitchen-aggregates",
+ "imkitchen-api",
+ "serde",
+ "tempfile",
+ "timada-core",
+ "timada-identity",
+ "tokio",
+ "tokio-rustls",
+ "topcoat",
+ "tracing",
+ "tracing-subscriber",
+]
 
 [[package]]
 name = "imkitchen-aggregates"

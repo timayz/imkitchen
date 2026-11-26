@@ -1,4 +1,4 @@
-.PHONY: start dev run migrate cluster.all www.dev www.run www.migrate cert cert.install up stop down health ready lint fmt-check fmt test machete l10n check
+.PHONY: start dev run migrate cluster.all www.dev www.run www.migrate admin.dev admin.run admin.migrate cert cert.install up stop down health ready lint fmt-check fmt test machete l10n check
 
 # Traefik and the mail catcher, then the api: what a bare `make` runs.
 start: up dev
@@ -9,14 +9,17 @@ API_ARGS := $(if $(API_CONFIG),--config $(API_CONFIG) )serve
 
 API_MIGRATE_ARGS := $(if $(API_CONFIG),--config $(API_CONFIG) )migrate
 
-# What www opens its connections to the local api with: for local use only.
+# What www and admin open their connections to the local api with: for local
+# use only.
 DEV_WWW_TOKEN := local-dev-only-not-a-secret-www-0000
+DEV_ADMIN_TOKEN := local-dev-only-not-a-secret-admin-0000
 
-# The local api serves the sidecars (www, later admin) on 4000, the node N of
-# the local cluster on 400N. Set here rather than in a file so that `make dev`
-# and `make www.dev` agree without one.
+# The local api serves the sidecars (www, admin) on 4000, the node N of the
+# local cluster on 400N. Set here rather than in a file so that `make dev`,
+# `make www.dev` and `make admin.dev` agree without one.
 API_SIDECARS_ENV = IMKITCHEN_API__SIDECARS__LISTEN=127.0.0.1:$(1) \
-	IMKITCHEN_API__SIDECARS__TOKENS__WWW=$(DEV_WWW_TOKEN)
+	IMKITCHEN_API__SIDECARS__TOKENS__WWW=$(DEV_WWW_TOKEN) \
+	IMKITCHEN_API__SIDECARS__TOKENS__ADMIN=$(DEV_ADMIN_TOKEN)
 
 # Optional local overrides for www, ignored by git. `topcoat dev` passes no
 # arguments to the binary, so the config path travels through the environment
@@ -25,6 +28,11 @@ API_SIDECARS_ENV = IMKITCHEN_API__SIDECARS__LISTEN=127.0.0.1:$(1) \
 # the local cluster.
 WWW_CONFIG := $(wildcard www/config/dev.local.toml)
 WWW_ENV := $(if $(WWW_CONFIG),IMKITCHEN_WWW_CONFIG=$(WWW_CONFIG) )IMKITCHEN_WWW__API__TOKEN=$(DEV_WWW_TOKEN)
+
+# The same for admin: admin/config/dev.local.toml, IMKITCHEN_ADMIN_CONFIG and
+# IMKITCHEN_ADMIN__API__EVENTS.
+ADMIN_CONFIG := $(wildcard admin/config/dev.local.toml)
+ADMIN_ENV := $(if $(ADMIN_CONFIG),IMKITCHEN_ADMIN_CONFIG=$(ADMIN_CONFIG) )IMKITCHEN_ADMIN__API__TOKEN=$(DEV_ADMIN_TOKEN)
 
 # One node of the local three-node cluster (api/config/cluster.toml): node N
 # serves HTTP on 300N, talks to the others on 700N (the store) and 710N (the
@@ -75,6 +83,20 @@ www.run: www.migrate
 www.migrate:
 	$(WWW_ENV) cargo run -p imkitchen-www -- migrate
 
+# Run admin at http://localhost:3020 against the local api, the way
+# `make www.dev` runs www.
+admin.dev: admin.migrate
+	$(ADMIN_ENV) topcoat dev -p imkitchen-admin
+
+# Run admin once, with the assets it serves bundled next to its binary
+admin.run: admin.migrate
+	topcoat asset bundle -p imkitchen-admin
+	$(ADMIN_ENV) cargo run -p imkitchen-admin
+
+# Create admin's store if needed and apply its pending migrations
+admin.migrate:
+	$(ADMIN_ENV) cargo run -p imkitchen-admin -- migrate
+
 # The certificate Traefik serves the local addresses with (.docker/traefik).
 # `make cert.install` once makes the browser trust it.
 cert:
@@ -86,7 +108,7 @@ cert.install:
 
 # Traefik in front of what runs on the host, and the mail catcher:
 # https://imkitchen.localhost is www (`make www.dev`),
-# https://admin.imkitchen.localhost admin, and the api (`make dev`) both
+# https://admin.imkitchen.localhost admin (`make admin.dev`), and the api (`make dev`) both
 # https://api.imkitchen.localhost and https://app.imkitchen.localhost/api.
 up:
 	DOCKER_GID=$$(getent group docker | cut -d: -f3) docker compose up -d --remove-orphans
