@@ -3,7 +3,10 @@
 //! pictures and the messages written to imkitchen each have a module below.
 //!
 //! Every page is read from the store of admin, which its subscriptions
-//! fill from the api's events: none asks the api for what it shows.
+//! fill from the api's events: none asks the api for what it shows. What
+//! an administrator does from a page is not written there: it is posted
+//! to the page, which hands it to the api as a command ([`done`]) and
+//! shows it once admin followed what the api wrote ([`followed`]).
 //!
 //! The module adds nothing to the addresses of its pages (its name starts
 //! with `_`). What it adds is who may read them: whatever is declared here
@@ -15,12 +18,16 @@ pub mod messages;
 pub mod recipes;
 pub mod users;
 
+use std::future::Future;
+use std::time::Duration;
+
 use timada_core::civil::format_time;
+use tokio::time::{Instant, sleep};
 use topcoat::{
     Error, Result,
     context::{Cx, context},
     router::{
-        Body, Next, Slot,
+        Body, Next, Slot, StatusCode,
         error::{NotFoundError, see_other, service_unavailable},
         href, layer, layout, not_found, page,
         request::uri,
@@ -30,13 +37,21 @@ use topcoat::{
 };
 
 use super::{api, db, sign_in, sign_out};
-use crate::api::Account;
+use crate::api::{Account, CommandError};
 use crate::listing::Pages;
 use crate::session::{self, Kept};
 
 /// How long a browser waits before it asks again, when the api could not
 /// say who it is: in seconds.
 const RETRY_AFTER_SECS: u64 = 5;
+
+/// How long a page waits for admin to follow what a command wrote, before
+/// it sends the browser on to a page that may not show it yet. A
+/// subscription is a second or two behind the api.
+const FOLLOWED_WITHIN: Duration = Duration::from_secs(5);
+
+/// In the address of a page: what was just done, for the page to say.
+pub(crate) const DONE: &str = "done";
 
 // Anything else is the "not found" page, of an administrator's too.
 not_found!();
@@ -91,6 +106,63 @@ async fn administrators_only(cx: &Cx, body: Body, next: Next<'_>) -> Result<Resp
     next.run(&cx.with(me.user), body).await
 }
 
+/// The token of who reads the page, for what they ask of the api.
+pub(crate) fn token(cx: &Cx) -> Result<String> {
+    match session::kept(cx) {
+        Some(kept) => Ok(kept.token),
+        None => Err(see_other(href!(sign_in::sign_in).resolve(cx)).into()),
+    }
+}
+
+/// A command the api did not do, as the page it was posted to says it.
+pub(crate) struct NotDone {
+    status: StatusCode,
+    message: String,
+}
+
+/// What became of a command handed to the api. Done, the browser is sent
+/// on to `then`. Refused, the page says so in the words of the api; a
+/// session that ended meanwhile signs in again.
+pub(crate) fn done(cx: &Cx, outcome: Result<(), CommandError>, then: String) -> Result<NotDone> {
+    match outcome {
+        Ok(()) => Err(see_other(then).into()),
+        Err(CommandError::Refused(refusal)) if refusal.status == 401 => {
+            session::forget(cx);
+            Err(see_other(href!(sign_in::sign_in).resolve(cx)).into())
+        }
+        Err(CommandError::Refused(refusal)) => Ok(NotDone {
+            status: StatusCode::from_u16(refusal.status).unwrap_or(StatusCode::BAD_GATEWAY),
+            message: refusal.message,
+        }),
+        Err(CommandError::Unreachable(err)) => {
+            tracing::warn!(
+                err = format!("{err:#}"),
+                "a command was not handed to the api"
+            );
+            Ok(NotDone {
+                status: StatusCode::BAD_GATEWAY,
+                message: "The api did not answer. It may have been done all the same: \
+                          look again in a moment."
+                    .to_owned(),
+            })
+        }
+    }
+}
+
+/// Waits until admin followed what a command just wrote, so that the page
+/// the browser is sent to shows it: `shown` says whether it does. Not for
+/// long: past [`FOLLOWED_WITHIN`] the page shows it a moment later.
+pub(crate) async fn followed<F>(mut shown: impl FnMut() -> F)
+where
+    F: Future<Output = anyhow::Result<bool>>,
+{
+    let deadline = Instant::now() + FOLLOWED_WITHIN;
+    // A read that fails is the next page's to say.
+    while !shown().await.unwrap_or(true) && Instant::now() < deadline {
+        sleep(Duration::from_millis(50)).await;
+    }
+}
+
 /// A read of the store that failed, as the error of a page.
 pub(crate) fn read<T>(read: anyhow::Result<T>) -> Result<T> {
     read.map_err(Error::from_anyhow)
@@ -109,6 +181,89 @@ pub(crate) const LINK: &str = "font-medium underline hover:text-stone-600";
 pub(crate) const MAIN: &str = "mx-auto max-w-5xl px-4 py-10";
 pub(crate) const H1: &str = "text-3xl font-bold tracking-tight";
 pub(crate) const H2: &str = "mt-10 text-xl font-semibold tracking-tight";
+pub(crate) const BUTTON: &str =
+    "rounded-lg border border-stone-300 bg-white px-4 py-2 font-semibold hover:bg-stone-100";
+/// What holds the buttons of a page.
+pub(crate) const ACTIONS: &str = "mt-4 flex flex-wrap items-start gap-3 text-sm";
+
+/// The page of a command the api did not do: why, and the way `back`.
+#[component]
+pub(crate) async fn not_done(cx: &Cx, failure: NotDone, back: String) -> Result<impl View> {
+    Ok(view! {
+        (failure.status)
+        <main class=(MAIN)>
+            <h1 class=(H1)>"This was not done"</h1>
+            <p
+                class="mt-6 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-900"
+                role="alert"
+                data-not-done=""
+            >
+                (failure.message)
+            </p>
+            <p class="mt-6 text-sm"><a class=(LINK) href=(back)>"Back"</a></p>
+        </main>
+    })
+}
+
+/// What was just done, said on the page the browser was sent to: `what`
+/// is the word its address carries.
+#[component]
+pub(crate) async fn notice(
+    cx: &Cx,
+    what: &'static str,
+    message: &'static str,
+) -> Result<impl View> {
+    Ok(view! {
+        <p
+            class="mt-6 rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-green-900"
+            role="status"
+            data-done=(what)
+        >
+            (message)
+        </p>
+    })
+}
+
+/// A button that posts to `action`: a command, done when it is pressed.
+#[component]
+pub(crate) async fn act(
+    cx: &Cx,
+    action: String,
+    what: &'static str,
+    label: &'static str,
+) -> Result<impl View> {
+    Ok(view! {
+        <form method="post" action=(action) data-action=(what)>
+            <button class=(BUTTON) type="submit">(label)</button>
+        </form>
+    })
+}
+
+/// The same for what is not undone: the button is behind `label`, next to
+/// what pressing it does (`warning`).
+#[component]
+pub(crate) async fn act_for_good(
+    cx: &Cx,
+    action: String,
+    what: &'static str,
+    label: &'static str,
+    warning: &'static str,
+) -> Result<impl View> {
+    Ok(view! {
+        <details class="rounded-lg border border-stone-300 bg-white px-4 py-2">
+            <summary class="cursor-pointer font-medium text-red-800">(label) "…"</summary>
+            <p class="mt-3 text-stone-700">(warning)</p>
+            <form class="mb-2 mt-3" method="post" action=(action) data-action=(what)>
+                <button
+                    class="rounded-lg bg-red-700 px-4 py-2 font-semibold text-white hover:bg-red-800"
+                    type="submit"
+                >
+                    (label)
+                </button>
+            </form>
+        </details>
+    })
+}
 
 /// Where a list stands, with the pages before and after when there are
 /// some: `previous` and `next` are their addresses.

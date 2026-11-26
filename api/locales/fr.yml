@@ -44,6 +44,8 @@ errors:
   unsupported_image: Ce n'est pas une image que l'api accepte. Envoyez un JPEG, un PNG, un WebP ou un GIF.
   image_too_large: Cette image est trop lourde. Elle doit peser 8 Mo au plus.
   image_too_many_pixels: Cette image est trop grande. Elle doit compter 25 mégapixels au plus.
+  image_not_found: Cette image n'existe pas.
+  account_suspended: Ce compte est suspendu.
 
 fields:
   invalid: Cette valeur n'est pas valide.

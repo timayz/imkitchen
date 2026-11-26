@@ -5,7 +5,8 @@ The administration of imkitchen, built with
 
 admin owns no aggregate and no command. What it shows of imkitchen it derives
 from the api's events, which it follows as an evento sidecar into a store of
-its own.
+its own. What an administrator does there is a command of the api's, sent
+over HTTP: admin writes nothing except through the api.
 
 Only an administrator reads it: every page asks the api who its reader is,
 and sends anyone else to sign in. It is not deployed yet.
@@ -50,8 +51,8 @@ the version of the workspace's `topcoat`.
 - `session.key`: what the cookie of a session is encrypted under, 32 bytes
   or more, the same for every replica. Without it admin draws one when it
   starts, and whoever was signed in signs in again.
-- `api.url`: where the api answers HTTP, for signing in and out and for
-  asking who reads a page.
+- `api.url`: where the api answers HTTP, for signing in and out, for asking
+  who reads a page and for the commands of the administrators.
 - `api.public_url`: where the browsers reach the api, for the pictures of
   the recipes. Without it admin shows none.
 - `api.events`: the `[sidecars]` listener of the api (evento's remote
@@ -71,7 +72,7 @@ migrations; `serve` refuses a store that is not there or not migrated.
 | --- | --- |
 | `src/app.rs`, `src/app/` | The pages: the router, the layout, signing in and out. |
 | `src/app/_admin.rs`, `src/app/_admin/` | What an administrator reads: the guard, the dashboard, and each screen at the address of its module. |
-| `src/api.rs` | The client of the api: signing in and out, and who a session is. |
+| `src/api.rs` | The client of the api: signing in and out, who a session is, and the commands of the administrators. |
 | `src/session.rs` | The cookie a browser keeps its session in. |
 | `src/events.rs` | The connection to the api's events. |
 | `src/users.rs`, `recipes.rs`, `imports.rs`, `images.rs`, `messages.rs` | The read models: each its subscription and what the pages read from it. |
@@ -115,7 +116,7 @@ password and no session.
 | Address | What it shows |
 | --- | --- |
 | `/` | The key numbers: users, administrators, recipes, imports and those that failed, sources, pictures and those that are shared, messages. Nothing of who visits. |
-| `/users`, `/users/{id}` | The users, searched by address or name; one of them, their recipes and their sessions. |
+| `/users`, `/users/{id}` | The users, searched by address or name; one of them, their recipes and their sessions, whether they are suspended and by whom. |
 | `/recipes`, `/recipes/{id}` | The recipes, searched by title or ingredient; one of them with all it says, its owner, its picture and the page it was imported from. |
 | `/imports`, `/imports/sources` | Each try at importing a recipe (`?failed=1` those that gave none, `?host=` those of a site); the sites they are made from. |
 | `/images`, `/images/{id}` | The pictures that are used (`?shared=1` those several recipes show); one of them and the recipes that show it. |
@@ -125,16 +126,47 @@ A list shows 50 rows a page (`?page=`), and `?q=` searches it whatever the
 case and the accents. With `api.public_url` the pictures are shown, from the
 api, which asks no token for them; without it the screens name them.
 
+## Actions
+
+What an administrator does is a button of a screen, which posts to admin;
+admin hands it to the api as a command of `/v1/admin`, with the token of who
+pressed it. The api decides whether they may, and writes; admin shows it
+once it followed the events.
+
+| Screen | Button | Posts to | Command of the api |
+| --- | --- | --- | --- |
+| `/users/{id}` | Suspend | `/users/{id}/suspend` | `PUT /v1/admin/users/{id}/suspension` |
+| `/users/{id}` | Reactivate | `/users/{id}/reactivate` | `DELETE /v1/admin/users/{id}/suspension` |
+| `/users/{id}` | Delete the account | `/users/{id}/delete` | `DELETE /v1/admin/users/{id}` |
+| `/recipes/{id}` | Delete the recipe | `/recipes/{id}/delete` | `DELETE /v1/admin/recipes/{id}` |
+| `/images/{id}` | Take it off the recipes | `/images/{id}/remove` | `DELETE /v1/admin/images/{id}` |
+
+- What is not undone (deleting, taking a picture off) is behind a
+  disclosure that says what it does; there is no script on the pages.
+- Once the api did it, the browser is sent on to the screen, which says
+  what was done. The read models are a second or two behind the api: the
+  page waits for them, five seconds at most.
+- What the api refuses is said in its words, with its status, and nothing
+  is done: an administrator does not suspend or delete another one (root
+  does), nobody root or themself. The buttons of an account are not shown
+  to its own reader, nor on root.
+- A session that ended meanwhile is sent to sign in. When the api does not
+  answer, the page says that it may have been done all the same.
+
+To add one: a method of `Api` in `src/api.rs` over `command`, and a
+`#[page(POST ...)]` next to the screen that calls it and answers with `done`
+(`src/app/_admin.rs`). Its command is the api's to have first.
+
 ## Read models
 
 Every screen is read from the store of admin and from nothing else: no page
 asks the api for what it shows. admin reads the aggregates
-`imkitchen-aggregates` lists for it (`Sidecar::Admin`); the api refuses it
-anything else, and every write.
+`imkitchen-aggregates` lists for it (`Sidecar::Admin`); the api's listener
+refuses it anything else, and every write.
 
 | Read model | Tables | Follows |
 | --- | --- | --- |
-| `users` | `users`, `user_sessions` | `timada-identity/User`, `timada-identity/Session` |
+| `users` | `users`, `user_sessions`, `user_suspensions` | `timada-identity/User`, `timada-identity/Session`, `imkitchen/Suspension` |
 | `recipes` | `recipes` | `imkitchen/Recipe` |
 | `imports` | `recipe_imports` | `imkitchen/RecipeImport` |
 | `images` | `images`, `image_uses` | `imkitchen/Image` |

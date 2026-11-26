@@ -45,7 +45,7 @@ const SESSION: &str = "session";
     tags(
         (name = AUTH, description = "Creating an account, signing in and out"),
         (name = ACCOUNT, description = "What a user does with their own account"),
-        (name = ADMIN, description = "What an administrator does with the accounts of others"),
+        (name = ADMIN, description = "What an administrator does with the accounts of others and with what they keep"),
         (name = RECIPES, description = "A user's own recipes"),
         (name = PLATS, description = "The plats a user composes of their recipes"),
         (name = SETTINGS, description = "How a user's list is generated, and the language they read"),

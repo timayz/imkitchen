@@ -255,7 +255,10 @@ async fn the_reference_describes_what_the_api_serves() {
     assert_eq!(
         operations,
         [
+            "DELETE /v1/admin/images/{id}",
+            "DELETE /v1/admin/recipes/{id}",
             "DELETE /v1/admin/users/{id}",
+            "DELETE /v1/admin/users/{id}/suspension",
             "DELETE /v1/groceries/items/{id}/check",
             "DELETE /v1/groceries/items/{id}/quantity",
             "DELETE /v1/list/entries/{id}",
@@ -292,6 +295,7 @@ async fn the_reference_describes_what_the_api_serves() {
             "PUT /v1/account/password",
             "PUT /v1/account/profile",
             "PUT /v1/admin/users/{id}/role",
+            "PUT /v1/admin/users/{id}/suspension",
             "PUT /v1/groceries/items/{id}/check",
             "PUT /v1/groceries/items/{id}/quantity",
             "PUT /v1/list/entries/{id}",

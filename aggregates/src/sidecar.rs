@@ -7,6 +7,7 @@ use crate::identity::{AccountInvitation, Session, User};
 use crate::image::Image;
 use crate::recipe::Recipe;
 use crate::recipe_import::RecipeImport;
+use crate::suspension::Suspension;
 
 /// One of the applications that build read models of their own from the
 /// api's events.
@@ -42,14 +43,15 @@ impl Sidecar {
             // shows how many there are, and nothing they say.
             Sidecar::Www => vec![Recipe::aggregate_type()],
             // The users, with their sessions and the invitations (what
-            // `timada_identity::read_model_subscription` follows), and what
-            // the people who run imkitchen look after: the recipes, how
-            // their imports went, their pictures and the messages written
-            // to imkitchen.
+            // `timada_identity::read_model_subscription` follows) and who
+            // among them is suspended, and what the people who run
+            // imkitchen look after: the recipes, how their imports went,
+            // their pictures and the messages written to imkitchen.
             Sidecar::Admin => vec![
                 User::aggregate_type(),
                 Session::aggregate_type(),
                 AccountInvitation::aggregate_type(),
+                Suspension::aggregate_type(),
                 Recipe::aggregate_type(),
                 RecipeImport::aggregate_type(),
                 Image::aggregate_type(),

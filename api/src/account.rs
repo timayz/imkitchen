@@ -31,6 +31,7 @@ use crate::auth::{Account, Session, SignedIn, login_context, sign_in, token_hash
 use crate::error::{ApiError, ApiResult, Body, INVALID_REQUEST, trimmed};
 use crate::openapi::{ACCOUNT, AUTH};
 use crate::server::AppState;
+use crate::suspension;
 
 /// The refusal when an address tried too many passwords.
 pub const TOO_MANY_SIGN_INS: &str = "too_many_sign_ins";
@@ -169,7 +170,8 @@ struct Credentials {
 /// The password is checked at both steps, the mailed code finishes the
 /// second: without `code` the answer is 202, with it 201 and the session.
 /// The root account needs no code. An address is counted before its
-/// password is looked at, so a password cannot be guessed by trying.
+/// password is looked at, so a password cannot be guessed by trying. A user
+/// an administrator suspended is refused (`account_suspended`).
 #[utoipa::path(
     post,
     path = "/auth/sign-in",
@@ -213,6 +215,8 @@ async fn sign_in_with_password(
     }
 
     let owner = identity.check_password(&form.email, &form.password).await?;
+    // Said to who knows the password, before a code is mailed for nothing.
+    suspension::refuse_suspended(&state.executor, &owner.user_id).await?;
     // Valid: `check_password` normalized it already.
     let email = normalize_email(&form.email)?;
     let Some(code) = form.code else {

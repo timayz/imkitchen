@@ -52,15 +52,17 @@ async fn upsert(db: &Db, recipe: &RecipeState) -> anyhow::Result<()> {
     let content = &recipe.content;
     let image = recipe.image.as_ref().map(Image::from).map(Json);
     let image = image.as_ref().map(Json::to_text).transpose()?;
+    let image_id = recipe.image.as_ref().map(|image| image.image_id.as_str());
     db.execute(
         "INSERT INTO recipes (id, owner_id, title, description, prep_minutes, cook_minutes,
-            servings, search, created_at, updated_at, image)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)
+            servings, search, created_at, updated_at, image, image_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
          ON CONFLICT (id) DO UPDATE SET
             title = excluded.title, description = excluded.description,
             prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
             servings = excluded.servings, search = excluded.search,
-            updated_at = excluded.updated_at, image = excluded.image",
+            updated_at = excluded.updated_at, image = excluded.image,
+            image_id = excluded.image_id",
         (
             recipe.id.as_str(),
             recipe.owner_id.as_str(),
@@ -73,6 +75,7 @@ async fn upsert(db: &Db, recipe: &RecipeState) -> anyhow::Result<()> {
             recipe.created_at as i64,
             recipe.updated_at as i64,
             image,
+            image_id,
         ),
     )
     .await?;
@@ -172,6 +175,15 @@ struct Id {
 pub async fn ids_of(db: &Db, owner_id: &str) -> anyhow::Result<Vec<String>> {
     let ids: Vec<Id> = db
         .fetch_all("SELECT id FROM recipes WHERE owner_id = ?1", (owner_id,))
+        .await?;
+    Ok(ids.into_iter().map(|row| row.id).collect())
+}
+
+/// The ids of every recipe the table knows to show the picture `image_id`,
+/// whoever's they are, in no order.
+pub async fn showing(db: &Db, image_id: &str) -> anyhow::Result<Vec<String>> {
+    let ids: Vec<Id> = db
+        .fetch_all("SELECT id FROM recipes WHERE image_id = ?1", (image_id,))
         .await?;
     Ok(ids.into_iter().map(|row| row.id).collect())
 }

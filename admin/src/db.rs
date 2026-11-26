@@ -137,6 +137,16 @@ pub const MIGRATIONS: Migrations<'static> = Migrations::new(
             );
             CREATE INDEX contact_messages_listed ON contact_messages (sent_at DESC, id DESC);",
         ),
+        Migration::up(
+            "0003_suspensions",
+            // One row per user who is suspended: since when, and by which
+            // administrator.
+            "CREATE TABLE user_suspensions (
+                user_id TEXT NOT NULL PRIMARY KEY,
+                by_id TEXT NOT NULL,
+                at INTEGER NOT NULL
+            );",
+        ),
     ],
 );
 

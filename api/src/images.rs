@@ -41,6 +41,10 @@ pub use self::release::{
 pub use self::store::{
     IMAGE_TOO_LARGE, IMAGE_TOO_MANY_PIXELS, Images, MAX_IMAGE_BYTES, UNSUPPORTED_IMAGE,
 };
+
+/// No picture is stored under this id: none ever was, or no recipe shows
+/// it any more.
+pub const IMAGE_NOT_FOUND: &str = "image_not_found";
 use crate::config::ImagesConfig;
 use crate::error::{ApiError, NOT_FOUND};
 use crate::openapi::IMAGES;
@@ -86,6 +90,12 @@ pub fn open(
 /// the directory of one of its two sizes.
 pub fn path(size: &str, file_id: &str) -> String {
     format!("{}/images/{size}/{file_id}.webp", crate::openapi::VERSION)
+}
+
+/// Whether the picture `image_id` is stored: one recipe at least shows it.
+pub async fn is_stored<E: evento::Executor>(executor: &E, image_id: &str) -> anyhow::Result<bool> {
+    let image = model::load(executor, image_id).await?;
+    Ok(image.is_some_and(|image| image.files.is_some()))
 }
 
 pub fn routes() -> OpenApiRouter<AppState> {

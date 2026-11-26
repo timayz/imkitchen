@@ -277,6 +277,32 @@ order, and whether it is done.
   step is done, and each is done again by the next command that does it,
   whatever the user already has.
 
+## Administration
+
+What only an administrator may do is under `/v1/admin`, and refused to
+anyone else (`403`, `not_allowed`). It is what admin sends: it writes
+nothing by itself.
+
+- `PUT /v1/admin/users/{id}/suspension` suspends a user, `DELETE` reactivates
+  them. Suspended, their account and all that is theirs stay, but every
+  session of theirs ends and signing in is refused (`403`,
+  `account_suspended`), whatever proves who they are, until they are
+  reactivated. Each may be sent again. A suspension is an aggregate of its
+  own (`imkitchen/Suspension`), under the id of the user.
+- `DELETE /v1/admin/users/{id}` deletes an account: its sessions end, and
+  the person may register again.
+- As with making administrators, identity holds its rules on top: an
+  administrator suspends and deletes members, root administrators too,
+  nobody themself or root.
+- `DELETE /v1/admin/recipes/{id}` deletes a recipe, whoever's it is, as its
+  owner would.
+- `DELETE /v1/admin/images/{id}` takes a picture off every recipe that shows
+  it: the recipes stay, and the files go with the last use. `id` is what the
+  picture is known under (`imkitchen/Image`), not the name of its files. It
+  goes by the list of the recipes, so a recipe given the picture a moment
+  ago may keep it: sent again, it is taken off that one too. Nothing keeps
+  the same picture from being given to a recipe again.
+
 ## Who asks
 
 Signing in answers a token. It is sent back with every request as
@@ -317,7 +343,7 @@ Whenever the api does not do what was asked, it answers with a status of
 | --- | --- | --- |
 | `400` | The body is not JSON, or what follows the `?` cannot be read | `invalid_request` |
 | `401` | Nobody is signed in: sign in (again) | `sign_in_required`, `signed_out` |
-| `403` | The user may not do this | `not_allowed` |
+| `403` | The user may not do this, or is suspended | `not_allowed`, `account_suspended` |
 | `404` | Nothing at this address, or the thing does not exist | `not_found`, … |
 | `405` | The address does not take this method | `method_not_allowed` |
 | `409` | The command no longer fits the state of things: start again | `invalid_state` |
