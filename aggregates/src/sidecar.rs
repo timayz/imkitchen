@@ -3,6 +3,7 @@
 use evento::Aggregate;
 
 use crate::identity::{AccountInvitation, Session, User};
+use crate::recipe::Recipe;
 
 /// One of the applications that build read models of their own from the
 /// api's events.
@@ -34,8 +35,9 @@ impl Sidecar {
     /// signs anyone in.
     pub fn reads(self) -> Vec<&'static str> {
         match self {
-            // Nothing of a user is public.
-            Sidecar::Www => Vec::new(),
+            // Nothing of a user is public: of the recipes www keeps and
+            // shows how many there are, and nothing they say.
+            Sidecar::Www => vec![Recipe::aggregate_type()],
             // The list of users and their sessions: what
             // `timada_identity::read_model_subscription` follows.
             Sidecar::Admin => vec![

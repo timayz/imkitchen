@@ -18,6 +18,7 @@ use helpers::{TestCluster, TestNode, eventually};
 use imkitchen_aggregates::identity::{
     AdminGranted, Claimed, EmailAccount, EmailRegistered, ProfileUpdated, User,
 };
+use imkitchen_aggregates::recipe;
 use imkitchen_api::config::{Secret, SidecarTokens, SidecarsConfig};
 use imkitchen_api::sidecars;
 use tempfile::TempDir;
@@ -496,7 +497,22 @@ async fn a_sidecar_reads_its_aggregates_and_no_other() {
         .commit(&node.executor)
         .await
         .unwrap();
-    assert_eq!(everything(&node.store).await.len(), 2);
+    // A recipe: its owner's alone, and www's to count.
+    let soup = evento::create()
+        .event(&recipe::Created {
+            owner_id: alice.clone(),
+            title: "Soup".to_owned(),
+            description: String::new(),
+            ingredients: Vec::new(),
+            instructions: Vec::new(),
+            prep_minutes: 0,
+            cook_minutes: 0,
+            servings: 1,
+        })
+        .commit(&node.executor)
+        .await
+        .unwrap();
+    assert_eq!(everything(&node.store).await.len(), 3);
     let (server, addr) = listen(&node).await;
 
     let admin = admin(addr).connect().await.unwrap();
@@ -511,7 +527,7 @@ async fn a_sidecar_reads_its_aggregates_and_no_other() {
     assert_eq!(read.len(), 1);
     assert_eq!(read[0].aggregate_id, alice);
 
-    // www reads no aggregate yet.
+    // www reads the recipes, and nothing of the identity.
     let www = RemoteClient::builder(addr)
         .token(WWW_TOKEN)
         .connect()
@@ -522,7 +538,9 @@ async fn a_sidecar_reads_its_aggregates_and_no_other() {
         .await
         .unwrap_err();
     assert!(format!("{err:#}").contains("may not read"), "{err:#}");
-    assert!(everything(&www).await.is_empty());
+    let read = everything(&www).await;
+    assert_eq!(read.len(), 1);
+    assert_eq!(read[0].aggregate_id, soup);
 
     server.shutdown().await;
     node.cluster.shutdown().await;
