@@ -27,7 +27,12 @@ const PROPERTIES: &[&str] = &[
     "totalTime",
     "recipeYield",
     "yield",
+    "image",
+    "url",
+    "contentUrl",
 ];
+/// Those of them that hold an address: a picture, or where one is.
+const ADDRESSES: &[&str] = &["image", "url", "contentUrl"];
 
 /// The recipe `document` describes to machines, when it names one.
 pub fn recipe(document: &Html, budget: &mut Budget) -> Option<Found> {
@@ -110,7 +115,7 @@ fn microdata_item(scope: ElementRef, depth: usize, budget: &mut Budget) -> Optio
                 let value = match nested {
                     true if depth < ITEMS_DEPTH => microdata_item(element, depth + 1, budget)?,
                     true => Value::Null,
-                    false => Value::String(property(element, budget)?),
+                    false => Value::String(property(element, name, budget)?),
                 };
                 add(&mut item, name, value);
             }
@@ -121,11 +126,14 @@ fn microdata_item(scope: ElementRef, depth: usize, budget: &mut Budget) -> Optio
     Some(Value::Object(item))
 }
 
-/// What a property that is not an item holds: what it says to machines
-/// when it does (`content`, `datetime`), its text otherwise.
-fn property(element: ElementRef, budget: &mut Budget) -> Option<String> {
+/// What the property `name` holds when it is not an item: what it says to
+/// machines when it does (`content`, `datetime`, and where it points for an
+/// address), its text otherwise.
+fn property(element: ElementRef, name: &str, budget: &mut Budget) -> Option<String> {
     let value = element.value();
-    match value.attr("content").or(value.attr("datetime")) {
+    let said = value.attr("content").or(value.attr("datetime"));
+    let points = || value.attr("src").or(value.attr("href"));
+    match said.or_else(|| points().filter(|_| ADDRESSES.contains(&name))) {
         Some(said) => {
             budget.take(said.len())?;
             Some(said.to_owned())
@@ -193,6 +201,20 @@ fn steps(value: &Value, into: &mut Vec<String>) {
             }
         },
         _ => {}
+    }
+}
+
+/// Where the picture `value` is: an address, the first of a list, or that
+/// of an `ImageObject`.
+fn image(value: &Value) -> Option<&str> {
+    match value {
+        Value::String(url) => Some(url.trim()).filter(|url| !url.is_empty()),
+        Value::Array(values) => values.iter().find_map(image),
+        Value::Object(node) => ["url", "contentUrl"]
+            .iter()
+            .filter_map(|key| node.get(*key))
+            .find_map(image),
+        _ => None,
     }
 }
 
@@ -268,6 +290,7 @@ fn found(recipe: &Map<String, Value>) -> Found {
             .iter()
             .filter_map(|name| recipe.get(*name))
             .find_map(servings),
+        image: recipe.get("image").and_then(image).map(str::to_owned),
     }
 }
 
@@ -439,6 +462,67 @@ mod tests {
             </div>"#;
         let read = recipe(html).unwrap();
         assert_eq!(read.instructions, ["Toast the bread.", "Butter it."]);
+    }
+
+    /// Where the page `html` says the picture of its recipe is.
+    fn picture(html: &str) -> Option<String> {
+        let mut budget = Budget::new();
+        let document = html::parse(html, &budget)?;
+        super::recipe(&document, &mut budget)?.image
+    }
+
+    #[test]
+    fn the_picture_of_a_recipe_is_read_however_it_is_given() {
+        let with =
+            |given: Value| page(&json!({ "@type": "Recipe", "name": "Toast", "image": given }));
+        for given in [
+            json!("https://example.com/toast.jpg"),
+            json!([
+                " https://example.com/toast.jpg ",
+                "https://example.com/small.jpg"
+            ]),
+            json!({ "@type": "ImageObject", "url": "https://example.com/toast.jpg" }),
+            json!([{ "@type": "ImageObject", "contentUrl": "https://example.com/toast.jpg" }]),
+        ] {
+            let read = picture(&with(given.clone()));
+            assert_eq!(
+                read.as_deref(),
+                Some("https://example.com/toast.jpg"),
+                "{given}"
+            );
+        }
+        for given in [
+            json!(""),
+            json!([]),
+            json!({ "@type": "ImageObject" }),
+            json!(3),
+        ] {
+            assert_eq!(picture(&with(given.clone())), None, "{given}");
+        }
+        assert_eq!(
+            picture(&page(&json!({ "@type": "Recipe", "name": "Toast" }))),
+            None
+        );
+
+        // In microdata: where the element points, not what it says.
+        let html = r#"
+            <div itemscope itemtype="http://schema.org/Recipe">
+              <a itemprop="name" href="/toast">Toast</a>
+              <img itemprop="image" src="/img/toast.jpg" alt="A toast">
+            </div>"#;
+        assert_eq!(picture(html).as_deref(), Some("/img/toast.jpg"));
+        assert_eq!(recipe(html).unwrap().title, "Toast");
+        let html = r#"
+            <div itemscope itemtype="http://schema.org/Recipe">
+              <span itemprop="name">Toast</span>
+              <div itemprop="image" itemscope itemtype="http://schema.org/ImageObject">
+                <meta itemprop="url" content="https://example.com/toast.jpg">
+              </div>
+            </div>"#;
+        assert_eq!(
+            picture(html).as_deref(),
+            Some("https://example.com/toast.jpg")
+        );
     }
 
     #[test]

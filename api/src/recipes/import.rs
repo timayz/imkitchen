@@ -6,6 +6,10 @@
 //! like one they wrote: nothing is kept of where it came from, and the same
 //! page imported twice, by one user or by two, is two recipes.
 //!
+//! The picture the page gives its recipe is fetched too and comes with the
+//! recipe ([`image`]). Two recipes imported from the same page show the
+//! same picture, which is stored once (`crate::images`).
+//!
 //! What is read is held to the bounds a recipe written by hand is held to
 //! (`recipes::RecipeBody`), cut short rather than refused.
 
@@ -17,12 +21,15 @@ mod schema_org;
 
 use anyhow::Context as _;
 use axum::http::StatusCode;
+use imkitchen_aggregates::image::RecipeImage;
 use reqwest::Url;
 use validator::ValidationError;
 
 pub use self::page::{PageError, Pages, Web};
 use super::model::Content;
 use crate::error::{ApiError, ApiResult};
+use crate::images;
+use crate::server::AppState;
 
 /// The page was not read: nothing answers at its address, not in time, not
 /// with a page, or the address is not one the api goes to.
@@ -54,9 +61,32 @@ struct Found {
     /// How long it all takes, for the pages that say nothing else.
     total_minutes: Option<u32>,
     servings: Option<u32>,
+    /// Where the page says the picture of the recipe is, as it writes it.
+    image: Option<String>,
+}
+
+/// What a page holds: its recipe, and where its picture is.
+#[derive(Debug, PartialEq)]
+pub struct Page {
+    pub content: Content,
+    pub image: Option<Url>,
 }
 
 impl Found {
+    /// What was found, as a recipe of ours and the address of its picture,
+    /// which the page at `url` may write from where it is. `None` without a
+    /// title: there is nothing to call it.
+    fn into_page(self, url: &Url) -> Option<Page> {
+        let image = self.image.as_deref().and_then(|image| {
+            let image = url.join(image.trim()).ok()?;
+            Some(image).filter(|image| page_url(image.as_str()).is_some())
+        });
+        Some(Page {
+            content: self.into_content()?,
+            image,
+        })
+    }
+
     /// What was found, as a recipe of ours. `None` without a title: there
     /// is nothing to call it.
     fn into_content(self) -> Option<Content> {
@@ -106,15 +136,15 @@ fn first_number(text: &str) -> Option<u32> {
     number[..end].parse().ok()
 }
 
-/// The recipe the page `html` holds, when it holds one that is read within
-/// the budget: the one it describes to machines rather than the one it
-/// shows, which is only guessed at.
-fn read(html: &str) -> Option<Content> {
+/// The recipe the page `html` at `url` holds, when it holds one that is
+/// read within the budget: the one it describes to machines rather than the
+/// one it shows, which is only guessed at.
+fn read(html: &str, url: &Url) -> Option<Page> {
     let mut budget = html::Budget::new();
     let document = html::parse(html, &budget)?;
     schema_org::recipe(&document, &mut budget)
         .or_else(|| article::recipe(&document, &mut budget))?
-        .into_content()
+        .into_page(url)
 }
 
 /// The address of a page of the web, if `url` is one.
@@ -137,7 +167,7 @@ pub const PAGE_MAX: usize = 4 * 1024 * 1024;
 /// The recipe of the page at `url`: read on `html` when the client sends
 /// the page as its browser got it, which a site that only answers browsers
 /// leaves no other way to, fetched otherwise.
-pub async fn content(pages: &dyn Pages, url: &str, html: Option<String>) -> ApiResult<Content> {
+pub async fn page(pages: &dyn Pages, url: &str, html: Option<String>) -> ApiResult<Page> {
     let refused = |code| ApiError::refused(StatusCode::UNPROCESSABLE_ENTITY, code);
     let url = page_url(url).ok_or(refused(PAGE_UNREACHABLE))?;
     let html = match html {
@@ -151,8 +181,73 @@ pub async fn content(pages: &dyn Pages, url: &str, html: Option<String>) -> ApiR
         })?,
     };
     // A page may be megabytes: read off the threads that answer requests.
-    tokio::task::spawn_blocking(move || read(&html))
+    tokio::task::spawn_blocking(move || read(&html, &url))
         .await
         .context("reading a page to import failed")?
         .ok_or(refused(NO_RECIPE_ON_PAGE))
+}
+
+/// The picture at `url`, used once more for the recipe being imported.
+/// `None` when it cannot be had (nothing answers, or not with a picture
+/// that is taken): a recipe is imported without its picture rather than
+/// not at all.
+pub async fn image(state: &AppState, url: &Url) -> Option<RecipeImage> {
+    let bytes = match state.pages.image(url).await {
+        Ok(bytes) => bytes,
+        Err(err) => {
+            tracing::info!(%url, ?err, "the picture of a recipe to import was not fetched");
+            return None;
+        }
+    };
+    match images::attach(&state.executor, &state.images, bytes).await {
+        Ok(image) => Some(image),
+        Err(err) => {
+            tracing::info!(%url, ?err, "the picture of a recipe to import was not kept");
+            None
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_address_of_a_picture_is_read_from_where_the_page_is() {
+        let url = Url::parse("https://example.com/recipes/toast").unwrap();
+        let found = |image: &str| Found {
+            title: "Toast".to_owned(),
+            image: Some(image.to_owned()),
+            ..Found::default()
+        };
+        let image = |image: &str| {
+            let page = found(image).into_page(&url).unwrap();
+            page.image.map(String::from)
+        };
+
+        for (written, read) in [
+            (
+                "https://cdn.example.com/toast.jpg",
+                "https://cdn.example.com/toast.jpg",
+            ),
+            (
+                "//cdn.example.com/toast.jpg",
+                "https://cdn.example.com/toast.jpg",
+            ),
+            ("/img/toast.jpg", "https://example.com/img/toast.jpg"),
+            ("toast.jpg", "https://example.com/recipes/toast.jpg"),
+        ] {
+            assert_eq!(image(written).as_deref(), Some(read), "{written}");
+        }
+        // Not somewhere a picture is fetched from: the recipe has none.
+        for written in [
+            "data:image/png;base64,AAAA",
+            "file:///etc/passwd",
+            "ftp://x/y",
+        ] {
+            assert_eq!(image(written), None, "{written}");
+        }
+        // No recipe, no picture.
+        assert_eq!(Found::default().into_page(&url), None);
+    }
 }

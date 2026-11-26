@@ -1,23 +1,27 @@
-//! Fetches the page a recipe is imported from.
+//! Fetches the page a recipe is imported from, and the picture the page
+//! gives it.
 //!
-//! The address comes from a user, so the fetch is held to what a stranger
-//! may make the api do ([`Web`]): only `http` and `https`, only towards
-//! public addresses (checked on the address the connection is made to, each
-//! redirect included, so a name cannot be pointed elsewhere between the
-//! check and the fetch), for [`TIMEOUT`] at most and [`PAGE_MAX`] at most.
+//! The address comes from a user, and the picture's from the page, so a
+//! fetch is held to what a stranger may make the api do ([`Web`]): only
+//! `http` and `https`, only towards public addresses (checked on the address
+//! the connection is made to, each redirect included, so a name cannot be
+//! pointed elsewhere between the check and the fetch), for [`TIMEOUT`] at
+//! most and [`PAGE_MAX`] at most, [`MAX_IMAGE_BYTES`] for a picture.
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Context as _;
+use bytes::Bytes;
 use encoding_rs::{Encoding, UTF_8};
 use reqwest::dns::{Addrs, Name, Resolve, Resolving};
 use reqwest::header::{ACCEPT, CONTENT_TYPE};
 use reqwest::redirect::Policy;
-use reqwest::{Client, Url};
+use reqwest::{Client, Response, Url};
 
 use super::PAGE_MAX;
+use crate::images::MAX_IMAGE_BYTES;
 
 /// How long a page gets to answer as a whole, its redirects included.
 const TIMEOUT: Duration = Duration::from_secs(10);
@@ -44,6 +48,11 @@ pub enum PageError {
 pub trait Pages: Send + Sync {
     /// The HTML at `url`.
     async fn fetch(&self, url: &Url) -> Result<String, PageError>;
+
+    /// What is at `url`, where a page says the picture of its recipe is:
+    /// the bytes as they are, for whoever keeps pictures to say whether
+    /// they are one.
+    async fn image(&self, url: &Url) -> Result<Bytes, PageError>;
 }
 
 /// The web, as far as a stranger's address may take the api.
@@ -86,22 +95,48 @@ impl Web {
     }
 }
 
-#[async_trait::async_trait]
-impl Pages for Web {
-    async fn fetch(&self, url: &Url) -> Result<String, PageError> {
+impl Web {
+    /// What answers at `url` when asked for `accept`, once it answered
+    /// that it has it.
+    async fn get(&self, url: &Url, accept: &str) -> Result<Response, PageError> {
         if self.guarded && !allowed(url) {
             return Err(unreachable("not an address the api goes to"));
         }
-        let mut response = self
+        let response = self
             .client
             .get(url.clone())
-            .header(ACCEPT, "text/html,application/xhtml+xml")
+            .header(ACCEPT, accept)
             .send()
             .await
             .map_err(failed)?;
         if !response.status().is_success() {
             return Err(unreachable(format!("answered {}", response.status())));
         }
+        Ok(response)
+    }
+}
+
+/// What `response` sends, `max` bytes of it at most, whether its server
+/// says how much it sends or not.
+async fn body(mut response: Response, max: usize) -> Result<Vec<u8>, PageError> {
+    let too_large = || unreachable(format!("weighs more than {max} bytes"));
+    if response.content_length().unwrap_or(0) > max as u64 {
+        return Err(too_large());
+    }
+    let mut bytes = Vec::new();
+    while let Some(chunk) = response.chunk().await.map_err(failed)? {
+        if bytes.len() + chunk.len() > max {
+            return Err(too_large());
+        }
+        bytes.extend_from_slice(&chunk);
+    }
+    Ok(bytes)
+}
+
+#[async_trait::async_trait]
+impl Pages for Web {
+    async fn fetch(&self, url: &Url) -> Result<String, PageError> {
+        let response = self.get(url, "text/html,application/xhtml+xml").await?;
         let content_type = response
             .headers()
             .get(CONTENT_TYPE)
@@ -117,18 +152,17 @@ impl Pages for Web {
             .and_then(|label| Encoding::for_label(label.trim_matches('"').as_bytes()))
             .unwrap_or(UTF_8);
 
-        let too_large = || unreachable(format!("weighs more than {PAGE_MAX} bytes"));
-        if response.content_length().unwrap_or(0) > PAGE_MAX as u64 {
-            return Err(too_large());
-        }
-        let mut bytes = Vec::new();
-        while let Some(chunk) = response.chunk().await.map_err(failed)? {
-            if bytes.len() + chunk.len() > PAGE_MAX {
-                return Err(too_large());
-            }
-            bytes.extend_from_slice(&chunk);
-        }
+        let bytes = body(response, PAGE_MAX).await?;
         Ok(encoding.decode(&bytes).0.into_owned())
+    }
+
+    async fn image(&self, url: &Url) -> Result<Bytes, PageError> {
+        // The kinds that are kept: a site that has others sends one of
+        // these when asked.
+        let response = self
+            .get(url, "image/webp,image/jpeg,image/png,image/gif")
+            .await?;
+        Ok(body(response, MAX_IMAGE_BYTES).await?.into())
     }
 }
 
@@ -379,6 +413,26 @@ mod tests {
         let large = serve(unsized_body).await;
         let err = web.fetch(&url(&large)).await.unwrap_err();
         assert!(matches!(&err, PageError::Unreachable(reason) if reason.contains("weighs")));
+    }
+
+    #[tokio::test]
+    async fn a_picture_is_fetched_as_it_is_within_its_bound() {
+        let web = Web::build(false).unwrap();
+
+        let picture = serve(answer("200 OK\r\nContent-Type: image/webp", b"RIFF")).await;
+        assert_eq!(web.image(&url(&picture)).await.unwrap(), &b"RIFF"[..]);
+
+        let body = vec![b'a'; MAX_IMAGE_BYTES + 1];
+        let large = serve(answer("200 OK\r\nContent-Type: image/jpeg", &body)).await;
+        let err = web.image(&url(&large)).await.unwrap_err();
+        assert!(matches!(&err, PageError::Unreachable(reason) if reason.contains("weighs")));
+
+        let guarded = Web::new().unwrap();
+        let err = guarded.image(&url(&picture)).await.unwrap_err();
+        assert!(
+            matches!(err, PageError::Unreachable(_)),
+            "an internal address"
+        );
     }
 
     #[tokio::test]

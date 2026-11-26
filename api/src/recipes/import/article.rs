@@ -73,6 +73,8 @@ pub fn recipe(document: &Html, budget: &mut Budget) -> Option<Found> {
         cook_minutes: time(document, r#"[class*="cuisson"], [class*="cook"]"#, budget)?,
         total_minutes: None,
         servings: feeds,
+        // The picture the page hands the sites that link to it.
+        image: meta(document, &["og:image", "twitter:image"]),
     })
 }
 
@@ -298,6 +300,7 @@ mod tests {
             <html><head>
               <title>Banana bread | A blog</title>
               <meta name="description" content="Moist &amp; easy.">
+              <meta property="og:image" content="/img/banana-bread.jpg">
             </head><body>
             <nav><h2>Ingredients of the month</h2><a href="/">Home</a></nav>
             <article>
@@ -345,6 +348,7 @@ mod tests {
                 cook_minutes: Some(65),
                 total_minutes: None,
                 servings: Some(8),
+                image: Some("/img/banana-bread.jpg".to_owned()),
             })
         );
     }

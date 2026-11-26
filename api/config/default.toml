@@ -71,6 +71,22 @@ session_lifetime_secs = 2592000
 smtp_url = "smtp://localhost:1025"
 from = "imkitchen <no-reply@imkitchen.localhost>"
 
+[images]
+# Where this node keeps the pictures of the recipes: two WebP files each,
+# 400/<id>.webp and 1200/<id>.webp, beside the store. Every node holds its
+# own copy of every picture; a node rebuilt on a new machine takes them from
+# the others as they are asked for, or all at once from a copy of this
+# directory (`rsync`).
+dir = "data/images"
+# With [cluster], where each node takes the pictures the others copy to it,
+# in the order of cluster.peers, this node included: a port of its own that
+# serves nothing else, https:// and the nodes' certificates with
+# [cluster.tls], http:// without. `listen` is required when this node's
+# entry is a name.
+#
+# peers = ["https://api-0.api:7100", "https://api-1.api:7100", "https://api-2.api:7100"]
+# listen = "0.0.0.0:7100"
+
 [monitoring]
 # A `tracing_subscriber::EnvFilter` directive, e.g. "info,tower_http=debug".
 log_level = "info"

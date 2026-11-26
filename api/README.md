@@ -36,6 +36,7 @@ done with it.
 | Create a thing | `POST /v1/recipes` | `201` and the thing, with its `id` |
 | Set a thing to what the body says, as a whole | `PUT /v1/recipes/{id}` | `204` |
 | Set a part of a thing to what the body says | `PUT /v1/recipes/{id}/{part}` | `204` |
+| Take a part off a thing | `DELETE /v1/recipes/{id}/{part}` | `204` |
 | Delete a thing | `DELETE /v1/recipes/{id}` | `204` |
 | Create a thing out of something else | `POST /v1/recipes/{verb}` (`import`) | `201` and the thing, with its `id` |
 | Anything else that is done to a thing | `POST /v1/recipes/{id}/{verb}` | `204`, or `201` and what it created |
@@ -74,6 +75,36 @@ one that does not exist (`404`), read or written.
 - Ids are strings. Moments are unix seconds.
 - A field left out and a field set to `null` are the same.
 - An answer without anything to say is a `204` with no body.
+- A picture is the one body that is not JSON: it is sent as it is
+  (`PUT /v1/recipes/{id}/image`), with its own `Content-Type`.
+
+## Pictures
+
+A recipe that shows a picture answers it under `image`, in the two sizes it
+is kept in, each with its address from the root of the api and its
+dimensions:
+
+```json
+"image": {
+  "small": { "url": "/v1/images/400/01JDQ0B6V5K1X5C3E8W4T9Z2YH.webp", "width": 400, "height": 267 },
+  "large": { "url": "/v1/images/1200/01JDQ0B6V5K1X5C3E8W4T9Z2YH.webp", "width": 1200, "height": 800 }
+}
+```
+
+- What is sent as a picture (a JPEG, PNG, WebP or GIF) is not kept as it
+  is: it is turned into two WebP files, 400 and 1200 pixels on their longest
+  side at most, never enlarged.
+- A picture never changes at its address: a recipe given another picture
+  answers another address. It is served with a `Cache-Control` that lets a
+  browser or a cache keep it for good.
+- Its address needs no token, so that whatever shows a picture can fetch
+  it. It is only handed out with the recipe, and cannot be guessed.
+- The same picture given twice, by one user or by two, is stored once: two
+  users who import the same recipe show the same files. It is kept for as
+  long as one recipe shows it.
+- With several nodes, every node keeps every picture and any of them serves
+  it: a picture is on a majority of the nodes before the recipe that shows
+  it is written, and a node that lacks one takes it from another.
 
 ## Who asks
 

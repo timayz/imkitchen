@@ -8,16 +8,18 @@ use evento::subscription::Subscription;
 use crate::auth::Auth;
 use crate::cluster::Executor;
 use crate::db::Db;
+use crate::images::Images;
 use crate::mail::{Mailer, code_mails_subscription};
 
 /// Starts every subscription of the api over `executor`, the read models'
-/// writing to `db`. `node` names this node among those of the cluster, for
+/// writing to `db` and the pictures' files kept in `images`. `node` names this node among those of the cluster, for
 /// the claims it writes. Keep the handles and hand them to [`shutdown`].
 pub async fn start(
     executor: &Executor,
     db: &Db,
     auth: &Auth,
     mailer: Arc<dyn Mailer>,
+    images: Arc<Images>,
     node: &str,
 ) -> Result<Vec<Subscription>> {
     Ok(vec![
@@ -40,6 +42,19 @@ pub async fn start(
             .start(&executor.local_reads())
             .await
             .context("cannot start the recipes subscription")?,
+        // This node's copies of the pictures, from its own file too.
+        crate::images::subscription(db.clone(), images)
+            .supervised()
+            .start(&executor.local_reads())
+            .await
+            .context("cannot start the images subscription")?,
+        // Gives back the pictures the recipes let go of: writes, so through
+        // the cluster.
+        crate::images::release_subscription()
+            .supervised()
+            .start(executor)
+            .await
+            .context("cannot start the image release subscription")?,
     ])
 }
 

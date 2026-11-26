@@ -7,12 +7,13 @@ API_ARGS := $(if $(API_CONFIG),--config $(API_CONFIG) )serve
 API_MIGRATE_ARGS := $(if $(API_CONFIG),--config $(API_CONFIG) )migrate
 
 # One node of the local three-node cluster (api/config/cluster.toml): node N
-# serves HTTP on 300N, talks to the others on 700N and keeps its store in
-# data/nodeN.
+# serves HTTP on 300N, talks to the others on 700N (the store) and 710N (the
+# pictures) and keeps its store and its pictures in data/nodeN.
 CLUSTER_NODE_ENV = IMKITCHEN_API_CONFIG=api/config/cluster.toml \
 	IMKITCHEN_API__CLUSTER__NODE_ID=$* \
 	IMKITCHEN_API__SERVER__PORT=300$* \
-	IMKITCHEN_API__DATABASE__PATH=data/node$*/imkitchen.db
+	IMKITCHEN_API__DATABASE__PATH=data/node$*/imkitchen.db \
+	IMKITCHEN_API__IMAGES__DIR=data/node$*/images
 
 # Run the api, restarting it on code changes
 dev: migrate

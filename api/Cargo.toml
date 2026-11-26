@@ -35,6 +35,10 @@ reqwest.workspace = true
 encoding_rs.workspace = true
 scraper.workspace = true
 html5ever.workspace = true
+image.workspace = true
+webp.workspace = true
+imagesize.workspace = true
+bytes.workspace = true
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["io-util"] }

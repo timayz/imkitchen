@@ -9,6 +9,7 @@
 //! (bitcode is positional): evolve by adding variants.
 
 pub mod identity;
+pub mod image;
 pub mod recipe;
 mod sidecar;
 

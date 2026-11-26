@@ -12,14 +12,18 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use bytes::Bytes;
 use evento::cluster::Settings;
 use imkitchen_api::auth::Auth;
-use imkitchen_api::cluster::{self, Cluster, Executor};
+use imkitchen_api::cluster::{self, Cluster, Executor, NodeTls};
 use imkitchen_api::config::{AuthConfig, RootConfig, Secret};
 use imkitchen_api::db::{self, Db, Store};
+use imkitchen_api::images::port::{self, PeerPort};
+use imkitchen_api::images::{Images, Peers};
 use imkitchen_api::recipes::{PageError, Pages};
 use imkitchen_api::server::AppState;
 use tempfile::TempDir;
+use tokio::net::TcpListener;
 
 /// How long a test waits for what the nodes do on their own time: confirming
 /// each other, applying a write another node took, a subscription's pass.
@@ -47,11 +51,12 @@ pub fn auth(session_lifetime_secs: u64) -> Arc<Auth> {
     )
 }
 
-/// The web of the tests: the pages put on it. Nothing answers anywhere
-/// else.
+/// The web of the tests: the pages and the pictures put on it. Nothing
+/// answers anywhere else.
 #[derive(Default)]
 pub struct TestWeb {
     pages: Mutex<HashMap<String, Result<String, PageError>>>,
+    images: Mutex<HashMap<String, Bytes>>,
 }
 
 impl TestWeb {
@@ -63,6 +68,12 @@ impl TestWeb {
     pub fn answer(&self, url: &str, answer: Result<String, PageError>) {
         self.pages.lock().unwrap().insert(url.to_owned(), answer);
     }
+
+    /// Answers `url` with `bytes`, as a site serves a picture.
+    pub fn put_image(&self, url: &str, bytes: &[u8]) {
+        let bytes = Bytes::copy_from_slice(bytes);
+        self.images.lock().unwrap().insert(url.to_owned(), bytes);
+    }
 }
 
 #[async_trait::async_trait]
@@ -71,6 +82,12 @@ impl Pages for TestWeb {
         let nothing = || Err(PageError::Unreachable("nothing answers there".to_owned()));
         let pages = self.pages.lock().unwrap();
         pages.get(url.as_str()).cloned().unwrap_or_else(nothing)
+    }
+
+    async fn image(&self, url: &reqwest::Url) -> Result<Bytes, PageError> {
+        let nothing = || PageError::Unreachable("nothing answers there".to_owned());
+        let images = self.images.lock().unwrap();
+        images.get(url.as_str()).cloned().ok_or_else(nothing)
     }
 }
 
@@ -84,6 +101,18 @@ pub struct TestNode {
     pub store_path: PathBuf,
     /// Where this node imports recipes from.
     pub web: Arc<TestWeb>,
+    /// The pictures this node keeps, in `images_dir`.
+    pub images: Arc<Images>,
+    pub images_dir: PathBuf,
+    /// Where the other nodes copy pictures to this one, when there are any.
+    images_port: Option<PeerPort>,
+}
+
+/// A node's place among those that copy pictures to each other: where it
+/// takes theirs, and where each of them does, itself included.
+struct ImagePeers {
+    listener: TcpListener,
+    urls: Vec<String>,
 }
 
 impl TestNode {
@@ -91,16 +120,35 @@ impl TestNode {
     /// store is gone with it.
     pub async fn alone() -> (Self, TempDir) {
         let dir = tempfile::tempdir().unwrap();
-        let node = Self::open(dir.path().join("imkitchen.db"), None).await;
+        let node = Self::open(dir.path().join("imkitchen.db"), None, None, None).await;
         (node, dir)
     }
 
-    async fn open(store_path: PathBuf, settings: Option<Settings>) -> Self {
+    async fn open(
+        store_path: PathBuf,
+        settings: Option<Settings>,
+        tls: Option<NodeTls>,
+        image_peers: Option<ImagePeers>,
+    ) -> Self {
         drop(db::migrate(&store_path).await.unwrap());
         let store = db::open(&store_path).await.unwrap();
-        let (cluster, executor) = cluster::open(settings, &store_path, store.clone())
+        let images_dir = store_path.with_file_name("images");
+        let node_id = settings.as_ref().map(|settings| settings.node_id as usize);
+        let (cluster, executor) = cluster::open(settings, tls.clone(), &store_path, store.clone())
             .await
             .unwrap();
+        let (images, images_port) = match (image_peers, node_id) {
+            (Some(ImagePeers { listener, mut urls }), Some(node_id)) => {
+                let nodes = urls.len();
+                urls.remove(node_id);
+                let peers = Peers::new(urls, nodes, tls.clone()).unwrap();
+                let images = Arc::new(Images::new(&images_dir, Some(peers)));
+                let members = tls.map(|tls| (tls, cluster.clone()));
+                let port = port::serve(listener, members, images.clone());
+                (images, Some(port))
+            }
+            _ => (Arc::new(Images::new(&images_dir, None)), None),
+        };
 
         Self {
             cluster,
@@ -108,7 +156,42 @@ impl TestNode {
             store,
             store_path,
             web: Arc::default(),
+            images,
+            images_dir,
+            images_port,
         }
+    }
+
+    /// Closes the port the other nodes copy pictures to this one on.
+    pub async fn stop_taking_pictures(&mut self) {
+        if let Some(port) = self.images_port.take() {
+            port.shutdown().await;
+        }
+    }
+
+    /// How many pictures this node's read model knows the files of.
+    pub async fn images_known(&self) -> i64 {
+        Db::from(self.store.clone())
+            .fetch_scalar("SELECT COUNT(*) FROM images", ())
+            .await
+            .unwrap()
+    }
+
+    /// The files this node keeps of the pictures, as `<size>/<name>`, in
+    /// order.
+    pub fn image_files(&self) -> Vec<String> {
+        let mut files = Vec::new();
+        for size in ["400", "1200"] {
+            let Ok(entries) = std::fs::read_dir(self.images_dir.join(size)) else {
+                continue;
+            };
+            for entry in entries {
+                let name = entry.unwrap().file_name();
+                files.push(format!("{size}/{}", name.to_string_lossy()));
+            }
+        }
+        files.sort();
+        files
     }
 
     pub fn state(&self) -> AppState {
@@ -119,6 +202,7 @@ impl TestNode {
             auth: auth(3600),
             sign_ins: Arc::default(),
             pages: self.web.clone(),
+            images: self.images.clone(),
         }
     }
 }
@@ -127,20 +211,56 @@ impl TestNode {
 /// of its own.
 pub struct TestCluster {
     pub nodes: Vec<TestNode>,
+    /// Where each node takes the pictures of the others.
+    pub image_urls: Vec<String>,
     _dir: TempDir,
 }
 
 impl TestCluster {
     /// Starts `size` nodes and waits until each takes writes.
     pub async fn start(size: usize) -> Self {
+        Self::start_with(size, None).await
+    }
+
+    /// The same, the nodes talking over mutual TLS with certificates of
+    /// `authority`: to the store's port and to the pictures'.
+    pub async fn start_over_tls(size: usize, authority: &Authority) -> Self {
+        Self::start_with(size, Some(authority)).await
+    }
+
+    async fn start_with(size: usize, authority: Option<&Authority>) -> Self {
         let dir = tempfile::tempdir().unwrap();
         let peers = free_addrs(size).await;
+        // Where each node takes the pictures of the others, open from the
+        // start: nothing else may take the address meanwhile.
+        let mut image_listeners = Vec::new();
+        for _ in 0..size {
+            image_listeners.push(TcpListener::bind("127.0.0.1:0").await.unwrap());
+        }
+        let scheme = if authority.is_some() { "https" } else { "http" };
+        let image_urls: Vec<String> = image_listeners
+            .iter()
+            .map(|listener| format!("{scheme}://{}", listener.local_addr().unwrap()))
+            .collect();
 
-        let opens: Vec<_> = (0..size)
-            .map(|id| {
+        let opens: Vec<_> = image_listeners
+            .into_iter()
+            .enumerate()
+            .map(|(id, listener)| {
                 let store_path = dir.path().join(format!("node{id}")).join("imkitchen.db");
                 let settings = Settings::new(id as u64, peers.clone());
-                tokio::spawn(TestNode::open(store_path, Some(settings)))
+                let image_peers = ImagePeers {
+                    listener,
+                    urls: image_urls.clone(),
+                };
+                // Every node is at 127.0.0.1, which its certificate names.
+                let tls = authority.map(|authority| authority.node("127.0.0.1"));
+                tokio::spawn(TestNode::open(
+                    store_path,
+                    Some(settings),
+                    tls,
+                    Some(image_peers),
+                ))
             })
             .collect();
         let mut nodes = Vec::new();
@@ -151,13 +271,54 @@ impl TestCluster {
             node.cluster.until_confirmed(SETTLE).await.unwrap();
         }
 
-        Self { nodes, _dir: dir }
+        Self {
+            nodes,
+            image_urls,
+            _dir: dir,
+        }
     }
 
     pub async fn shutdown(self) {
-        for node in &self.nodes {
+        for node in self.nodes {
+            if let Some(port) = node.images_port {
+                port.shutdown().await;
+            }
             node.cluster.shutdown().await;
         }
+    }
+}
+
+/// The authority of a test cluster: what issues its nodes' certificates.
+pub struct Authority {
+    params: rcgen::CertificateParams,
+    key: rcgen::KeyPair,
+    pem: String,
+}
+
+impl Authority {
+    pub fn new() -> Self {
+        let key = rcgen::KeyPair::generate().unwrap();
+        let mut params = rcgen::CertificateParams::new(Vec::<String>::new()).unwrap();
+        params.is_ca = rcgen::IsCa::Ca(rcgen::BasicConstraints::Unconstrained);
+        let pem = params.self_signed(&key).unwrap().pem();
+        Self { params, key, pem }
+    }
+
+    /// A node's side of TLS, with a certificate for `name`: a host, or an
+    /// address.
+    pub fn node(&self, name: &str) -> NodeTls {
+        self.node_trusting(self, name)
+    }
+
+    /// The same, for a node that takes the certificates `trusted` issues
+    /// for its peers' while its own is of this authority.
+    pub fn node_trusting(&self, trusted: &Authority, name: &str) -> NodeTls {
+        let key = rcgen::KeyPair::generate().unwrap();
+        let params = rcgen::CertificateParams::new(vec![name.to_owned()]).unwrap();
+        let issuer = rcgen::Issuer::from_params(&self.params, &self.key);
+        let cert = params.signed_by(&key, &issuer).unwrap().pem();
+        let key = key.serialize_pem();
+        NodeTls::from_pem(trusted.pem.as_bytes(), cert.as_bytes(), key.as_bytes()).unwrap()
     }
 }
 
@@ -165,7 +326,7 @@ impl TestCluster {
 async fn free_addrs(count: usize) -> Vec<SocketAddr> {
     let mut listeners = Vec::new();
     for _ in 0..count {
-        listeners.push(tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap());
+        listeners.push(TcpListener::bind("127.0.0.1:0").await.unwrap());
     }
     listeners
         .iter()
