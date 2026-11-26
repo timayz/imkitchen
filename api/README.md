@@ -143,6 +143,42 @@ on every device they sign in on.
   each device goes by its own. It is for the clients to show themselves in:
   the api words its refusals as `Accept-Language` asks, whatever it says.
 
+## List
+
+A user has one list, there from the start and empty: the meals they plan to
+cook, in the order they were planned. A meal is a recipe of theirs or one of
+their plats, cooked for so many people. The same one may be planned more
+than once, so each entry has an id of its own. `GET /v1/list` answers each
+with its `recipe` or its `plat`, as it now stands:
+
+```json
+{
+  "entries": [
+    { "id": "01JDQ0B6V5K1X5C3E8W4T9Z2YH", "servings": 4, "recipe": { "id": "…", "title": "Soup" } },
+    { "id": "01JDQ0B7M2R8N4P6S0V3X5Z7AB", "servings": 2, "plat": { "id": "…", "name": "Sunday roast", "recipes": [] } }
+  ]
+}
+```
+
+- `POST /v1/list/generate` draws the list anew as the settings say, in
+  place of what it held: `meals` of them at random, none twice, each for
+  `servings`. Going by `sources` they are the user's plats, their recipes,
+  or both: then a recipe that is part of a plat comes with its plat, not on
+  its own. A plat made of no recipe is never drawn.
+- There are fewer meals than asked when the user has not as many, and what
+  the list held is drawn last, so that a list generated again changes as
+  much as it can. With nothing to draw it is refused
+  (`nothing_to_generate`).
+- It draws from what `GET /v1/recipes` and `GET /v1/plats` list: a recipe
+  just written is drawn from a moment later.
+- `POST /v1/list/entries` puts a meal after the others (`recipe_id` or
+  `plat_id`, one of the two, and `servings`, the settings' when left out);
+  `PUT /v1/list/entries/{id}` replaces one in its place, as a whole;
+  `DELETE` takes it off. A list holds 50 meals at most (`list_full`).
+- A recipe or a plat that is deleted leaves the list a moment later, the
+  other meals as they were.
+- Changing the settings changes nothing of the list as it stands.
+
 ## Who asks
 
 Signing in answers a token. It is sent back with every request as

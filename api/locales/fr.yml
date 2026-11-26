@@ -35,6 +35,9 @@ errors:
   signup_closed: Les comptes sont créés sur invitation.
   recipe_not_found: Cette recette n'existe pas.
   plat_not_found: Ce plat n'existe pas.
+  list_entry_not_found: Ce repas n'est pas dans votre liste.
+  list_full: Votre liste est pleine. Retirez un repas avant d'en ajouter un autre.
+  nothing_to_generate: Il n'y a encore rien pour générer une liste. Ajoutez d'abord des recettes ou des plats.
   page_unreachable: Cette page n'a pas pu être lue. Vérifiez son adresse.
   no_recipe_on_page: Aucune recette n'a été trouvée sur cette page.
   unsupported_image: Ce n'est pas une image que l'api accepte. Envoyez un JPEG, un PNG, un WebP ou un GIF.
@@ -58,3 +61,5 @@ fields:
   count: Il doit y en avoir entre %{min} et %{max}.
   duplicate: Cet élément est présent plus d'une fois.
   recipe_not_found: Ce n'est pas l'une de vos recettes.
+  plat_not_found: Ce n'est pas l'un de vos plats.
+  exclusive: Un repas est une recette ou un plat, pas les deux.

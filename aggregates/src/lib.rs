@@ -10,6 +10,7 @@
 
 pub mod identity;
 pub mod image;
+pub mod list;
 pub mod plat;
 pub mod recipe;
 pub mod settings;

@@ -37,6 +37,9 @@ errors:
   signup_closed: Accounts are created by invitation.
   recipe_not_found: This recipe does not exist.
   plat_not_found: This plat does not exist.
+  list_entry_not_found: This meal is not on your list.
+  list_full: Your list is full. Take a meal off before adding another.
+  nothing_to_generate: There is nothing to generate a list from yet. Add recipes or plats first.
   page_unreachable: This page could not be read. Check its address.
   no_recipe_on_page: No recipe was found on this page.
   unsupported_image: This is not a picture the api takes. Send a JPEG, PNG, WebP or GIF.
@@ -60,3 +63,5 @@ fields:
   count: There must be between %{min} and %{max} of these.
   duplicate: This is there more than once.
   recipe_not_found: This is not one of your recipes.
+  plat_not_found: This is not one of your plats.
+  exclusive: A meal is a recipe or a plat, not both.

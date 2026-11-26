@@ -7,6 +7,7 @@ pub mod db;
 pub mod error;
 mod health;
 pub mod images;
+pub mod list;
 pub mod locale;
 pub mod mail;
 pub mod openapi;

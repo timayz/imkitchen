@@ -84,13 +84,7 @@ async fn on_recipe_deleted<E: evento::Executor>(
     };
     let gone = [recipe_id.to_owned()];
     // A user has a few dozen plats: all of theirs are looked at.
-    let plats: Vec<Composed> = db
-        .fetch_all(
-            "SELECT id, recipe_ids FROM plats WHERE owner_id = ?1",
-            (owner_id.as_str(),),
-        )
-        .await?;
-    for plat in plats {
+    for plat in composed_by(&db, &owner_id).await? {
         if plat.recipe_ids.0.contains(recipe_id) {
             model::remove_recipes(context.executor, &plat.id, &gone).await?;
         }
@@ -100,9 +94,18 @@ async fn on_recipe_deleted<E: evento::Executor>(
 
 /// What a plat is made of, as the table knows it.
 #[derive(FromRow)]
-struct Composed {
-    id: String,
-    recipe_ids: Json<Vec<String>>,
+pub struct Composed {
+    pub id: String,
+    pub recipe_ids: Json<Vec<String>>,
+}
+
+/// Every plat of `owner_id` the table knows, in no order.
+pub async fn composed_by(db: &Db, owner_id: &str) -> anyhow::Result<Vec<Composed>> {
+    db.fetch_all(
+        "SELECT id, recipe_ids FROM plats WHERE owner_id = ?1",
+        (owner_id,),
+    )
+    .await
 }
 
 /// Writes the row of a plat as its stream leaves it.
