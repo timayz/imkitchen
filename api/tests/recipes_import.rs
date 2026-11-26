@@ -231,6 +231,54 @@ async fn a_recipe_is_imported_from_an_article_that_only_shows_it() {
 }
 
 #[tokio::test]
+async fn a_page_the_client_sends_is_read_without_being_fetched() {
+    let (api, outbox, _node, _dir) = start().await;
+    let (token, _) = register(&api, &outbox, "alice@example.com").await;
+    // Nothing answers the api at this address: a site that refuses it.
+    let url = "https://captcha.example.com/pancakes";
+    let send = |html: String| {
+        let body = json!({ "url": url, "html": html });
+        api.post("/v1/recipes/import", Some(&token), body)
+    };
+
+    let (status, imported) = send(MARMITON_PAGE.to_owned()).await;
+    assert_eq!(status, StatusCode::CREATED, "{imported}");
+    assert_eq!(
+        imported["title"],
+        "Pancakes faciles et rapides : la meilleure recette"
+    );
+    assert_eq!(imported["ingredients"].as_array().unwrap().len(), 6);
+
+    // Held to what a recipe on a fetched page is held to.
+    assert_eq!(
+        send("<h1>Pancakes</h1><p>Mix everything.</p>".to_owned()).await,
+        (
+            StatusCode::UNPROCESSABLE_ENTITY,
+            refusal("no_recipe_on_page")
+        )
+    );
+    assert_eq!(
+        send("a".repeat(4 * 1024 * 1024 + 1)).await,
+        (
+            StatusCode::UNPROCESSABLE_ENTITY,
+            invalid(json!([{
+                "field": "html",
+                "code": "too_long",
+                "message": "This must be at most 4194304 characters.",
+                "params": { "max": 4194304 },
+            }]))
+        )
+    );
+    // And the address is still one of a page.
+    let body = json!({ "url": "pancakes", "html": MARMITON_PAGE });
+    let (status, body) = api.post("/v1/recipes/import", Some(&token), body).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(body["error"]["fields"][0]["code"], "invalid_url");
+
+    api.shutdown().await;
+}
+
+#[tokio::test]
 async fn a_page_without_a_recipe_is_refused_and_writes_nothing() {
     let (api, outbox, node, _dir) = start().await;
     let (token, _) = register(&api, &outbox, "alice@example.com").await;

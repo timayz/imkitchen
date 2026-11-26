@@ -131,17 +131,25 @@ pub fn valid_page_url(url: &str) -> Result<(), ValidationError> {
         .ok_or(ValidationError::new("invalid_url"))
 }
 
-/// What the page at `url` says of the recipe it describes.
-pub async fn content(pages: &dyn Pages, url: &str) -> ApiResult<Content> {
+/// The most a page may weigh, fetched or sent, in bytes.
+pub const PAGE_MAX: usize = 4 * 1024 * 1024;
+
+/// The recipe of the page at `url`: read on `html` when the client sends
+/// the page as its browser got it, which a site that only answers browsers
+/// leaves no other way to, fetched otherwise.
+pub async fn content(pages: &dyn Pages, url: &str, html: Option<String>) -> ApiResult<Content> {
     let refused = |code| ApiError::refused(StatusCode::UNPROCESSABLE_ENTITY, code);
     let url = page_url(url).ok_or(refused(PAGE_UNREACHABLE))?;
-    let html = pages.fetch(&url).await.map_err(|err| match err {
-        PageError::Unreachable(reason) => {
-            tracing::info!(reason, "a page to import was not read");
-            refused(PAGE_UNREACHABLE)
-        }
-        PageError::NotHtml => refused(NO_RECIPE_ON_PAGE),
-    })?;
+    let html = match html {
+        Some(html) => html,
+        None => pages.fetch(&url).await.map_err(|err| match err {
+            PageError::Unreachable(reason) => {
+                tracing::info!(reason, "a page to import was not read");
+                refused(PAGE_UNREACHABLE)
+            }
+            PageError::NotHtml => refused(NO_RECIPE_ON_PAGE),
+        })?,
+    };
     // A page may be megabytes: read off the threads that answer requests.
     tokio::task::spawn_blocking(move || read(&html))
         .await

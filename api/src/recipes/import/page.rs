@@ -4,7 +4,7 @@
 //! may make the api do ([`Web`]): only `http` and `https`, only towards
 //! public addresses (checked on the address the connection is made to, each
 //! redirect included, so a name cannot be pointed elsewhere between the
-//! check and the fetch), for [`TIMEOUT`] at most and [`MAX_BYTES`] at most.
+//! check and the fetch), for [`TIMEOUT`] at most and [`PAGE_MAX`] at most.
 
 use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::sync::Arc;
@@ -17,11 +17,11 @@ use reqwest::header::{ACCEPT, CONTENT_TYPE};
 use reqwest::redirect::Policy;
 use reqwest::{Client, Url};
 
+use super::PAGE_MAX;
+
 /// How long a page gets to answer as a whole, its redirects included.
 const TIMEOUT: Duration = Duration::from_secs(10);
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
-/// The most a page may weigh.
-const MAX_BYTES: usize = 4 * 1024 * 1024;
 const MAX_REDIRECTS: usize = 5;
 /// Who the api says it is to the sites it reads: a browser, as the person
 /// who pasted the address was when they saw the page. Many sites answer
@@ -117,13 +117,13 @@ impl Pages for Web {
             .and_then(|label| Encoding::for_label(label.trim_matches('"').as_bytes()))
             .unwrap_or(UTF_8);
 
-        let too_large = || unreachable(format!("weighs more than {MAX_BYTES} bytes"));
-        if response.content_length().unwrap_or(0) > MAX_BYTES as u64 {
+        let too_large = || unreachable(format!("weighs more than {PAGE_MAX} bytes"));
+        if response.content_length().unwrap_or(0) > PAGE_MAX as u64 {
             return Err(too_large());
         }
         let mut bytes = Vec::new();
         while let Some(chunk) = response.chunk().await.map_err(failed)? {
-            if bytes.len() + chunk.len() > MAX_BYTES {
+            if bytes.len() + chunk.len() > PAGE_MAX {
                 return Err(too_large());
             }
             bytes.extend_from_slice(&chunk);
@@ -369,7 +369,7 @@ mod tests {
         assert!(matches!(&err, PageError::Unreachable(reason) if reason.contains("404")));
 
         // Whether the server says how much it sends or not.
-        let body = vec![b'a'; MAX_BYTES + 1];
+        let body = vec![b'a'; PAGE_MAX + 1];
         let large = serve(answer("200 OK\r\nContent-Type: text/html", &body)).await;
         let err = web.fetch(&url(&large)).await.unwrap_err();
         assert!(matches!(&err, PageError::Unreachable(reason) if reason.contains("weighs")));
