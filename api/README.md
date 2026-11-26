@@ -106,6 +106,17 @@ dimensions:
   it: a picture is on a majority of the nodes before the recipe that shows
   it is written, and a node that lacks one takes it from another.
 
+### Imports
+
+A recipe imported from a page (`POST /v1/recipes/import`) says nothing of
+the page: it is its owner's like one they wrote. Each try is noted apart,
+as an aggregate of its own (`imkitchen/RecipeImport`): who asked, the
+address of the page, whether the client sent the page itself, and the
+recipe it gave or the word the import was refused with (`page_unreachable`,
+`no_recipe_on_page`). The api keeps no list of them: admin reads them from
+the events, to tell which sites are imported from and which the api fails
+to read. An import whose try could not be noted went as it went.
+
 ## Plats
 
 A plat is a composed dish: a name and recipes of the user, in the order they

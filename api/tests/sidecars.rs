@@ -497,7 +497,8 @@ async fn a_sidecar_reads_its_aggregates_and_no_other() {
         .commit(&node.executor)
         .await
         .unwrap();
-    // A recipe: its owner's alone, and www's to count.
+    // A recipe: its owner's alone, www's to count and admin's to look
+    // after.
     let soup = evento::create()
         .event(&recipe::Created {
             owner_id: alice.clone(),
@@ -522,10 +523,17 @@ async fn a_sidecar_reads_its_aggregates_and_no_other() {
         .await
         .unwrap_err();
     assert!(format!("{err:#}").contains("may not read"), "{err:#}");
-    // A read that names nothing is given what admin reads.
+    // A read that names nothing is given what admin reads: the user and
+    // the recipe, not the index.
     let read = everything(&admin).await;
-    assert_eq!(read.len(), 1);
-    assert_eq!(read[0].aggregate_id, alice);
+    let mut read: Vec<&str> = read
+        .iter()
+        .map(|event| event.aggregate_id.as_str())
+        .collect();
+    read.sort_unstable();
+    let mut expected = [alice.as_str(), soup.as_str()];
+    expected.sort_unstable();
+    assert_eq!(read, expected);
 
     // www reads the recipes, and nothing of the identity.
     let www = RemoteClient::builder(addr)

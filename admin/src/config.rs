@@ -75,6 +75,10 @@ pub struct ApiConfig {
     /// Where the api answers HTTP: where administrators are signed in and
     /// out, and asked about on every page.
     pub url: String,
+    /// Where the browsers of the administrators reach the api: what the
+    /// pictures of the recipes are shown from. Absent: admin shows none.
+    #[serde(default)]
+    pub public_url: Option<String>,
     /// The api's listener for the sidecars (`[sidecars]` there): an IP and
     /// port, or a `host:port` looked up again on every reconnect.
     pub events: String,
@@ -115,6 +119,14 @@ impl ApiConfig {
             return Err(ConfigError::Message(format!(
                 "api.url must be an http(s) address, not '{}'",
                 self.url
+            )));
+        }
+        if let Some(public_url) = &self.public_url
+            && !public_url.starts_with("http://")
+            && !public_url.starts_with("https://")
+        {
+            return Err(ConfigError::Message(format!(
+                "api.public_url must be an http(s) address, not '{public_url}'"
             )));
         }
         if self.events_host().is_none() {
@@ -290,6 +302,14 @@ mod tests {
 
         let err = load("[api]\nurl = \"api:3000\"\n").unwrap_err();
         assert!(err.to_string().contains("api.url"), "{err}");
+
+        let config = load("[api]\npublic_url = \"https://api.imkitchen.test\"\n").unwrap();
+        assert_eq!(
+            config.api.public_url.as_deref(),
+            Some("https://api.imkitchen.test")
+        );
+        let err = load("[api]\npublic_url = \"api.imkitchen.test\"\n").unwrap_err();
+        assert!(err.to_string().contains("api.public_url"), "{err}");
     }
 
     #[test]

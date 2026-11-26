@@ -14,9 +14,14 @@ use imkitchen_admin::api::Api as Accounts;
 use imkitchen_admin::config::ApiConfig;
 use imkitchen_admin::db::{self, Db};
 use imkitchen_admin::events::Events;
+use imkitchen_admin::imports::Filter;
 use imkitchen_admin::session::Sessions;
-use imkitchen_admin::{app, config, subscriptions, users};
+use imkitchen_admin::{app, config, images, imports, messages, recipes, subscriptions, users};
+use imkitchen_aggregates::contact::Sent;
 use imkitchen_aggregates::identity::{Deleted, EmailRegistered, ProfileUpdated, User};
+use imkitchen_aggregates::image::{RecipeImage, Released, Stored, Used};
+use imkitchen_aggregates::recipe::{self, Ingredient};
+use imkitchen_aggregates::recipe_import::{Failed, Imported};
 use imkitchen_api::auth::Auth;
 use imkitchen_api::cluster::{self, Cluster, Executor};
 use imkitchen_api::config::{AuthConfig, RootConfig, Secret, SidecarTokens, SidecarsConfig};
@@ -27,6 +32,7 @@ use imkitchen_api::server::{self, AppState};
 use imkitchen_api::sidecars;
 use serde_json::{Value, json};
 use tempfile::TempDir;
+use timada_core::Picture;
 use timada_identity::CodeMail;
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
@@ -43,6 +49,9 @@ const ADMIN_TOKEN: &str = "the token of admin in the tests, 32 characters";
 
 /// What the cookies of the tests are encrypted under.
 const SESSION_KEY: &[u8] = b"the key of the sessions in the tests, 32 bytes or more";
+
+/// Where the browsers of the tests get the pictures.
+const PICTURES: &str = "https://api.test";
 
 /// An address of the api nothing answers at.
 const NOWHERE: &str = "http://127.0.0.1:1";
@@ -347,6 +356,103 @@ impl Api {
             .unwrap();
     }
 
+    /// Writes a recipe of `owner_id` as the api does, with flour and
+    /// `ingredient`; its id.
+    async fn write_recipe(&self, owner_id: &str, title: &str, ingredient: &str) -> String {
+        evento::create()
+            .event(&recipe::Created {
+                owner_id: owner_id.to_owned(),
+                title: title.to_owned(),
+                description: format!("How {title} is made."),
+                ingredients: vec![
+                    Ingredient {
+                        name: "flour".to_owned(),
+                        quantity: Some(250.0),
+                        unit: Some("g".to_owned()),
+                    },
+                    Ingredient {
+                        name: ingredient.to_owned(),
+                        quantity: None,
+                        unit: None,
+                    },
+                ],
+                instructions: vec!["Mix.".to_owned(), "Cook.".to_owned()],
+                prep_minutes: 10,
+                cook_minutes: 20,
+                servings: 4,
+            })
+            .commit(&self.executor)
+            .await
+            .unwrap()
+    }
+
+    /// Appends `event` to the recipe `id`, which has `version` events.
+    async fn change_recipe<D: evento::AggregateEvent + bitcode::Encode>(
+        &self,
+        id: &str,
+        version: u16,
+        event: &D,
+    ) {
+        evento::append(id)
+            .original_version(version)
+            .event(event)
+            .commit(&self.executor)
+            .await
+            .unwrap();
+    }
+
+    /// Notes a try at importing the page at `url` for `user_id`, as the api
+    /// does: the recipe it gave, or why it gave none.
+    async fn note_import(&self, user_id: &str, url: &str, outcome: Result<&str, &str>) {
+        let (user_id, url) = (user_id.to_owned(), url.to_owned());
+        let mut write = evento::create();
+        match outcome {
+            Ok(recipe_id) => write.event(&Imported {
+                user_id,
+                url,
+                page_sent: false,
+                recipe_id: recipe_id.to_owned(),
+            }),
+            Err(reason) => write.event(&Failed {
+                user_id,
+                url,
+                page_sent: true,
+                reason: reason.to_owned(),
+            }),
+        };
+        write.commit(&self.executor).await.unwrap();
+    }
+
+    /// Appends `event` to the picture `image_id`, which has `version`
+    /// events.
+    async fn picture<D: evento::AggregateEvent + bitcode::Encode>(
+        &self,
+        image_id: &str,
+        version: u16,
+        event: &D,
+    ) {
+        evento::append(image_id)
+            .original_version(version)
+            .event(event)
+            .commit(&self.executor)
+            .await
+            .unwrap();
+    }
+
+    /// Takes a message as the api does; its id.
+    async fn write_message(&self, name: &str, message: &str) -> String {
+        evento::create()
+            .event(&Sent {
+                name: name.to_owned(),
+                email: format!("{}@example.com", name.to_lowercase()),
+                message: message.to_owned(),
+                language: "fr".to_owned(),
+            })
+            .commit(&self.executor)
+            .await
+            .unwrap()
+    }
+
     async fn shutdown(self) {
         if let Some(http) = self.http {
             http.mailing.shutdown().await.unwrap();
@@ -381,6 +487,7 @@ impl Admin {
         let db = Db::from(store.clone());
         let api = ApiConfig {
             url: NOWHERE.to_owned(),
+            public_url: None,
             events: addr.to_string(),
             token: Some(config::Secret::new(token)),
             tls_ca: None,
@@ -414,6 +521,7 @@ impl Admin {
     fn router_with(&self, secure: bool) -> Router {
         let api = Accounts::new(&ApiConfig {
             url: self.api.clone(),
+            public_url: Some(PICTURES.to_owned()),
             events: "127.0.0.1:1".to_owned(),
             token: None,
             tls_ca: None,
@@ -698,7 +806,10 @@ async fn the_dashboard_says_what_admin_followed() {
         "{page}"
     );
     assert!(page.contains("<title>imkitchen admin</title>"), "{page}");
-    assert!(page.contains("data-users=\"3\""), "{page}");
+    assert!(
+        page.contains("data-number=\"users\" data-value=\"3\""),
+        "{page}"
+    );
     assert!(
         page.contains("href=\"https://assets.test/tailwind.css\""),
         "{page}"
@@ -748,7 +859,7 @@ async fn nobody_reads_a_page_without_signing_in() {
     assert!(page.body.contains("action=\"/sign-in\""), "{}", page.body);
     assert!(page.body.contains("name=\"password\""), "{}", page.body);
     assert!(!page.body.contains("name=\"code\""), "{}", page.body);
-    assert!(!page.body.contains("data-users"), "{}", page.body);
+    assert!(!page.body.contains("data-number"), "{}", page.body);
     assert!(
         page.body.contains("content=\"noindex, nofollow\""),
         "{}",
@@ -961,7 +1072,7 @@ async fn nobody_is_let_through_while_the_api_is_away() {
     let router = admin.router();
     let answer = root.get(&router, "/").await;
     assert_eq!(answer.status, StatusCode::SERVICE_UNAVAILABLE);
-    assert!(!answer.body.contains("data-users"), "{}", answer.body);
+    assert!(!answer.body.contains("data-number"), "{}", answer.body);
     assert!(!root.cookies.is_empty(), "the session is kept for later");
 
     let answer = Browser::default()
@@ -1000,6 +1111,435 @@ async fn health_says_how_admin_stands_with_the_api() {
     let (status, body) = get(&admin.router(), "/health").await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body, r#"{"status":"ok","api":"connected"}"#);
+
+    admin.stop().await;
+    api.shutdown().await;
+}
+
+/// The picture of the tests, as its stream is named.
+const PICTURE: &str = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08";
+
+fn picture() -> Picture {
+    let mut picture = Picture {
+        width: 1600,
+        height: 1200,
+        ..Picture::default()
+    };
+    picture.listing.size = 40_000;
+    picture.page.size = 260_000;
+    picture
+}
+
+fn shown(use_id: &str) -> recipe::ImageSet {
+    recipe::ImageSet {
+        image: RecipeImage {
+            image_id: PICTURE.to_owned(),
+            use_id: use_id.to_owned(),
+            file_id: "file-1".to_owned(),
+            picture: picture(),
+        },
+    }
+}
+
+/// What the tests have imkitchen hold: two users, alice with pancakes
+/// (imported, with a picture) and a soup that is deleted, bob with crêpes
+/// that share the picture; an import that failed, twice from the same
+/// site; two messages.
+struct Kitchen {
+    alice: String,
+    bob: String,
+    pancakes: String,
+    crepes: String,
+    message: String,
+}
+
+impl Kitchen {
+    async fn fill(api: &Api) -> Self {
+        let alice = api.register("alice@example.com").await;
+        let bob = api.register("bob@example.com").await;
+        api.rename(&bob, "bob@example.com", "Bob Léger").await;
+
+        let pancakes = api.write_recipe(&alice, "Pancakes", "milk").await;
+        let soup = api.write_recipe(&alice, "Soup", "leek").await;
+        let crepes = api.write_recipe(&bob, "Crêpes", "rum").await;
+        api.change_recipe(&soup, 1, &recipe::Deleted).await;
+
+        // One picture, shown by two recipes; a third use came and went.
+        let stored = Stored {
+            file_id: "file-1".to_owned(),
+            picture: picture(),
+            use_id: "use-1".to_owned(),
+        };
+        api.picture(PICTURE, 0, &stored).await;
+        api.change_recipe(&pancakes, 1, &shown("use-1")).await;
+        let used = |use_id: &str| Used {
+            use_id: use_id.to_owned(),
+        };
+        api.picture(PICTURE, 1, &used("use-2")).await;
+        api.change_recipe(&crepes, 1, &shown("use-2")).await;
+        api.picture(PICTURE, 2, &used("use-3")).await;
+        let released = Released {
+            use_id: "use-3".to_owned(),
+        };
+        api.picture(PICTURE, 3, &released).await;
+
+        let marmiton = "https://www.marmiton.org/recettes/pancakes";
+        api.note_import(&alice, marmiton, Ok(&pancakes)).await;
+        let captcha = "https://captcha.example.com/soup";
+        api.note_import(&alice, captcha, Err("page_unreachable"))
+            .await;
+        api.note_import(&bob, captcha, Err("no_recipe_on_page"))
+            .await;
+
+        api.write_message("Carol", "Hello!").await;
+        let message = api
+            .write_message("Dave", "Bonjour,\nune question sur les crêpes.")
+            .await;
+
+        Self {
+            alice,
+            bob,
+            pancakes,
+            crepes,
+            message,
+        }
+    }
+
+    /// Waits until the read models of `admin` hold all of it.
+    async fn followed(&self, admin: &Admin) {
+        eventually("admin to follow the kitchen", || async {
+            let db = &admin.db;
+            let recipe = recipes::get(db, &self.crepes).await.unwrap();
+            let settled = users::found(db, Some("léger")).await.unwrap() == 1
+                && recipes::count(db, None).await.unwrap() == 2
+                && recipe.is_some_and(|recipe| recipe.image_id.is_some())
+                && imports::count(db, Filter::default()).await.unwrap() == 3
+                && images::get(db, PICTURE)
+                    .await
+                    .unwrap()
+                    .is_some_and(|image| image.uses == 2)
+                && messages::count(db).await.unwrap() == 2;
+            settled.then_some(())
+        })
+        .await;
+    }
+}
+
+#[tokio::test]
+async fn the_read_models_are_built_from_scratch_and_follow() {
+    let dir = dir();
+    let api = Api::start(dir.path()).await;
+    // All of it written before admin ever ran.
+    let kitchen = Kitchen::fill(&api).await;
+
+    let admin = Admin::start(api.addr, &dir.path().join("admin.db")).await;
+    kitchen.followed(&admin).await;
+    let db = &admin.db;
+
+    // The users, searched whatever the case and the accents.
+    assert_eq!(users::count(db).await.unwrap(), 2);
+    let found = users::list(db, Some("LEGER"), 0, 10).await.unwrap();
+    assert_eq!(found.len(), 1);
+    assert_eq!(
+        (found[0].id.as_str(), found[0].label.as_str()),
+        (kitchen.bob.as_str(), "Bob Léger")
+    );
+
+    // The recipes that are not deleted, with all they say.
+    assert_eq!(recipes::count(db, Some("crepes")).await.unwrap(), 1);
+    assert_eq!(
+        recipes::count(db, Some("leek")).await.unwrap(),
+        0,
+        "deleted"
+    );
+    assert_eq!(recipes::count_of(db, &kitchen.alice).await.unwrap(), 1);
+    let pancakes = recipes::get(db, &kitchen.pancakes).await.unwrap().unwrap();
+    assert_eq!(pancakes.owner_id, kitchen.alice);
+    assert_eq!(pancakes.ingredients.0.len(), 2);
+    assert_eq!(pancakes.ingredients.0[0].quantity, Some(250.0));
+    assert_eq!(pancakes.instructions.0, ["Mix.", "Cook."]);
+    assert_eq!(pancakes.image_id.as_deref(), Some(PICTURE));
+    assert_eq!(pancakes.file_id.as_deref(), Some("file-1"));
+
+    // The imports, and where they are made from.
+    let failed = Filter {
+        failed: true,
+        host: None,
+    };
+    assert_eq!(imports::count(db, failed).await.unwrap(), 2);
+    let import = imports::of_recipe(db, &kitchen.pancakes).await.unwrap();
+    assert_eq!(import.unwrap().host, "marmiton.org");
+    let sources = imports::sources(db, 10).await.unwrap();
+    let sources: Vec<_> = sources
+        .iter()
+        .map(|source| {
+            (
+                source.host.as_str(),
+                source.imported,
+                source.failed,
+                source.page_sent,
+            )
+        })
+        .collect();
+    assert_eq!(
+        sources,
+        [("captcha.example.com", 0, 2, 2), ("marmiton.org", 1, 0, 0)]
+    );
+
+    // The picture, stored once and shown twice.
+    assert_eq!(images::count(db, false).await.unwrap(), 1);
+    assert_eq!(images::count(db, true).await.unwrap(), 1);
+    let image = images::get(db, PICTURE).await.unwrap().unwrap();
+    assert_eq!(
+        (image.width, image.height, image.bytes),
+        (1600, 1200, 300_000)
+    );
+    let showing = recipes::showing(db, PICTURE, 10).await.unwrap();
+    let mut showing: Vec<_> = showing.iter().map(|recipe| recipe.title.as_str()).collect();
+    showing.sort();
+    assert_eq!(showing, ["Crêpes", "Pancakes"]);
+
+    // The messages, as they were written.
+    let message = messages::get(db, &kitchen.message).await.unwrap().unwrap();
+    assert_eq!(message.name, "Dave");
+    assert_eq!(message.email, "dave@example.com");
+    assert_eq!(message.message, "Bonjour,\nune question sur les crêpes.");
+    assert_eq!(message.language, "fr");
+
+    // Then as events come: a recipe rewritten, shown without its picture,
+    // then deleted, and the picture let go of until nobody uses it.
+    let edited = recipe::Edited {
+        title: "Galettes".to_owned(),
+        description: String::new(),
+        ingredients: vec![Ingredient {
+            name: "buckwheat".to_owned(),
+            quantity: None,
+            unit: None,
+        }],
+        instructions: vec!["Cook.".to_owned()],
+        prep_minutes: 5,
+        cook_minutes: 5,
+        servings: 2,
+    };
+    api.change_recipe(&kitchen.crepes, 2, &edited).await;
+    api.change_recipe(&kitchen.crepes, 3, &recipe::ImageRemoved)
+        .await;
+    let released = |use_id: &str| Released {
+        use_id: use_id.to_owned(),
+    };
+    api.picture(PICTURE, 4, &released("use-2")).await;
+    let galettes = eventually("the recipe to be rewritten", || async {
+        let recipe = recipes::get(db, &kitchen.crepes).await.unwrap()?;
+        (recipe.title == "Galettes" && recipe.image_id.is_none()).then_some(recipe)
+    })
+    .await;
+    assert_eq!(galettes.ingredients.0.len(), 1);
+    assert_eq!(recipes::count(db, Some("rum")).await.unwrap(), 0);
+    assert_eq!(recipes::count(db, Some("buckwheat")).await.unwrap(), 1);
+    eventually("the picture to be shown once", || async {
+        let image = images::get(db, PICTURE).await.unwrap()?;
+        (image.uses == 1).then_some(())
+    })
+    .await;
+    assert_eq!(images::count(db, true).await.unwrap(), 0);
+
+    api.change_recipe(&kitchen.pancakes, 2, &recipe::Deleted)
+        .await;
+    api.picture(PICTURE, 5, &released("use-1")).await;
+    eventually("the picture to be gone with its last use", || async {
+        images::get(db, PICTURE)
+            .await
+            .unwrap()
+            .is_none()
+            .then_some(())
+    })
+    .await;
+    eventually("the recipe to be gone", || async {
+        (recipes::count(db, None).await.unwrap() == 1).then_some(())
+    })
+    .await;
+    // The try outlives the recipe it gave.
+    assert_eq!(imports::count(db, Filter::default()).await.unwrap(), 3);
+    admin.stop().await;
+
+    // A store that is lost is built again from the api, to the same end.
+    let again = Admin::start(api.addr, &dir.path().join("again.db")).await;
+    eventually("the store to be built again", || async {
+        let db = &again.db;
+        let settled = users::count(db).await.unwrap() == 2
+            && recipes::count(db, None).await.unwrap() == 1
+            && recipes::count(db, Some("buckwheat")).await.unwrap() == 1
+            && imports::count(db, failed).await.unwrap() == 2
+            && images::count(db, false).await.unwrap() == 0
+            && messages::count(db).await.unwrap() == 2;
+        settled.then_some(())
+    })
+    .await;
+
+    again.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn each_screen_is_read_from_what_admin_followed() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let kitchen = Kitchen::fill(&api).await;
+    let mut admin = Admin::start(api.addr, &dir.path().join("admin.db")).await;
+    admin.api = api.serve_http().await;
+    kitchen.followed(&admin).await;
+    let router = admin.router();
+    let Kitchen {
+        alice,
+        bob,
+        pancakes,
+        crepes,
+        message,
+    } = &kitchen;
+    let screens = [
+        "/users".to_owned(),
+        format!("/users/{alice}"),
+        "/recipes".to_owned(),
+        format!("/recipes/{pancakes}"),
+        "/imports".to_owned(),
+        "/imports/sources".to_owned(),
+        "/images".to_owned(),
+        format!("/images/{PICTURE}"),
+        "/messages".to_owned(),
+        format!("/messages/{message}"),
+    ];
+
+    // Nobody reads any of them without signing in.
+    for screen in &screens {
+        let answer = Browser::default().get(&router, screen).await;
+        assert_eq!(answer.status, StatusCode::SEE_OTHER, "{screen}");
+        assert_eq!(answer.location, "/sign-in", "{screen}");
+    }
+
+    let mut root = Browser::default();
+    let answer = root
+        .sign_in(&router, &api, ROOT_EMAIL, ROOT_PASSWORD, 0)
+        .await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    admin.counts(3).await;
+    let mut read = async |path: &str| {
+        let answer = root.get(&router, path).await;
+        assert_eq!(answer.status, StatusCode::OK, "{path}: {}", answer.body);
+        answer.body
+    };
+    let has = |page: &str, what: &str| assert!(page.contains(what), "{what}: {page}");
+    let lacks = |page: &str, what: &str| assert!(!page.contains(what), "{what}: {page}");
+    for screen in &screens {
+        read(screen).await;
+    }
+
+    // The key numbers.
+    let page = read("/").await;
+    for (number, value) in [
+        ("users", 3),
+        ("administrators", 1),
+        ("recipes", 2),
+        ("imports", 3),
+        ("failed-imports", 2),
+        ("sources", 2),
+        ("pictures", 1),
+        ("shared-pictures", 1),
+        ("messages", 2),
+    ] {
+        has(
+            &page,
+            &format!("data-number=\"{number}\" data-value=\"{value}\""),
+        );
+    }
+
+    // The users, searched, and one of them.
+    let page = read("/users").await;
+    has(&page, &format!("data-user=\"{alice}\""));
+    has(&page, &format!("href=\"/users/{bob}\""));
+    has(&page, "data-total=\"3\"");
+    let page = read("/users?q=l%C3%A9ger").await;
+    has(&page, "Bob Léger");
+    lacks(&page, "alice@example.com");
+    has(&page, "data-total=\"1\"");
+    has(&read("/users?q=nobody").await, "data-empty");
+    let page = read(&format!("/users/{alice}")).await;
+    has(&page, "alice@example.com");
+    has(&page, "data-recipes=\"1\"");
+    has(&page, &format!("href=\"/recipes/{pancakes}\""));
+    let page = read("/users/root").await;
+    has(&page, "Administrator");
+    has(&page, "data-session=\"active\"");
+
+    // The recipes, searched, and one of them with all it says.
+    let page = read("/recipes").await;
+    has(&page, &format!("data-recipe=\"{crepes}\""));
+    has(&page, "Bob Léger");
+    lacks(&page, "Soup");
+    let page = read("/recipes?q=MILK").await;
+    has(&page, "Pancakes");
+    lacks(&page, "Crêpes");
+    let page = read(&format!("/recipes/{pancakes}")).await;
+    has(&page, "How Pancakes is made.");
+    has(&page, "250 g flour");
+    has(&page, "data-instructions=\"2\"");
+    has(&page, "data-imported-from=\"marmiton.org\"");
+    has(&page, &format!("href=\"/images/{PICTURE}\""));
+    has(&page, "src=\"https://api.test/v1/images/400/file-1.webp\"");
+    has(&page, &format!("href=\"/users/{alice}\""));
+
+    // The imports: all, those that failed, those of a site, the sources.
+    let page = read("/imports").await;
+    assert_eq!(page.matches("data-import=\"imported\"").count(), 1);
+    assert_eq!(page.matches("data-import=\"failed\"").count(), 2);
+    has(&page, &format!("href=\"/recipes/{pancakes}\""));
+    let page = read("/imports?failed=1").await;
+    lacks(&page, "data-import=\"imported\"");
+    has(&page, "data-reason=\"page_unreachable\"");
+    has(&page, "data-reason=\"no_recipe_on_page\"");
+    let page = read("/imports?host=marmiton.org").await;
+    has(&page, "data-host=\"marmiton.org\"");
+    has(&page, "data-total=\"1\"");
+    let page = read("/imports/sources").await;
+    has(
+        &page,
+        "data-source=\"captcha.example.com\" data-imported=\"0\" data-failed=\"2\"",
+    );
+    has(
+        &page,
+        "data-source=\"marmiton.org\" data-imported=\"1\" data-failed=\"0\"",
+    );
+    has(&page, "href=\"/imports?host=marmiton.org\"");
+
+    // The pictures, and who shows one.
+    let page = read("/images?shared=1").await;
+    has(&page, &format!("data-image=\"{PICTURE}\" data-uses=\"2\""));
+    has(&page, "1600 × 1200");
+    let page = read(&format!("/images/{PICTURE}")).await;
+    has(&page, "data-shown-by=\"2\"");
+    has(&page, &format!("href=\"/recipes/{crepes}\""));
+    has(&page, &format!("href=\"/users/{bob}\""));
+
+    // The messages, and one as it was written.
+    let page = read("/messages").await;
+    has(&page, "Carol");
+    has(&page, &format!("href=\"/messages/{message}\""));
+    has(&page, "Bonjour, une question sur les crêpes.");
+    let page = read(&format!("/messages/{message}")).await;
+    has(&page, "href=\"mailto:dave@example.com\"");
+    has(&page, "data-language=\"fr\"");
+    has(&page, "Bonjour,\nune question sur les crêpes.");
+
+    // What admin knows nothing of is the address of nothing.
+    for path in [
+        "/users/nobody",
+        "/recipes/nothing",
+        "/images/nothing",
+        "/messages/nothing",
+    ] {
+        let answer = root.get(&router, path).await;
+        assert_eq!(answer.status, StatusCode::NOT_FOUND, "{path}");
+        assert!(answer.body.contains("This page does not exist"), "{path}");
+    }
 
     admin.stop().await;
     api.shutdown().await;

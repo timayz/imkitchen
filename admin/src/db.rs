@@ -29,12 +29,115 @@ pub type Store = Turso;
 /// migration that was released is never edited.
 pub const MIGRATIONS: Migrations<'static> = Migrations::new(
     "imkitchen-admin",
-    &[Migration::up(
-        "0001_users",
-        // One row per user whose account is not deleted, and nothing of
-        // who they are: how many there are is all admin shows of them yet.
-        "CREATE TABLE users (id TEXT NOT NULL PRIMARY KEY);",
-    )],
+    &[
+        Migration::up(
+            "0001_users",
+            // One row per user whose account is not deleted, and nothing of
+            // who they are: how many there are is all admin showed of them.
+            "CREATE TABLE users (id TEXT NOT NULL PRIMARY KEY);",
+        ),
+        Migration::up(
+            "0002_read_models",
+            // `users`: one row per user, deleted or not, with how they sign
+            // in; `search` is their address and their name, lowercased and
+            // without accents. `user_sessions`: one row per session.
+            //
+            // `recipes`: one row per recipe that is not deleted, with all
+            // it says (`ingredients` and `instructions` as JSON) and the
+            // picture it shows; `search` is its title and its ingredients,
+            // lowercased and without accents.
+            //
+            // `recipe_imports`: one row per try at importing a recipe, with
+            // the recipe it gave or the reason it gave none; `host` is the
+            // site of `url`, what the sources are counted by.
+            //
+            // `images`: one row per picture that is used, and `image_uses`
+            // one per use of it.
+            //
+            // `contact_messages`: one row per message written to imkitchen.
+            "DROP TABLE users;
+            CREATE TABLE users (
+                id TEXT NOT NULL PRIMARY KEY,
+                account TEXT NOT NULL,
+                label TEXT NOT NULL,
+                is_admin INTEGER NOT NULL,
+                deleted INTEGER NOT NULL,
+                registered_at INTEGER NOT NULL,
+                last_sign_in_at INTEGER,
+                sign_in_count INTEGER NOT NULL,
+                oauth2_count INTEGER NOT NULL,
+                passkey_count INTEGER NOT NULL,
+                has_password INTEGER NOT NULL,
+                search TEXT NOT NULL
+            );
+            CREATE INDEX users_listed ON users (deleted, label COLLATE NOCASE, id);
+            CREATE TABLE user_sessions (
+                id TEXT NOT NULL PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                started_at INTEGER NOT NULL,
+                started_at_ms INTEGER NOT NULL,
+                expires_at INTEGER NOT NULL,
+                ended INTEGER NOT NULL,
+                user_agent TEXT
+            );
+            CREATE INDEX user_sessions_of ON user_sessions (user_id, started_at DESC, id);
+            CREATE TABLE recipes (
+                id TEXT NOT NULL PRIMARY KEY,
+                owner_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                ingredients TEXT NOT NULL,
+                instructions TEXT NOT NULL,
+                prep_minutes INTEGER NOT NULL,
+                cook_minutes INTEGER NOT NULL,
+                servings INTEGER NOT NULL,
+                image_id TEXT,
+                file_id TEXT,
+                search TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+            );
+            CREATE INDEX recipes_listed ON recipes (created_at DESC, id DESC);
+            CREATE INDEX recipes_owned ON recipes (owner_id, created_at DESC, id DESC);
+            CREATE INDEX recipes_shown ON recipes (image_id);
+            CREATE TABLE recipe_imports (
+                id TEXT NOT NULL PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                url TEXT NOT NULL,
+                host TEXT NOT NULL,
+                page_sent INTEGER NOT NULL,
+                recipe_id TEXT,
+                reason TEXT,
+                at INTEGER NOT NULL
+            );
+            CREATE INDEX recipe_imports_listed ON recipe_imports (at DESC, id DESC);
+            CREATE INDEX recipe_imports_from ON recipe_imports (host, at DESC, id DESC);
+            CREATE INDEX recipe_imports_of ON recipe_imports (recipe_id);
+            CREATE TABLE images (
+                image_id TEXT NOT NULL PRIMARY KEY,
+                file_id TEXT NOT NULL,
+                width INTEGER NOT NULL,
+                height INTEGER NOT NULL,
+                bytes INTEGER NOT NULL,
+                stored_at INTEGER NOT NULL
+            );
+            CREATE INDEX images_listed ON images (stored_at DESC, image_id DESC);
+            CREATE TABLE image_uses (
+                image_id TEXT NOT NULL,
+                use_id TEXT NOT NULL,
+                PRIMARY KEY (image_id, use_id)
+            );
+            CREATE TABLE contact_messages (
+                id TEXT NOT NULL PRIMARY KEY,
+                name TEXT NOT NULL,
+                email TEXT NOT NULL,
+                message TEXT NOT NULL,
+                language TEXT NOT NULL,
+                sent_at INTEGER NOT NULL
+            );
+            CREATE INDEX contact_messages_listed ON contact_messages (sent_at DESC, id DESC);",
+        ),
+    ],
 );
 
 /// Every list of migrations the store's schema is made of.
@@ -146,5 +249,6 @@ mod tests {
         drop(migrate(&path).await.unwrap());
         let db = Db::from(open(&path).await.unwrap());
         assert_eq!(crate::users::count(&db).await.unwrap(), 0);
+        assert_eq!(crate::recipes::count(&db, None).await.unwrap(), 0);
     }
 }

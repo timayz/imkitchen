@@ -1,12 +1,17 @@
 //! Importing a recipe from a page of the web, through the api's routes: the
 //! recipe the page describes becomes one of the user who asked, and theirs
-//! alone.
+//! alone, and each try is noted for admin.
 
 mod helpers;
 
+use std::sync::{Arc, Mutex};
+
 use axum::http::{Method, StatusCode};
+use evento::metadata::Event;
+use evento::subscription::{Context, SubscriptionBuilder};
 use helpers::api::{Api, invalid, refusal, register, start};
 use helpers::eventually;
+use imkitchen_aggregates::recipe_import::{Failed, Imported};
 use imkitchen_api::recipes::PageError;
 use serde_json::{Value, json};
 
@@ -405,5 +410,99 @@ async fn each_user_who_imports_a_page_has_a_recipe_of_their_own() {
     assert_ne!(again["id"], his["id"]);
     assert_eq!(listed(&api, &bob, 2).await.len(), 2);
 
+    api.shutdown().await;
+}
+
+/// The tries the api noted, as they come: who, the address, whether the
+/// page was sent, and the recipe it gave or why it gave none.
+type Tries = Arc<Mutex<Vec<(String, String, bool, Result<String, String>)>>>;
+
+#[evento::subscription]
+async fn on_imported<E: evento::Executor>(
+    context: &Context<'_, E>,
+    event: Event<Imported>,
+) -> anyhow::Result<()> {
+    let tries: Tries = context.extract();
+    let Imported {
+        user_id,
+        url,
+        page_sent,
+        recipe_id,
+    } = event.data;
+    tries
+        .lock()
+        .unwrap()
+        .push((user_id, url, page_sent, Ok(recipe_id)));
+    Ok(())
+}
+
+#[evento::subscription]
+async fn on_failed<E: evento::Executor>(
+    context: &Context<'_, E>,
+    event: Event<Failed>,
+) -> anyhow::Result<()> {
+    let tries: Tries = context.extract();
+    let Failed {
+        user_id,
+        url,
+        page_sent,
+        reason,
+    } = event.data;
+    tries
+        .lock()
+        .unwrap()
+        .push((user_id, url, page_sent, Err(reason)));
+    Ok(())
+}
+
+#[tokio::test]
+async fn every_try_is_noted_whether_it_gave_a_recipe_or_not() {
+    let (api, outbox, node, _dir) = start().await;
+    let (token, alice) = register(&api, &outbox, "alice@example.com").await;
+    let tries = Tries::default();
+    let following = SubscriptionBuilder::new("tests/recipe-imports")
+        .data(tries.clone())
+        .handler(on_imported())
+        .handler(on_failed())
+        .start(&node.executor)
+        .await
+        .unwrap();
+
+    node.web.put(MARMITON, MARMITON_PAGE);
+    let (status, imported) = import(&api, &token, MARMITON).await;
+    assert_eq!(status, StatusCode::CREATED, "{imported}");
+    let nowhere = "https://nowhere.example.com/recipe";
+    let (status, _) = import(&api, &token, nowhere).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    let captcha = "https://captcha.example.com/pancakes";
+    let body = json!({ "url": captcha, "html": "<h1>Pancakes</h1>" });
+    let (status, _) = api.post("/v1/recipes/import", Some(&token), body).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    // What is not the address of a page was never tried.
+    let (status, _) = import(&api, &token, "pancakes").await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+
+    let noted = eventually("the tries to be noted", || async {
+        let tries = tries.lock().unwrap().clone();
+        (tries.len() >= 3).then_some(tries)
+    })
+    .await;
+    let recipe = imported["id"].as_str().unwrap().to_owned();
+    let failed = |reason: &str| Err(reason.to_owned());
+    assert_eq!(
+        noted,
+        [
+            (alice.clone(), MARMITON.to_owned(), false, Ok(recipe)),
+            (
+                alice.clone(),
+                nowhere.to_owned(),
+                false,
+                failed("page_unreachable")
+            ),
+            (alice, captcha.to_owned(), true, failed("no_recipe_on_page")),
+        ]
+    );
+
+    following.shutdown().await.unwrap();
     api.shutdown().await;
 }
