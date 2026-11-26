@@ -16,5 +16,6 @@ pub mod plat;
 pub mod recipe;
 pub mod settings;
 mod sidecar;
+pub mod tutorial;
 
 pub use sidecar::Sidecar;

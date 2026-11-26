@@ -218,6 +218,37 @@ is in the next answer.
 - An item the list does not call for is refused
   (`grocery_item_not_found`).
 
+## Tutorial
+
+The app walks a new user through five steps. How far they are is kept here,
+so it is the same on every device: `GET /v1/tutorial` answers every step, in
+order, and whether it is done.
+
+```json
+{
+  "steps": [
+    { "step": "recipe", "completed": true },
+    { "step": "plat", "completed": false },
+    { "step": "settings", "completed": false },
+    { "step": "list", "completed": false },
+    { "step": "groceries", "completed": false }
+  ],
+  "skipped": false,
+  "completed": false
+}
+```
+
+- No command does a step for its own sake: each is done by what it names,
+  wherever it is made from, and shows a moment later. `recipe` by writing a
+  recipe or importing one, `plat` by composing a plat, `settings` by setting
+  how the list is generated or the language, `list` by generating the list
+  or picking a meal, `groceries` by checking or adjusting an item.
+- The steps are done in any order; `completed` says they all are.
+- `POST /v1/tutorial/skip` skips it: the steps done stay done, and no other
+  is noted. `POST /v1/tutorial/restart` starts it over, skipped or not: no
+  step is done, and each is done again by the next command that does it,
+  whatever the user already has.
+
 ## Who asks
 
 Signing in answers a token. It is sent back with every request as

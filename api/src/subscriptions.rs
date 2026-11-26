@@ -56,6 +56,13 @@ pub async fn start(
             .start(executor)
             .await
             .context("cannot start the list subscription")?,
+        // The steps of the tutorials, noted as the users do them: writes,
+        // so through the cluster.
+        crate::tutorial::subscription()
+            .supervised()
+            .start(executor)
+            .await
+            .context("cannot start the tutorial subscription")?,
         // This node's copies of the pictures, from its own file too.
         crate::images::subscription(db.clone(), images)
             .supervised()
