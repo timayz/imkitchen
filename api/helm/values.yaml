@@ -7,8 +7,9 @@
 replicaCount: 3
 
 image:
-  repository: timayz/imkitchen-api
-  # Empty: the chart's appVersion.
+  repository: timayz/imkitchen
+  # Empty: api-<the chart's appVersion>. Every application of imkitchen has
+  # its tags in the one repository.
   tag: ""
   pullPolicy: IfNotPresent
 

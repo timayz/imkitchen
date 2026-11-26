@@ -3,7 +3,7 @@ name: imkitchen-api
 description: The imkitchen api, one node or a cluster of them
 type: application
 version: 0.1.0
-# The image tag deployed when image.tag is left empty.
+# The version of the api deployed when image.tag is left empty (api-<it>).
 appVersion: "1.13.0"
 home: https://imkitchen.app
 sources:

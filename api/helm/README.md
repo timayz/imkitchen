@@ -41,12 +41,14 @@ helm install imkitchen api/helm \
 
 ## The image
 
-`timayz/imkitchen-api`, built from the root of the repository:
+`timayz/imkitchen:api-<version>`, built from the root of the repository:
 
 ```sh
-docker build -f api/Dockerfile -t timayz/imkitchen-api .
+docker build -f api/Dockerfile -t timayz/imkitchen:api-local .
 ```
 
 It is pushed when a version is tagged (`.github/workflows/publish.yaml`);
 the same workflow run by hand builds it and pushes nothing.
-`image.tag` defaults to the chart's `appVersion`.
+`image.tag` defaults to `api-<the chart's appVersion>`. The build starts from
+`timayz/imkitchen:api-builder` (`api/builder.Dockerfile`, the Builder
+workflow), which has to be there first.

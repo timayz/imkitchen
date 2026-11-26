@@ -2,52 +2,11 @@
 #
 # The image of the api, built from the root of the repository:
 #
-#   docker build -f api/Dockerfile -t timayz/imkitchen-api .
+#   docker build -f api/Dockerfile -t timayz/imkitchen:api-local .
 #
-# The dependencies are built in a stage of their own, `deps` (cargo-chef),
-# which only changes with Cargo.lock: built again on the same machine, a
-# change to the code builds the api alone.
-
-FROM rust:1.100-alpine AS chef
-
-# build-base, cmake and perl build the C the crypto and WebP crates carry;
-# clang-libs is what the store's bindings generator looks for.
-RUN apk add --no-cache musl-dev build-base cmake perl clang-libs ca-certificates
-
-RUN cargo install cargo-chef --locked --version 0.1.78
-
-WORKDIR /app
-
-FROM chef AS planner
-
-COPY . .
-
-RUN cargo chef prepare --recipe-path recipe.json
-
-FROM chef AS deps
-
-ARG USER=imkitchen
-ARG UID=10001
-ARG GID=10001
-
-# Create group explicitly with fixed GID, then user with fixed UID/GID.
-# This guarantees GID=10001 (adduser alone may pick a different GID).
-RUN addgroup -g "${GID}" -S "${USER}" && \
-    adduser \
-        --disabled-password \
-        --gecos "" \
-        --home "/nonexistent" \
-        --shell "/sbin/nologin" \
-        --no-create-home \
-        --uid "${UID}" \
-        --ingroup "${USER}" \
-        "${USER}"
-
-COPY --from=planner /app/recipe.json recipe.json
-
-RUN cargo chef cook --release --locked --recipe-path recipe.json -p imkitchen-api
-
-FROM deps AS builder
+# It starts from the builder image (`api/builder.Dockerfile`), which holds
+# the toolchain and a build of the api: only what changed since is compiled.
+FROM timayz/imkitchen:api-builder AS builder
 
 COPY . .
 

@@ -10,5 +10,5 @@
 !app
 **/target
 api/helm
-api/Dockerfile*
+api/*Dockerfile*
 api/config/*.local.toml

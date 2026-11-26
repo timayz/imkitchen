@@ -35,7 +35,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{- define "api.image" -}}
-{{- printf "%s:%s" .Values.image.repository (.Values.image.tag | default .Chart.AppVersion) }}
+{{- printf "%s:%s" .Values.image.repository (.Values.image.tag | default (printf "api-%s" .Chart.AppVersion)) }}
 {{- end }}
 
 {{- define "api.envSecret" -}}
