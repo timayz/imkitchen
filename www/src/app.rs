@@ -34,6 +34,7 @@ use topcoat::{
     view::{View, class, error_boundary, view},
 };
 
+use crate::api::Api;
 use crate::config::{AppConfig, ContactConfig};
 use crate::db::Db;
 use crate::events::Events;
@@ -58,18 +59,24 @@ pub struct Site {
 }
 
 /// The pages of www, read from `db`, saying how www stands with the api
-/// through `events` and what `site` says of imkitchen. Give the result its
-/// assets, then build it.
-pub fn router(db: Db, events: Events, site: Site) -> RouterBuilder {
+/// through `events`, sending their commands to `api` and saying what `site`
+/// says of imkitchen. Give the result its assets, then build it.
+pub fn router(db: Db, events: Events, api: Api, site: Site) -> RouterBuilder {
     module_router!()
         .with(db)
         .with(events)
+        .with(api)
         .with(site.url.clone())
         .with(site)
 }
 
 /// The read models of www.
 pub(crate) fn db(cx: &Cx) -> &Db {
+    context(cx)
+}
+
+/// The api, for the commands of the pages.
+pub(crate) fn api(cx: &Cx) -> &Api {
     context(cx)
 }
 

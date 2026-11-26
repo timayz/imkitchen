@@ -19,7 +19,12 @@ pub async fn privacy(cx: &Cx) -> Result<impl View> {
         Section::new(t!(privacy_controller_title), [t!(privacy_controller_1)]),
         Section::new(
             t!(privacy_data_title),
-            [t!(privacy_data_1), t!(privacy_data_2), t!(privacy_data_3)],
+            [
+                t!(privacy_data_1),
+                t!(privacy_data_2),
+                t!(privacy_data_3),
+                t!(privacy_data_4),
+            ],
         ),
         Section::new(
             t!(privacy_use_title),

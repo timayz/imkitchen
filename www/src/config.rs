@@ -66,6 +66,8 @@ pub struct DatabaseConfig {
 /// How www reaches the api.
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct ApiConfig {
+    /// Where the api answers HTTP: what the commands of www are POSTed to.
+    pub url: String,
     /// The api's listener for the sidecars (`[sidecars]` there): an IP and
     /// port, or a `host:port` looked up again on every reconnect.
     pub events: String,
@@ -102,6 +104,12 @@ impl ApiConfig {
     }
 
     fn validate(&self) -> Result<(), ConfigError> {
+        if !self.url.starts_with("http://") && !self.url.starts_with("https://") {
+            return Err(ConfigError::Message(format!(
+                "api.url must be an http(s) address, not '{}'",
+                self.url
+            )));
+        }
         if self.events_host().is_none() {
             return Err(ConfigError::Message(format!(
                 "api.events must be host:port, not '{}'",
@@ -218,6 +226,7 @@ impl Config {
             .set_default("server.url", "http://localhost:3010")?
             .set_default("server.shutdown_timeout_secs", 30)?
             .set_default("database.path", "data/www.db")?
+            .set_default("api.url", "http://127.0.0.1:3000")?
             .set_default("api.events", "127.0.0.1:4000")?
             .set_default("contact.email", "contact@imkitchen.app")?
             .set_default("monitoring.log_level", "info")?
@@ -296,6 +305,11 @@ mod tests {
 
         let config = load("[api]\nevents = \"[::1]:4000\"\n").unwrap();
         assert_eq!(config.api.events_host(), Some("::1"));
+
+        assert_eq!(config.api.url, "http://127.0.0.1:3000");
+
+        let err = load("[api]\nurl = \"api:3000\"\n").unwrap_err();
+        assert!(err.to_string().contains("api.url"), "{err}");
 
         let err = load("[api]\nevents = \"api\"\n").unwrap_err();
         assert!(err.to_string().contains("api.events"), "{err}");

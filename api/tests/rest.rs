@@ -281,6 +281,7 @@ async fn the_reference_describes_what_the_api_serves() {
             "POST /v1/auth/register",
             "POST /v1/auth/sign-in",
             "POST /v1/auth/sign-out",
+            "POST /v1/contact-messages",
             "POST /v1/list/entries",
             "POST /v1/list/generate",
             "POST /v1/plats",

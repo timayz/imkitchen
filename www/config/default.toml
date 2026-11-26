@@ -22,6 +22,9 @@ shutdown_timeout_secs = 30
 path = "data/www.db"
 
 [api]
+# Where the api answers HTTP: what the commands of www (the contact form)
+# are POSTed to. One node, or a name in front of several.
+url = "http://127.0.0.1:3000"
 # Where www follows the api's events: the `[sidecars]` listener of the api
 # (evento's remote protocol over TCP, not HTTP). One node, or a name in front
 # of several, looked up again on every reconnect.

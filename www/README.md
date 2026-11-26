@@ -46,6 +46,8 @@ What a deployment sets:
   is got. A listing is linked once it is set; while none is, the home says
   the application is coming.
 - `contact.email`: the address the contact and legal pages give.
+- `api.url`: where the api answers HTTP, for the commands of www (the
+  contact form).
 - `api.events`: the `[sidecars]` listener of the api (evento's remote
   protocol over TCP, not HTTP). One node, or a name in front of several.
 - `api.token`: `sidecars.tokens.www` of the api.
@@ -64,6 +66,7 @@ migrations; `serve` refuses a store that is not there or not migrated.
 | `src/app.rs`, `src/app/` | The pages: the router, the layout, each page at the address of its module. |
 | `src/app/language.rs`, `src/app/language/` | The pages of a language: the home, the terms, the privacy page, the contact. |
 | `src/app/l10n/` | The sentences of the pages, one Fluent file per language. |
+| `src/api.rs` | The commands www sends to the api, and what it refuses of them. |
 | `src/events.rs` | The connection to the api's events. |
 | `src/recipes.rs` | A read model: its subscription and what the pages read from it. |
 | `src/subscriptions.rs` | Every subscription www runs. |
@@ -93,6 +96,23 @@ imkitchen no longer is (ads, premium, payment, sharing, chefs). Sentences
 are written around them.
 
 Classes are Tailwind's, found in the `.rs` files when the crate is built.
+
+## Commands
+
+www writes nothing of imkitchen itself: what a visitor does that is to be
+kept is a command of the api, POSTed over HTTP (`api.url`) by `src/api.rs`.
+Today that is the contact form, `POST /v1/contact-messages`.
+
+A form is a `#[page(POST)]` next to the page that shows it. It sends the
+command in the language of its address, and:
+
+- taken, sends the visitor on (`303`) to a page that does not send it again;
+- refused (`validation_failed`), shows the form again over what was typed,
+  each field under what the api says of it, in the api's words;
+- when the api does not answer, shows the form again and says so.
+
+To send another command, give `Api` a method for it and its body a struct;
+the sentences of a refusal are the api's, so www has none to add.
 
 ## Read models
 
