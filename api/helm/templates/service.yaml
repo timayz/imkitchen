@@ -1,0 +1,45 @@
+# What clients are served through: the nodes that take writes.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "api.fullname" . }}
+  labels:
+    {{- include "api.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+    {{- if .Values.sidecars.enabled }}
+    - name: sidecars
+      port: {{ .Values.sidecars.port }}
+      targetPort: sidecars
+      protocol: TCP
+    {{- end }}
+  selector:
+    {{- include "api.selectorLabels" . | nindent 4 }}
+---
+# What the nodes reach each other through, each under its own name. A node
+# is ready once its peers confirmed it, so they must find it before it is.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "api.nodes" . }}
+  labels:
+    {{- include "api.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  ports:
+    - name: store
+      port: {{ .Values.cluster.port }}
+      targetPort: store
+      protocol: TCP
+    - name: images
+      port: {{ .Values.cluster.imagesPort }}
+      targetPort: images
+      protocol: TCP
+  selector:
+    {{- include "api.selectorLabels" . | nindent 4 }}

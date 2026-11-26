@@ -1,0 +1,72 @@
+{{- $clustered := include "api.clustered" . }}
+{{- $tls := and $clustered .Values.cluster.tls.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "api.fullname" . }}
+  labels:
+    {{- include "api.labels" . | nindent 4 }}
+data:
+  config.toml: |
+    [server]
+    host = "0.0.0.0"
+    port = 3000
+    shutdown_timeout_secs = {{ int .Values.config.server.shutdownTimeoutSecs }}
+
+    [database]
+    path = "/var/lib/imkitchen/imkitchen.db"
+    {{- if $clustered }}
+
+    # node_id is the pod's ordinal, from its environment.
+    [cluster]
+    peers = [
+      {{- range $host := include "api.peerHosts" . | fromJsonArray }}
+      {{ printf "%s:%d" $host (int $.Values.cluster.port) | quote }},
+      {{- end }}
+    ]
+    listen = "0.0.0.0:{{ int .Values.cluster.port }}"
+    {{- if $tls }}
+
+    [cluster.tls]
+    ca = "/etc/imkitchen-tls/nodes/ca.crt"
+    cert = "/etc/imkitchen-tls/nodes/tls.crt"
+    key = "/etc/imkitchen-tls/nodes/tls.key"
+    {{- end }}
+    {{- end }}
+    {{- if .Values.sidecars.enabled }}
+
+    [sidecars]
+    listen = "0.0.0.0:{{ int .Values.sidecars.port }}"
+    {{- if .Values.sidecars.tls.secretName }}
+    tls_cert = "/etc/imkitchen-tls/sidecars/tls.crt"
+    tls_key = "/etc/imkitchen-tls/sidecars/tls.key"
+    {{- end }}
+    {{- end }}
+
+    [auth]
+    session_lifetime_secs = {{ int .Values.config.auth.sessionLifetimeSecs }}
+    {{- if .Values.config.auth.rootEmail }}
+
+    [auth.root]
+    email = {{ .Values.config.auth.rootEmail | quote }}
+    {{- end }}
+
+    [mail]
+    from = {{ .Values.config.mail.from | quote }}
+
+    [images]
+    dir = "/var/lib/imkitchen/images"
+    {{- if $clustered }}
+    peers = [
+      {{- range $host := include "api.peerHosts" . | fromJsonArray }}
+      {{ printf "%s://%s:%d" (ternary "https" "http" (not (not $tls))) $host (int $.Values.cluster.imagesPort) | quote }},
+      {{- end }}
+    ]
+    listen = "0.0.0.0:{{ int .Values.cluster.imagesPort }}"
+    {{- end }}
+
+    [monitoring]
+    log_level = {{ .Values.config.monitoring.logLevel | quote }}
+    log_json = {{ .Values.config.monitoring.logJson }}
+    log_target = {{ .Values.config.monitoring.logTarget }}
+    log_line_number = {{ .Values.config.monitoring.logLineNumber }}

@@ -1,0 +1,18 @@
+# What CI renders the chart with: three nodes, everything on.
+secretEnv:
+  IMKITCHEN_API__AUTH__SECRET: "a secret of the ci, 32 characters long"
+  IMKITCHEN_API__SIDECARS__TOKENS__WWW: "the token of www in ci, 32 characters"
+config:
+  auth:
+    rootEmail: root@example.com
+cluster:
+  tls:
+    enabled: true
+    issuerRef:
+      kind: ClusterIssuer
+      name: internal-ca
+sidecars:
+  enabled: true
+route:
+  enabled: true
+  hostname: api.example.com
