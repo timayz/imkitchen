@@ -17,6 +17,7 @@ use crate::error::{method_not_allowed, not_found};
 use crate::health::{__path_health, __path_ready, health, ready};
 use crate::locale::localize;
 use crate::openapi::{self, Document, VERSION};
+use crate::recipes::Pages;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -30,6 +31,8 @@ pub struct AppState {
     pub auth: Arc<Auth>,
     /// The password sign-ins tried on this node, per address.
     pub sign_ins: Arc<SignInAttempts>,
+    /// The pages of the web recipes are imported from.
+    pub pages: Arc<dyn Pages>,
 }
 
 /// Every route of the api: the probes of the node, then the commands and

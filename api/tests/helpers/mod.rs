@@ -5,10 +5,11 @@
 
 pub mod api;
 
+use std::collections::HashMap;
 use std::future::Future;
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use evento::cluster::Settings;
@@ -16,6 +17,7 @@ use imkitchen_api::auth::Auth;
 use imkitchen_api::cluster::{self, Cluster, Executor};
 use imkitchen_api::config::{AuthConfig, RootConfig, Secret};
 use imkitchen_api::db::{self, Db, Store};
+use imkitchen_api::recipes::{PageError, Pages};
 use imkitchen_api::server::AppState;
 use tempfile::TempDir;
 
@@ -45,6 +47,33 @@ pub fn auth(session_lifetime_secs: u64) -> Arc<Auth> {
     )
 }
 
+/// The web of the tests: the pages put on it. Nothing answers anywhere
+/// else.
+#[derive(Default)]
+pub struct TestWeb {
+    pages: Mutex<HashMap<String, Result<String, PageError>>>,
+}
+
+impl TestWeb {
+    /// Answers `url` with the page `html`.
+    pub fn put(&self, url: &str, html: &str) {
+        self.answer(url, Ok(html.to_owned()));
+    }
+
+    pub fn answer(&self, url: &str, answer: Result<String, PageError>) {
+        self.pages.lock().unwrap().insert(url.to_owned(), answer);
+    }
+}
+
+#[async_trait::async_trait]
+impl Pages for TestWeb {
+    async fn fetch(&self, url: &reqwest::Url) -> Result<String, PageError> {
+        let nothing = || Err(PageError::Unreachable("nothing answers there".to_owned()));
+        let pages = self.pages.lock().unwrap();
+        pages.get(url.as_str()).cloned().unwrap_or_else(nothing)
+    }
+}
+
 pub struct TestNode {
     pub cluster: Arc<Cluster>,
     /// Writes go through the cluster; with peers, a read of one aggregate
@@ -53,6 +82,8 @@ pub struct TestNode {
     /// This node's own file, as it stands: what the node holds itself.
     pub store: Store,
     pub store_path: PathBuf,
+    /// Where this node imports recipes from.
+    pub web: Arc<TestWeb>,
 }
 
 impl TestNode {
@@ -76,6 +107,7 @@ impl TestNode {
             executor,
             store,
             store_path,
+            web: Arc::default(),
         }
     }
 
@@ -86,6 +118,7 @@ impl TestNode {
             db: Db::from(self.store.clone()),
             auth: auth(3600),
             sign_ins: Arc::default(),
+            pages: self.web.clone(),
         }
     }
 }

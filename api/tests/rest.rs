@@ -270,6 +270,7 @@ async fn the_reference_describes_what_the_api_serves() {
             "POST /v1/auth/sign-in",
             "POST /v1/auth/sign-out",
             "POST /v1/recipes",
+            "POST /v1/recipes/import",
             "PUT /v1/account/password",
             "PUT /v1/account/profile",
             "PUT /v1/admin/users/{id}/role",

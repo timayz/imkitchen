@@ -37,6 +37,7 @@ done with it.
 | Set a thing to what the body says, as a whole | `PUT /v1/recipes/{id}` | `204` |
 | Set a part of a thing to what the body says | `PUT /v1/recipes/{id}/{part}` | `204` |
 | Delete a thing | `DELETE /v1/recipes/{id}` | `204` |
+| Create a thing out of something else | `POST /v1/recipes/{verb}` (`import`) | `201` and the thing, with its `id` |
 | Anything else that is done to a thing | `POST /v1/recipes/{id}/{verb}` | `204`, or `201` and what it created |
 
 - `PUT` is for commands that give the same result sent twice
