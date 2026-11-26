@@ -5,8 +5,8 @@
 #   docker build -f api/Dockerfile -t timayz/imkitchen-api .
 #
 # The dependencies are built in a stage of their own, `deps` (cargo-chef),
-# which only changes with Cargo.lock: a change to the code builds the api
-# alone. CI keeps that stage between runs, and nothing after it.
+# which only changes with Cargo.lock: built again on the same machine, a
+# change to the code builds the api alone.
 
 FROM rust:1.100-alpine AS chef
 

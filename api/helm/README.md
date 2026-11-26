@@ -47,5 +47,6 @@ helm install imkitchen api/helm \
 docker build -f api/Dockerfile -t timayz/imkitchen-api .
 ```
 
-It is pushed when a version is tagged (`.github/workflows/publish.yaml`).
+It is pushed when a version is tagged (`.github/workflows/publish.yaml`);
+the same workflow run by hand builds it and pushes nothing.
 `image.tag` defaults to the chart's `appVersion`.

@@ -15,14 +15,6 @@ jobs:
   test:
     uses: timayz/.github/.github/workflows/rust-test.yml@v3
 
-  # The image of the api builds; it is pushed when a version is tagged
-  # (publish.yaml). A branch keeps the dependencies it compiled for the
-  # builds that follow, a pull request only reads them.
-  api-image:
-    uses: ./.github/workflows/api-image.yaml
-    with:
-      cache: ${{ github.event_name == 'push' }}
-
   # The chart of the api renders, for a cluster and for a node alone.
   api-chart:
     runs-on: ubuntu-24.04
