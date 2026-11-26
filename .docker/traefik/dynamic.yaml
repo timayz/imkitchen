@@ -2,7 +2,9 @@
 #
 #   https://imkitchen.localhost          www   (make www.dev, 3010)
 #   https://admin.imkitchen.localhost    admin (3020)
-#   https://app.imkitchen.localhost/api  api   (make dev, 3000)
+#   https://app.imkitchen.localhost/api  api   (make dev, 3000), for the app
+#                                        in a browser: its own origin
+#   https://api.imkitchen.localhost      api, for the mobile apps
 #
 # `make cert` writes the certificate they are served with.
 
@@ -32,10 +34,18 @@ http:
       entryPoints:
         - https
 
-    # The api is where the app reaches it: under /api of the app's address,
-    # which the api itself knows nothing of (/api/v1/recipes is its
-    # /v1/recipes).
+    # The api at an address of its own, for the mobile apps.
     api:
+      rule: "Host(`api.imkitchen.localhost`)"
+      tls: true
+      service: api
+      entryPoints:
+        - https
+
+    # The api under /api of the app's address, which the api itself knows
+    # nothing of (/api/v1/recipes is its /v1/recipes): the app in a browser
+    # then calls its own origin, and needs no CORS.
+    app-api:
       rule: "Host(`app.imkitchen.localhost`) && PathPrefix(`/api`)"
       tls: true
       service: api

@@ -44,8 +44,8 @@ cert.install:
 
 # Traefik in front of what runs on the host, and the mail catcher:
 # https://imkitchen.localhost is www (`make www.dev`),
-# https://admin.imkitchen.localhost admin, and
-# https://app.imkitchen.localhost/api the api (`make dev`).
+# https://admin.imkitchen.localhost admin, and the api (`make dev`) both
+# https://api.imkitchen.localhost and https://app.imkitchen.localhost/api.
 up:
 	DOCKER_GID=$$(getent group docker | cut -d: -f3) docker compose up -d --remove-orphans
 
