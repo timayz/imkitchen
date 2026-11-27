@@ -1,19 +1,407 @@
-//! `/list`: the list of the week. Nothing of it is shown yet: the screen is
-//! there for the navigation to lead to.
+//! `/list`: the meals who reads the page plans to cook, in the order they
+//! were planned. The list is generated in one action, drawn by the api as
+//! the settings say, or filled by hand: a meal is added at `/list/add` and
+//! replaced at `/list/{entry_id}/replace` ([`_pick`]), and taken off from
+//! here.
+//!
+//! A meal is a recipe or a dish, cooked for so many people. The list names
+//! it and keeps nothing of it: each is shown as it now stands, and one
+//! that was deleted is no longer on the list.
 
+pub mod _pick;
+
+use std::collections::HashMap;
+
+use reqwest::Method;
+use serde::Deserialize;
+use timada_core::Rendition;
 use topcoat::{
     Result,
     context::Cx,
+    l10n::Translation,
     metadata::Metadata,
-    router::page,
-    view::{View, view},
+    router::{error::see_other, href, page, path_param, query_params},
+    view::{View, class, component, view},
 };
 
-use crate::app::{_signed_in::screen, t};
+use super::dishes::{self, dish_id};
+use super::recipes::{self, recipe_id};
+use super::{BUTTON, BUTTON_QUIET, Failure, H1, account, asking, failed, followed, read};
+use crate::api::CommandError;
+use crate::app::{api, db, language, t};
+use crate::list::Entry;
+
+path_param!(pub entry_id);
+
+/// What the address of the list says of what was just done to it.
+const GENERATED: &str = "generated";
+pub(crate) const ADDED: &str = "added";
+pub(crate) const REPLACED: &str = "replaced";
+const REMOVED: &str = "removed";
+
+#[query_params]
+struct Query {
+    /// What was just done to the list.
+    done: Option<String>,
+}
+
+/// The list as the api tells of it: what app waits to have followed before
+/// it shows it. No page is read from it.
+#[derive(Debug, Deserialize)]
+struct Told {
+    entries: Vec<ToldEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ToldEntry {
+    id: String,
+    servings: u32,
+    #[serde(default)]
+    recipe: Option<ToldMeal>,
+    #[serde(default)]
+    plat: Option<ToldMeal>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ToldMeal {
+    id: String,
+}
+
+impl ToldEntry {
+    /// Whether `entry`, as app followed it, says the same.
+    fn is(&self, entry: &Entry) -> bool {
+        let id = |meal: &Option<ToldMeal>| meal.as_ref().map(|meal| meal.id.clone());
+        self.id == entry.id
+            && self.servings == entry.servings
+            && id(&self.recipe) == entry.recipe_id
+            && id(&self.plat) == entry.dish_id
+    }
+}
+
+/// Waits until app followed the list as far as the api has written it, for
+/// the page the browser is sent to to show it as it was just left. An api
+/// that does not say is not waited for: the page shows the list a moment
+/// later.
+async fn settled(cx: &Cx) {
+    let language = language(cx);
+    let told = api(cx).read::<Told>(asking(cx, &language), &["list"]).await;
+    let Ok(told) = told else {
+        return;
+    };
+    let (db, owner_id) = (db(cx), account(cx).id.as_str());
+    followed(|| async {
+        let entries = crate::list::of(db, owner_id).await?;
+        Ok(told.entries.len() == entries.len()
+            && told
+                .entries
+                .iter()
+                .zip(&entries)
+                .all(|(told, entry)| told.is(entry)))
+    })
+    .await;
+}
+
+/// Sends the browser back to the list once the api did what was asked and
+/// app followed, saying `done`; or says what the api refused.
+pub(crate) async fn changed(
+    cx: &Cx,
+    done: &str,
+    asked: Result<(), CommandError>,
+) -> Result<Failure> {
+    match asked {
+        Ok(()) => {
+            settled(cx).await;
+            let then = href!(show).query([("done", done)]).resolve(cx);
+            Err(see_other(then).into())
+        }
+        Err(err) => Failure::of(cx, err),
+    }
+}
+
+/// A recipe or a dish, as a meal is shown.
+pub(crate) struct Meal {
+    pub(crate) title: String,
+    /// What a dish is made of: the titles of its recipes, when it has
+    /// some.
+    pub(crate) made_of: Option<String>,
+    pub(crate) picture: Option<String>,
+    /// Where it is read.
+    pub(crate) address: String,
+}
+
+/// The recipes and the dishes of who reads the page among `recipe_ids` and
+/// `dish_ids`, as meals, by id: one that was deleted is not among them.
+pub(crate) async fn meals(
+    cx: &Cx,
+    mut recipe_ids: Vec<String>,
+    dish_ids: &[String],
+) -> Result<(HashMap<String, Meal>, HashMap<String, Meal>)> {
+    let found = read(crate::dishes::listed_own(db(cx), &account(cx).id, dish_ids).await)?;
+    // The recipes of the dishes with the others, read at once.
+    let alone = recipe_ids.clone();
+    recipe_ids.extend(
+        found
+            .iter()
+            .flat_map(|dish| dish.recipe_ids.0.iter().cloned()),
+    );
+    recipe_ids.sort_unstable();
+    recipe_ids.dedup();
+    let named = dishes::named(cx, &recipe_ids).await?;
+    let picture = |file_id: &str| api(cx).picture(file_id, Rendition::Listing);
+    let dishes = found
+        .into_iter()
+        .map(|dish| {
+            let parts: Vec<_> = dish
+                .recipe_ids
+                .0
+                .iter()
+                .filter_map(|id| named.get(id))
+                .collect();
+            let meal = Meal {
+                made_of: Some(
+                    parts
+                        .iter()
+                        .map(|recipe| recipe.title.as_str())
+                        .collect::<Vec<_>>()
+                        .join(" · "),
+                )
+                .filter(|made_of| !made_of.is_empty()),
+                picture: parts
+                    .iter()
+                    .find_map(|recipe| recipe.file_id.as_deref())
+                    .map(picture),
+                address: href!(dishes::show, dish_id: dish.id.as_str())
+                    .resolve(cx)
+                    .to_string(),
+                title: dish.name,
+            };
+            (dish.id, meal)
+        })
+        .collect();
+    let recipes = alone
+        .iter()
+        .filter_map(|id| named.get(id))
+        .map(|recipe| {
+            let meal = Meal {
+                title: recipe.title.clone(),
+                made_of: None,
+                picture: recipe.file_id.as_deref().map(picture),
+                address: href!(recipes::show, recipe_id: recipe.id.as_str())
+                    .resolve(cx)
+                    .to_string(),
+            };
+            (recipe.id.clone(), meal)
+        })
+        .collect();
+    Ok((recipes, dishes))
+}
+
+/// The meal `entry` names among `recipes` and `dishes`, when it is still
+/// there.
+pub(crate) fn meal_of<'a>(
+    entry: &Entry,
+    recipes: &'a HashMap<String, Meal>,
+    dishes: &'a HashMap<String, Meal>,
+) -> Option<&'a Meal> {
+    match (&entry.recipe_id, &entry.dish_id) {
+        (Some(id), _) => recipes.get(id),
+        (None, Some(id)) => dishes.get(id),
+        (None, None) => None,
+    }
+}
 
 #[page(with(Metadata::new().title(t!(list_meta_title))))]
 pub async fn show(cx: &Cx) -> Result<impl View> {
+    Ok(view! { content(failure: None) })
+}
+
+/// Generates the list in one action: drawn by the api as the settings say,
+/// in place of what it held.
+#[page(POST "./generate", with(Metadata::new().title(t!(list_meta_title))))]
+async fn generate(cx: &Cx) -> Result<impl View> {
+    let language = language(cx);
+    let generated = api(cx)
+        .command(
+            asking(cx, &language),
+            Method::POST,
+            &["list", "generate"],
+            None::<&()>,
+        )
+        .await;
+    let failure = changed(cx, GENERATED, generated).await?;
+
+    Ok(view! { content(failure: Some(failure)) })
+}
+
+/// Takes a meal off the list. Its recipe or its dish stays.
+#[page(POST "./{entry_id}/remove", with(Metadata::new().title(t!(list_meta_title))))]
+async fn remove(cx: &Cx) -> Result<impl View> {
+    let language = language(cx);
+    let removed = api(cx)
+        .command(
+            asking(cx, &language),
+            Method::DELETE,
+            &["list", "entries", entry_id(cx)],
+            None::<&()>,
+        )
+        .await;
+    let failure = changed(cx, REMOVED, removed).await?;
+
+    Ok(view! { content(failure: Some(failure)) })
+}
+
+/// A meal of the list, as it is shown.
+struct Card {
+    id: String,
+    /// What it is: `recipe` or `dish`.
+    kind: &'static str,
+    title: String,
+    made_of: Option<String>,
+    picture: Option<String>,
+    address: String,
+    servings: u32,
+    replace: String,
+    remove: String,
+}
+
+/// The list, and what `failure` says of the command that was just refused.
+#[component]
+async fn content(cx: &Cx, failure: Option<Failure>) -> Result<impl View> {
+    let entries = read(crate::list::of(db(cx), &account(cx).id).await)?;
+    let ids = |pick: fn(&Entry) -> &Option<String>| -> Vec<String> {
+        entries
+            .iter()
+            .filter_map(|entry| pick(entry).clone())
+            .collect()
+    };
+    let (recipes, dishes) = meals(
+        cx,
+        ids(|entry| &entry.recipe_id),
+        &ids(|entry| &entry.dish_id),
+    )
+    .await?;
+    let cards: Vec<Card> = entries
+        .iter()
+        .filter_map(|entry| {
+            let meal = meal_of(entry, &recipes, &dishes)?;
+            Some(Card {
+                kind: if entry.dish_id.is_some() {
+                    "dish"
+                } else {
+                    "recipe"
+                },
+                title: meal.title.clone(),
+                made_of: meal.made_of.clone(),
+                picture: meal.picture.clone(),
+                address: meal.address.clone(),
+                servings: entry.servings,
+                replace: href!(_pick::replace, entry_id: entry.id.as_str())
+                    .resolve(cx)
+                    .to_string(),
+                remove: href!(remove, entry_id: entry.id.as_str())
+                    .resolve(cx)
+                    .to_string(),
+                id: entry.id.clone(),
+            })
+        })
+        .collect();
+    let done = query_params::<Query>(cx)
+        .ok()
+        .and_then(|query| query.done.clone())
+        // What a command that was just refused says replaces it.
+        .filter(|_| failure.is_none());
+    let done: Option<(String, Translation<'static>)> = done.and_then(|done| {
+        let said = match done.as_str() {
+            GENERATED => t!(list_generated),
+            ADDED => t!(list_added),
+            REPLACED => t!(list_replaced),
+            REMOVED => t!(list_removed),
+            _ => return None,
+        };
+        Some((done, said))
+    });
+    let count = cards.len();
+    let action = "rounded-lg border border-stone-300 bg-white px-3 py-1 text-sm font-semibold hover:border-stone-500";
+
     Ok(view! {
-        screen(title: t!(list_title), text: t!(list_text))
+        <main class="mx-auto max-w-3xl px-4 py-8 md:px-8 md:py-12">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <h1 class=(H1)>(t!(list_title))</h1>
+                <div class="flex gap-3 text-sm">
+                    <a class=(BUTTON_QUIET) href=(href!(_pick::add)) data-action="add">
+                        (t!(list_add))
+                    </a>
+                    <form method="post" action=(href!(generate)) data-action="generate">
+                        <button class=(BUTTON) type="submit">(t!(list_generate))</button>
+                    </form>
+                </div>
+            </div>
+            <p class="mt-3 text-sm text-stone-500">(t!(list_generate_hint))</p>
+            if let Some((done, said)) = done {
+                <p
+                    class="mt-6 rounded-lg border border-green-300 bg-green-50 px-4 py-3 text-green-900"
+                    role="status"
+                    data-done=(done)
+                >
+                    (said)
+                </p>
+            }
+            <div class="mt-6">failed(failure: failure)</div>
+            if count == 0 {
+                <p class="mt-8 text-stone-600" data-empty="">(t!(list_none))</p>
+            } else {
+                <p class="mt-8 text-sm text-stone-500">(t!(list_meals, count: count))</p>
+            }
+            <ol class="mt-4 grid gap-3" data-entries=(count)>
+                for card in cards {
+                    <li
+                        class="flex items-center gap-4 overflow-hidden rounded-xl border border-stone-200 bg-white"
+                        data-entry=(card.id)
+                        data-kind=(card.kind)
+                    >
+                        // As tall as the meal is told, whatever it says.
+                        <div class="relative min-h-20 w-20 shrink-0 self-stretch bg-stone-100">
+                            if let Some(picture) = card.picture {
+                                <img
+                                    class="absolute inset-0 size-full object-cover"
+                                    src=(picture)
+                                    alt=""
+                                    loading="lazy"
+                                >
+                            }
+                        </div>
+                        <div class="min-w-0 flex-1 py-3">
+                            <h2 class="font-semibold wrap-break-word">
+                                <a class="hover:underline" href=(card.address)>(card.title.as_str())</a>
+                            </h2>
+                            if let Some(made_of) = card.made_of {
+                                <p class="mt-1 line-clamp-2 text-sm text-stone-500">(made_of)</p>
+                            }
+                            <p class="mt-1 text-sm text-stone-500" data-servings=(card.servings)>
+                                (t!(recipe_serves, count: card.servings))
+                            </p>
+                        </div>
+                        <div class="flex shrink-0 flex-col gap-2 py-3 pr-3 sm:flex-row">
+                            <a
+                                class=(action)
+                                href=(card.replace)
+                                aria-label=(t!(list_replace_of, title: card.title.as_str()))
+                            >
+                                (t!(list_replace))
+                            </a>
+                            <form method="post" action=(card.remove)>
+                                <button
+                                    class=(class!(action, "w-full text-red-800"))
+                                    type="submit"
+                                    aria-label=(t!(list_remove_of, title: card.title.as_str()))
+                                >
+                                    (t!(list_remove))
+                                </button>
+                            </form>
+                        </div>
+                    </li>
+                }
+            </ol>
+        </main>
     })
 }

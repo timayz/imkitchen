@@ -16,7 +16,7 @@
 use evento::metadata::Event;
 use evento::subscription::{Context, SubscriptionBuilder};
 use imkitchen_aggregates::plat::{Created, Deleted, Edited, RecipeRemoved};
-use timada_core::db::{FromRow, Json, search_key};
+use timada_core::db::{FromRow, Json, params_from_iter, placeholders, search_key};
 use timada_core::like_contains;
 use timada_core::page::Cursor;
 
@@ -183,6 +183,26 @@ pub async fn get_own(db: &Db, owner_id: &str, id: &str) -> anyhow::Result<Option
     db.fetch_optional(
         "SELECT id, name, recipe_ids, created_at FROM dishes WHERE id = ?1 AND owner_id = ?2",
         (id, owner_id),
+    )
+    .await
+}
+
+/// The dishes `ids` name, in no order: those among them that are
+/// `owner_id`'s.
+pub async fn listed_own(db: &Db, owner_id: &str, ids: &[String]) -> anyhow::Result<Vec<Dish>> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut params: Vec<&str> = ids.iter().map(String::as_str).collect();
+    params.push(owner_id);
+    db.fetch_all(
+        &format!(
+            "SELECT id, name, recipe_ids, created_at
+             FROM dishes WHERE id IN ({}) AND owner_id = ?{}",
+            placeholders(ids.len()),
+            params.len()
+        ),
+        params_from_iter(params),
     )
     .await
 }

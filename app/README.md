@@ -100,6 +100,7 @@ when topcoat moves its own.
 | `src/app/_signed_in.rs`, `src/app/_signed_in/` | What a signed-in user reads: who is let through, the layout and its navigation, the home, each screen at the address of its module. |
 | `src/app/_signed_in/recipes.rs`, `src/app/_signed_in/recipes/` | The recipes: the list, a recipe, the form one is written and rewritten with, and the import. |
 | `src/app/_signed_in/dishes.rs`, `src/app/_signed_in/dishes/` | The dishes: the list, a dish, and the form one is composed and recomposed with. |
+| `src/app/_signed_in/list.rs`, `src/app/_signed_in/list/` | The list: its meals, generating it, and where a meal is picked by hand. |
 | `src/app/_signed_in/settings.rs` | The settings: how the list is generated, the language, and the account. |
 | `src/app/auth.rs`, `src/app/auth/` | What a visitor is shown, under `/auth`: signing in, registering, and signing out. |
 | `src/app/_app.rs`, `src/app/_app/` | What is not a page, under `/_app`: the health. |
@@ -108,7 +109,7 @@ when topcoat moves its own.
 | `src/api.rs` | The api over HTTP: registering, signing in and out, who a session is, and the commands. |
 | `src/session.rs` | What a browser keeps of its session: the two cookies. |
 | `src/events.rs` | The connection to the api's events. |
-| `src/recipes.rs`, `src/dishes.rs`, `src/settings.rs` | The read models: the subscription of each and what the pages read from it. |
+| `src/recipes.rs`, `src/dishes.rs`, `src/list.rs`, `src/settings.rs` | The read models: the subscription of each and what the pages read from it. |
 | `src/subscriptions.rs` | Every subscription app runs. |
 | `src/db.rs` | The store and the migrations of its tables. |
 | `Dockerfile`, `builder.Dockerfile`, `helm/` | The image and the chart app is deployed with. |
@@ -149,8 +150,8 @@ the two, or the gateway hands it to www.
 
 `/` is the home. Each screen of the application has a module under
 `src/app/_signed_in/` and is at its address: `/recipes`, `/dishes`, `/list`,
-`/groceries`, `/settings`. Nothing is shown yet on the list and on the
-groceries: they are there for the navigation to lead to.
+`/groceries`, `/settings`. Nothing is shown yet on the groceries: they are
+there for the navigation to lead to.
 
 One layout (`signed_in` in `src/app/_signed_in.rs`) serves the desktop and
 the phone. The navigation between the screens is a bar that stays at the
@@ -286,6 +287,34 @@ left it. The Enter key in a field searches. Nothing is written until the
 form is saved (`POST /v1/plats`, `PUT /v1/plats/{id}`), and what the api
 refuses is said under the name or under the recipes.
 
+## List
+
+The list is the meals a user plans to cook, in the order they were planned.
+A meal is one of their recipes or of their dishes, cooked for so many
+people; the same one may be on the list more than once.
+
+| Address | What it is |
+| --- | --- |
+| `/list` | The list: each meal leading to its recipe or its dish, with what replaces it and what takes it off, and the button that generates the list. |
+| `/list/add` | Where a meal is picked by hand, to go after the others. |
+| `/list/{entry}/replace` | The same page, for a meal that takes the place of another. |
+
+Generating is one action (`POST /list/generate`, the api's
+`POST /v1/list/generate`): the api draws the meals as the settings say, in
+place of what the list held, and refuses when there is nothing to draw.
+
+Picking works without a script. The page shows the user's dishes and their
+recipes, the most recent or those a search finds (dishes by name, recipes
+by title or ingredient), each with the button that picks it, and how many
+the meal is cooked for: as many as the settings say when adding, as many as
+the meal it replaces when replacing. Searching, and the Enter key in a
+field, post the form to get it back as it was left
+(`POST /v1/list/entries`, `PUT /v1/list/entries/{id}` once a meal is
+picked; `DELETE` takes one off).
+
+The list names its meals and keeps nothing of them: each is shown as it now
+stands, and a recipe or a dish that is deleted leaves it.
+
 ## Settings
 
 `/settings` is one page of several forms, each posted to an address of its
@@ -316,8 +345,9 @@ app reads the aggregates `imkitchen-aggregates` lists for it
 (`Sidecar::App`); the api refuses it anything else, and every write. Today
 that is the recipes, of which app keeps all each one says, whose it is and
 the picture it shows (`src/recipes.rs`), and the plats, its dishes: the name
-of each, whose it is and the recipes it names (`src/dishes.rs`), and the
-settings of each user who set some (`src/settings.rs`).
+of each, whose it is and the recipes it names (`src/dishes.rs`), the list
+of each user, the meals it names (`src/list.rs`), and the settings of each
+user who set some (`src/settings.rs`).
 
 To show something else of imkitchen:
 

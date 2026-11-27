@@ -190,8 +190,10 @@ struct Http {
     outbox: Arc<Outbox>,
     /// What mails the codes.
     mailing: Subscription,
-    /// What takes the recipes that are deleted out of the plats.
-    plats: Subscription,
+    /// What the api does on its own time besides: its lists of the recipes
+    /// and of the plats, and what is deleted taken out of the plats and off
+    /// the lists.
+    following: Vec<Subscription>,
     stop: oneshot::Sender<()>,
     served: JoinHandle<()>,
 }
@@ -254,11 +256,21 @@ impl Api {
                 .start(&self.executor)
                 .await
                 .unwrap();
-        let plats =
-            imkitchen_api::plats::subscription(imkitchen_api::db::Db::from(self.store.clone()))
+        let db = imkitchen_api::db::Db::from(self.store.clone());
+        let following = vec![
+            imkitchen_api::recipes::subscription(db.clone())
+                .start(&self.executor.local_reads())
+                .await
+                .unwrap(),
+            imkitchen_api::plats::subscription(db)
                 .start(&self.executor)
                 .await
-                .unwrap();
+                .unwrap(),
+            imkitchen_api::list::subscription()
+                .start(&self.executor)
+                .await
+                .unwrap(),
+        ];
         let state = AppState {
             cluster: self.cluster.clone(),
             executor: self.executor.clone(),
@@ -284,7 +296,7 @@ impl Api {
             client: reqwest::Client::new(),
             outbox,
             mailing,
-            plats,
+            following,
             stop,
             served,
         });
@@ -400,7 +412,9 @@ impl Api {
     async fn shutdown(self) {
         if let Some(http) = self.http {
             http.mailing.shutdown().await.unwrap();
-            http.plats.shutdown().await.unwrap();
+            for subscription in http.following {
+                subscription.shutdown().await.unwrap();
+            }
             let _ = http.stop.send(());
             http.served.await.unwrap();
         }
@@ -2933,6 +2947,342 @@ async fn a_user_manages_their_account() {
     assert!(page.contains("data-done=\"sessions\""), "{page}");
     let answer = phone.get(&router, SETTINGS).await;
     assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, "/"));
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+/// The list, and where a meal is added to it.
+const LIST: &str = "/list";
+const ADD_MEAL: &str = "/list/add";
+
+/// The ids of the entries `page` shows, in the order it shows them.
+fn entries(page: &str) -> Vec<String> {
+    let marker = "data-entry=\"";
+    page.match_indices(marker)
+        .map(|(at, _)| {
+            let from = at + marker.len();
+            page[from..from + page[from..].find('"').unwrap()].to_owned()
+        })
+        .collect()
+}
+
+/// What `page` shows of the entry `id`.
+fn entry<'a>(page: &'a str, id: &str) -> &'a str {
+    let at = page
+        .find(&format!("data-entry=\"{id}\""))
+        .unwrap_or_else(|| panic!("no entry {id} in {page}"));
+    let from = page[..at].rfind("<li").unwrap();
+    &page[from..at + page[at..].find("</li>").unwrap()]
+}
+
+#[tokio::test]
+async fn a_user_generates_their_list_and_picks_meals_by_hand() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "en").await;
+    let token = api.root_token().await;
+
+    // Nothing yet, and the two ways to fill it.
+    let Answer {
+        status, body: page, ..
+    } = cook.get(&router, LIST).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(page.contains("data-empty"), "{page}");
+    assert!(page.contains("data-entries=\"0\""), "{page}");
+    assert!(page.contains("action=\"/list/generate\""), "{page}");
+    assert!(link(&page, ADD_MEAL).is_some(), "{page}");
+
+    // With no recipe there is nothing to generate, nor to pick: the api
+    // says the first, the page the second.
+    let Answer {
+        status, body: page, ..
+    } = cook.post(&router, "/list/generate", &[]).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{page}");
+    assert!(page.contains("data-code=\"nothing_to_generate\""), "{page}");
+    assert!(page.contains("data-empty"), "{page}");
+    let Answer {
+        status, body: page, ..
+    } = cook.get(&router, ADD_MEAL).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        page.contains("<title>Add a meal — imkitchen</title>"),
+        "{page}"
+    );
+    assert!(page.contains("data-pick=\"nothing\""), "{page}");
+    assert!(link(&page, NEW_RECIPE).is_some(), "{page}");
+    // The list is the screen being read on the pages under it.
+    let screen = link(&page, LIST).unwrap();
+    assert!(screen.contains("aria-current=\"page\""), "{screen}");
+
+    // Three recipes, two of them composed into a dish.
+    let soup = recipe_of(&api, &token, "Soup").await;
+    let roast = recipe_of(&api, &token, "Roast").await;
+    let tart = recipe_of(&api, &token, "Tart").await;
+    let plat = json!({ "name": "Sunday", "recipe_ids": [roast, tart] });
+    let (status, body) = api
+        .call(reqwest::Method::POST, "/v1/plats", Some(&token), plat)
+        .await;
+    assert_eq!(status, 201, "{body}");
+    let sunday = body["id"].as_str().unwrap().to_owned();
+    app.counts(3).await;
+    // The api draws from its own lists, a moment behind what was written.
+    eventually("the api to list what was written", || async {
+        let (_, recipes) = api
+            .call(reqwest::Method::GET, "/v1/recipes", Some(&token), json!({}))
+            .await;
+        let (_, plats) = api
+            .call(reqwest::Method::GET, "/v1/plats", Some(&token), json!({}))
+            .await;
+        let listed = |list: &Value| list.as_array().map_or(0, Vec::len);
+        (listed(&recipes["recipes"]) == 3 && listed(&plats["plats"]) == 1).then_some(())
+    })
+    .await;
+
+    // Generated in one action: as the settings say by default, the dish
+    // and the recipe that is part of none, each for four.
+    let answer = cook.post(&router, "/list/generate", &[]).await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/list?done=generated"),
+        "{}",
+        answer.body
+    );
+    let page = cook.get(&router, &answer.location).await.body;
+    assert!(page.contains("data-done=\"generated\""), "{page}");
+    assert!(page.contains("data-entries=\"2\""), "{page}");
+    assert!(!page.contains("data-empty"), "{page}");
+    let generated = entries(&page);
+    assert_eq!(generated.len(), 2, "{page}");
+    let shown: Vec<&str> = generated.iter().map(|id| entry(&page, id)).collect();
+    let dish = shown
+        .iter()
+        .find(|entry| entry.contains("data-kind=\"dish\""));
+    let dish = dish.unwrap_or_else(|| panic!("no dish in {page}"));
+    assert!(dish.contains("Sunday"), "{dish}");
+    assert!(dish.contains("Roast · Tart"), "{dish}");
+    assert!(
+        dish.contains(&format!("href=\"/dishes/{sunday}\"")),
+        "{dish}"
+    );
+    assert!(dish.contains("data-servings=\"4\""), "{dish}");
+    let recipe = shown
+        .iter()
+        .find(|entry| entry.contains("data-kind=\"recipe\""));
+    let recipe = recipe.unwrap_or_else(|| panic!("no recipe in {page}"));
+    assert!(recipe.contains("Soup"), "{recipe}");
+    assert!(
+        recipe.contains(&format!("href=\"/recipes/{soup}\"")),
+        "{recipe}"
+    );
+
+    // Picked by hand: the dishes and the recipes to pick among, for as
+    // many as the settings say until another number is typed.
+    let page = cook.get(&router, ADD_MEAL).await.body;
+    assert!(page.contains("action=\"/list/add\""), "{page}");
+    assert!(tag(&page, "name=\"servings\"").contains("value=\"4\""));
+    assert!(page.contains(&format!("data-dish=\"{sunday}\"")), "{page}");
+    for id in [&soup, &roast, &tart] {
+        assert!(page.contains(&format!("data-recipe=\"{id}\"")), "{page}");
+    }
+    // Searching picks nothing: the page comes back as it was left.
+    let searched = [("servings", "2"), ("q", "TART"), ("search", "1")];
+    let Answer {
+        status, body: page, ..
+    } = cook.post(&router, ADD_MEAL, &searched).await;
+    assert_eq!(status, StatusCode::OK, "{page}");
+    assert!(tag(&page, "name=\"servings\"").contains("value=\"2\""));
+    assert!(tag(&page, "name=\"q\"").contains("value=\"TART\""));
+    assert!(page.contains(&format!("data-recipe=\"{tart}\"")), "{page}");
+    assert_eq!(count(&page, "data-recipe="), 1, "{page}");
+    assert!(!page.contains("data-dish="), "{page}");
+    let nothing = [("servings", "2"), ("q", "butter")];
+    let page = cook.post(&router, ADD_MEAL, &nothing).await.body;
+    assert!(page.contains("data-pick=\"none\""), "{page}");
+
+    // A recipe picked for two: after the others.
+    let picked = [
+        ("servings", "2"),
+        ("q", "tart"),
+        ("recipe_id", tart.as_str()),
+    ];
+    let answer = cook.post(&router, ADD_MEAL, &picked).await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/list?done=added"),
+        "{}",
+        answer.body
+    );
+    let page = cook.get(&router, &answer.location).await.body;
+    assert!(page.contains("data-done=\"added\""), "{page}");
+    let listed = entries(&page);
+    assert_eq!(listed[..2], generated[..], "{page}");
+    assert_eq!(listed.len(), 3, "{page}");
+    let added = listed[2].clone();
+    let shown = entry(&page, &added);
+    assert!(shown.contains("Tart"), "{shown}");
+    assert!(shown.contains("data-kind=\"recipe\""), "{shown}");
+    assert!(shown.contains("data-servings=\"2\""), "{shown}");
+
+    // Replaced in its place, as a whole: by the dish, for six.
+    let replace = format!("/list/{added}/replace");
+    assert!(link(&page, &replace).is_some(), "{page}");
+    let Answer {
+        status, body: page, ..
+    } = cook.get(&router, &replace).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        page.contains("<title>Replace a meal — imkitchen</title>"),
+        "{page}"
+    );
+    assert!(page.contains(&format!("action=\"{replace}\"")), "{page}");
+    assert!(page.contains("data-replaces"), "{page}");
+    assert!(tag(&page, "name=\"servings\"").contains("value=\"2\""));
+    // What the api refuses is said on the page, and the list stays.
+    let refused = [("servings", "0"), ("dish_id", sunday.as_str())];
+    let Answer {
+        status, body: page, ..
+    } = cook.post(&router, &replace, &refused).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{page}");
+    assert!(page.contains("data-field=\"servings\""), "{page}");
+    let unknown = [("servings", "2"), ("recipe_id", "nothing")];
+    let page = cook.post(&router, &replace, &unknown).await.body;
+    assert!(page.contains("data-field=\"meal\""), "{page}");
+    let replaced = [("servings", "6"), ("dish_id", sunday.as_str())];
+    let answer = cook.post(&router, &replace, &replaced).await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/list?done=replaced"),
+        "{}",
+        answer.body
+    );
+    let page = cook.get(&router, &answer.location).await.body;
+    assert_eq!(entries(&page), listed, "{page}");
+    let shown = entry(&page, &added);
+    assert!(shown.contains("data-kind=\"dish\""), "{shown}");
+    assert!(shown.contains("Sunday"), "{shown}");
+    assert!(shown.contains("data-servings=\"6\""), "{shown}");
+
+    // Taken off: the others stay, and so does what it was made from.
+    let remove = format!("/list/{added}/remove");
+    assert!(page.contains(&format!("action=\"{remove}\"")), "{page}");
+    let answer = cook.post(&router, &remove, &[]).await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/list?done=removed"),
+        "{}",
+        answer.body
+    );
+    let page = cook.get(&router, &answer.location).await.body;
+    assert!(page.contains("data-done=\"removed\""), "{page}");
+    assert_eq!(entries(&page), generated, "{page}");
+    assert_eq!(
+        cook.get(&router, &format!("/dishes/{sunday}")).await.status,
+        StatusCode::OK
+    );
+    // An entry that is not on the list is not found, replaced or removed.
+    assert_eq!(
+        cook.get(&router, &replace).await.status,
+        StatusCode::NOT_FOUND
+    );
+    let answer = cook.post(&router, &replace, &replaced).await;
+    assert_eq!(answer.status, StatusCode::NOT_FOUND, "{}", answer.body);
+    let answer = cook.post(&router, &remove, &[]).await;
+    assert_eq!(answer.status, StatusCode::NOT_FOUND, "{}", answer.body);
+
+    // A recipe that is deleted leaves the list, the other meals as they
+    // were: at once on the page, and in what app follows a moment later.
+    let answer = cook
+        .post(&router, &format!("/recipes/{soup}/delete"), &[])
+        .await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let page = cook.get(&router, LIST).await.body;
+    assert!(page.contains("data-entries=\"1\""), "{page}");
+    assert!(!page.contains("Soup"), "{page}");
+    eventually("the meal to be taken off the list", || async {
+        let entries: String = app
+            .db
+            .fetch_scalar("SELECT entries FROM lists", ())
+            .await
+            .unwrap();
+        (!entries.contains(&soup)).then_some(())
+    })
+    .await;
+
+    // Generated again: in place of what it held.
+    let answer = cook.post(&router, "/list/generate", &[]).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let page = cook.get(&router, LIST).await.body;
+    assert!(page.contains("data-entries=\"1\""), "{page}");
+    assert!(page.contains("data-kind=\"dish\""), "{page}");
+
+    // Nobody reads or fills a list without signing in.
+    for path in [LIST, ADD_MEAL, replace.as_str()] {
+        let (status, location, _) = get(&router, path, "en").await;
+        assert_eq!(
+            (status, location.as_str()),
+            (StatusCode::SEE_OTHER, SIGN_IN)
+        );
+    }
+    let answer = Browser::reading("en")
+        .post(&router, "/list/generate", &[])
+        .await;
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, SIGN_IN));
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn a_list_is_its_owners_alone() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "en").await;
+    let token = api.root_token().await;
+    let soup = recipe_of(&api, &token, "Soup").await;
+    app.counts(1).await;
+    let picked = [("servings", "3"), ("recipe_id", soup.as_str())];
+    let answer = cook.post(&router, ADD_MEAL, &picked).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let page = cook.get(&router, LIST).await.body;
+    let mine = entries(&page);
+    assert_eq!(mine.len(), 1, "{page}");
+
+    // Someone else reads a list of their own, picks nothing of what is
+    // not theirs, and reaches no entry of another list.
+    let mut alice = Browser::reading("en");
+    let answer = alice
+        .fill(&router, &api, REGISTER, "alice@example.com", PASSWORD, 0)
+        .await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let page = alice.get(&router, LIST).await.body;
+    assert!(page.contains("data-empty"), "{page}");
+    assert!(!page.contains("Soup"), "{page}");
+    let page = alice.get(&router, ADD_MEAL).await.body;
+    assert!(page.contains("data-pick=\"nothing\""), "{page}");
+    let Answer {
+        status, body: page, ..
+    } = alice.post(&router, ADD_MEAL, &picked).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{page}");
+    assert!(page.contains("data-field=\"meal\""), "{page}");
+    let theirs = format!("/list/{}", mine[0]);
+    assert_eq!(
+        alice
+            .get(&router, &format!("{theirs}/replace"))
+            .await
+            .status,
+        StatusCode::NOT_FOUND
+    );
+    let answer = alice.post(&router, &format!("{theirs}/remove"), &[]).await;
+    assert_eq!(answer.status, StatusCode::NOT_FOUND, "{}", answer.body);
+    let page = cook.get(&router, LIST).await.body;
+    assert_eq!(entries(&page), mine, "{page}");
 
     app.stop().await;
     api.shutdown().await;
