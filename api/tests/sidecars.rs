@@ -199,6 +199,17 @@ impl Follower {
         self.users.handled.load(Ordering::SeqCst)
     }
 
+    /// Waits until the cursor is at the newest event followed. A cursor is
+    /// recorded once the listener said how far behind it is: an event whose
+    /// handler ran when the listener went away is delivered again.
+    async fn caught_up(&self) {
+        eventually("the sidecar to record its cursor", || async {
+            let lag = self.subscription.lag().await.ok()?;
+            lag.is_caught_up().then_some(())
+        })
+        .await;
+    }
+
     /// Stops following; the connection goes with the subscription.
     async fn stop(self) {
         self.subscription.shutdown().await.unwrap();
@@ -347,6 +358,7 @@ async fn a_sidecar_catches_up_when_the_api_comes_back() {
         .users
         .are(&[("alice@example.com", "Alice", false)])
         .await;
+    follower.caught_up().await;
 
     // The listener goes away under the sidecar, which keeps running.
     server.shutdown().await;

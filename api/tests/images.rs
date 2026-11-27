@@ -350,11 +350,13 @@ async fn a_node_that_was_behind_deletes_the_files_nobody_uses_any_more() {
         format!("1200/{}.webp", again.file_id),
         format!("400/{}.webp", again.file_id),
     ];
-    eventually("the files let go of to be deleted", || async {
-        (node.image_files() == kept).then_some(())
-    })
+    // The handler deletes the files it was let go of before it records the
+    // ones the picture has now: both are waited for.
+    eventually(
+        "the files let go of to be deleted and the picture to be known",
+        || async { (node.image_files() == kept && node.images_known().await == 1).then_some(()) },
+    )
     .await;
-    assert_eq!(node.images_known().await, 1);
 
     api.shutdown().await;
 }

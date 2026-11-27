@@ -7,8 +7,9 @@ pub mod api;
 
 use std::collections::HashMap;
 use std::future::Future;
-use std::net::SocketAddr;
+use std::net::{Ipv4Addr, SocketAddr};
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -230,7 +231,7 @@ impl TestCluster {
 
     async fn start_with(size: usize, authority: Option<&Authority>) -> Self {
         let dir = tempfile::tempdir().unwrap();
-        let peers = free_addrs(size).await;
+        let peers = free_addrs(size);
         // Where each node takes the pictures of the others, open from the
         // start: nothing else may take the address meanwhile.
         let mut image_listeners = Vec::new();
@@ -322,16 +323,47 @@ impl Authority {
     }
 }
 
-/// Addresses nothing listens on, for the nodes to talk to each other.
-async fn free_addrs(count: usize) -> Vec<SocketAddr> {
-    let mut listeners = Vec::new();
-    for _ in 0..count {
-        listeners.push(TcpListener::bind("127.0.0.1:0").await.unwrap());
+/// The ports the nodes are given: below 32768, where Linux starts handing
+/// out the local ports of outgoing connections
+/// (`net.ipv4.ip_local_port_range`), and above the ones the development
+/// services listen on.
+const FIRST_PORT: u32 = 20_000;
+const PORTS: u32 = 12_000;
+
+static NEXT_PORT: AtomicU32 = AtomicU32::new(0);
+
+/// `count` addresses nothing listens on, for the nodes to talk to each
+/// other, none of them given before in this process.
+///
+/// A node binds its own address, so it is named here and let go of first.
+/// A port the system picks and gets back is not safe to name: it comes from
+/// the range outgoing connections and the other tests' listeners are served
+/// from, and now and then one of them was given it before the node bound it
+/// (`cannot bind the consensus listener … Address already in use`). So the
+/// ports are taken below that range, each once: a counter says which comes
+/// next, started from the process id so that two test binaries running at
+/// once do not walk the same ports.
+fn free_addrs(count: usize) -> Vec<SocketAddr> {
+    let start = std::process::id().wrapping_mul(7919);
+    let mut found = Vec::with_capacity(count);
+    // Every port of the span tried once at most: more would mean none is
+    // free, which no retry cures.
+    for _ in 0..PORTS {
+        let next = NEXT_PORT.fetch_add(1, Ordering::Relaxed);
+        let port = FIRST_PORT + start.wrapping_add(next) % PORTS;
+        let addr = SocketAddr::from((Ipv4Addr::LOCALHOST, port as u16));
+        // Bound to see that nothing holds it, and let go of at once.
+        if std::net::TcpListener::bind(addr).is_ok() {
+            found.push(addr);
+            if found.len() == count {
+                return found;
+            }
+        }
     }
-    listeners
-        .iter()
-        .map(|listener| listener.local_addr().unwrap())
-        .collect()
+    panic!(
+        "no {count} free ports between {FIRST_PORT} and {}",
+        FIRST_PORT + PORTS
+    );
 }
 
 /// Polls `check` until it answers `Some`, for what settles on the nodes' own
