@@ -155,7 +155,36 @@ groceries_text = Les ingrédients de votre liste, additionnés en ce qu’il y a
 
 settings_meta_title = Réglages — imkitchen
 settings_title = Réglages
-settings_text = Comment vous aimez votre liste, et votre compte.
+settings_saved = Enregistré.
+settings_save = Enregistrer
+
+settings_list = Votre liste
+settings_list_hint = Comment votre liste est générée. La liste actuelle reste telle quelle : la prochaine générée suivra.
+settings_servings = Personnes à table
+settings_meals = Repas dans une liste
+settings_sources = Tirés de
+settings_sources_plats_and_recipes = Vos plats et vos recettes
+settings_sources_plats = Vos plats seulement
+settings_sources_recipes = Vos recettes seulement
+
+settings_language = Langue
+settings_language_hint = La langue dans laquelle imkitchen se lit, sur tous les appareils où vous vous connectez.
+settings_language_device = La langue de l’appareil
+
+settings_account = Votre compte
+settings_account_email = Vous vous connectez avec { $email }.
+settings_name = Nom
+settings_name_save = Enregistrer le nom
+settings_password = Mot de passe
+settings_password_hint = Un nouveau mot de passe demande l’actuel. Tous les autres appareils sont déconnectés.
+settings_current_password = Mot de passe actuel
+settings_new_password = Nouveau mot de passe
+settings_password_save = Changer le mot de passe
+settings_password_changed = Le mot de passe est changé.
+settings_sessions = Autres appareils
+settings_sessions_hint = Déconnecte votre compte partout sauf ici.
+settings_sessions_end = Se déconnecter partout ailleurs
+settings_sessions_ended = Tous les autres appareils sont déconnectés.
 
 ## Not found
 

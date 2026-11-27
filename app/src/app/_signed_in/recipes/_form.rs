@@ -118,7 +118,7 @@ pub(crate) struct Typed {
 /// typed when it is not one.
 #[derive(Serialize)]
 #[serde(untagged)]
-enum Number<'a> {
+pub(crate) enum Number<'a> {
     Whole(u64),
     Real(f64),
     Typed(&'a str),
@@ -126,7 +126,7 @@ enum Number<'a> {
 
 impl<'a> Number<'a> {
     /// Minutes, people: nothing when nothing was typed.
-    fn whole(typed: &'a str) -> Option<Self> {
+    pub(crate) fn whole(typed: &'a str) -> Option<Self> {
         let typed = typed.trim();
         if typed.is_empty() {
             return None;

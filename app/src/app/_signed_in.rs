@@ -13,6 +13,9 @@
 //! sends the browser on once app followed what the api wrote
 //! ([`followed`]).
 //!
+//! The pages are read in the language their reader set, when they set one
+//! ([`settings`]), whatever device they are on.
+//!
 //! One layout serves the desktop and the phone: the navigation between the
 //! screens is a column beside the page where there is room for one, and a
 //! bar under it where there is not.
@@ -32,7 +35,7 @@ use tokio::time::{Instant, sleep};
 use topcoat::{
     Error, Result,
     context::{Cx, context},
-    l10n::Translation,
+    l10n::{Locale, Translation},
     router::{
         Body, Next, Slot, StatusCode,
         error::{self, NotFoundError, see_other, service_unavailable},
@@ -222,7 +225,24 @@ async fn signed_in_only(cx: &Cx, body: Body, next: Next<'_>) -> Result<Response>
             },
         )?;
     }
-    next.run(&cx.with(me.user).with(token), body).await
+    // The language they chose is the one their pages are read in, on every
+    // device: the browser's is for who chose none.
+    let chosen = read(crate::settings::of(db(cx), &me.user.id).await)?
+        .language
+        .and_then(|language| spoken(&language));
+    let cx = cx.with(me.user).with(token);
+    match chosen {
+        Some(locale) => next.run(&cx.with(locale), body).await,
+        None => next.run(&cx, body).await,
+    }
+}
+
+/// The language `tag` names, when app speaks it.
+pub(crate) fn spoken(tag: &str) -> Option<Locale> {
+    let mut locales = t::locales().iter();
+    locales
+        .find(|locale| locale.id().to_string() == tag)
+        .cloned()
 }
 
 /// Takes back what the browser keeps of a session the api does not know,

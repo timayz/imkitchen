@@ -25,4 +25,5 @@ pub mod dishes;
 pub mod events;
 pub mod recipes;
 pub mod session;
+pub mod settings;
 pub mod subscriptions;

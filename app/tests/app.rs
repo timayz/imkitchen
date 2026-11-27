@@ -2624,3 +2624,316 @@ async fn the_list_of_the_dishes_is_read_a_page_at_a_time() {
     app.stop().await;
     api.shutdown().await;
 }
+
+/// The settings, and where each of their parts is posted.
+const SETTINGS: &str = "/settings";
+
+/// The tag of `page` that holds `marker`: `<input … value="recipes" …>`.
+fn tag<'a>(page: &'a str, marker: &str) -> &'a str {
+    let at = page
+        .find(marker)
+        .unwrap_or_else(|| panic!("no {marker} in {page}"));
+    let from = page[..at].rfind('<').unwrap();
+    let to = at + page[at..].find('>').unwrap();
+    &page[from..=to]
+}
+
+#[tokio::test]
+async fn a_user_sets_how_their_list_is_generated_and_the_language_they_read() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "en").await;
+    let token = api.root_token().await;
+
+    // Nothing was set: the defaults, and the language of the device.
+    let Answer {
+        status, body: page, ..
+    } = cook.get(&router, SETTINGS).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(page.contains("action=\"/settings/list\""), "{page}");
+    assert!(tag(&page, "name=\"servings\"").contains("value=\"4\""));
+    assert!(tag(&page, "name=\"meals\"").contains("value=\"7\""));
+    assert!(tag(&page, "value=\"plats_and_recipes\"").contains("checked"));
+    assert!(!tag(&page, "value=\"recipes\"").contains("checked"));
+    assert!(tag(&page, "<option value=\"\"").contains("selected"));
+    assert!(!tag(&page, "<option value=\"fr\"").contains("selected"));
+    assert!(page.contains(">Français"), "{page}");
+    assert!(!page.contains("data-done"), "{page}");
+
+    // The list is set as a whole, through the api, and the page says so
+    // from what app followed.
+    let list = [("servings", "2"), ("meals", "5"), ("sources", "recipes")];
+    let answer = cook.post(&router, "/settings/list", &list).await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/settings?done=list"),
+        "{}",
+        answer.body
+    );
+    let page = cook.get(&router, &answer.location).await.body;
+    assert!(page.contains("data-done=\"list\""), "{page}");
+    assert!(tag(&page, "name=\"servings\"").contains("value=\"2\""));
+    assert!(tag(&page, "name=\"meals\"").contains("value=\"5\""));
+    assert!(tag(&page, "value=\"recipes\"").contains("checked"));
+    assert!(!tag(&page, "value=\"plats_and_recipes\"").contains("checked"));
+    let (_, told) = api
+        .call(
+            reqwest::Method::GET,
+            "/v1/settings",
+            Some(&token),
+            json!({}),
+        )
+        .await;
+    assert_eq!(
+        told["list"],
+        json!({ "servings": 2, "meals": 5, "sources": "recipes" })
+    );
+
+    // Saved as it stands: nothing to wait for, and the browser is sent on.
+    let answer = cook.post(&router, "/settings/list", &list).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+
+    // What the api refuses is said under the field, what was typed still
+    // there, and the settings stay.
+    let refused = [("servings", "0"), ("meals", "5"), ("sources", "plats")];
+    let Answer {
+        status, body: page, ..
+    } = cook.post(&router, "/settings/list", &refused).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{page}");
+    assert!(page.contains("data-code=\"validation_failed\""), "{page}");
+    assert!(page.contains("data-field=\"servings\""), "{page}");
+    assert!(!page.contains("data-field=\"meals\""), "{page}");
+    assert!(tag(&page, "name=\"servings\"").contains("value=\"0\""));
+    assert!(tag(&page, "value=\"plats\"").contains("checked"));
+    let many = [("servings", "many"), ("meals", "5"), ("sources", "plats")];
+    let page = cook.post(&router, "/settings/list", &many).await.body;
+    assert!(page.contains("data-code=\"invalid_request\""), "{page}");
+    assert!(tag(&page, "name=\"servings\"").contains("value=\"many\""));
+    let page = cook.get(&router, SETTINGS).await.body;
+    assert!(tag(&page, "name=\"servings\"").contains("value=\"2\""));
+
+    // The language: the page the browser is sent to is read in it, whatever
+    // the browser asks for.
+    let answer = cook
+        .post(&router, "/settings/language", &[("language", "fr")])
+        .await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/settings?done=language"),
+        "{}",
+        answer.body
+    );
+    let page = cook.get(&router, &answer.location).await.body;
+    assert!(page.contains("<html lang=\"fr\""), "{page}");
+    assert!(
+        page.contains("<title>Réglages — imkitchen</title>"),
+        "{page}"
+    );
+    assert!(page.contains(">Réglages</h1>"), "{page}");
+    assert!(page.contains("data-done=\"language\""), "{page}");
+    assert!(tag(&page, "<option value=\"fr\"").contains("selected"));
+    assert!(!tag(&page, "<option value=\"\"").contains("selected"));
+    // Every page, the navigation with it, and what the api refuses.
+    let page = cook.get(&router, RECIPES).await.body;
+    assert!(page.contains(">Recettes</h1>"), "{page}");
+    assert!(link(&page, DISHES).unwrap().ends_with(">Plats"), "{page}");
+    let page = cook.post(&router, "/settings/list", &refused).await.body;
+    assert!(
+        page.contains("Certains champs ne sont pas valides."),
+        "{page}"
+    );
+
+    // On every device they sign in on: another browser, which reads
+    // English. What a visitor is shown stays in the language of the device.
+    let page = get(&router, SIGN_IN, "en").await.2;
+    assert!(page.contains(">Sign in</h1>"), "{page}");
+    let mut elsewhere = Browser::signed_in(&router, "en").await;
+    let page = elsewhere.get(&router, "/").await.body;
+    assert!(page.contains("<html lang=\"fr\""), "{page}");
+    assert!(page.contains(">Votre cuisine</h1>"), "{page}");
+
+    // A language the api does not speak is refused, and nothing changes.
+    let Answer {
+        status, body: page, ..
+    } = cook
+        .post(&router, "/settings/language", &[("language", "tlh")])
+        .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{page}");
+    assert!(page.contains("<html lang=\"fr\""), "{page}");
+    assert!(tag(&page, "<option value=\"fr\"").contains("selected"));
+
+    // Back to the language of the device: each reads its own again.
+    let answer = cook
+        .post(&router, "/settings/language", &[("language", "")])
+        .await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let page = cook.get(&router, SETTINGS).await.body;
+    assert!(page.contains("<html lang=\"en\""), "{page}");
+    assert!(page.contains(">Settings</h1>"), "{page}");
+    assert!(tag(&page, "<option value=\"\"").contains("selected"));
+    // The list was left as it was set.
+    assert!(tag(&page, "name=\"servings\"").contains("value=\"2\""));
+    let mut french = cook.clone();
+    french.language = "fr".to_owned();
+    let page = french.get(&router, SETTINGS).await.body;
+    assert!(page.contains(">Réglages</h1>"), "{page}");
+
+    // Nobody reads or sets anything of the settings without signing in.
+    let (status, location, _) = get(&router, SETTINGS, "en").await;
+    assert_eq!(
+        (status, location.as_str()),
+        (StatusCode::SEE_OTHER, SIGN_IN)
+    );
+    let answer = Browser::reading("en")
+        .post(&router, "/settings/list", &list)
+        .await;
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, SIGN_IN));
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn the_settings_of_a_user_are_theirs_alone() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "en").await;
+    let mut alice = Browser::reading("en");
+    let answer = alice
+        .fill(&router, &api, REGISTER, "alice@example.com", PASSWORD, 0)
+        .await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+
+    // A language is the first thing alice sets: the rest is the defaults.
+    let answer = alice
+        .post(&router, "/settings/language", &[("language", "fr")])
+        .await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let page = alice.get(&router, SETTINGS).await.body;
+    assert!(page.contains(">Réglages</h1>"), "{page}");
+    assert!(tag(&page, "name=\"servings\"").contains("value=\"4\""));
+    assert!(tag(&page, "name=\"meals\"").contains("value=\"7\""));
+    let list = [("servings", "1"), ("meals", "3"), ("sources", "plats")];
+    let answer = alice.post(&router, "/settings/list", &list).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+
+    // Nothing of it is someone else's.
+    let page = cook.get(&router, SETTINGS).await.body;
+    assert!(page.contains(">Settings</h1>"), "{page}");
+    assert!(tag(&page, "name=\"servings\"").contains("value=\"4\""));
+    assert!(tag(&page, "value=\"plats_and_recipes\"").contains("checked"));
+    let page = alice.get(&router, SETTINGS).await.body;
+    assert!(tag(&page, "name=\"servings\"").contains("value=\"1\""));
+    assert!(tag(&page, "<option value=\"fr\"").contains("selected"));
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn a_user_manages_their_account() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let email = "alice@example.com";
+    let mut alice = Browser::reading("en");
+    let answer = alice
+        .fill(&router, &api, REGISTER, email, PASSWORD, 0)
+        .await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let mut phone = Browser::reading("en");
+    let answer = phone.fill(&router, &api, SIGN_IN, email, PASSWORD, 1).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+
+    // The account: the address it signs in with, and the name it shows.
+    let page = alice.get(&router, SETTINGS).await.body;
+    assert!(
+        page.contains(&format!("data-account=\"{email}\"")),
+        "{page}"
+    );
+    let answer = alice
+        .post(&router, "/settings/name", &[("name", " Alice ")])
+        .await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/settings?done=name"),
+        "{}",
+        answer.body
+    );
+    let page = alice.get(&router, &answer.location).await.body;
+    assert!(page.contains("data-done=\"name\""), "{page}");
+    assert!(tag(&page, "name=\"name\"").contains("value=\"Alice\""));
+    // On every device.
+    let page = phone.get(&router, SETTINGS).await.body;
+    assert!(tag(&page, "name=\"name\"").contains("value=\"Alice\""));
+    let Answer {
+        status, body: page, ..
+    } = alice
+        .post(&router, "/settings/name", &[("name", " ")])
+        .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{page}");
+    assert!(page.contains("data-field=\"name\""), "{page}");
+
+    // A new password takes the current one, and one the api takes.
+    let new_password = "another long password";
+    let wrong = [("current_password", "not it"), ("password", new_password)];
+    let Answer {
+        status, body: page, ..
+    } = alice.post(&router, "/settings/password", &wrong).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{page}");
+    assert!(page.contains("data-code=\"wrong_password\""), "{page}");
+    // Neither is typed back.
+    assert!(!page.contains("not it"), "{page}");
+    assert!(!page.contains(new_password), "{page}");
+    let weak = [("current_password", PASSWORD), ("password", "short")];
+    let page = alice.post(&router, "/settings/password", &weak).await.body;
+    assert!(page.contains("data-field=\"password\""), "{page}");
+    assert_eq!(phone.get(&router, SETTINGS).await.status, StatusCode::OK);
+
+    // Changed: this browser stays signed in, the other is signed out.
+    let changed = [("current_password", PASSWORD), ("password", new_password)];
+    let answer = alice.post(&router, "/settings/password", &changed).await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/settings?done=password"),
+        "{}",
+        answer.body
+    );
+    let page = alice.get(&router, &answer.location).await.body;
+    assert!(page.contains("data-done=\"password\""), "{page}");
+    let answer = phone.get(&router, SETTINGS).await;
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, "/"));
+    assert!(!phone.keeps(MARKER));
+
+    // Signed out everywhere else: here stays.
+    let mut phone = Browser::reading("en");
+    let answer = phone
+        .fill(&router, &api, SIGN_IN, email, new_password, 2)
+        .await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    assert_eq!(phone.get(&router, SETTINGS).await.status, StatusCode::OK);
+    let answer = alice
+        .post(&router, "/settings/sign-out-everywhere", &[])
+        .await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/settings?done=sessions"),
+        "{}",
+        answer.body
+    );
+    let page = alice.get(&router, &answer.location).await.body;
+    assert!(page.contains("data-done=\"sessions\""), "{page}");
+    let answer = phone.get(&router, SETTINGS).await;
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, "/"));
+
+    app.stop().await;
+    api.shutdown().await;
+}

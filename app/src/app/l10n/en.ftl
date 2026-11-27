@@ -155,7 +155,36 @@ groceries_text = The ingredients of your list, added up into what there is to bu
 
 settings_meta_title = Settings — imkitchen
 settings_title = Settings
-settings_text = How you like your list, and your account.
+settings_saved = Saved.
+settings_save = Save
+
+settings_list = Your list
+settings_list_hint = How your list is generated. The list as it stands is left as it is: the next one generated follows.
+settings_servings = People to cook for
+settings_meals = Meals in a list
+settings_sources = Drawn from
+settings_sources_plats_and_recipes = Your dishes and your recipes
+settings_sources_plats = Your dishes only
+settings_sources_recipes = Your recipes only
+
+settings_language = Language
+settings_language_hint = The language imkitchen is read in, on every device you sign in on.
+settings_language_device = The language of the device
+
+settings_account = Your account
+settings_account_email = You sign in with { $email }.
+settings_name = Name
+settings_name_save = Save the name
+settings_password = Password
+settings_password_hint = A new password takes the current one. Every other device is signed out.
+settings_current_password = Current password
+settings_new_password = New password
+settings_password_save = Change the password
+settings_password_changed = The password is changed.
+settings_sessions = Other devices
+settings_sessions_hint = Signs your account out everywhere but here.
+settings_sessions_end = Sign out everywhere else
+settings_sessions_ended = Every other device is signed out.
 
 ## Not found
 
