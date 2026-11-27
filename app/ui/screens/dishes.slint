@@ -1,0 +1,11 @@
+// Filled in by #774.
+
+import { EmptyState, Page } from "page.slint";
+
+export component DishesScreen inherits Page {
+    title: @tr("Dishes");
+
+    EmptyState {
+        text: @tr("The dishes you compose with your recipes are kept here.");
+    }
+}

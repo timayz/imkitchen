@@ -1,0 +1,70 @@
+# The sentences of the app in French. `make app.l10n` adds those the Slint
+# sources gained, `make l10n` fails while one of them is not translated.
+msgid ""
+msgstr ""
+"Project-Id-Version: imkitchen-app\n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgctxt "NavigationBar"
+msgid "Recipes"
+msgstr "Recettes"
+
+msgctxt "NavigationBar"
+msgid "Dishes"
+msgstr "Plats"
+
+msgctxt "NavigationBar"
+msgid "List"
+msgstr "Liste"
+
+msgctxt "NavigationBar"
+msgid "Groceries"
+msgstr "Courses"
+
+msgctxt "NavigationBar"
+msgid "Settings"
+msgstr "Réglages"
+
+msgctxt "DishesScreen"
+msgid "Dishes"
+msgstr "Plats"
+
+msgctxt "DishesScreen"
+msgid "The dishes you compose with your recipes are kept here."
+msgstr "Les plats que vous composez avec vos recettes sont gardés ici."
+
+msgctxt "GroceriesScreen"
+msgid "Groceries"
+msgstr "Courses"
+
+msgctxt "GroceriesScreen"
+msgid "The ingredients of your list are added up here."
+msgstr "Les ingrédients de votre liste sont additionnés ici."
+
+msgctxt "ListScreen"
+msgid "List"
+msgstr "Liste"
+
+msgctxt "ListScreen"
+msgid "The recipes of your week, generated or chosen, are listed here."
+msgstr "Les recettes de votre semaine, générées ou choisies, sont listées ici."
+
+msgctxt "RecipesScreen"
+msgid "Recipes"
+msgstr "Recettes"
+
+msgctxt "RecipesScreen"
+msgid "The recipes you write or import are kept here."
+msgstr "Les recettes que vous écrivez ou importez sont gardées ici."
+
+msgctxt "SettingsScreen"
+msgid "Settings"
+msgstr "Réglages"
+
+msgctxt "SettingsScreen"
+msgid "About"
+msgstr "À propos"

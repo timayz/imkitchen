@@ -1,3 +1,8 @@
-//! imkitchen app: the application, on desktop, Android and iOS. Scaffolded by #771.
+//! The app on a desktop and on iOS. Android has no binary: see the library.
 
-fn main() {}
+// No console behind the window on Windows.
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+fn main() -> Result<(), slint::PlatformError> {
+    imkitchen_app::run()
+}

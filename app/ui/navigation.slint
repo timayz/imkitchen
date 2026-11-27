@@ -1,0 +1,174 @@
+// Where the user is in the app, and the bar that takes them elsewhere: along
+// the bottom of a phone, down the side of anything wider.
+
+import { Form, Theme } from "theme.slint";
+
+export enum Screen { recipes, dishes, list, groceries, settings }
+
+export global Navigation {
+    in-out property <Screen> current: Screen.recipes;
+}
+
+struct Destination {
+    screen: Screen,
+    label: string,
+    icon: image,
+}
+
+component NavigationItem inherits Rectangle {
+    in property <string> label;
+    in property <image> icon;
+    in property <bool> selected;
+    // The label beside the icon, on one line, instead of under it.
+    in property <bool> wide;
+    callback clicked;
+
+    accessible-role: tab;
+    accessible-label: root.label;
+    accessible-item-selectable: true;
+    accessible-item-selected: root.selected;
+    accessible-action-default => {
+        root.clicked();
+    }
+
+    min-width: Theme.touch-target;
+    min-height: root.wide ? 56px : 64px;
+
+    if !root.wide: VerticalLayout {
+        alignment: center;
+        spacing: Theme.space-xs;
+
+        HorizontalLayout {
+            alignment: center;
+
+            Rectangle {
+                width: 56px;
+                height: 32px;
+                border-radius: self.height / 2;
+                background: root.selected ? Theme.accent-container : touch.has-hover ? Theme.surface : transparent;
+
+                animate background { duration: Theme.motion-short; }
+
+                Image {
+                    width: 24px;
+                    height: 24px;
+                    source: root.icon;
+                    colorize: root.selected ? Theme.on-accent-container : Theme.text-muted;
+                }
+            }
+        }
+
+        Text {
+            text: root.label;
+            horizontal-alignment: center;
+            overflow: elide;
+            font-size: Theme.font-label;
+            font-weight: root.selected ? 700 : 500;
+            color: root.selected ? Theme.text : Theme.text-muted;
+        }
+    }
+
+    if root.wide: Rectangle {
+        height: 56px;
+        border-radius: self.height / 2;
+        background: root.selected ? Theme.accent-container : touch.has-hover ? Theme.surface : transparent;
+
+        animate background { duration: Theme.motion-short; }
+
+        HorizontalLayout {
+            padding-left: Theme.space-m;
+            padding-right: Theme.space-l;
+            spacing: Theme.space-m;
+
+            Image {
+                width: 24px;
+                source: root.icon;
+                colorize: root.selected ? Theme.on-accent-container : Theme.text-muted;
+            }
+
+            Text {
+                text: root.label;
+                vertical-alignment: center;
+                overflow: elide;
+                font-size: Theme.font-body;
+                font-weight: root.selected ? 700 : 500;
+                color: root.selected ? Theme.on-accent-container : Theme.text-muted;
+            }
+        }
+    }
+
+    touch := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+// The destinations of the app, laid out for the room the window gives.
+export component NavigationBar inherits Rectangle {
+    in property <Form> form;
+    // What the system keeps of the edges of the screen, left for the bar to
+    // paint under.
+    in property <length> inset-top;
+    in property <length> inset-bottom;
+    in property <length> inset-left;
+    // How high the bar is along the bottom, how wide down the side.
+    out property <length> thickness: root.form == Form.compact ? 80px + root.inset-bottom : root.form == Form.medium ? 96px + root.inset-left : 240px + root.inset-left;
+
+    property <[Destination]> destinations: [
+        { screen: Screen.recipes, label: @tr("Recipes"), icon: @image-url("icons/recipes.svg") },
+        { screen: Screen.dishes, label: @tr("Dishes"), icon: @image-url("icons/dishes.svg") },
+        { screen: Screen.list, label: @tr("List"), icon: @image-url("icons/list.svg") },
+        { screen: Screen.groceries, label: @tr("Groceries"), icon: @image-url("icons/groceries.svg") },
+        { screen: Screen.settings, label: @tr("Settings"), icon: @image-url("icons/settings.svg") },
+    ];
+
+    accessible-role: tab-list;
+    background: Theme.surface;
+
+    if root.form == Form.compact: HorizontalLayout {
+        padding-left: Theme.space-s;
+        padding-right: Theme.space-s;
+        padding-top: Theme.space-s;
+        padding-bottom: Theme.space-s + root.inset-bottom;
+
+        for destination in root.destinations: NavigationItem {
+            horizontal-stretch: 1;
+            label: destination.label;
+            icon: destination.icon;
+            selected: Navigation.current == destination.screen;
+            clicked => {
+                Navigation.current = destination.screen;
+            }
+        }
+    }
+
+    if root.form != Form.compact: VerticalLayout {
+        alignment: start;
+        padding: Theme.space-m;
+        padding-top: Theme.space-m + root.inset-top;
+        padding-left: Theme.space-m + root.inset-left;
+        padding-bottom: Theme.space-m + root.inset-bottom;
+        spacing: Theme.space-s;
+
+        if root.form == Form.expanded: Text {
+            height: 56px;
+            text: "imkitchen";
+            vertical-alignment: center;
+            font-size: Theme.font-title;
+            font-weight: 700;
+            color: Theme.text;
+        }
+
+        for destination in root.destinations: NavigationItem {
+            width: root.form == Form.expanded ? 208px : 64px;
+            wide: root.form == Form.expanded;
+            label: destination.label;
+            icon: destination.icon;
+            selected: Navigation.current == destination.screen;
+            clicked => {
+                Navigation.current = destination.screen;
+            }
+        }
+    }
+}

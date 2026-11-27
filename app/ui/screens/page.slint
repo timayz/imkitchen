@@ -1,0 +1,52 @@
+// What every screen is made of: its title, then what it holds, in a column
+// that does not grow past what reads well on a wide window.
+
+import { Form, Theme } from "../theme.slint";
+
+export component Page {
+    in property <Form> form;
+    in property <string> title;
+
+    property <length> margin: root.form == Form.compact ? Theme.space-m : root.form == Form.medium ? Theme.space-l : Theme.space-xl;
+
+    // Placed by hand, in the middle: a layout would have the column ask for
+    // the width it is given.
+    VerticalLayout {
+        x: (root.width - self.width) / 2;
+        y: 0;
+        width: min(root.width, 840px);
+        height: root.height;
+        padding: root.margin;
+        spacing: root.margin;
+
+        Text {
+            text: root.title;
+            vertical-stretch: 0;
+            overflow: elide;
+            font-size: root.form == Form.compact ? Theme.font-title : Theme.font-display;
+            font-weight: 700;
+            color: Theme.text;
+        }
+
+        @children
+    }
+}
+
+// A screen with nothing to show yet says what will be there.
+export component EmptyState {
+    in property <string> text;
+
+    vertical-stretch: 1;
+
+    VerticalLayout {
+        alignment: center;
+
+        Text {
+            text: root.text;
+            horizontal-alignment: center;
+            wrap: word-wrap;
+            font-size: Theme.font-body;
+            color: Theme.text-muted;
+        }
+    }
+}

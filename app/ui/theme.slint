@@ -1,0 +1,42 @@
+// The look of the app, in one place: every screen takes its colours, its
+// sizes and its spacing from here, and none from the style of the widgets.
+//
+// These are the values of the skeleton. The tokens of the design replace them
+// (#782, #783).
+
+import { Palette } from "std-widgets.slint";
+
+// How much room the window gives: a phone held upright, a tablet or a small
+// window, a desktop. The breakpoints are the window size classes of
+// Material 3.
+export enum Form { compact, medium, expanded }
+
+export global Theme {
+    // Follows the setting of the system.
+    out property <bool> dark: Palette.color-scheme == ColorScheme.dark;
+
+    out property <color> background: dark ? #1c1a17 : #faf6ee;
+    out property <color> surface: dark ? #26231f : #f1ebdf;
+    out property <color> outline: dark ? #4a453d : #d9d0c0;
+    out property <color> text: dark ? #f0eadf : #26221c;
+    out property <color> text-muted: dark ? #b5ad9f : #5f574b;
+    out property <color> accent: dark ? #f0a070 : #a8451b;
+    out property <color> accent-container: dark ? #5a2e17 : #f6d9c8;
+    out property <color> on-accent-container: dark ? #fbe3d5 : #4a1c08;
+
+    out property <length> space-xs: 4px;
+    out property <length> space-s: 8px;
+    out property <length> space-m: 16px;
+    out property <length> space-l: 24px;
+    out property <length> space-xl: 32px;
+
+    out property <length> font-label: 12px;
+    out property <length> font-body: 16px;
+    out property <length> font-title: 22px;
+    out property <length> font-display: 32px;
+
+    // The least a finger needs.
+    out property <length> touch-target: 48px;
+
+    out property <duration> motion-short: 150ms;
+}

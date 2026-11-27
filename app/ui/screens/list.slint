@@ -1,0 +1,11 @@
+// Filled in by #776.
+
+import { EmptyState, Page } from "page.slint";
+
+export component ListScreen inherits Page {
+    title: @tr("List");
+
+    EmptyState {
+        text: @tr("The recipes of your week, generated or chosen, are listed here.");
+    }
+}

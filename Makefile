@@ -1,4 +1,4 @@
-.PHONY: start dev run migrate cluster.all www.dev www.run www.migrate admin.dev admin.run admin.migrate cert cert.install up stop down health ready lint fmt-check fmt test machete l10n check
+.PHONY: start dev run migrate cluster.all www.dev www.run www.migrate admin.dev admin.run admin.migrate app.run app.android app.android.build app.ios app.l10n cert cert.install up stop down health ready lint fmt-check fmt test machete l10n check
 
 # Traefik and the mail catcher, then the api: what a bare `make` runs.
 start: up dev
@@ -127,6 +127,53 @@ health:
 ready:
 	curl -fsS http://localhost:$(or $(PORT),3000)/ready
 
+# What the app is built for on Android: the emulator of the Nix shell. A
+# phone is APP_ANDROID_TARGET=aarch64-linux-android.
+APP_ANDROID_TARGET ?= x86_64-linux-android
+
+# cargo-apk2 copies the NDK's libc++ next to the package as it is in the Nix
+# store, read-only, and cannot write over it the next time: start from none.
+APP_APK = rm -rf target/debug/apk && cd app && cargo apk2
+
+APP_VERSION := $(shell sed -n 's/^version = "\(.*\)"/\1/p' app/Cargo.toml | head -1)
+
+# The sentences of the Slint sources, as gettext reads them, and the file of
+# each language they are translated in.
+APP_POT := target/imkitchen-app.pot
+APP_LANGUAGES := $(wildcard app/lang/*/LC_MESSAGES/imkitchen-app.po)
+APP_SENTENCES = mkdir -p target && cd app && find ui -name '*.slint' | sort | xargs slint-tr-extractor -d imkitchen-app -o ../$(APP_POT)
+
+# Run the app on this desktop
+app.run:
+	cargo run -p imkitchen-app
+
+# Build the app for Android, install it on the emulator (`android-emulator`
+# in another terminal) or on the phone adb sees, and run it there
+app.android:
+	$(APP_APK) run --lib --target $(APP_ANDROID_TARGET)
+
+# Build the Android package alone, into target/debug/apk
+app.android.build:
+	$(APP_APK) build --lib --target $(APP_ANDROID_TARGET)
+
+# Build the app for the iOS simulator, on a Mac with Xcode and XcodeGen, into
+# app/ios/build/Build/Products/Debug-iphonesimulator/imkitchen.app
+app.ios:
+	cd app/ios && APP_VERSION=$(APP_VERSION) xcodegen generate
+	cd app/ios && xcodebuild -project imkitchen.xcodeproj -scheme imkitchen \
+		-configuration Debug -sdk iphonesimulator \
+		-destination 'generic/platform=iOS Simulator' -derivedDataPath build \
+		ARCHS=arm64 ONLY_ACTIVE_ARCH=YES CODE_SIGNING_ALLOWED=NO build
+
+# Add to the file of each language the sentences the app's sources gained,
+# empty, for a translator to fill in, and set aside those they lost
+app.l10n:
+	$(APP_SENTENCES)
+	@for po in $(APP_LANGUAGES); do \
+		msgmerge --quiet --update --backup=none --no-fuzzy-matching --no-location --no-wrap $$po $(APP_POT); \
+		sed -i '/^"POT-Creation-Date:/d' $$po; \
+	done
+
 # Run Clippy linter for code quality
 lint:
 	cargo clippy --workspace --all-targets --all-features -- -D warnings
@@ -148,9 +195,12 @@ machete:
 	cargo machete --with-metadata api aggregates www admin app
 
 # The sentences of www: a key a language lacks, one no page uses, an
-# argument a page does not give.
+# argument a page does not give. Those of the app: one a language does not
+# translate.
 l10n:
 	topcoat l10n check -p imkitchen-www
+	$(APP_SENTENCES)
+	@for po in $(APP_LANGUAGES); do msgcmp $$po $(APP_POT) || exit 1; done
 
 # Run all checks: format, lint, machete, the sentences and test (CI-ready)
 check: fmt-check lint machete l10n test

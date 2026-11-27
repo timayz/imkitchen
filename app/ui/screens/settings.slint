@@ -1,0 +1,43 @@
+// The settings of the user come with #775. What the app says of itself is
+// already here.
+
+import { AboutSlint } from "std-widgets.slint";
+import { Theme } from "../theme.slint";
+import { Page } from "page.slint";
+
+// What the app is, told by the binary.
+export global About {
+    in property <string> version;
+}
+
+export component SettingsScreen inherits Page {
+    title: @tr("Settings");
+
+    VerticalLayout {
+        alignment: start;
+        spacing: Theme.space-m;
+
+        Text {
+            text: @tr("About");
+            font-size: Theme.font-title;
+            font-weight: 700;
+            color: Theme.text;
+        }
+
+        Text {
+            text: "imkitchen " + About.version;
+            font-size: Theme.font-body;
+            color: Theme.text-muted;
+        }
+
+        // Slint's licence for applications asks that it is credited.
+        HorizontalLayout {
+            alignment: start;
+
+            AboutSlint {
+                width: 160px;
+                height: 96px;
+            }
+        }
+    }
+}

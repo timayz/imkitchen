@@ -1,0 +1,67 @@
+// The window of the app: the bar of its destinations and the screen the user
+// is on, laid out for the room it has.
+
+import { Navigation, NavigationBar, Screen } from "navigation.slint";
+import { Form, Theme } from "theme.slint";
+import { DishesScreen } from "screens/dishes.slint";
+import { GroceriesScreen } from "screens/groceries.slint";
+import { ListScreen } from "screens/list.slint";
+import { RecipesScreen } from "screens/recipes.slint";
+import { About, SettingsScreen } from "screens/settings.slint";
+
+export { About, Form, Navigation, Screen }
+
+export component AppWindow inherits Window {
+    out property <Form> form: self.width < 600px ? Form.compact : self.width < 840px ? Form.medium : Form.expanded;
+
+    title: "imkitchen";
+    preferred-width: 1080px;
+    preferred-height: 720px;
+    min-width: 320px;
+    min-height: 480px;
+    background: Theme.background;
+
+    // A bar along the bottom leaves the screen the whole width of a phone;
+    // anything wider has room for it down the side. Both are placed by hand:
+    // what the window lays out depends on its width, so its width cannot
+    // come from a layout. The insets are what the system keeps of the edges
+    // of the screen, on a phone: the screens stay clear of them, the bar
+    // paints under them.
+    bar := NavigationBar {
+        x: 0;
+        y: root.form == Form.compact ? root.height - self.height : 0;
+        width: root.form == Form.compact ? root.width : self.thickness;
+        height: root.form == Form.compact ? self.thickness : root.height;
+        form: root.form;
+        inset-top: root.safe-area-insets.top;
+        inset-bottom: root.safe-area-insets.bottom;
+        inset-left: root.safe-area-insets.left;
+    }
+
+    VerticalLayout {
+        x: root.form == Form.compact ? 0 : bar.width;
+        y: 0;
+        width: root.width - self.x;
+        height: root.form == Form.compact ? root.height - bar.height : root.height;
+        padding-top: root.safe-area-insets.top;
+        padding-right: root.safe-area-insets.right;
+        padding-left: root.form == Form.compact ? root.safe-area-insets.left : 0;
+        padding-bottom: root.form == Form.compact ? 0 : root.safe-area-insets.bottom;
+
+        if Navigation.current == Screen.recipes: RecipesScreen {
+            form: root.form;
+        }
+        if Navigation.current == Screen.dishes: DishesScreen {
+            form: root.form;
+        }
+        if Navigation.current == Screen.list: ListScreen {
+            form: root.form;
+        }
+        if Navigation.current == Screen.groceries: GroceriesScreen {
+            form: root.form;
+        }
+        if Navigation.current == Screen.settings: SettingsScreen {
+            form: root.form;
+        }
+    }
+}

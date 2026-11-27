@@ -77,6 +77,14 @@ bytes = "1"
 # application turns on the features it needs, its build script the same
 # version's `tailwind`.
 topcoat = { version = "0.12.1", default-features = false }
+# The toolkit of the app, on desktop, Android and iOS. The app turns on, for
+# each target, the backend and the renderer it runs with there. The build
+# script and Slint's own crates (`i-slint-*`) are released with it, at the
+# same version.
+slint = { version = "1.19.1", default-features = false }
+slint-build = "1.19.1"
+i-slint-backend-testing = "=1.19.1"
+i-slint-common = { version = "=1.19.1", default-features = false }
 
 [profile.release]
 codegen-units = 1

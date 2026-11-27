@@ -57,5 +57,10 @@ mobile/ios/LynxResources/*
 mobile/ios/SparklingGo/SparklingGo/Resources/Assets/
 .temp-templates/
 
+# The app on iOS: what XcodeGen and Xcode generate from app/ios/project.yml
+app/ios/*.xcodeproj/
+app/ios/Info.plist
+app/ios/build/
+
 # Docker
 .docker/traefik/certs/

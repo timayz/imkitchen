@@ -23,6 +23,11 @@
         };
         pkgs-unstable = import nixpkgs-unstable {
           inherit system;
+          config = {
+            # For the NDK of the app, below.
+            allowUnfree = true;
+            android_sdk.accept_license = true;
+          };
         };
 
         # Playwright comes from nixpkgs-unstable rather than a third-party flake.
@@ -62,6 +67,45 @@
         androidHome = "${androidSdk}/libexec/android-sdk";
         androidAapt2BuildTools = "37.0.0";
         avdName = "imkitchen-api34";
+
+        # The NDK the Slint app in ./app is built for Android with. Slint
+        # draws with Skia there, from binaries its build downloads, and those
+        # need the libc++ of NDK r30 or newer: with an older one the app
+        # builds and crashes when it starts. nixpkgs 26.05 only has release
+        # candidates of r30, hence unstable. The SDK above gives the rest:
+        # the platform, the build tools and the emulator.
+        appNdkVersion = "30.0.16248370";
+        appNdk = (pkgs-unstable.androidenv.composeAndroidPackages {
+          includeNDK = true;
+          ndkVersions = [ appNdkVersion ];
+        }).ndk-bundle;
+
+        # What the app loads when it starts on a Linux desktop, and NixOS
+        # keeps out of sight: the display (Wayland or X11), the keyboard,
+        # OpenGL and the fonts.
+        appRuntimeLibs = with pkgs; [
+          wayland
+          libxkbcommon
+          libGL
+          fontconfig
+          libx11
+          libxcursor
+          libxi
+          libxrandr
+        ];
+
+        # Tools installed with cargo by the shell hook: not in nixpkgs, or not
+        # at the version the workspace needs.
+        cargoTools = {
+          # `topcoat dev`, `topcoat asset bundle`, `topcoat l10n check`:
+          # pinned to the topcoat version the workspace uses.
+          topcoat-cli = "0.12.1";
+          # `make app.l10n`, `make l10n`: reads the sentences of the app out of
+          # its Slint sources. Pinned to the slint version the workspace uses.
+          slint-tr-extractor = "1.19.1";
+          # `make app.android`: packages the app as an APK and runs it.
+          cargo-apk2 = "1.5.0";
+        };
       in
       {
         devShells.default = with pkgs; mkShell {
@@ -86,6 +130,8 @@
             sqlite
             (rust-bin.stable.latest.default.override {
               extensions = [ "rust-src" "rust-analyzer" ];
+              # The app on Android: a phone, and the emulator of this shell.
+              targets = [ "aarch64-linux-android" "x86_64-linux-android" ];
             })
 
             # Sparkling / Lynx toolchain. Node ^22 || ^24 is required by
@@ -112,25 +158,32 @@
             # steps and GNU ld dominates them. Deliberately not in
             # .cargo/config.toml: CI runs timayz/.github's rust-test.yml, which has
             # no lld on PATH and would fail to link. An existing RUSTFLAGS wins.
+            # Set for the host alone, not as RUSTFLAGS: the app is also built
+            # for Android, which the NDK's own clang links.
             if [ "$(uname -s)" = "Linux" ] && [ -z "''${RUSTFLAGS:-}" ]; then
-              _lld_dir="$(rustc --print sysroot)/lib/rustlib/$(rustc -vV | sed -n 's/^host: //p')/bin/gcc-ld"
+              _host="$(rustc -vV | sed -n 's/^host: //p')"
+              _lld_dir="$(rustc --print sysroot)/lib/rustlib/$_host/bin/gcc-ld"
               if [ -x "$_lld_dir/ld.lld" ]; then
-                export RUSTFLAGS="-C link-arg=-B$_lld_dir -C link-arg=-fuse-ld=lld"
+                export "CARGO_TARGET_$(tr 'a-z-' 'A-Z_' <<< "$_host")_RUSTFLAGS=-C link-arg=-B$_lld_dir -C link-arg=-fuse-ld=lld"
               fi
-              unset _lld_dir
+              unset _host _lld_dir
             fi
 
             # www's build.rs runs Tailwind; use the packaged CLI instead of downloading it.
             export TAILWIND_CLI="$(command -v tailwindcss)"
 
-            # topcoat-cli (`topcoat dev`, `topcoat asset bundle`, `topcoat l10n check`) is
-            # not in nixpkgs; install it with cargo, pinned to the topcoat version the
-            # workspace uses.
+            # The tools cargo installs (cargoTools above), each at its version.
             export PATH="$HOME/.cargo/bin:$PATH"
-            TOPCOAT_CLI_VERSION="0.12.1"
-            if ! cargo install --list 2>/dev/null | grep -q "^topcoat-cli v$TOPCOAT_CLI_VERSION:"; then
-              cargo install topcoat-cli --version "$TOPCOAT_CLI_VERSION" --locked
-            fi
+            _cargo_installed="$(cargo install --list 2>/dev/null)"
+            ${pkgs.lib.concatStrings (pkgs.lib.mapAttrsToList (name: version: ''
+              if ! grep -q "^${name} v${version}:" <<< "$_cargo_installed"; then
+                cargo install ${name} --version "${version}" --locked
+              fi
+            '') cargoTools)}
+            unset _cargo_installed
+
+            # The app on a Linux desktop (appRuntimeLibs above).
+            export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath appRuntimeLibs}''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 
             # Playwright browsers come from the Nix store, not `npx playwright install`.
             export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
@@ -140,6 +193,8 @@
             export ANDROID_HOME="${androidHome}"
             export ANDROID_SDK_ROOT="$ANDROID_HOME"
             export JAVA_HOME="${pkgs.jdk17.home}"
+            # The app on Android (appNdk above).
+            export ANDROID_NDK_ROOT="${appNdk}/libexec/android-sdk/ndk/${appNdkVersion}"
             # The Nix store is read-only and Maven's prebuilt aapt2 is not patched
             # for NixOS, so point AGP at the SDK's build-tools copy instead.
             export GRADLE_OPTS="-Dorg.gradle.project.android.aapt2FromMavenOverride=$ANDROID_HOME/build-tools/${androidAapt2BuildTools}/aapt2"

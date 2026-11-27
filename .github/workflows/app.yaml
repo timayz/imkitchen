@@ -1,0 +1,166 @@
+name: App
+
+# Builds the app (./app) for every target it has: the desktops, Android and
+# iOS. Its tests run with the workspace's, in CI.
+#
+# There is no Mac in the dev environment, so the `ios` job is the only place
+# the app is compiled for iOS and started there: it builds it for the
+# simulator, launches it, checks it is still running once it has drawn and
+# uploads what it looks like, light and dark.
+
+on:
+  pull_request:
+    paths:
+      - "app/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "Makefile"
+      - ".github/workflows/app.yaml"
+  push:
+    branches:
+      - main
+      - alpha
+      - beta
+    paths:
+      - "app/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "Makefile"
+      - ".github/workflows/app.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Keep cached target dirs small, as the tests do.
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_DEV_DEBUG: line-tables-only
+
+jobs:
+  desktop:
+    name: Desktop (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: app-desktop
+          cache-bin: false
+          save-if: ${{ github.event_name == 'push' }}
+      - run: cargo build -p imkitchen-app
+
+  android:
+    name: Android APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      # The first NDK whose libc++ the Skia binaries Slint downloads link:
+      # the one of flake.nix.
+      NDK_VERSION: 30.0.16248370
+      CARGO_APK2_VERSION: 1.5.0
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platforms;android-37.0 build-tools;37.0.0 platform-tools ndk;${{ env.NDK_VERSION }}
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: false
+      - run: |
+          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: app-android
+          save-if: ${{ github.event_name == 'push' }}
+      - name: Install cargo-apk2
+        run: |
+          if ! cargo install --list | grep -q "^cargo-apk2 v$CARGO_APK2_VERSION:"; then
+            cargo install cargo-apk2 --version "$CARGO_APK2_VERSION" --locked
+          fi
+      - name: Build
+        run: make app.android.build APP_ANDROID_TARGET=aarch64-linux-android
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android-debug-apk
+          path: target/debug/apk/imkitchen.apk
+          if-no-files-found: error
+
+  ios:
+    name: iOS simulator
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios-sim
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: app-ios
+          cache-bin: false
+          save-if: ${{ github.event_name == 'push' }}
+      - name: Install XcodeGen
+        run: command -v xcodegen || brew install xcodegen
+      - name: Build
+        run: make app.ios
+      - name: Start it on a simulator
+        working-directory: app/ios
+        # A crash when the app starts (a missing scene delegate, a renderer
+        # that finds no surface) shows as its process being gone once it had
+        # the time to draw.
+        run: |
+          set -euo pipefail
+          app=build/Build/Products/Debug-iphonesimulator/imkitchen.app
+          test -d "$app"
+          mkdir -p smoke
+          # A pre-provisioned iPhone on the newest iOS runtime the image ships,
+          # plain model first ("iPhone 16" over "iPhone 16 Pro Max").
+          udid=$(xcrun simctl list devices available -j | jq -r '
+            .devices | to_entries
+            | map(select(.key | test("SimRuntime\\.iOS-")))
+            | sort_by(.key | capture("iOS-(?<v>[0-9-]+)").v | split("-") | map(tonumber)) | last
+            | .value | map(select(.name | startswith("iPhone")))
+            | (map(select(.name | test("^iPhone [0-9]+$"))) + .) | first | .udid')
+          test -n "$udid" && [ "$udid" != null ]
+          xcrun simctl list devices | grep "$udid"
+          trap '
+            xcrun simctl terminate "$udid" app.imkitchen.ios 2>/dev/null || true
+            xcrun simctl spawn "$udid" log show --style compact --last 5m \
+              --predicate "process == \"imkitchen\"" > smoke/system.log 2>&1 || true
+            xcrun simctl shutdown "$udid" 2>/dev/null || true
+          ' EXIT
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+          xcrun simctl status_bar "$udid" override \
+            --time 9:41 --batteryLevel 100 --batteryState charged --cellularBars 4 --wifiBars 3
+          xcrun simctl install "$udid" "$app"
+          xcrun simctl ui "$udid" appearance light
+          xcrun simctl launch --console-pty "$udid" app.imkitchen.ios > smoke/app.log 2>&1 &
+          sleep 30
+          pgrep -xq imkitchen || { echo "::error::imkitchen exited within 30 s of launch (see the ios-smoke artifact)"; exit 1; }
+          xcrun simctl io "$udid" screenshot smoke/recipes-light.png
+          xcrun simctl ui "$udid" appearance dark
+          sleep 3
+          xcrun simctl io "$udid" screenshot smoke/recipes-dark.png
+          pgrep -xq imkitchen || { echo "::error::imkitchen exited while switching to dark mode"; exit 1; }
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ios-smoke
+          path: app/ios/smoke
+          if-no-files-found: ignore
