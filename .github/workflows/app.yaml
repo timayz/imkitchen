@@ -142,6 +142,7 @@ jobs:
             xcrun simctl terminate "$udid" app.imkitchen.ios 2>/dev/null || true
             xcrun simctl spawn "$udid" log show --style compact --last 5m \
               --predicate "process == \"imkitchen\"" > smoke/system.log 2>&1 || true
+            cp ~/Library/Logs/DiagnosticReports/imkitchen* smoke/ 2>/dev/null || true
             xcrun simctl shutdown "$udid" 2>/dev/null || true
           ' EXIT
           xcrun simctl boot "$udid"
@@ -151,8 +152,12 @@ jobs:
           xcrun simctl install "$udid" "$app"
           xcrun simctl ui "$udid" appearance light
           xcrun simctl launch --console-pty "$udid" app.imkitchen.ios > smoke/app.log 2>&1 &
+          # A simulator that has just booted can take a while to start its
+          # first app: wait for the process, then give it the time to draw.
+          for _ in $(seq 60); do pgrep -xq imkitchen && break; sleep 2; done
+          pgrep -xq imkitchen || { echo "::error::imkitchen did not start within 2 min of its launch (see the ios-smoke artifact)"; exit 1; }
           sleep 30
-          pgrep -xq imkitchen || { echo "::error::imkitchen exited within 30 s of launch (see the ios-smoke artifact)"; exit 1; }
+          pgrep -xq imkitchen || { echo "::error::imkitchen exited within 30 s of starting (see the ios-smoke artifact)"; exit 1; }
           xcrun simctl io "$udid" screenshot smoke/recipes-light.png
           xcrun simctl ui "$udid" appearance dark
           sleep 3
