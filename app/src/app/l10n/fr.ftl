@@ -109,7 +109,41 @@ import_submit = Importer la recette
 
 dishes_meta_title = Plats — imkitchen
 dishes_title = Plats
-dishes_text = Les plats que vous servez, composés de vos recettes.
+dishes_new = Nouveau plat
+dishes_search_label = Nom d’un plat
+dishes_none = Vous n’avez pas encore de plat. Composez le premier à partir de vos recettes.
+dishes_none_found = Aucun plat n’est trouvé.
+dishes_more = Plus de plats
+
+dish_recipes = Recettes
+dish_recipes_count =
+    { $count ->
+        [0] Aucune recette
+        [one] { $count } recette
+       *[other] { $count } recettes
+    }
+dish_no_recipe = Ce plat n’a plus de recette. Modifiez-le pour le recomposer.
+dish_delete_warning = Le plat disparaît pour de bon. Ses recettes restent.
+dish_delete_confirm = Supprimer le plat
+dish_deleted = Le plat est supprimé.
+dish_not_deleted = Le plat n’a pas été supprimé
+
+dish_new_meta_title = Nouveau plat — imkitchen
+dish_new_title = Nouveau plat
+dish_edit_meta_title = Modifier le plat — imkitchen
+dish_edit_title = Modifier le plat
+dish_name = Nom
+dish_chosen = Recettes du plat
+dish_chosen_hint = Dans l’ordre où elles sont servies. Décochez une recette pour la retirer.
+dish_chosen_none = Pas encore de recette : cochez-en ci-dessous.
+dish_move_up = Servir { $title } plus tôt
+dish_move_down = Servir { $title } plus tard
+dish_others = Vos autres recettes
+dish_others_hint = Cochez les recettes à ajouter : elles rejoignent le plat quand vous enregistrez, ou cherchez à nouveau.
+dish_others_none = Aucune autre recette n’est trouvée.
+dish_others_more = Seules les plus récentes sont affichées ici : cherchez pour en trouver une autre.
+dish_no_recipe_yet = Vous n’avez pas encore de recette, et un plat se compose de vos recettes.
+dish_save = Enregistrer le plat
 
 list_meta_title = Liste — imkitchen
 list_title = Liste

@@ -99,6 +99,7 @@ when topcoat moves its own.
 | `src/app.rs` | The router, the language of a page and the document every page is in. |
 | `src/app/_signed_in.rs`, `src/app/_signed_in/` | What a signed-in user reads: who is let through, the layout and its navigation, the home, each screen at the address of its module. |
 | `src/app/_signed_in/recipes.rs`, `src/app/_signed_in/recipes/` | The recipes: the list, a recipe, the form one is written and rewritten with, and the import. |
+| `src/app/_signed_in/dishes.rs`, `src/app/_signed_in/dishes/` | The dishes: the list, a dish, and the form one is composed and recomposed with. |
 | `src/app/auth.rs`, `src/app/auth/` | What a visitor is shown, under `/auth`: signing in, registering, and signing out. |
 | `src/app/_app.rs`, `src/app/_app/` | What is not a page, under `/_app`: the health. |
 | `src/assets.rs` | The assets, served under `/_app/assets`. |
@@ -106,7 +107,7 @@ when topcoat moves its own.
 | `src/api.rs` | The api over HTTP: registering, signing in and out, who a session is, and the commands. |
 | `src/session.rs` | What a browser keeps of its session: the two cookies. |
 | `src/events.rs` | The connection to the api's events. |
-| `src/recipes.rs` | A read model: its subscription and what the pages read from it. |
+| `src/recipes.rs`, `src/dishes.rs` | The read models: the subscription of each and what the pages read from it. |
 | `src/subscriptions.rs` | Every subscription app runs. |
 | `src/db.rs` | The store and the migrations of its tables. |
 | `Dockerfile`, `builder.Dockerfile`, `helm/` | The image and the chart app is deployed with. |
@@ -147,8 +148,8 @@ the two, or the gateway hands it to www.
 
 `/` is the home. Each screen of the application has a module under
 `src/app/_signed_in/` and is at its address: `/recipes`, `/dishes`, `/list`,
-`/groceries`, `/settings`. Nothing is shown on them yet but the recipes: the
-others are there for the navigation to lead to.
+`/groceries`, `/settings`. Nothing is shown on them yet but the recipes and
+the dishes: the others are there for the navigation to lead to.
 
 One layout (`signed_in` in `src/app/_signed_in.rs`) serves the desktop and
 the phone. The navigation between the screens is a bar that stays at the
@@ -256,12 +257,39 @@ row.
 A picture is shown from the api, where the browsers reach it
 (`api.public_url`): app keeps the name of its files and stores none.
 
+## Dishes
+
+A dish is what the api calls a plat: a name, and recipes of the user in the
+order they are served.
+
+| Address | What it is |
+| --- | --- |
+| `/dishes` | The dishes of who reads it, the most recent first, 24 at a time; `q` searches their names, whatever the case and the accents. |
+| `/dishes/new` | The form a dish is composed with. |
+| `/dishes/{id}` | A dish: its recipes, each leading to the recipe, and the button that deletes it. |
+| `/dishes/{id}/edit` | The same form, to recompose it. |
+
+Like a recipe, a dish is its owner's alone. It names its recipes and keeps
+nothing of them: each is shown as it now stands. A recipe that is deleted
+leaves the dishes it was part of, and a dish left with none stays, to be
+recomposed or deleted. Deleting a dish deletes none of its recipes.
+
+The form works without a script. It shows the recipes of the dish, a ticked
+box each, then the user's other recipes: the 24 most recent, or those a
+search finds (by title or ingredient). Searching, and moving a recipe up or
+down, post the form to get it back as it was left: what was ticked among the
+others has joined the dish, after its recipes, and what was unticked has
+left it. The Enter key in a field searches. Nothing is written until the
+form is saved (`POST /v1/plats`, `PUT /v1/plats/{id}`), and what the api
+refuses is said under the name or under the recipes.
+
 ## Read models
 
 app reads the aggregates `imkitchen-aggregates` lists for it
 (`Sidecar::App`); the api refuses it anything else, and every write. Today
-that is the recipes: app keeps all each one says, whose it is and the
-picture it shows (`src/recipes.rs`).
+that is the recipes, of which app keeps all each one says, whose it is and
+the picture it shows (`src/recipes.rs`), and the plats, its dishes: the name
+of each, whose it is and the recipes it names (`src/dishes.rs`).
 
 To show something else of imkitchen:
 

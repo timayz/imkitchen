@@ -14,7 +14,7 @@ use evento::metadata::Event;
 use evento::subscription::{Context, SubscriptionBuilder};
 use imkitchen_aggregates::recipe::{self, Created, Deleted, Edited, ImageRemoved, ImageSet};
 use serde::{Deserialize, Serialize};
-use timada_core::db::{FromRow, Json, search_key};
+use timada_core::db::{FromRow, Json, params_from_iter, placeholders, search_key};
 use timada_core::page::Cursor;
 use timada_core::{Rendition, like_contains};
 
@@ -287,6 +287,26 @@ pub async fn get_own(db: &Db, owner_id: &str, id: &str) -> anyhow::Result<Option
             servings, file_id, image_width, image_height, updated_at
          FROM recipes WHERE id = ?1 AND owner_id = ?2",
         (id, owner_id),
+    )
+    .await
+}
+
+/// What the lists show of the recipes `ids`, in no order: those among them
+/// that are `owner_id`'s.
+pub async fn listed_own(db: &Db, owner_id: &str, ids: &[String]) -> anyhow::Result<Vec<RecipeRow>> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut params: Vec<&str> = ids.iter().map(String::as_str).collect();
+    params.push(owner_id);
+    db.fetch_all(
+        &format!(
+            "SELECT id, title, prep_minutes, cook_minutes, servings, file_id, created_at
+             FROM recipes WHERE id IN ({}) AND owner_id = ?{}",
+            placeholders(ids.len()),
+            params.len()
+        ),
+        params_from_iter(params),
     )
     .await
 }

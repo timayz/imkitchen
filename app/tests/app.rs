@@ -28,7 +28,7 @@ use imkitchen_app::config::ApiConfig;
 use imkitchen_app::db::{self, Db};
 use imkitchen_app::events::Events;
 use imkitchen_app::session::{MARKER, Sessions};
-use imkitchen_app::{app, assets, config, recipes, subscriptions};
+use imkitchen_app::{app, assets, config, dishes, recipes, subscriptions};
 use serde_json::{Value, json};
 use tempfile::TempDir;
 use timada_identity::CodeMail;
@@ -190,6 +190,8 @@ struct Http {
     outbox: Arc<Outbox>,
     /// What mails the codes.
     mailing: Subscription,
+    /// What takes the recipes that are deleted out of the plats.
+    plats: Subscription,
     stop: oneshot::Sender<()>,
     served: JoinHandle<()>,
 }
@@ -252,6 +254,11 @@ impl Api {
                 .start(&self.executor)
                 .await
                 .unwrap();
+        let plats =
+            imkitchen_api::plats::subscription(imkitchen_api::db::Db::from(self.store.clone()))
+                .start(&self.executor)
+                .await
+                .unwrap();
         let state = AppState {
             cluster: self.cluster.clone(),
             executor: self.executor.clone(),
@@ -277,6 +284,7 @@ impl Api {
             client: reqwest::Client::new(),
             outbox,
             mailing,
+            plats,
             stop,
             served,
         });
@@ -392,6 +400,7 @@ impl Api {
     async fn shutdown(self) {
         if let Some(http) = self.http {
             http.mailing.shutdown().await.unwrap();
+            http.plats.shutdown().await.unwrap();
             let _ = http.stop.send(());
             http.served.await.unwrap();
         }
@@ -2190,6 +2199,426 @@ async fn the_list_of_the_recipes_is_read_a_page_at_a_time() {
     let page = cook.get(&router, "/recipes?q=tart").await.body;
     assert_eq!(count(&page, "data-recipe="), 13, "{page}");
     assert!(!page.contains("Soup"), "{page}");
+    assert!(!page.contains("data-more"), "{page}");
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+/// Where a dish is composed, and the list of them.
+const DISHES: &str = "/dishes";
+const NEW_DISH: &str = "/dishes/new";
+
+/// Writes a recipe of whoever `token` signs in, at the api; its id.
+async fn recipe_of(api: &Api, token: &str, title: &str) -> String {
+    let recipe = json!({ "title": title, "servings": 2 });
+    let (status, body) = api
+        .call(reqwest::Method::POST, "/v1/recipes", Some(token), recipe)
+        .await;
+    assert_eq!(status, 201, "{body}");
+    body["id"].as_str().unwrap().to_owned()
+}
+
+/// Where each of `whats` is in `page`: all of them are, in that order.
+fn in_order(page: &str, whats: &[String]) -> bool {
+    let places: Option<Vec<usize>> = whats.iter().map(|what| page.find(what.as_str())).collect();
+    places.is_some_and(|places| places.is_sorted())
+}
+
+#[tokio::test]
+async fn a_user_composes_a_dish_of_their_recipes_recomposes_it_and_deletes_it() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "en").await;
+
+    // Nothing yet, and the way to a first dish.
+    let page = cook.get(&router, DISHES).await.body;
+    assert!(page.contains("data-empty"), "{page}");
+    assert!(page.contains("You have no dish yet."), "{page}");
+    assert!(link(&page, NEW_DISH).is_some(), "{page}");
+
+    // A dish is composed of recipes: without any, the form leads to one.
+    let Answer {
+        status, body: page, ..
+    } = cook.get(&router, NEW_DISH).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        page.contains("<title>New dish — imkitchen</title>"),
+        "{page}"
+    );
+    assert!(page.contains("data-others=\"no-recipe\""), "{page}");
+    assert!(link(&page, NEW_RECIPE).is_some(), "{page}");
+    // The dishes screen is the one being read on the pages under it.
+    let screen = link(&page, DISHES).unwrap();
+    assert!(screen.contains("aria-current=\"page\""), "{screen}");
+
+    let token = api.root_token().await;
+    let soup = recipe_of(&api, &token, "Soup").await;
+    let roast = recipe_of(&api, &token, "Roast").await;
+    let tart = recipe_of(&api, &token, "Tart").await;
+    app.counts(3).await;
+    let chosen = |id: &str| format!("data-chosen=\"{id}\"");
+    let other = |id: &str| format!("data-other=\"{id}\"");
+
+    // The recipes to pick among, none picked yet.
+    let page = cook.get(&router, NEW_DISH).await.body;
+    assert!(page.contains("action=\"/dishes/new\""), "{page}");
+    assert!(page.contains("data-chosen=\"none\""), "{page}");
+    for id in [&soup, &roast, &tart] {
+        assert!(page.contains(&other(id)), "{page}");
+    }
+
+    // Searching writes nothing: the form comes back as it was left, what
+    // was ticked part of the dish, the others those the search finds.
+    let searched = [
+        ("name", "Sunday"),
+        ("recipe_ids", roast.as_str()),
+        ("q", "TART"),
+        ("search", "1"),
+    ];
+    let Answer {
+        status, body: page, ..
+    } = cook.post(&router, NEW_DISH, &searched).await;
+    assert_eq!(status, StatusCode::OK, "{page}");
+    assert!(page.contains("value=\"Sunday\""), "{page}");
+    assert!(page.contains("value=\"TART\""), "{page}");
+    assert!(page.contains(&chosen(&roast)), "{page}");
+    assert!(page.contains(&other(&tart)), "{page}");
+    assert!(!page.contains(&other(&soup)), "{page}");
+    assert!(!page.contains(&other(&roast)), "{page}");
+    let page = cook
+        .post(
+            &router,
+            NEW_DISH,
+            &[("name", ""), ("q", "butter"), ("search", "1")],
+        )
+        .await
+        .body;
+    assert!(page.contains("data-others=\"none\""), "{page}");
+
+    // A recipe is moved before the one it follows, or after the next.
+    let moved = [
+        ("name", "Sunday"),
+        ("recipe_ids", roast.as_str()),
+        ("recipe_ids", tart.as_str()),
+        ("up", tart.as_str()),
+    ];
+    let page = cook.post(&router, NEW_DISH, &moved).await.body;
+    assert!(in_order(&page, &[chosen(&tart), chosen(&roast)]), "{page}");
+    assert!(page.contains(&other(&soup)), "{page}");
+    let mut back = moved;
+    back[3] = ("down", tart.as_str());
+    let page = cook.post(&router, NEW_DISH, &back).await.body;
+    assert!(in_order(&page, &[chosen(&roast), chosen(&tart)]), "{page}");
+    // The last stays the last.
+    back[3] = ("down", roast.as_str());
+    back.swap(1, 2);
+    let page = cook.post(&router, NEW_DISH, &back).await.body;
+    assert!(in_order(&page, &[chosen(&tart), chosen(&roast)]), "{page}");
+
+    // Nothing was written so far.
+    let page = cook.get(&router, DISHES).await.body;
+    assert!(page.contains("data-empty"), "{page}");
+
+    // Composed: the browser is sent to it, and app shows it from what it
+    // followed, its recipes in the order they were picked in.
+    let composed = [
+        ("name", " Sunday roast "),
+        ("recipe_ids", tart.as_str()),
+        ("recipe_ids", roast.as_str()),
+    ];
+    let answer = cook.post(&router, NEW_DISH, &composed).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let at = answer.location.clone();
+    let id = at.strip_prefix("/dishes/").expect("sent to the dish");
+    let recipe = |id: &str| format!("data-recipe=\"{id}\"");
+    let Answer {
+        status, body: page, ..
+    } = cook.get(&router, &at).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(page.contains(">Sunday roast</h1>"), "{page}");
+    assert!(page.contains("data-recipes=\"2\""), "{page}");
+    assert!(in_order(&page, &[recipe(&tart), recipe(&roast)]), "{page}");
+    // Each leads to the recipe.
+    let part = link(&page, &format!("/recipes/{roast}")).unwrap();
+    assert!(part.contains("Roast"), "{part}");
+    assert!(link(&page, &format!("{at}/edit")).is_some(), "{page}");
+
+    // In the list, with what it is made of, and searched by name whatever
+    // the case.
+    let page = cook.get(&router, DISHES).await.body;
+    assert!(page.contains(&format!("data-dish=\"{id}\"")), "{page}");
+    let card = link(&page, &at).unwrap();
+    assert!(card.contains("Sunday roast"), "{card}");
+    assert!(card.contains("data-recipes=\"2\""), "{card}");
+    assert!(card.contains("Tart · Roast"), "{card}");
+    assert!(!page.contains("data-empty"), "{page}");
+    let page = cook.get(&router, "/dishes?q=SUNDAY").await.body;
+    assert!(page.contains(&format!("data-dish=\"{id}\"")), "{page}");
+    let page = cook.get(&router, "/dishes?q=tart").await.body;
+    assert!(!page.contains("data-dish="), "{page}");
+    assert!(page.contains("No dish is found."), "{page}");
+
+    // Its form holds what it is made of, and the recipes it is not.
+    let edit = format!("{at}/edit");
+    let Answer {
+        status, body: page, ..
+    } = cook.get(&router, &edit).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        page.contains("<title>Edit the dish — imkitchen</title>"),
+        "{page}"
+    );
+    assert!(page.contains(&format!("action=\"{edit}\"")), "{page}");
+    assert!(page.contains("value=\"Sunday roast\""), "{page}");
+    assert!(in_order(&page, &[chosen(&tart), chosen(&roast)]), "{page}");
+    assert!(page.contains(&other(&soup)), "{page}");
+    assert_eq!(count(&page, "data-other="), 1, "{page}");
+
+    // Recomposed as a whole: a recipe taken out, another put in.
+    let recomposed = [
+        ("name", "Roast and soup"),
+        ("recipe_ids", roast.as_str()),
+        ("recipe_ids", soup.as_str()),
+    ];
+    let answer = cook.post(&router, &edit, &recomposed).await;
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, at.as_str()));
+    let page = cook.get(&router, &at).await.body;
+    assert!(page.contains(">Roast and soup</h1>"), "{page}");
+    assert!(in_order(&page, &[recipe(&roast), recipe(&soup)]), "{page}");
+    assert!(!page.contains(&recipe(&tart)), "{page}");
+
+    // Saved as it stands: nothing to wait for, and the browser is sent on.
+    let answer = cook.post(&router, &edit, &recomposed).await;
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, at.as_str()));
+
+    // A recipe that is deleted leaves the dish, which stays.
+    let answer = cook
+        .post(&router, &format!("/recipes/{roast}/delete"), &[])
+        .await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let page = cook.get(&router, &at).await.body;
+    assert!(page.contains("data-recipes=\"1\""), "{page}");
+    assert!(!page.contains(&recipe(&roast)), "{page}");
+    // The api takes it out a moment later, and app follows.
+    let left = json!([soup]).to_string();
+    eventually("the recipe to be taken out of the dish", || async {
+        let named: String = app
+            .db
+            .fetch_scalar("SELECT recipe_ids FROM dishes WHERE id = ?1", (id,))
+            .await
+            .unwrap();
+        (named == left).then_some(())
+    })
+    .await;
+    let answer = cook
+        .post(&router, &format!("/recipes/{soup}/delete"), &[])
+        .await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let page = cook.get(&router, &at).await.body;
+    assert!(page.contains("data-recipes=\"0\""), "{page}");
+    assert!(page.contains("This dish has no recipe left."), "{page}");
+    let page = cook.get(&router, DISHES).await.body;
+    assert!(link(&page, &at).unwrap().contains("No recipe"), "{page}");
+
+    // Deleted for good: the list says so, and the dish is nowhere. The
+    // recipe it was not made of stays.
+    let answer = cook.post(&router, &format!("{at}/delete"), &[]).await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/dishes?done=deleted")
+    );
+    let page = cook.get(&router, &answer.location).await.body;
+    assert!(page.contains("data-done=\"deleted\""), "{page}");
+    assert!(page.contains("data-empty"), "{page}");
+    for gone in [at.as_str(), edit.as_str()] {
+        assert_eq!(
+            cook.get(&router, gone).await.status,
+            StatusCode::NOT_FOUND,
+            "{gone}"
+        );
+    }
+    let answer = cook.post(&router, &format!("{at}/delete"), &[]).await;
+    assert_eq!(answer.status, StatusCode::NOT_FOUND, "{}", answer.body);
+    let page = cook.get(&router, RECIPES).await.body;
+    assert!(page.contains(&recipe(&tart)), "{page}");
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn what_the_api_refuses_of_a_dish_is_said_on_its_form() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "fr").await;
+    let token = api.root_token().await;
+    let soup = recipe_of(&api, &token, "Soupe").await;
+    app.counts(1).await;
+
+    // A dish without a name, made of nothing: each is said where it is
+    // typed, in the language of the page.
+    let Answer {
+        status, body: page, ..
+    } = cook.post(&router, NEW_DISH, &[("name", " ")]).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{page}");
+    assert!(page.contains("data-code=\"validation_failed\""), "{page}");
+    assert!(
+        page.contains("Certains champs ne sont pas valides."),
+        "{page}"
+    );
+    assert!(page.contains("data-field=\"name\""), "{page}");
+    assert!(page.contains("data-field=\"recipe_ids\""), "{page}");
+    assert!(page.contains("action=\"/dishes/new\""), "{page}");
+
+    // A recipe that is not one of theirs is refused, what was left still
+    // there.
+    let refused = [
+        ("name", "Dimanche"),
+        ("recipe_ids", soup.as_str()),
+        ("recipe_ids", "nothing"),
+    ];
+    let Answer {
+        status, body: page, ..
+    } = cook.post(&router, NEW_DISH, &refused).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{page}");
+    assert!(page.contains("value=\"Dimanche\""), "{page}");
+    assert!(page.contains(&format!("data-chosen=\"{soup}\"")), "{page}");
+    assert!(page.contains("data-field=\"recipe_ids\""), "{page}");
+    assert!(!page.contains("data-field=\"recipe_ids[0]\""), "{page}");
+
+    // Nothing was written.
+    let page = cook.get(&router, DISHES).await.body;
+    assert!(page.contains("data-empty"), "{page}");
+
+    // The api away: nothing is let through.
+    app.api = NOWHERE.to_owned();
+    let away = app.router();
+    let answer = cook.post(&away, NEW_DISH, &refused).await;
+    assert_eq!(answer.status, StatusCode::SERVICE_UNAVAILABLE);
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn a_dish_is_its_owners_alone() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    // Someone else's.
+    let stew = evento::create()
+        .event(&imkitchen_aggregates::plat::Created {
+            owner_id: "alice".to_owned(),
+            name: "Stew".to_owned(),
+            recipe_ids: Vec::new(),
+        })
+        .commit(&api.executor)
+        .await
+        .unwrap();
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    eventually("app to follow the dish", || async {
+        dishes::get_own(&app.db, "alice", &stew).await.unwrap()
+    })
+    .await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "en").await;
+    let at = format!("/dishes/{stew}");
+    let edit = format!("{at}/edit");
+
+    // Not in the list, searched for or not, and not found at its address.
+    for list in [DISHES, "/dishes?q=stew"] {
+        let page = cook.get(&router, list).await.body;
+        assert!(!page.contains("Stew"), "{page}");
+        assert!(page.contains("data-empty"), "{page}");
+    }
+    for path in [at.as_str(), edit.as_str()] {
+        let Answer { status, body, .. } = cook.get(&router, path).await;
+        assert_eq!(status, StatusCode::NOT_FOUND, "{path}");
+        assert!(!body.contains("Stew"), "{body}");
+    }
+
+    // Nor recomposed, nor deleted: the api refuses, and the dish stays.
+    let token = api.root_token().await;
+    let soup = recipe_of(&api, &token, "Soup").await;
+    let mine = [("name", "Mine"), ("recipe_ids", soup.as_str())];
+    let answer = cook.post(&router, &edit, &mine).await;
+    assert_eq!(answer.status, StatusCode::NOT_FOUND, "{}", answer.body);
+    let answer = cook.post(&router, &format!("{at}/delete"), &[]).await;
+    assert_eq!(answer.status, StatusCode::NOT_FOUND, "{}", answer.body);
+    let theirs = dishes::get_own(&app.db, "alice", &stew).await.unwrap();
+    assert_eq!(theirs.unwrap().name, "Stew");
+
+    // Nobody reads anything of the dishes without signing in.
+    for path in [DISHES, NEW_DISH, at.as_str()] {
+        let (status, location, _) = get(&router, path, "en").await;
+        assert_eq!(
+            (status, location.as_str()),
+            (StatusCode::SEE_OTHER, SIGN_IN)
+        );
+    }
+    let answer = Browser::reading("en").post(&router, NEW_DISH, &mine).await;
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, SIGN_IN));
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn the_list_of_the_dishes_is_read_a_page_at_a_time() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "en").await;
+    let token = api.root_token().await;
+    let soup = recipe_of(&api, &token, "Soup").await;
+    for nth in 0..26 {
+        let name = if nth % 2 == 0 { "Lunch" } else { "Dinner" };
+        let plat = json!({ "name": format!("{name} {nth}"), "recipe_ids": [soup] });
+        let (status, body) = api
+            .call(reqwest::Method::POST, "/v1/plats", Some(&token), plat)
+            .await;
+        assert_eq!(status, 201, "{body}");
+    }
+    eventually("app to follow the dishes", || async {
+        let dishes: i64 = app
+            .db
+            .fetch_scalar("SELECT count(*) FROM dishes", ())
+            .await
+            .unwrap();
+        (dishes == 26).then_some(())
+    })
+    .await;
+    app.counts(1).await;
+
+    // The most recent first, and the way to those that follow.
+    let page = cook.get(&router, DISHES).await.body;
+    assert_eq!(count(&page, "data-dish="), 24, "{page}");
+    let from = page.find("data-more").expect("a page beyond");
+    let more = &page[page[..from].rfind("<a ").unwrap()..from];
+    let from = more.find("href=\"").unwrap() + "href=\"".len();
+    let next = more[from..from + more[from..].find('"').unwrap()].replace("&amp;", "&");
+    let rest = cook.get(&router, &next).await.body;
+    assert_eq!(count(&rest, "data-dish="), 2, "{rest}");
+    assert!(!rest.contains("data-more"), "{rest}");
+    // No dish twice, none left out.
+    for nth in 0..26 {
+        let name = format!(" {nth}</h2>");
+        assert_eq!(count(&page, &name) + count(&rest, &name), 1, "{nth}");
+    }
+
+    // A search is read the same way.
+    let page = cook.get(&router, "/dishes?q=dinner").await.body;
+    assert_eq!(count(&page, "data-dish="), 13, "{page}");
+    assert!(!page.contains("Lunch"), "{page}");
     assert!(!page.contains("data-more"), "{page}");
 
     app.stop().await;
