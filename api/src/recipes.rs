@@ -219,6 +219,12 @@ struct Instruction {
     #[serde(deserialize_with = "trimmed")]
     #[validate(length(min = 1, max = 4000))]
     text: String,
+    /// The minutes to wait once the step is done ("bake 25 minutes"): what
+    /// a timer is started from. Left out when there is nothing to wait for.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[validate(range(min = 1, max = 10080))]
+    #[schema(example = 25)]
+    timer_minutes: Option<u32>,
 }
 
 /// Everything a recipe says: what writing one takes, and what rewriting one
@@ -265,7 +271,14 @@ impl From<RecipeBody> for Content {
                     unit: one.unit,
                 })
                 .collect(),
-            instructions: body.instructions.into_iter().map(|one| one.text).collect(),
+            instructions: body
+                .instructions
+                .into_iter()
+                .map(|one| imkitchen_aggregates::recipe::Instruction {
+                    text: one.text,
+                    timer_minutes: one.timer_minutes,
+                })
+                .collect(),
             prep_minutes: body.prep_minutes,
             cook_minutes: body.cook_minutes,
             servings: body.servings,
@@ -335,7 +348,10 @@ impl From<RecipeState> for Recipe {
             instructions: content
                 .instructions
                 .into_iter()
-                .map(|text| Instruction { text })
+                .map(|one| Instruction {
+                    text: one.text,
+                    timer_minutes: one.timer_minutes,
+                })
                 .collect(),
             prep_minutes: content.prep_minutes,
             cook_minutes: content.cook_minutes,
@@ -470,6 +486,8 @@ async fn or_give_back<T>(
 /// The recipe the page holds becomes one of the user's, theirs to
 /// rewrite like one they wrote; the recipe says nothing of the page. What the page
 /// does not say is left out (the times), or taken as usual (4 servings).
+/// A step that says how long to wait ("25 min", "1 h 30") has that as its
+/// `timer_minutes`.
 /// The picture the page gives its recipe comes with it when it can be
 /// fetched; the recipe is imported without one otherwise.
 /// A site that refuses the api answers the browser of the client: the

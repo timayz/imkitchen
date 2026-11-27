@@ -10,7 +10,7 @@
 use scraper::{ElementRef, Html, Node, Selector};
 
 use super::html::{self, BREAKS, Budget, NodeRef, following, split};
-use super::{Found, first_number};
+use super::{Found, Step, first_number, spoken};
 
 /// What the heading of the ingredients starts with, in lowercase.
 const INGREDIENTS: &[&str] = &["ingrédient", "ingredient"];
@@ -68,7 +68,7 @@ pub fn recipe(document: &Html, budget: &mut Budget) -> Option<Found> {
         title: title(document, budget)?,
         description: meta(document, &["description", "og:description"]).unwrap_or_default(),
         ingredients,
-        instructions,
+        instructions: instructions.into_iter().map(Step::from).collect(),
         prep_minutes: time(document, r#"[class*="prep"]"#, budget)?,
         cook_minutes: time(document, r#"[class*="cuisson"], [class*="cook"]"#, budget)?,
         total_minutes: None,
@@ -231,57 +231,11 @@ fn time(document: &Html, selector: &str, budget: &mut Budget) -> Option<Option<u
                 break;
             }
         }
-        if let Some(minutes) = spoken_minutes(&text).filter(|_| text.len() <= TIME_MAX) {
+        if let Some(minutes) = spoken::minutes(&text).filter(|_| text.len() <= TIME_MAX) {
             return Some(Some(minutes));
         }
     }
     Some(None)
-}
-
-/// The minutes of a time as people write it: "25 min", "1 h 30", "2
-/// heures", "1 hour 15 minutes".
-fn spoken_minutes(text: &str) -> Option<u32> {
-    let says = text.trim().to_lowercase();
-    let (first, rest) = number(&says)?;
-    let (unit, rest) = word(rest);
-    match unit {
-        "h" | "hr" | "hrs" | "heure" | "heures" | "hour" | "hours" => {
-            let minutes = match number(rest) {
-                Some((minutes, rest)) => {
-                    let (unit, rest) = word(rest);
-                    (is_minutes(unit) || unit.is_empty() && rest.is_empty()).then_some(minutes)?
-                }
-                None => rest.trim().is_empty().then_some(0)?,
-            };
-            first.checked_mul(60)?.checked_add(minutes)
-        }
-        unit if is_minutes(unit) && rest.trim().is_empty() => Some(first),
-        _ => None,
-    }
-}
-
-fn is_minutes(unit: &str) -> bool {
-    matches!(unit, "min" | "mins" | "mn" | "minute" | "minutes")
-}
-
-/// The whole number `text` starts with, blanks aside, and what follows.
-fn number(text: &str) -> Option<(u32, &str)> {
-    let text = text.trim_start();
-    let end = text
-        .find(|c: char| !c.is_ascii_digit())
-        .unwrap_or(text.len());
-    Some((text[..end].parse().ok()?, &text[end..]))
-}
-
-/// The word `text` starts with, blanks and its point aside, and what
-/// follows.
-fn word(text: &str) -> (&str, &str) {
-    let text = text.trim_start();
-    let end = text
-        .find(|c: char| !c.is_alphabetic())
-        .unwrap_or(text.len());
-    let (word, rest) = text.split_at(end);
-    (word, rest.strip_prefix('.').unwrap_or(rest))
 }
 
 #[cfg(test)]
@@ -340,9 +294,9 @@ mod tests {
                     "100 g icing sugar".to_owned(),
                 ],
                 instructions: vec![
-                    "Mash the bananas & mix.".to_owned(),
-                    "Bake.".to_owned(),
-                    "Let it cool.".to_owned(),
+                    Step::from("Mash the bananas & mix.".to_owned()),
+                    Step::from("Bake.".to_owned()),
+                    Step::from("Let it cool.".to_owned()),
                 ],
                 prep_minutes: Some(15),
                 cook_minutes: Some(65),
@@ -364,7 +318,10 @@ mod tests {
         let found = recipe(html).unwrap();
         assert_eq!(found.title, "Toast");
         assert_eq!(found.ingredients, ["2 tranches de pain"]);
-        assert_eq!(found.instructions, ["Griller le pain."]);
+        assert_eq!(
+            found.instructions,
+            [Step::from("Griller le pain.".to_owned())]
+        );
         assert_eq!((found.prep_minutes, found.servings), (None, None));
     }
 
@@ -378,30 +335,6 @@ mod tests {
             "<h1>Pancakes</h1><h2>Ingredients</h2><h2>Method</h2>",
         ] {
             assert_eq!(recipe(html), None, "{html}");
-        }
-    }
-
-    #[test]
-    fn a_time_is_read_as_people_write_it() {
-        for (text, minutes) in [
-            ("25 min", Some(25)),
-            (" 45 minutes ", Some(45)),
-            ("30mn", Some(30)),
-            ("5 min.", Some(5)),
-            ("1 h", Some(60)),
-            ("1h30", Some(90)),
-            ("1 h 30 min", Some(90)),
-            ("2 heures", Some(120)),
-            ("1 hour 15 minutes", Some(75)),
-            ("1 hr. 5 mins", Some(65)),
-            ("Prep: 15 min", None),
-            ("25", None),
-            ("25 g", None),
-            ("1 h 30 g", None),
-            ("min", None),
-            ("", None),
-        ] {
-            assert_eq!(spoken_minutes(text), minutes, "{text}");
         }
     }
 }

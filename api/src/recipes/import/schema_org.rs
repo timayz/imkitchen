@@ -9,7 +9,7 @@ use scraper::{ElementRef, Html, Selector};
 use serde_json::{Map, Value};
 
 use super::html::{self, Budget, following, lines};
-use super::{Found, INGREDIENTS_MAX, INSTRUCTIONS_MAX};
+use super::{Found, INGREDIENTS_MAX, INSTRUCTIONS_MAX, Step};
 
 /// How deep the items of a microdata item are read.
 const ITEMS_DEPTH: usize = 8;
@@ -25,6 +25,9 @@ const PROPERTIES: &[&str] = &[
     "prepTime",
     "cookTime",
     "totalTime",
+    "timeRequired",
+    "performTime",
+    "duration",
     "recipeYield",
     "yield",
     "image",
@@ -181,14 +184,18 @@ fn texts(value: &Value, into: &mut Vec<String>) {
     }
 }
 
+/// How a step says how long it takes, the most usual first.
+const STEP_TIMES: &[&str] = &["timeRequired", "performTime", "duration"];
+
 /// The steps `value` holds, in their order: a text of several lines, a
-/// list of texts or of `HowToStep`, themselves in `HowToSection` or not.
-fn steps(value: &Value, into: &mut Vec<String>) {
+/// list of texts or of `HowToStep`, themselves in `HowToSection` or not. A
+/// `HowToStep` that says how long it takes has that to wait.
+fn steps(value: &Value, into: &mut Vec<Step>) {
     if into.len() >= INSTRUCTIONS_MAX {
         return;
     }
     match value {
-        Value::String(text) => into.extend(lines(text)),
+        Value::String(text) => into.extend(lines(text).into_iter().map(Step::from)),
         Value::Array(values) => values.iter().for_each(|value| steps(value, into)),
         Value::Object(node) => match node.get("itemListElement") {
             Some(section) => steps(section, into),
@@ -196,7 +203,13 @@ fn steps(value: &Value, into: &mut Vec<String>) {
                 let step = node.get("text").or(node.get("name")).and_then(text);
                 let step = step.map(|text| lines(text).join(" ")).unwrap_or_default();
                 if !step.is_empty() {
-                    into.push(step);
+                    into.push(Step {
+                        text: step,
+                        timer_minutes: STEP_TIMES
+                            .iter()
+                            .filter_map(|name| node.get(*name))
+                            .find_map(minutes),
+                    });
                 }
             }
         },
@@ -298,7 +311,7 @@ fn found(recipe: &Map<String, Value>) -> Found {
 mod tests {
     use std::time::{Duration, Instant};
 
-    use imkitchen_aggregates::recipe::Ingredient;
+    use imkitchen_aggregates::recipe::{Ingredient, Instruction};
     use serde_json::json;
 
     use super::*;
@@ -321,6 +334,13 @@ mod tests {
             name: name.to_owned(),
             quantity,
             unit: unit.map(str::to_owned),
+        }
+    }
+
+    fn step(text: &str, timer_minutes: Option<u32>) -> Instruction {
+        Instruction {
+            text: text.to_owned(),
+            timer_minutes,
         }
     }
 
@@ -351,9 +371,9 @@ mod tests {
                 one("sel", None, None),
             ],
             instructions: vec![
-                "Mix everything.".to_owned(),
-                "Cook.".to_owned(),
-                "Eat.".to_owned(),
+                step("Mix everything.", None),
+                step("Cook.", None),
+                step("Eat.", None),
             ],
             prep_minutes: 5,
             cook_minutes: 90,
@@ -407,7 +427,10 @@ mod tests {
         });
         let read = recipe(&page(&old)).unwrap();
         assert_eq!(read.ingredients, [one("bread", Some(2.0), Some("slices"))]);
-        assert_eq!(read.instructions, ["Toast the bread.", "Butter it."]);
+        assert_eq!(
+            read.instructions,
+            [step("Toast the bread.", None), step("Butter it.", None)]
+        );
         assert_eq!((read.prep_minutes, read.cook_minutes), (2, 3));
         assert_eq!(read.servings, 1);
     }
@@ -447,7 +470,7 @@ mod tests {
                     one("ripe bananas", Some(3.0), None),
                     one("flour", Some(250.0), Some("g")),
                 ],
-                instructions: vec!["Mash the bananas.".to_owned(), "Bake.".to_owned()],
+                instructions: vec![step("Mash the bananas.", None), step("Bake.", None)],
                 prep_minutes: 15,
                 cook_minutes: 60,
                 servings: 8,
@@ -461,7 +484,59 @@ mod tests {
               <div itemprop="recipeInstructions"><p>Toast the bread.</p><p>Butter it.</p></div>
             </div>"#;
         let read = recipe(html).unwrap();
-        assert_eq!(read.instructions, ["Toast the bread.", "Butter it."]);
+        assert_eq!(
+            read.instructions,
+            [step("Toast the bread.", None), step("Butter it.", None)]
+        );
+    }
+
+    #[test]
+    fn a_step_that_says_how_long_to_wait_has_a_timer() {
+        let bread = json!({
+            "@type": "Recipe",
+            "name": "Bread",
+            "recipeInstructions": [
+                // What the page says of the step, rather than its text.
+                { "@type": "HowToStep", "text": "Knead 10 minutes, let it rise.", "timeRequired": "PT1H30M" },
+                { "@type": "HowToStep", "text": "Shape it.", "performTime": "PT0M" },
+                { "@type": "HowToSection", "name": "Baking", "itemListElement": [
+                    { "@type": "HowToStep", "text": "Bake 35 min at 230°C." },
+                    { "@type": "HowToDirection", "text": "Let it cool.", "duration": "P30D" },
+                ] },
+                "Laisser reposer 1 h 30 avant de trancher.",
+                "Eat.",
+            ],
+        });
+        assert_eq!(
+            recipe(&page(&bread)).unwrap().instructions,
+            [
+                step("Knead 10 minutes, let it rise.", Some(90)),
+                step("Shape it.", None),
+                step("Bake 35 min at 230°C.", Some(35)),
+                step("Let it cool.", Some(MINUTES_MAX)),
+                step("Laisser reposer 1 h 30 avant de trancher.", Some(90)),
+                step("Eat.", None),
+            ]
+        );
+
+        let html = r#"
+            <div itemscope itemtype="http://schema.org/Recipe">
+              <span itemprop="name">Bread</span>
+              <div itemprop="recipeInstructions" itemscope itemtype="http://schema.org/HowToStep">
+                <span itemprop="text">Let it rise.</span>
+                <meta itemprop="timeRequired" content="PT45M">
+              </div>
+              <div itemprop="recipeInstructions" itemscope itemtype="http://schema.org/HowToStep">
+                <span itemprop="text">Bake 35 minutes.</span>
+              </div>
+            </div>"#;
+        assert_eq!(
+            recipe(html).unwrap().instructions,
+            [
+                step("Let it rise.", Some(45)),
+                step("Bake 35 minutes.", Some(35))
+            ]
+        );
     }
 
     /// Where the page `html` says the picture of its recipe is.
@@ -557,7 +632,7 @@ mod tests {
         assert_eq!(read.description.len(), DESCRIPTION_MAX);
         assert_eq!(read.ingredients.len(), INGREDIENTS_MAX);
         assert_eq!(read.instructions.len(), INSTRUCTIONS_MAX);
-        assert_eq!(read.instructions[0].len(), INSTRUCTION_MAX);
+        assert_eq!(read.instructions[0].text.len(), INSTRUCTION_MAX);
         assert_eq!((read.prep_minutes, read.cook_minutes), (MINUTES_MAX, 0));
         assert_eq!(read.servings, SERVINGS);
     }

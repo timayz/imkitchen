@@ -50,6 +50,26 @@ fn ingredients(ingredients: &[recipe::Ingredient]) -> anyhow::Result<String> {
     Json(ingredients).to_text()
 }
 
+/// One step of a recipe, as the table keeps it.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Instruction {
+    pub text: String,
+    /// The minutes to wait once it is done, when there is something to
+    /// wait for.
+    pub timer_minutes: Option<u32>,
+}
+
+fn instructions(instructions: &[recipe::Instruction]) -> anyhow::Result<String> {
+    let instructions: Vec<Instruction> = instructions
+        .iter()
+        .map(|one| Instruction {
+            text: one.text.clone(),
+            timer_minutes: one.timer_minutes,
+        })
+        .collect();
+    Json(instructions).to_text()
+}
+
 /// What a search looks in: the title and the name of each ingredient, a
 /// line each, without case or accents.
 fn searched(title: &str, ingredients: &[recipe::Ingredient]) -> String {
@@ -77,7 +97,7 @@ async fn on_created<E: evento::Executor>(
             data.title.as_str(),
             data.description.as_str(),
             ingredients(&data.ingredients)?,
-            Json(&data.instructions).to_text()?,
+            instructions(&data.instructions)?,
             data.prep_minutes,
             data.cook_minutes,
             data.servings,
@@ -105,7 +125,7 @@ async fn on_edited<E: evento::Executor>(
             data.title.as_str(),
             data.description.as_str(),
             ingredients(&data.ingredients)?,
-            Json(&data.instructions).to_text()?,
+            instructions(&data.instructions)?,
             data.prep_minutes,
             data.cook_minutes,
             data.servings,
@@ -188,7 +208,7 @@ pub struct Recipe {
     pub description: String,
     pub ingredients: Json<Vec<Ingredient>>,
     /// The steps, in the order they are made.
-    pub instructions: Json<Vec<String>>,
+    pub instructions: Json<Vec<Instruction>>,
     pub prep_minutes: i64,
     pub cook_minutes: i64,
     pub servings: i64,

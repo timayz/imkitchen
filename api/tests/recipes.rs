@@ -21,6 +21,7 @@ fn pancakes() -> Value {
         ],
         "instructions": [
             { "text": "Mix everything." },
+            { "text": "Let the batter rest.", "timer_minutes": 60 },
             { "text": "Cook each one two minutes a side." },
         ],
         "prep_minutes": 10,
@@ -228,7 +229,11 @@ async fn what_a_recipe_does_not_hold_is_said_field_by_field() {
                     { "name": "flour", "quantity": 250, "unit": "g" },
                     { "name": "", "quantity": 0 },
                 ],
-                "instructions": [{ "text": " " }],
+                "instructions": [
+                    { "text": " " },
+                    { "text": "Wait.", "timer_minutes": 0 },
+                    { "text": "Wait.", "timer_minutes": null },
+                ],
                 "prep_minutes": 100000,
                 "servings": 0,
             }),
@@ -256,6 +261,12 @@ async fn what_a_recipe_does_not_hold_is_said_field_by_field() {
                     "code": "length",
                     "message": "This must be between 1 and 4000 characters.",
                     "params": { "min": 1, "max": 4000 },
+                },
+                {
+                    "field": "instructions[1].timer_minutes",
+                    "code": "range",
+                    "message": "This must be between 1 and 10080.",
+                    "params": { "min": 1, "max": 10080 },
                 },
                 {
                     "field": "prep_minutes",
