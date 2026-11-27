@@ -4,6 +4,9 @@
 //! replaced at `/list/{entry_id}/replace` ([`_pick`]), and taken off from
 //! here.
 //!
+//! A meal is cooked from here, for as many as the list says
+//! ([`recipes::_cook`]; a dish asks which of its recipes first).
+//!
 //! A meal is a recipe or a dish, cooked for so many people. The list names
 //! it and keeps nothing of it: each is shown as it now stands, and one
 //! that was deleted is no longer on the list.
@@ -260,6 +263,8 @@ struct Card {
     picture: Option<String>,
     address: String,
     servings: u32,
+    /// Where it is cooked, for as many as the list says.
+    cook: String,
     replace: String,
     remove: String,
 }
@@ -284,7 +289,20 @@ async fn content(cx: &Cx, failure: Option<Failure>) -> Result<impl View> {
         .iter()
         .filter_map(|entry| {
             let meal = meal_of(entry, &recipes, &dishes)?;
+            let servings = entry.servings.to_string();
+            let cook = match (&entry.recipe_id, &entry.dish_id) {
+                (Some(id), _) => href!(recipes::_cook::cook, recipe_id: id.as_str())
+                    .query([("servings", servings.as_str())])
+                    .resolve(cx)
+                    .to_string(),
+                (None, Some(id)) => href!(dishes::cook, dish_id: id.as_str())
+                    .query([("servings", servings.as_str())])
+                    .resolve(cx)
+                    .to_string(),
+                (None, None) => return None,
+            };
             Some(Card {
+                cook,
                 kind: if entry.dish_id.is_some() {
                     "dish"
                 } else {
@@ -321,7 +339,7 @@ async fn content(cx: &Cx, failure: Option<Failure>) -> Result<impl View> {
         Some((done, said))
     });
     let count = cards.len();
-    let action = "rounded-lg border border-stone-300 bg-white px-3 py-1 text-sm font-semibold hover:border-stone-500";
+    let action = "rounded-lg border border-stone-300 bg-white px-3 py-1 text-center text-sm font-semibold hover:border-stone-500";
 
     Ok(view! {
         <main class="mx-auto max-w-3xl px-4 py-8 md:px-8 md:py-12">
@@ -382,6 +400,14 @@ async fn content(cx: &Cx, failure: Option<Failure>) -> Result<impl View> {
                             </p>
                         </div>
                         <div class="flex shrink-0 flex-col gap-2 py-3 pr-3 sm:flex-row">
+                            <a
+                                class="rounded-lg bg-stone-900 px-3 py-1 text-center text-sm font-semibold text-stone-50 hover:bg-stone-700"
+                                href=(card.cook)
+                                aria-label=(t!(list_cook_of, title: card.title.as_str()))
+                                data-action="cook"
+                            >
+                                (t!(recipe_cook_it))
+                            </a>
                             <a
                                 class=(action)
                                 href=(card.replace)

@@ -480,7 +480,7 @@ impl App {
         self.pages(secure)
             .assets(AssetConfig::hosted_at(
                 "https://assets.test",
-                Self::stylesheet(),
+                Self::assets(),
             ))
             .build()
     }
@@ -502,16 +502,25 @@ impl App {
         )
     }
 
-    /// What a bundle says of the stylesheet.
-    fn stylesheet() -> Manifest {
+    /// What a bundle says of the assets: the stylesheet, and the script of
+    /// the cooking screen.
+    fn assets() -> Manifest {
         Manifest {
             version: MANIFEST_VERSION,
-            assets: vec![ManifestEntry {
-                id: app::STYLESHEET.id(),
-                file: "tailwind.css".to_owned(),
-                hash: String::new(),
-                content_type: "text/css".to_owned(),
-            }],
+            assets: vec![
+                ManifestEntry {
+                    id: app::STYLESHEET.id(),
+                    file: "tailwind.css".to_owned(),
+                    hash: String::new(),
+                    content_type: "text/css".to_owned(),
+                },
+                ManifestEntry {
+                    id: app::_signed_in::recipes::_cook::SCRIPT.id(),
+                    file: "cook.js".to_owned(),
+                    hash: String::new(),
+                    content_type: "text/javascript".to_owned(),
+                },
+            ],
         }
     }
 
@@ -890,10 +899,9 @@ async fn the_assets_are_at_addresses_of_app_alone() {
     // A bundle, as `topcoat asset bundle` leaves one next to the binary.
     let bundle = dir.path().join("assets");
     std::fs::create_dir(&bundle).unwrap();
-    App::stylesheet()
-        .save(bundle.join("manifest.toml"))
-        .unwrap();
+    App::assets().save(bundle.join("manifest.toml")).unwrap();
     std::fs::write(bundle.join("tailwind.css"), "body{}").unwrap();
+    std::fs::write(bundle.join("cook.js"), "cook()").unwrap();
     let router = assets::serve(app.pages(false), AssetBundle::load_dir(&bundle).unwrap()).build();
 
     // The pages of a visitor link to the stylesheet under `/_app`, which
@@ -929,6 +937,17 @@ async fn the_assets_are_at_addresses_of_app_alone() {
     );
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     assert_eq!(&body[..], b"body{}");
+
+    // So is the script of the cooking screen.
+    let request = Request::builder()
+        .uri("/_app/assets/cook.js")
+        .body(Body::empty())
+        .unwrap();
+    let response = router.handle(request).await;
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()[CONTENT_TYPE], "text/javascript");
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    assert_eq!(&body[..], b"cook()");
 
     // And nowhere else.
     let (status, location, _) = get(&router, "/_topcoat/assets/tailwind.css", "en").await;
@@ -3283,6 +3302,188 @@ async fn a_list_is_its_owners_alone() {
     assert_eq!(answer.status, StatusCode::NOT_FOUND, "{}", answer.body);
     let page = cook.get(&router, LIST).await.body;
     assert_eq!(entries(&page), mine, "{page}");
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn a_recipe_is_cooked_a_step_at_a_time() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    // Someone else's.
+    let theirs = api.write_recipe("Soup").await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "en").await;
+    let token = api.root_token().await;
+    let bread = json!({
+        "title": "Bread",
+        "servings": 4,
+        "ingredients": [
+            { "name": "flour", "quantity": 250, "unit": "g" },
+            { "name": "salt" },
+        ],
+        "instructions": [
+            { "text": "Mix everything." },
+            { "text": "Bake.", "timer_minutes": 25 },
+            { "text": "Let it cool." },
+        ],
+    });
+    let (status, body) = api
+        .call(reqwest::Method::POST, "/v1/recipes", Some(&token), bread)
+        .await;
+    assert_eq!(status, 201, "{body}");
+    let bread = body["id"].as_str().unwrap().to_owned();
+    let toast = recipe_of(&api, &token, "Toast").await;
+    app.counts(3).await;
+
+    // Cooked from the recipe.
+    let at = format!("/recipes/{bread}");
+    let cooking = format!("{at}/cook");
+    let page = cook.get(&router, &at).await.body;
+    assert!(link(&page, &cooking).is_some(), "{page}");
+
+    // The page holds the whole recipe, for its script to show a step at a
+    // time: every step, the timer of the one that has one, the ingredients
+    // at hand.
+    let Answer {
+        status, body: page, ..
+    } = cook.get(&router, &cooking).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        page.contains("<title>Cooking — imkitchen</title>"),
+        "{page}"
+    );
+    assert!(page.contains(&format!("data-cook=\"{bread}\"")), "{page}");
+    assert!(page.contains("data-title=\"Bread\""), "{page}");
+    assert!(page.contains("data-cook-steps=\"3\""), "{page}");
+    assert_eq!(count(&page, "data-cook-step="), 3, "{page}");
+    assert!(page.contains("Mix everything."), "{page}");
+    assert!(page.contains("Let it cool."), "{page}");
+    assert!(!tag(&page, "data-cook-step=\"0\"").contains("data-minutes"));
+    assert!(tag(&page, "data-cook-step=\"1\"").contains("data-minutes=\"25\""));
+    assert_eq!(count(&page, "data-cook-start"), 1, "{page}");
+    assert!(page.contains("data-servings=\"4\""), "{page}");
+    assert!(page.contains("<li>250 g flour</li>"), "{page}");
+    assert!(page.contains("<li>salt</li>"), "{page}");
+    assert!(
+        page.contains("<script src=\"https://assets.test/cook.js\""),
+        "{page}"
+    );
+    // Stopping and finishing lead back to the recipe.
+    assert!(tag(&page, "data-cook-leave").contains(&format!("href=\"{at}\"")));
+    assert!(tag(&page, "data-cook-finish").contains(&format!("href=\"{at}\"")));
+    // The recipes screen is the one being read.
+    let screen = link(&page, RECIPES).unwrap();
+    assert!(screen.contains("aria-current=\"page\""), "{screen}");
+
+    // Cooked for more, or fewer, than it is written for: the quantities
+    // follow. What is not a number of people is the recipe's.
+    let page = cook
+        .get(&router, &format!("{cooking}?servings=6"))
+        .await
+        .body;
+    assert!(page.contains("data-servings=\"6\""), "{page}");
+    assert!(page.contains("<li>375 g flour</li>"), "{page}");
+    assert!(page.contains("<li>salt</li>"), "{page}");
+    for servings in ["many", "0", "-2", "100000"] {
+        let page = cook
+            .get(&router, &format!("{cooking}?servings={servings}"))
+            .await
+            .body;
+        assert!(page.contains("<li>250 g flour</li>"), "{servings}: {page}");
+    }
+
+    // From the list: for as many as the list says.
+    let picked = [("servings", "2"), ("recipe_id", bread.as_str())];
+    let answer = cook.post(&router, ADD_MEAL, &picked).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let page = cook.get(&router, LIST).await.body;
+    let for_two = format!("{cooking}?servings=2");
+    assert!(link(&page, &for_two).is_some(), "{page}");
+    let page = cook.get(&router, &for_two).await.body;
+    assert!(page.contains("<li>125 g flour</li>"), "{page}");
+
+    // A dish asks which of its recipes to cook, and for how many goes with
+    // the one that is picked.
+    let plat = json!({ "name": "Breakfast", "recipe_ids": [bread, toast] });
+    let (status, body) = api
+        .call(reqwest::Method::POST, "/v1/plats", Some(&token), plat)
+        .await;
+    assert_eq!(status, 201, "{body}");
+    let breakfast = body["id"].as_str().unwrap().to_owned();
+    eventually("app to follow the dish", || async {
+        let at = format!("/dishes/{breakfast}");
+        let page = cook.clone().get(&router, &at).await;
+        (page.status == StatusCode::OK).then_some(())
+    })
+    .await;
+    let picked = [("servings", "6"), ("dish_id", breakfast.as_str())];
+    let answer = cook.post(&router, ADD_MEAL, &picked).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let page = cook.get(&router, LIST).await.body;
+    let asked = format!("/dishes/{breakfast}/cook?servings=6");
+    assert!(link(&page, &asked).is_some(), "{page}");
+    let Answer {
+        status, body: page, ..
+    } = cook.get(&router, &asked).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(page.contains("data-recipes=\"2\""), "{page}");
+    let bread_for_six = link(&page, &format!("{cooking}?servings=6")).unwrap();
+    assert!(bread_for_six.contains("Bread"), "{bread_for_six}");
+    assert!(
+        link(&page, &format!("/recipes/{toast}/cook?servings=6")).is_some(),
+        "{page}"
+    );
+    // From the dish itself: for as many as each recipe says.
+    let page = cook
+        .get(&router, &format!("/dishes/{breakfast}"))
+        .await
+        .body;
+    let asked = format!("/dishes/{breakfast}/cook");
+    assert!(link(&page, &asked).is_some(), "{page}");
+    let page = cook.get(&router, &asked).await.body;
+    assert!(link(&page, &cooking).is_some(), "{page}");
+
+    // A dish of one recipe has nothing to ask.
+    let plat = json!({ "name": "Snack", "recipe_ids": [toast] });
+    let (status, body) = api
+        .call(reqwest::Method::POST, "/v1/plats", Some(&token), plat)
+        .await;
+    assert_eq!(status, 201, "{body}");
+    let snack = body["id"].as_str().unwrap().to_owned();
+    eventually("app to follow the dish", || async {
+        let page = cook.clone().get(&router, &format!("/dishes/{snack}")).await;
+        (page.status == StatusCode::OK).then_some(())
+    })
+    .await;
+    let answer = cook
+        .get(&router, &format!("/dishes/{snack}/cook?servings=3"))
+        .await;
+    let only = format!("/recipes/{toast}/cook?servings=3");
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, only.as_str()));
+
+    // A recipe without a step says so, and is finished as any.
+    let page = cook
+        .get(&router, &format!("/recipes/{toast}/cook"))
+        .await
+        .body;
+    assert!(page.contains("data-cook-empty"), "{page}");
+    assert!(page.contains("data-cook-steps=\"0\""), "{page}");
+    assert!(page.contains("data-cook-finish"), "{page}");
+
+    // Someone else's recipe is not cooked, nor anything without signing in.
+    let answer = cook.get(&router, &format!("/recipes/{theirs}/cook")).await;
+    assert_eq!(answer.status, StatusCode::NOT_FOUND);
+    let answer = cook.get(&router, "/dishes/nothing/cook").await;
+    assert_eq!(answer.status, StatusCode::NOT_FOUND);
+    let (status, location, _) = get(&router, &cooking, "en").await;
+    assert_eq!(
+        (status, location.as_str()),
+        (StatusCode::SEE_OTHER, SIGN_IN)
+    );
 
     app.stop().await;
     api.shutdown().await;

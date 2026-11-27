@@ -160,6 +160,7 @@ list_generated = Votre liste est générée.
 list_added = Le repas est sur votre liste.
 list_replaced = Le repas est remplacé.
 list_removed = Le repas n’est plus sur votre liste.
+list_cook_of = Cuisiner { $title }
 list_replace = Remplacer
 list_replace_of = Remplacer { $title }
 list_remove = Retirer
@@ -213,6 +214,26 @@ settings_sessions = Autres appareils
 settings_sessions_hint = Déconnecte votre compte partout sauf ici.
 settings_sessions_end = Se déconnecter partout ailleurs
 settings_sessions_ended = Tous les autres appareils sont déconnectés.
+
+## Cooking
+
+recipe_cook_it = Cuisiner
+cook_meta_title = En cuisine — imkitchen
+cook_stop = Arrêter de cuisiner
+cook_asleep = Ce navigateur ne garde pas l’écran allumé : il peut s’éteindre pendant que vous cuisinez.
+cook_no_step = Cette recette n’a pas d’étape.
+cook_step = Étape { $number }
+cook_step_of = Étape { $number } sur { $total }
+cook_timer = Puis attendre { $minutes } min
+cook_timer_start = Lancer le minuteur
+cook_timer_stop = Arrêter
+cook_timer_over = Le minuteur est terminé
+cook_timer_over_of = Le minuteur de l’étape { $number } est terminé.
+cook_previous = Précédente
+cook_next = Suivante
+cook_finish = Terminer
+cook_choose_meta_title = Cuisiner un plat — imkitchen
+cook_choose = Quelle recette cuisinez-vous ?
 
 ## Not found
 
