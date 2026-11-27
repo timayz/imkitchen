@@ -1,0 +1,13 @@
+apiVersion: v2
+name: imkitchen-app
+description: imkitchen app, the application in a browser
+type: application
+version: 0.1.0
+# The version of app deployed when image.tag is left empty (app-<it>).
+appVersion: "1.13.0"
+home: https://imkitchen.app
+sources:
+  - https://github.com/timayz/imkitchen
+maintainers:
+  - name: Timada
+    url: https://imkitchen.app

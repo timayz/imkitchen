@@ -50,6 +50,24 @@ What a deployment sets:
 `imkitchen-app migrate` creates the store and applies its pending
 migrations; `serve` refuses a store that is not there or not migrated.
 
+## Deploying it
+
+`app/Dockerfile` builds the image (`timayz/imkitchen:app-<version>`): the
+binary and, next to it, its assets. `app/helm` is its chart, whose README
+says what it runs and what to set: a StatefulSet, each pod keeping its
+store on a volume of its own.
+
+```sh
+docker build -f app/builder.Dockerfile -t timayz/imkitchen:app-builder .   # once
+docker build -f app/Dockerfile -t timayz/imkitchen:app-local .
+```
+
+The builder image holds the two tools the build needs besides cargo:
+`topcoat-cli`, at the version of `topcoat` in `Cargo.lock`, and the Tailwind
+CLI, pinned with its checksum (`TAILWIND_VERSION` in
+`app/builder.Dockerfile`, the release topcoat pins): the one to move by hand
+when topcoat moves its own.
+
 ## Where things are
 
 | Path | Contents |
@@ -60,6 +78,7 @@ migrations; `serve` refuses a store that is not there or not migrated.
 | `src/recipes.rs` | A read model: its subscription and what the pages read from it. |
 | `src/subscriptions.rs` | Every subscription app runs. |
 | `src/db.rs` | The store and the migrations of its tables. |
+| `Dockerfile`, `builder.Dockerfile`, `helm/` | The image and the chart app is deployed with. |
 | `styles.css`, `build.rs` | The Tailwind stylesheet, compiled at build time. |
 
 ## Screens and layout

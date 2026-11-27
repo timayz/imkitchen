@@ -1,0 +1,104 @@
+# How many pods of app run. Each one follows the api's events into a store
+# of its own, on a volume of its own, and serves from it: they are added
+# and taken away at will.
+replicaCount: 2
+
+image:
+  repository: timayz/imkitchen
+  # Empty: app-<the chart's appVersion>. Every application of imkitchen has
+  # its tags in the one repository.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# The non-secret part of app's configuration (app/config/default.toml says
+# what each key does). The store and the port are the chart's to say.
+config:
+  server:
+    # How long requests in flight get to finish when a pod is asked to stop.
+    shutdownTimeoutSecs: 30
+  api:
+    # Where app follows the api's events: the `sidecars` port of its service
+    # (evento's remote protocol, not HTTP). Its token goes in secretEnv.
+    events: "imkitchen-api:4000"
+    tls:
+      # A Secret whose `ca.crt` the certificate of the api's sidecars port
+      # is checked against, when the api gives it one. Empty: the
+      # connection is not encrypted and the token travels in clear.
+      secretName: ""
+      # The name that certificate must carry. Empty: the host of `events`.
+      serverName: ""
+  monitoring:
+    logLevel: "info"
+    logJson: true
+    logTarget: true
+    logLineNumber: true
+
+# The secret part of the configuration, as the environment variables app
+# reads. Kept in a Secret the chart makes:
+#
+#   IMKITCHEN_APP__API__TOKEN   what app opens its connections to the api's
+#                               events with: the api's
+#                               IMKITCHEN_API__SIDECARS__TOKENS__APP. Required.
+secretEnv: {}
+
+# A Secret made elsewhere that holds the same variables, in place of the one
+# the chart makes from secretEnv.
+existingSecret: ""
+
+# More environment variables, in plain text.
+extraEnv: {}
+
+service:
+  type: ClusterIP
+  port: 3030
+
+# Publishes app through a Gateway (HTTPRoute), with a certificate for its
+# hostname asked of cert-manager beside the Gateway.
+route:
+  enabled: false
+  hostname: ""
+  parentRef:
+    name: envoy
+    namespace: envoy-gateway-system
+  certificate:
+    enabled: true
+    issuerRef:
+      kind: ClusterIssuer
+      name: letsencrypt
+    annotations: {}
+
+# Each pod's own volume: its store, the read models it builds from the
+# api's events and how far it followed them. A pod that starts again goes on
+# from where it stopped. Nothing in it is written anywhere else: a pod that
+# lost its volume builds its store again from the first event, and serves
+# what it has while it catches up.
+persistence:
+  size: 1Gi
+  # Empty: the cluster's default class.
+  storageClassName: ""
+  labels: {}
+
+# CPU and memory each pod asks for and may use, as Kubernetes writes it.
+resources: {}
+
+# Longer than config.server.shutdownTimeoutSecs: the pod also stops its
+# subscriptions.
+terminationGracePeriodSeconds: 45
+
+# Pods that may be down at once on purpose (a drain, an upgrade). Only with
+# more than one pod.
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+
+podAnnotations: {}
+podLabels: {}
+nodeSelector: {}
+tolerations: []
+# Empty: the pods are spread over the machines when there are enough of
+# them.
+affinity: {}

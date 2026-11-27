@@ -1,0 +1,160 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "app.fullname" . }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  # No pod is reached by its own name: the service that serves them is
+  # the one that governs them.
+  serviceName: {{ include "app.fullname" . }}
+  replicas: {{ .Values.replicaCount }}
+  # All at once: no pod waits on another.
+  podManagementPolicy: Parallel
+  # One at a time, each ready again before the next: the others keep
+  # serving.
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "app.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- if not .Values.existingSecret }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Creates the pod's store if needed and applies its pending
+        # migrations: `serve` refuses to start without it.
+        - name: migrate
+          image: {{ include "app.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["migrate", "--config", "/etc/imkitchen/config.toml"]
+          securityContext:
+            {{- include "app.containerSecurityContext" . | nindent 12 }}
+          {{- with include "app.env" . }}
+          env:
+            {{- . | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ include "app.envSecret" . }}
+          volumeMounts:
+            {{- include "app.volumeMounts" . | nindent 12 }}
+      containers:
+        - name: app
+          image: {{ include "app.image" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["serve", "--config", "/etc/imkitchen/config.toml"]
+          securityContext:
+            {{- include "app.containerSecurityContext" . | nindent 12 }}
+          {{- with include "app.env" . }}
+          env:
+            {{- . | nindent 12 }}
+          {{- end }}
+          envFrom:
+            - secretRef:
+                name: {{ include "app.envSecret" . }}
+          ports:
+            - name: http
+              containerPort: 3030
+          # app answers whether the api does or not: it serves what its
+          # store holds, and catches up once the api is there.
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 2
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 15
+            failureThreshold: 3
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- include "app.volumeMounts" . | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "app.fullname" . }}
+        - name: tmp
+          emptyDir: {}
+        {{- if .Values.config.api.tls.secretName }}
+        - name: api-ca
+          secret:
+            secretName: {{ .Values.config.api.tls.secretName }}
+            items:
+              - key: ca.crt
+                path: ca.crt
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        {{- if .Values.affinity }}
+        {{- toYaml .Values.affinity | nindent 8 }}
+        {{- else }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    {{- include "app.selectorLabels" . | nindent 20 }}
+        {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        {{- with .Values.persistence.labels }}
+        labels:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        {{- with .Values.persistence.storageClassName }}
+        storageClassName: {{ . | quote }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}

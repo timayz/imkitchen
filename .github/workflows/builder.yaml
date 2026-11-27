@@ -1,9 +1,9 @@
 name: Builder
 
-# The images the release builds of the api, of www and of admin start from
-# (timayz/imkitchen:api-builder, :www-builder, :admin-builder): the
-# toolchain and a build of the application, so a release only compiles what
-# changed since. Built again when the dependencies move on a release branch,
+# The images the release builds of the api, of www, of admin and of app start
+# from (timayz/imkitchen:api-builder, :www-builder, :admin-builder,
+# :app-builder): the toolchain and a build of the application, so a release
+# only compiles what changed since. Built again when the dependencies move on a release branch,
 # the commit of a release aside, or by hand.
 on:
   workflow_dispatch:
@@ -18,6 +18,7 @@ on:
       - "api/builder.Dockerfile"
       - "www/builder.Dockerfile"
       - "admin/builder.Dockerfile"
+      - "app/builder.Dockerfile"
 
 jobs:
   build:
@@ -28,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [api, www, admin]
+        app: [api, www, admin, app]
     # One tag an application for every branch: the last build is the one
     # that stays, and a build a newer one overtakes is not worth finishing.
     concurrency:
