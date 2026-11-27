@@ -305,6 +305,7 @@ impl Api {
             tokens: SidecarTokens {
                 www: None,
                 admin: Some(Secret::new(ADMIN_TOKEN)),
+                app: None,
             },
         };
         let listener = TcpListener::bind(addr).await.unwrap();

@@ -73,7 +73,7 @@ image = { version = "0.25", default-features = false, features = ["jpeg", "png",
 webp = "0.3"
 imagesize = "0.14"
 bytes = "1"
-# The web framework of www and admin: early-stage, its minors break. Each
+# The web framework of www, admin and app: early-stage, its minors break. Each
 # application turns on the features it needs, its build script the same
 # version's `tailwind`.
 topcoat = { version = "0.12.1", default-features = false }

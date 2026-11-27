@@ -2,6 +2,7 @@
 #
 #   https://imkitchen.localhost          www   (make www.dev, 3010)
 #   https://admin.imkitchen.localhost    admin (make admin.dev, 3020)
+#   https://app.imkitchen.localhost      app   (make app.dev, 3030)
 #   https://app.imkitchen.localhost/api  api   (make dev, 3000), for the app
 #                                        in a browser: its own origin
 #   https://api.imkitchen.localhost      api, for the mobile apps
@@ -31,6 +32,15 @@ http:
       rule: "Host(`admin.imkitchen.localhost`)"
       tls: true
       service: admin
+      entryPoints:
+        - https
+
+    # Everything of the app's address but /api, which the longer rule below
+    # takes.
+    app:
+      rule: "Host(`app.imkitchen.localhost`)"
+      tls: true
+      service: app
       entryPoints:
         - https
 
@@ -69,6 +79,10 @@ http:
       loadBalancer:
         servers:
           - url: "http://host.docker.internal:3020"
+    app:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:3030"
     api:
       loadBalancer:
         servers:

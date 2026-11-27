@@ -199,6 +199,7 @@ impl Api {
             tokens: SidecarTokens {
                 www: Some(Secret::new(WWW_TOKEN)),
                 admin: None,
+                app: None,
             },
         };
         let listener = TcpListener::bind(addr).await.unwrap();

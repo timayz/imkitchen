@@ -14,6 +14,7 @@ config/*.local.toml
 api/config/*.local.toml
 www/config/*.local.toml
 admin/config/*.local.toml
+app/config/*.local.toml
 
 # Environment
 .env

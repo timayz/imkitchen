@@ -28,7 +28,7 @@ pub struct Config {
     /// (`node_id`, `peers`, …). Absent: a node alone, talking to no one.
     #[serde(default)]
     pub cluster: Option<Settings>,
-    /// Where www and admin read the events from. Absent: no sidecar is
+    /// Where www, admin and app read the events from. Absent: no sidecar is
     /// served.
     #[serde(default)]
     pub sidecars: Option<SidecarsConfig>,
@@ -184,6 +184,8 @@ pub struct SidecarTokens {
     pub www: Option<Secret>,
     #[serde(default)]
     pub admin: Option<Secret>,
+    #[serde(default)]
+    pub app: Option<Secret>,
 }
 
 impl SidecarsConfig {
@@ -193,6 +195,7 @@ impl SidecarsConfig {
             let token = match sidecar {
                 Sidecar::Www => &self.tokens.www,
                 Sidecar::Admin => &self.tokens.admin,
+                Sidecar::App => &self.tokens.app,
             };
             Some((sidecar, token.as_ref()?))
         })
@@ -479,18 +482,19 @@ mod tests {
         let listen = "[sidecars]\nlisten = \"127.0.0.1:4000\"\n";
         let www = "w".repeat(SECRET_MIN_LEN);
         let admin = "a".repeat(SECRET_MIN_LEN);
+        let app = "p".repeat(SECRET_MIN_LEN);
 
         assert_eq!(Config::load(None).unwrap().sidecars, None);
 
         let config = load(&format!(
-            "{listen}[sidecars.tokens]\nwww = \"{www}\"\nadmin = \"{admin}\"\n"
+            "{listen}[sidecars.tokens]\nwww = \"{www}\"\nadmin = \"{admin}\"\napp = \"{app}\"\n"
         ))
         .unwrap();
         let sidecars = config.sidecars.as_ref().unwrap();
         assert_eq!(sidecars.listen.port(), 4000);
         assert_eq!(sidecars.tls(), None);
         let served: Vec<_> = sidecars.tokens().map(|(sidecar, _)| sidecar).collect();
-        assert_eq!(served, [Sidecar::Www, Sidecar::Admin]);
+        assert_eq!(served, [Sidecar::Www, Sidecar::Admin, Sidecar::App]);
         let printed = format!("{config:?}");
         assert!(!printed.contains(&www), "{printed}");
 

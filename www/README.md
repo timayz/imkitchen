@@ -22,7 +22,8 @@ or not: it serves what its store holds and catches up once the api answers.
 
 With `make up` (Traefik, after `make cert` once) www is also at
 <https://imkitchen.localhost>, and the api at
-<https://api.imkitchen.localhost> and <https://app.imkitchen.localhost/api>.
+<https://api.imkitchen.localhost> and <https://app.imkitchen.localhost/api>
+(the rest of that address is app, `make app.dev`).
 
 `make www.run` runs it once, without the reload. The stylesheet is an asset
 bundled next to the binary (`topcoat asset bundle -p imkitchen-www`): a plain

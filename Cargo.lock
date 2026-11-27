@@ -2645,6 +2645,22 @@ dependencies = [
 [[package]]
 name = "imkitchen-app"
 version = "1.13.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "config",
+ "evento",
+ "imkitchen-aggregates",
+ "imkitchen-api",
+ "serde",
+ "tempfile",
+ "timada-core",
+ "tokio",
+ "tokio-rustls",
+ "topcoat",
+ "tracing",
+ "tracing-subscriber",
+]
 
 [[package]]
 name = "imkitchen-www"
