@@ -11,11 +11,28 @@ spec:
       namespace: {{ .Values.route.parentRef.namespace }}
   hostnames:
     - {{ required "route.hostname is required with route.enabled" .Values.route.hostname | quote }}
+  # The hostname is the main domain, which www's chart publishes too: app
+  # takes of it what follows, the api's chart its /api, and www the rest.
   rules:
     - matches:
+        # Whoever asks: the pages of a visitor (signing in, registering),
+        # and what app serves that is not a page (its assets, its health).
+        - path:
+            type: PathPrefix
+            value: /auth
+        - path:
+            type: PathPrefix
+            value: /_app
+        # A browser that is signed in: it keeps a cookie that says so and
+        # nothing else, `signed_in`, found among the others it sends.
+        # Whether the session is still one is for app to tell.
         - path:
             type: PathPrefix
             value: /
+          headers:
+            - type: RegularExpression
+              name: Cookie
+              value: '^(.*;\s*)?signed_in=.*$'
       backendRefs:
         - name: {{ include "app.fullname" . }}
           port: {{ .Values.service.port }}

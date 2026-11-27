@@ -6,9 +6,9 @@ use imkitchen_app::api::Api;
 use imkitchen_app::config::{Config, MonitoringConfig};
 use imkitchen_app::events::Events;
 use imkitchen_app::session::Sessions;
-use imkitchen_app::{app, db, subscriptions};
+use imkitchen_app::{app, assets, db, subscriptions};
 use tokio::net::TcpListener;
-use topcoat::asset::{AssetBundle, RouterBuilderAssetExt};
+use topcoat::asset::AssetBundle;
 use topcoat::router::RouterService;
 use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -71,11 +71,12 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
     let port = port.unwrap_or(config.server.port);
     // Built by `topcoat dev` after each build, by `topcoat asset bundle`
     // for a release: the stylesheet, next to the executable.
-    let assets = AssetBundle::load().context(
+    let bundle = AssetBundle::load().context(
         "cannot load the assets: bundle them with `topcoat asset bundle -p imkitchen-app`",
     )?;
     let api = Api::new(&config.api)?;
     let sessions = Sessions::new(&config.session, &config.server);
+    let www = app::Www(config.www.base_url()?);
     let store = db::open(&config.database.path).await?;
     let db = db::Db::from(store.clone());
     let events = Events::connect(&config.api, store)?;
@@ -95,9 +96,7 @@ async fn serve(config: Config, host: Option<String>, port: Option<u16>) -> Resul
     tracing::info!("listening on http://{}", listener.local_addr()?);
 
     let service = RouterService::new(
-        app::router(db, events, api, sessions)
-            .assets(assets)
-            .build(),
+        assets::serve(app::router(db, events, api, sessions, www), bundle).build(),
     )
     .shutdown_timeout(config.server.shutdown_timeout());
     // Stops on Ctrl+C or SIGTERM, the requests in flight given

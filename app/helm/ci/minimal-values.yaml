@@ -5,3 +5,5 @@ secretEnv:
 config:
   server:
     url: https://imkitchen.example.com
+  www:
+    url: https://about.imkitchen.example.com

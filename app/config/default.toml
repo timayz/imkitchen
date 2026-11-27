@@ -6,8 +6,9 @@
 [server]
 host = "0.0.0.0"
 port = 3030
-# The address users reach app at. Over https, the cookies of a session are
-# only ever sent encrypted.
+# The address users reach app at: the main domain of imkitchen, which the
+# gateway shares with www. Over https, the cookies of a session are only ever
+# sent encrypted.
 url = "http://localhost:3030"
 # How long requests in flight get to finish once Ctrl+C or SIGTERM asked the
 # server to stop, in seconds.
@@ -40,6 +41,12 @@ events = "127.0.0.1:4000"
 # The name the listener's certificate must carry: the host of `events` when
 # left out.
 # tls_server_name = "api"
+
+[www]
+# The address that always serves www, the public pages of imkitchen, without
+# a path of its pages: `about.` of the main domain, which serves a signed-in
+# user app. What the pages of app link to them at.
+url = "http://localhost:3010"
 
 [session]
 # What the cookie of a session is encrypted under: 32 bytes or more, the same

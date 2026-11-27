@@ -33,7 +33,7 @@ use topcoat::asset::{
     AssetConfig, MANIFEST_VERSION, Manifest, ManifestEntry, RouterBuilderAssetExt,
 };
 use topcoat::context::BaseUrl;
-use topcoat::router::header::{ACCEPT_LANGUAGE, CONTENT_TYPE, LOCATION};
+use topcoat::router::header::{ACCEPT_LANGUAGE, CONTENT_TYPE, HOST, LOCATION, VARY};
 use topcoat::router::request::Request;
 use topcoat::router::{Body, Router, StatusCode, to_bytes};
 
@@ -771,9 +771,12 @@ async fn the_home_links_to_the_listings_that_are_live() {
     assert!(page.contains("data-get=\"coming\""), "{page}");
     assert!(page.contains("href=\"/en#get\""), "{page}");
     assert!(!page.contains("Google Play"), "{page}");
+    assert!(!page.contains("Sign in"), "{page}");
 
     let play = "https://play.google.com/store/apps/details?id=app.imkitchen";
+    let web = "https://www.test/auth/sign-in";
     let router = www.router_with(AppConfig {
+        web: Some(web.to_owned()),
         google_play: Some(play.to_owned()),
         app_store: None,
         desktop: Some("https://imkitchen.app/download".to_owned()),
@@ -791,6 +794,84 @@ async fn the_home_links_to_the_listings_that_are_live() {
         "{page}"
     );
     assert!(!page.contains("App Store"), "{page}");
+    // The application in a browser is on the main domain: where a visitor
+    // signs in, from the top of every page and among the listings.
+    assert!(
+        page.contains(&format!("href=\"{web}\">Se connecter</a>")),
+        "{page}"
+    );
+    assert!(
+        page.contains(&format!(
+            "href=\"{web}\" rel=\"noopener\">L’ouvrir dans votre navigateur</a>"
+        )),
+        "{page}"
+    );
+    let (_, _, page) = get(&router, "/en/terms", "en").await;
+    assert!(
+        page.contains(&format!("href=\"{web}\">Sign in</a>")),
+        "{page}"
+    );
+
+    www.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn www_answers_the_main_domain_and_about_alike() {
+    let dir = dir();
+    let api = Api::start(dir.path()).await;
+    let www = Www::start(api.addr, &dir.path().join("www.db")).await;
+    let router = www.router();
+
+    // The gateway serves the main domain from www or from app, on the
+    // cookies of the browser: nothing www answers, a page or not, is to be
+    // kept for a browser that sends others.
+    for (path, expected) in [
+        ("/", StatusCode::TEMPORARY_REDIRECT),
+        ("/en", StatusCode::OK),
+        ("/fr/contact", StatusCode::OK),
+        ("/robots.txt", StatusCode::OK),
+        ("/sitemap.xml", StatusCode::OK),
+        ("/health", StatusCode::OK),
+        ("/en/nowhere", StatusCode::NOT_FOUND),
+        ("/nowhere", StatusCode::NOT_FOUND),
+    ] {
+        let request = Request::builder().uri(path).body(Body::empty()).unwrap();
+        let response = router.handle(request).await;
+        assert_eq!(response.status(), expected, "{path}");
+        let varies: Vec<&str> = response
+            .headers()
+            .get_all(VARY)
+            .iter()
+            .map(|value| value.to_str().unwrap())
+            .collect();
+        assert!(varies.contains(&"Cookie"), "{path}: {varies:?}");
+    }
+
+    // A page has one address for a search engine, on the main domain,
+    // whichever of the two hosts it is read at.
+    for host in ["www.test", "about.www.test"] {
+        let request = Request::builder()
+            .uri("/fr/terms")
+            .header(HOST, host)
+            .body(Body::empty())
+            .unwrap();
+        let response = router.handle(request).await;
+        assert_eq!(response.status(), StatusCode::OK, "{host}");
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        let html = String::from_utf8(body.to_vec()).unwrap();
+        assert!(
+            html.contains(&format!(
+                "<link rel=\"canonical\" href=\"{SITE}/fr/terms\">"
+            )),
+            "{host}: {html}"
+        );
+        assert!(
+            html.contains(&format!("hreflang=\"en\" href=\"{SITE}/en/terms\"")),
+            "{host}: {html}"
+        );
+        assert!(!html.contains("about.www.test"), "{host}: {html}");
+    }
 
     www.stop().await;
     api.shutdown().await;

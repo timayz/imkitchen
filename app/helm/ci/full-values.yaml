@@ -8,11 +8,15 @@ config:
     tls:
       secretName: api-sidecars-ca
       serverName: api
+  www:
+    url: https://about.example.com
 extraEnv:
   IMKITCHEN_APP__MONITORING__LOG_LEVEL: "info,evento=debug"
 route:
   enabled: true
-  hostname: app.example.com
+  hostname: example.com
+  certificate:
+    enabled: true
 persistence:
   size: 2Gi
   storageClassName: local-path

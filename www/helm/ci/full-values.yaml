@@ -9,6 +9,7 @@ config:
       secretName: api-sidecars-ca
       serverName: api
   app:
+    web: "https://example.com/auth/sign-in"
     googlePlay: "https://play.google.com/store/apps/details?id=app.imkitchen"
     appStore: "https://apps.apple.com/app/imkitchen/id0000000000"
     desktop: "https://example.com/download"
@@ -18,7 +19,8 @@ extraEnv:
   IMKITCHEN_WWW__MONITORING__LOG_LEVEL: "info,evento=debug"
 route:
   enabled: true
-  hostname: www.example.com
+  hostname: example.com
+  aboutHostname: about.example.com
 persistence:
   size: 2Gi
   storageClassName: local-path

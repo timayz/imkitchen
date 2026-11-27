@@ -11,6 +11,14 @@
 //!
 //! No page loads a script or anything from another site: nothing tells
 //! anyone a page was read.
+//!
+//! www answers at two addresses. The main domain, which the gateway in
+//! front of imkitchen shares with app: a browser that keeps the marker of a
+//! session is served app there, any other www. And `about.`, which is www
+//! whoever asks. The pages have one address for a search engine, on the
+//! main domain ([`Site::url`]), whichever they are read at, and what www
+//! answers is not to be kept for a browser that sends other cookies
+//! ([`VariesOnCookies`]).
 
 pub mod health;
 pub mod language;
@@ -22,12 +30,13 @@ use topcoat::{
     l10n::{Locale, accept_language, locale, negotiate},
     metadata::{Metadata, OpenGraph, Url},
     router::{
-        Body, Next, RouterBuilder, Slot,
+        Body, Layer, LayerFuture, Next, Path, RouterBuilder, Slot,
         content::sitemap::{Sitemap, SitemapUrl},
         error::{NotFoundError, redirect},
+        header::{HeaderValue, VARY},
         href, layer, layout, module_router,
         request::uri,
-        response::Response,
+        response::{Response, response_headers},
         route,
     },
     tailwind,
@@ -50,7 +59,8 @@ const DEFAULT_LOCALE: Locale = locale!("en");
 /// What the pages say of imkitchen that a deployment decides.
 #[derive(Debug, Clone)]
 pub struct Site {
-    /// The address visitors reach www at.
+    /// The address visitors reach www at: the main domain, where the pages
+    /// have their canonical address.
     pub url: BaseUrl,
     /// Where the application is got.
     pub app: AppConfig,
@@ -63,6 +73,7 @@ pub struct Site {
 /// says of imkitchen. Give the result its assets, then build it.
 pub fn router(db: Db, events: Events, api: Api, site: Site) -> RouterBuilder {
     module_router!()
+        .layer(VariesOnCookies)
         .with(db)
         .with(events)
         .with(api)
@@ -88,6 +99,25 @@ pub(crate) fn site(cx: &Cx) -> &Site {
 /// The languages www speaks: those with a file in `app/l10n`.
 pub(crate) fn locales() -> &'static [Locale] {
     t::locales()
+}
+
+/// On the main domain, what is at an address depends on the cookies the
+/// browser sends: www without the marker of a session, app with it. Every
+/// answer of www says so, the one of an address of nothing too, for no
+/// cache to hand it to a signed-in user.
+struct VariesOnCookies;
+
+impl Layer for VariesOnCookies {
+    fn path(&self) -> Option<&Path> {
+        None
+    }
+
+    fn handle<'a>(&'a self, cx: &'a Cx, body: Body, next: Next<'a>) -> LayerFuture<'a> {
+        Box::pin(async move {
+            response_headers(cx).append(VARY, HeaderValue::from_static("Cookie"));
+            next.run(cx, body).await
+        })
+    }
 }
 
 /// Before a page says which language it is in, the one the browser prefers
@@ -143,6 +173,7 @@ async fn root(cx: &Cx, slot: Slot<'_>) -> Result<impl View> {
     // same address under its code.
     let page = language::page(uri(cx).path(), current);
     let home = page == Some("");
+    let sign_in = site(cx).app.web.clone();
 
     Ok(view! {
         <!DOCTYPE html>
@@ -188,6 +219,11 @@ async fn root(cx: &Cx, slot: Slot<'_>) -> Result<impl View> {
                             >
                                 (t!(nav_contact))
                             </a>
+                            if let Some(sign_in) = sign_in {
+                                <a class="font-semibold hover:underline" href=(sign_in)>
+                                    (t!(nav_sign_in))
+                                </a>
+                            }
                         </nav>
                         <nav class="flex gap-3 text-stone-500" aria-label=(t!(languages))>
                             for spoken in locales() {

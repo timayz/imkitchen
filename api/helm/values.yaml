@@ -95,7 +95,13 @@ service:
 # its hostname asked of cert-manager beside the Gateway.
 route:
   enabled: false
+  # The address of the api's own, for the mobile apps.
   hostname: ""
+  # The main domain of imkitchen, which www's chart and app's publish: the
+  # api also answers under its /api, whoever asks, for the app in a browser
+  # to call its own origin. Its certificate is asked by www's chart. Empty:
+  # the api is at its own address only.
+  mainHostname: ""
   parentRef:
     name: envoy
     namespace: envoy-gateway-system

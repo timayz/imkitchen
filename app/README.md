@@ -22,16 +22,20 @@ make app.dev    # app, at http://localhost:3030, in another terminal
 rebuilds on a change and reloads the page (`topcoat dev`). The two share a
 token of the Makefile's, for local use only. app starts whether the api runs
 or not, and catches up with its events once the api answers:
-`GET /health` says how it stands with them (`"api": "connected"`). Nobody
-gets past signing in while the api is away.
+`GET /_app/health` says how it stands with them (`"api": "connected"`).
+Nobody gets past signing in while the api is away.
 
 <http://localhost:3030> sends a browser that is not signed in to
 `/auth/sign-in`. Root (`auth.root` of the api) signs in with its password
 alone; anyone else registers at `/auth/register` and types the code the api
 mails (`[mail]` of the api: locally the maildev of `compose.yml`).
 
-With `make up` (Traefik, after `make cert` once) app is also at
-<https://app.imkitchen.localhost>, the api under its `/api`.
+With `make up` (Traefik, after `make cert` once) app is at
+<https://imkitchen.localhost>, the main domain, which it shares with www
+(`make www.dev`): a visitor is shown www there, and app once signed in
+(<https://imkitchen.localhost/auth/sign-in>). The api is under its `/api`,
+and www whoever asks at <https://about.imkitchen.localhost>. The Makefile
+gives app and www these addresses to link to each other at.
 
 `make app.run` runs it once, without the reload. The stylesheet is an asset
 bundled next to the binary (`topcoat asset bundle -p imkitchen-app`): a plain
@@ -51,6 +55,8 @@ What a deployment sets:
 
 - `server.url`: the address users reach app at, the main domain of
   imkitchen. Over `https` the cookies of a session are `Secure`.
+- `www.url`: the address that always serves www (`about.`), where the pages
+  link to the public ones.
 - `api.url`: where the api answers HTTP.
 - `session.key`: what the cookie of a session is encrypted under, the same
   for every replica. Without one a key is drawn at each start, and whoever
@@ -91,6 +97,8 @@ when topcoat moves its own.
 | `src/app.rs` | The router, the language of a page and the document every page is in. |
 | `src/app/_signed_in.rs`, `src/app/_signed_in/` | What a signed-in user reads: who is let through, the layout and its navigation, the home, each screen at the address of its module. |
 | `src/app/auth.rs`, `src/app/auth/` | What a visitor is shown, under `/auth`: signing in, registering, and signing out. |
+| `src/app/_app.rs`, `src/app/_app/` | What is not a page, under `/_app`: the health. |
+| `src/assets.rs` | The assets, served under `/_app/assets`. |
 | `src/app/l10n/` | The sentences of the pages, one Fluent file per language. |
 | `src/api.rs` | The api over HTTP: registering, signing in and out, who a session is, and the commands. |
 | `src/session.rs` | What a browser keeps of its session: the two cookies. |
@@ -100,6 +108,37 @@ when topcoat moves its own.
 | `src/db.rs` | The store and the migrations of its tables. |
 | `Dockerfile`, `builder.Dockerfile`, `helm/` | The image and the chart app is deployed with. |
 | `styles.css`, `build.rs` | The Tailwind stylesheet, compiled at build time. |
+
+## One address with www
+
+The main domain of imkitchen is www for a visitor and app for a signed-in
+user. The gateway in front of the two chooses (Traefik locally,
+`.docker/traefik/dynamic.yaml`; Envoy Gateway deployed, the `HTTPRoute` of
+each chart), on what the browser sends:
+
+| Request to the main domain | Goes to |
+| --- | --- |
+| `/api/…` | the api, as its `/…` |
+| `/auth/…`, `/_app/…` | app, whoever asks |
+| anything else, with the `signed_in` cookie among those sent | app |
+| anything else | www |
+
+`about.` of the main domain is www whoever asks: it is where app links to
+the public pages (`www.url`), the terms and the privacy page under the forms
+of `/auth` and "About imkitchen" beside the navigation.
+
+The gateway only sees that the marker is there, not that the session is one:
+app tells, and takes the marker back when it is not (see below), which
+brings www back.
+
+What app serves a browser without the marker is under the two prefixes:
+the pages of a visitor under `/auth`, and under `/_app` what is not a page.
+That is its health (`/_app/health`; `/health` of the main domain is www's)
+and its assets: topcoat serves those of any application under
+`/_topcoat/assets`, where a visitor reading `/auth/sign-in` would ask www
+for app's stylesheet, so app serves its own under `/_app/assets`
+(`src/assets.rs`). A page or a route added for visitors goes under one of
+the two, or the gateway hands it to www.
 
 ## Screens and layout
 
@@ -142,8 +181,8 @@ session lasts, closed or not:
 - `session`: the token, encrypted under `session.key`. No script reads it.
 - `signed_in`: the marker. It says a session is there and nothing else, and
   opens nothing by itself. It is what the gateway in front of imkitchen
-  routes the main domain on (#822): to app when the browser sends it, to
-  www when it does not.
+  routes the main domain on: to app when the browser sends it, to www when
+  it does not.
 
 The two are written together and taken back together. Every page a user
 reads is declared under `src/app/_signed_in/`, which asks the api whose

@@ -9,9 +9,16 @@
 //! api says, and what they do is a command of the api's, sent over HTTP
 //! ([`api`]). What a browser keeps of its session is two cookies
 //! ([`session`]).
+//!
+//! It shares its address with www: the gateway in front of imkitchen sends
+//! the main domain to app when the browser keeps the marker of a session,
+//! and to www when it does not. What app serves whoever asks is under two
+//! prefixes the gateway routes to it either way: `/auth`, the pages of a
+//! visitor, and `/_app`, what is not a page ([`assets`], the health).
 
 pub mod api;
 pub mod app;
+pub mod assets;
 pub mod config;
 pub mod db;
 pub mod events;

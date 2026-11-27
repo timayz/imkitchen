@@ -4,6 +4,13 @@ nav_screens = Écrans
 nav_home = Accueil
 nav_sign_out = Se déconnecter
 
+## The public pages, which are www's
+
+public_pages = Pages publiques
+public_about = À propos d’imkitchen
+public_terms = Conditions d’utilisation
+public_privacy = Confidentialité
+
 ## Signing in and registering
 
 sign_in_meta_title = Connexion — imkitchen

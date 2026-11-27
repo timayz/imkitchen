@@ -38,6 +38,9 @@ helm install imkitchen api/helm \
   is not supported.
 - `cluster.tls` for mutual TLS between the nodes, `sidecars` for www and
   admin, `route` to publish the api through a Gateway.
+- `route.mainHostname`: the main domain of imkitchen, under whose `/api`
+  the api also answers (`/api/v1/recipes` is its `/v1/recipes`), for the
+  app in a browser to call its own origin.
 
 ## The image
 

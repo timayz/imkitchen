@@ -24,13 +24,22 @@ API_SIDECARS_ENV = IMKITCHEN_API__SIDECARS__LISTEN=127.0.0.1:$(1) \
 	IMKITCHEN_API__SIDECARS__TOKENS__ADMIN=$(DEV_ADMIN_TOKEN) \
 	IMKITCHEN_API__SIDECARS__TOKENS__APP=$(DEV_APP_TOKEN)
 
+# The local addresses, as Traefik serves them (`make up`,
+# .docker/traefik/dynamic.yaml): the main domain, which is www for a visitor
+# and app for a browser that is signed in, and the one that is www whoever
+# asks. www and app link to each other there.
+DEV_MAIN_URL := https://imkitchen.localhost
+DEV_ABOUT_URL := https://about.imkitchen.localhost
+
 # Optional local overrides for www, ignored by git. `topcoat dev` passes no
 # arguments to the binary, so the config path travels through the environment
 # and `serve` is the default subcommand. www follows the api on 4000:
 # IMKITCHEN_WWW__API__EVENTS=127.0.0.1:4001 make www.dev follows a node of
 # the local cluster.
 WWW_CONFIG := $(wildcard www/config/dev.local.toml)
-WWW_ENV := $(if $(WWW_CONFIG),IMKITCHEN_WWW_CONFIG=$(WWW_CONFIG) )IMKITCHEN_WWW__API__TOKEN=$(DEV_WWW_TOKEN)
+WWW_ENV := $(if $(WWW_CONFIG),IMKITCHEN_WWW_CONFIG=$(WWW_CONFIG) )IMKITCHEN_WWW__API__TOKEN=$(DEV_WWW_TOKEN) \
+	IMKITCHEN_WWW__SERVER__URL=$(DEV_MAIN_URL) \
+	IMKITCHEN_WWW__APP__WEB=$(DEV_MAIN_URL)/auth/sign-in
 
 # The same for admin: admin/config/dev.local.toml, IMKITCHEN_ADMIN_CONFIG and
 # IMKITCHEN_ADMIN__API__EVENTS.
@@ -40,7 +49,9 @@ ADMIN_ENV := $(if $(ADMIN_CONFIG),IMKITCHEN_ADMIN_CONFIG=$(ADMIN_CONFIG) )IMKITC
 # And for app: app/config/dev.local.toml, IMKITCHEN_APP_CONFIG and
 # IMKITCHEN_APP__API__EVENTS.
 APP_CONFIG := $(wildcard app/config/dev.local.toml)
-APP_ENV := $(if $(APP_CONFIG),IMKITCHEN_APP_CONFIG=$(APP_CONFIG) )IMKITCHEN_APP__API__TOKEN=$(DEV_APP_TOKEN)
+APP_ENV := $(if $(APP_CONFIG),IMKITCHEN_APP_CONFIG=$(APP_CONFIG) )IMKITCHEN_APP__API__TOKEN=$(DEV_APP_TOKEN) \
+	IMKITCHEN_APP__SERVER__URL=$(DEV_MAIN_URL) \
+	IMKITCHEN_APP__WWW__URL=$(DEV_ABOUT_URL)
 
 # One node of the local three-node cluster (api/config/cluster.toml): node N
 # serves HTTP on 300N, talks to the others on 700N (the store) and 710N (the
@@ -75,7 +86,8 @@ cluster.all:
 	cargo build -p imkitchen-api
 	$(MAKE) -j3 cluster.node0 cluster.node1 cluster.node2
 
-# Run www at http://localhost:3010 against the local api (`make dev` in
+# Run www at http://localhost:3010, which Traefik serves as
+# https://imkitchen.localhost, against the local api (`make dev` in
 # another terminal; www starts without it and catches up when it is there):
 # builds, serves, rebuilds on change and reloads the page. `serve` does not
 # migrate: the store is migrated once here.
@@ -106,7 +118,8 @@ admin.migrate:
 	$(ADMIN_ENV) cargo run -p imkitchen-admin -- migrate
 
 # Run app at http://localhost:3030 against the local api, the way
-# `make www.dev` runs www.
+# `make www.dev` runs www. Traefik serves it as https://imkitchen.localhost
+# to a browser that is signed in, and its /auth to anyone.
 app.dev: app.migrate
 	$(APP_ENV) topcoat dev -p imkitchen-app
 
@@ -129,11 +142,12 @@ cert.install:
 	sudo mkcert -install
 
 # Traefik in front of what runs on the host, and the mail catcher:
-# https://imkitchen.localhost is www (`make www.dev`),
-# https://admin.imkitchen.localhost admin (`make admin.dev`),
-# https://app.imkitchen.localhost app (`make app.dev`), and the api
+# https://imkitchen.localhost is www (`make www.dev`) for a visitor and app
+# (`make app.dev`) for a browser that is signed in,
+# https://about.imkitchen.localhost www whoever asks,
+# https://admin.imkitchen.localhost admin (`make admin.dev`), and the api
 # (`make dev`) both https://api.imkitchen.localhost and
-# https://app.imkitchen.localhost/api.
+# https://imkitchen.localhost/api.
 up:
 	DOCKER_GID=$$(getent group docker | cut -d: -f3) docker compose up -d --remove-orphans
 

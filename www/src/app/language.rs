@@ -67,6 +67,7 @@ pub async fn home(cx: &Cx) -> Result<impl View> {
     let app = &site(cx).app;
     // The listings that are live, each under the sentence of its link.
     let listings: Vec<_> = [
+        (t!(get_web), &app.web),
         (t!(get_google_play), &app.google_play),
         (t!(get_app_store), &app.app_store),
         (t!(get_desktop), &app.desktop),

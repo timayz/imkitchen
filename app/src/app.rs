@@ -1,7 +1,11 @@
 //! The pages: what a signed-in user reads ([`_signed_in`]: the home at `/`
 //! and each screen of the application at the address of its module), what
 //! a visitor who is not is shown ([`auth`], all of it under `/auth`), and
-//! `/health` for the probes.
+//! what is not a page ([`_app`], under `/_app`): the health, for the probes.
+//!
+//! The public pages of imkitchen are www's: app links to them where www
+//! always answers ([`Www`]), the main domain being app for whoever is
+//! signed in.
 //!
 //! Every page is read from the store of app, which its subscriptions fill
 //! from the api's events: none asks the api for what it shows. The api is
@@ -12,14 +16,14 @@
 //! `app/l10n`, one file per language: a language is spoken once its file is
 //! there. No search engine is to list any page.
 
+pub mod _app;
 pub mod _signed_in;
 pub mod auth;
-pub mod health;
 
 use topcoat::{
     Result,
     asset::Asset,
-    context::{Cx, context},
+    context::{BaseUrl, Cx, context},
     cookie::CookieLayer,
     l10n::{Locale, accept_language, locale, negotiate},
     metadata::{Metadata, Robots},
@@ -41,15 +45,21 @@ pub const STYLESHEET: Asset = tailwind::stylesheet!();
 /// The language of a reader whose browser asks for none app speaks.
 const DEFAULT_LOCALE: Locale = locale!("en");
 
+/// The address that always serves www, the public pages of imkitchen.
+#[derive(Debug, Clone)]
+pub struct Www(pub BaseUrl);
+
 /// The pages of app, read from `db`, saying how app stands with the api
-/// through `events`, asking `api` who reads them and keeping the sessions
-/// as `sessions` says. Give the result its assets, then build it.
-pub fn router(db: Db, events: Events, api: Api, sessions: Sessions) -> RouterBuilder {
+/// through `events`, asking `api` who reads them, keeping the sessions as
+/// `sessions` says and linking to the public pages at `www`. Give the
+/// result its assets, then build it.
+pub fn router(db: Db, events: Events, api: Api, sessions: Sessions, www: Www) -> RouterBuilder {
     module_router!()
         .layer(CookieLayer::new())
         .with(db)
         .with(events)
         .with(api)
+        .with(www)
         .with(sessions.key)
         .with(Secure(sessions.secure))
 }
@@ -62,6 +72,14 @@ pub(crate) fn db(cx: &Cx) -> &Db {
 /// The api, for who reads the pages and what they do.
 pub(crate) fn api(cx: &Cx) -> &Api {
     context(cx)
+}
+
+/// The address of a public page: `page` is what follows the language in
+/// it (`/terms`; nothing for the home). www has its pages under the
+/// language they are in, and speaks those app does.
+pub(crate) fn public(cx: &Cx, page: &str) -> String {
+    let Www(www) = context(cx);
+    www.join(&format!("{}{page}", language(cx)))
 }
 
 /// The language the page is read in, as the api is asked to word its

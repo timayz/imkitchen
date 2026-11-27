@@ -20,3 +20,35 @@ spec:
         - name: {{ include "api.fullname" . }}
           port: {{ .Values.service.port }}
 {{- end }}
+{{- if and .Values.route.enabled .Values.route.mainHostname }}
+---
+# The api under /api of the main domain, which the api itself knows nothing
+# of (/api/v1/recipes is its /v1/recipes): the app in a browser then calls
+# its own origin, and needs no CORS.
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "api.fullname" . }}-main
+  labels:
+    {{- include "api.labels" . | nindent 4 }}
+spec:
+  parentRefs:
+    - name: {{ .Values.route.parentRef.name }}
+      namespace: {{ .Values.route.parentRef.namespace }}
+  hostnames:
+    - {{ .Values.route.mainHostname | quote }}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              type: ReplacePrefixMatch
+              replacePrefixMatch: /
+      backendRefs:
+        - name: {{ include "api.fullname" . }}
+          port: {{ .Values.service.port }}
+{{- end }}

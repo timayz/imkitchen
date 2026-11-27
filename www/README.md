@@ -21,9 +21,10 @@ or not: it serves what its store holds and catches up once the api answers.
 `GET /health` says how it stands with it (`"api": "connected"`).
 
 With `make up` (Traefik, after `make cert` once) www is also at
-<https://imkitchen.localhost>, and the api at
-<https://api.imkitchen.localhost> and <https://app.imkitchen.localhost/api>
-(the rest of that address is app, `make app.dev`).
+<https://imkitchen.localhost>, the main domain, for a browser that is not
+signed in: one that is gets app there (`make app.dev`), and www at
+<https://about.imkitchen.localhost>. The api is at
+<https://api.imkitchen.localhost> and <https://imkitchen.localhost/api>.
 
 `make www.run` runs it once, without the reload. The stylesheet is an asset
 bundled next to the binary (`topcoat asset bundle -p imkitchen-www`): a plain
@@ -41,8 +42,10 @@ the version of the workspace's `topcoat`.
 
 What a deployment sets:
 
-- `server.url`: the address visitors reach www at. The addresses a search
-  engine is given start with it.
+- `server.url`: the address visitors reach www at, the main domain. The
+  addresses a search engine is given start with it.
+- `app.web`: the application in a browser, where a visitor signs in
+  (`/auth/sign-in` of the main domain). Set, every page links to it.
 - `app.google_play`, `app.app_store`, `app.desktop`: where the application
   is got. A listing is linked once it is set; while none is, the home says
   the application is coming.
@@ -116,6 +119,23 @@ imkitchen no longer is (ads, premium, payment, sharing, chefs). Sentences
 are written around them.
 
 Classes are Tailwind's, found in the `.rs` files when the crate is built.
+
+## Two addresses
+
+www answers at the main domain of imkitchen and at `about.` of it. The main
+domain is shared with app: the gateway in front of the two hands it to app
+when the browser keeps the `signed_in` cookie, under `/auth` and `/_app`,
+and to the api under `/api` (`app/README.md` has the table). `about.` is
+www whoever asks: where a signed-in user reads the public pages.
+
+- A page has one address for a search engine, on the main domain
+  (`server.url`): its canonical address, its other languages and the
+  sitemap say it at `about.` too.
+- Every answer says `Vary: Cookie`: what is at an address of the main
+  domain depends on the cookies sent, and no cache is to hand www to a
+  signed-in user, or keep it from a visitor.
+- With `app.web` set, the top of every page leads to signing in, and the
+  home lists the application in a browser first.
 
 ## Commands
 

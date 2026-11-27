@@ -11,6 +11,11 @@ spec:
       namespace: {{ .Values.route.parentRef.namespace }}
   hostnames:
     - {{ required "route.hostname is required with route.enabled" .Values.route.hostname | quote }}
+    {{- with .Values.route.aboutHostname }}
+    - {{ . | quote }}
+    {{- end }}
+  # Whatever no longer match takes: on the main domain, app's chart routes
+  # a browser that is signed in, /auth and /_app, and the api's chart /api.
   rules:
     - matches:
         - path:

@@ -10,6 +10,9 @@ metadata:
 spec:
   dnsNames:
     - {{ .Values.route.hostname | quote }}
+    {{- with .Values.route.aboutHostname }}
+    - {{ . | quote }}
+    {{- end }}
   secretName: {{ include "www.fullname" . }}-tls
   issuerRef:
     {{- toYaml .Values.route.certificate.issuerRef | nindent 4 }}

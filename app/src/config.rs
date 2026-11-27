@@ -11,6 +11,7 @@ use std::time::Duration;
 
 use config::{ConfigError, Environment, File};
 use serde::Deserialize;
+use topcoat::context::BaseUrl;
 
 /// The least the token of app may be, in characters: what the api asks of
 /// `sidecars.tokens.app`.
@@ -24,6 +25,7 @@ pub struct Config {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub api: ApiConfig,
+    pub www: WwwConfig,
     #[serde(default)]
     pub session: SessionConfig,
     pub monitoring: MonitoringConfig,
@@ -140,6 +142,26 @@ impl ApiConfig {
     }
 }
 
+/// Where the public pages of imkitchen are.
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct WwwConfig {
+    /// The address that always serves www (`about.`), without a path of its
+    /// pages: the main domain serves a signed-in user app.
+    pub url: String,
+}
+
+impl WwwConfig {
+    /// `url`, for the pages to link to those of www.
+    pub fn base_url(&self) -> Result<BaseUrl, ConfigError> {
+        BaseUrl::new(&self.url).map_err(|err| {
+            ConfigError::Message(format!(
+                "www.url must be the address of www, not '{}': {err}",
+                self.url
+            ))
+        })
+    }
+}
+
 /// What the sessions of the users are kept with.
 #[derive(Debug, Default, Deserialize, Clone, PartialEq)]
 pub struct SessionConfig {
@@ -203,6 +225,7 @@ impl Config {
             .set_default("database.path", "data/app.db")?
             .set_default("api.url", "http://127.0.0.1:3000")?
             .set_default("api.events", "127.0.0.1:4000")?
+            .set_default("www.url", "http://localhost:3010")?
             .set_default("monitoring.log_level", "info")?
             .set_default("monitoring.log_json", false)?
             .set_default("monitoring.log_target", true)?
@@ -219,6 +242,7 @@ impl Config {
 
         config.server.validate()?;
         config.api.validate()?;
+        config.www.base_url()?;
         config.session.validate()?;
 
         Ok(config)
@@ -323,6 +347,31 @@ mod tests {
 
         let err = load("[server]\nurl = \"imkitchen.app\"\n").unwrap_err();
         assert!(err.to_string().contains("server.url"), "{err}");
+    }
+
+    #[test]
+    fn the_address_of_www_is_read_and_validated() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("www.toml");
+        let load = |content: &str| {
+            std::fs::write(&path, content).unwrap();
+            Config::load(path.to_str())
+        };
+
+        let config = Config::load(None).unwrap();
+        assert_eq!(
+            config.www.base_url().unwrap().as_str(),
+            "http://localhost:3010"
+        );
+
+        let config = load("[www]\nurl = \"https://about.imkitchen.app/\"\n").unwrap();
+        assert_eq!(
+            config.www.base_url().unwrap().as_str(),
+            "https://about.imkitchen.app"
+        );
+
+        let err = load("[www]\nurl = \"about.imkitchen.app\"\n").unwrap_err();
+        assert!(err.to_string().contains("www.url"), "{err}");
     }
 
     #[test]

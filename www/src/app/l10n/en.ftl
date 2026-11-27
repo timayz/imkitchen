@@ -7,6 +7,7 @@ site_description = Your own recipes, the dishes you compose with them, your list
 nav_pages = Pages
 nav_get = Get the application
 nav_contact = Contact
+nav_sign_in = Sign in
 footer_pages = About this site
 footer_tagline = Your own cookbook, from the recipe to the groceries.
 
@@ -34,6 +35,7 @@ home_recipes =
 
 get_title = Get the application
 get_text = imkitchen is an application for the phone, the tablet and the desktop.
+get_web = Open it in your browser
 get_google_play = Get it on Google Play
 get_app_store = Download on the App Store
 get_desktop = Download for the desktop

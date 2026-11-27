@@ -26,6 +26,9 @@ data:
     {{- end }}
     {{- end }}
 
+    [www]
+    url = {{ required "config.www.url is required: the address that always serves www" .Values.config.www.url | quote }}
+
     [monitoring]
     log_level = {{ .Values.config.monitoring.logLevel | quote }}
     log_json = {{ .Values.config.monitoring.logJson }}
