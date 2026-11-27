@@ -502,8 +502,8 @@ impl App {
         )
     }
 
-    /// What a bundle says of the assets: the stylesheet, and the script of
-    /// the cooking screen.
+    /// What a bundle says of the assets: the stylesheet, and the scripts of
+    /// the cooking screen and of the groceries.
     fn assets() -> Manifest {
         Manifest {
             version: MANIFEST_VERSION,
@@ -517,6 +517,12 @@ impl App {
                 ManifestEntry {
                     id: app::_signed_in::recipes::_cook::SCRIPT.id(),
                     file: "cook.js".to_owned(),
+                    hash: String::new(),
+                    content_type: "text/javascript".to_owned(),
+                },
+                ManifestEntry {
+                    id: app::_signed_in::groceries::SCRIPT.id(),
+                    file: "groceries.js".to_owned(),
                     hash: String::new(),
                     content_type: "text/javascript".to_owned(),
                 },
@@ -902,6 +908,7 @@ async fn the_assets_are_at_addresses_of_app_alone() {
     App::assets().save(bundle.join("manifest.toml")).unwrap();
     std::fs::write(bundle.join("tailwind.css"), "body{}").unwrap();
     std::fs::write(bundle.join("cook.js"), "cook()").unwrap();
+    std::fs::write(bundle.join("groceries.js"), "groceries()").unwrap();
     let router = assets::serve(app.pages(false), AssetBundle::load_dir(&bundle).unwrap()).build();
 
     // The pages of a visitor link to the stylesheet under `/_app`, which
@@ -938,16 +945,18 @@ async fn the_assets_are_at_addresses_of_app_alone() {
     let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
     assert_eq!(&body[..], b"body{}");
 
-    // So is the script of the cooking screen.
-    let request = Request::builder()
-        .uri("/_app/assets/cook.js")
-        .body(Body::empty())
-        .unwrap();
-    let response = router.handle(request).await;
-    assert_eq!(response.status(), StatusCode::OK);
-    assert_eq!(response.headers()[CONTENT_TYPE], "text/javascript");
-    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    assert_eq!(&body[..], b"cook()");
+    // So are the scripts of the cooking screen and of the groceries.
+    for (script, holds) in [("cook.js", "cook()"), ("groceries.js", "groceries()")] {
+        let request = Request::builder()
+            .uri(format!("/_app/assets/{script}"))
+            .body(Body::empty())
+            .unwrap();
+        let response = router.handle(request).await;
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.headers()[CONTENT_TYPE], "text/javascript");
+        let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+        assert_eq!(&body[..], holds.as_bytes());
+    }
 
     // And nowhere else.
     let (status, location, _) = get(&router, "/_topcoat/assets/tailwind.css", "en").await;
@@ -3484,6 +3493,313 @@ async fn a_recipe_is_cooked_a_step_at_a_time() {
         (status, location.as_str()),
         (StatusCode::SEE_OTHER, SIGN_IN)
     );
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+const GROCERIES: &str = "/groceries";
+
+/// The ids of the items `page` shows, in the order it shows them.
+fn items(page: &str) -> Vec<String> {
+    let marker = "data-item=\"";
+    page.match_indices(marker)
+        .map(|(at, _)| {
+            let from = at + marker.len();
+            page[from..from + page[from..].find('"').unwrap()].to_owned()
+        })
+        .collect()
+}
+
+/// What `page` shows of the item `id`.
+fn item<'a>(page: &'a str, id: &str) -> &'a str {
+    let at = page
+        .find(&format!("data-item=\"{id}\""))
+        .unwrap_or_else(|| panic!("no item {id} in {page}"));
+    &page[at..at + page[at..].find("</li>").unwrap()]
+}
+
+#[tokio::test]
+async fn the_groceries_are_what_the_list_takes_and_are_checked_in_the_shop() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "en").await;
+    let token = api.root_token().await;
+    let groceries = || async {
+        let (status, body) = api
+            .call(
+                reqwest::Method::GET,
+                "/v1/groceries",
+                Some(&token),
+                json!({}),
+            )
+            .await;
+        assert_eq!(status, 200, "{body}");
+        body["items"].as_array().unwrap().clone()
+    };
+
+    // An empty list takes nothing, and the page leads to it.
+    let Answer {
+        status, body: page, ..
+    } = cook.get(&router, GROCERIES).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        page.contains("<title>Groceries — imkitchen</title>"),
+        "{page}"
+    );
+    assert!(page.contains("data-empty"), "{page}");
+    assert!(page.contains("data-items=\"0\""), "{page}");
+    assert!(link(&page, LIST).is_some(), "{page}");
+
+    // Two recipes that take flour, one of them part of a dish.
+    let write = |recipe: Value| async {
+        let (status, body) = api
+            .call(reqwest::Method::POST, "/v1/recipes", Some(&token), recipe)
+            .await;
+        assert_eq!(status, 201, "{body}");
+        body["id"].as_str().unwrap().to_owned()
+    };
+    let bread = write(json!({
+        "title": "Bread",
+        "servings": 4,
+        "ingredients": [
+            { "name": "flour", "quantity": 250, "unit": "g" },
+            { "name": "salt" },
+        ],
+    }))
+    .await;
+    let pancakes = write(json!({
+        "title": "Pancakes",
+        "servings": 2,
+        "ingredients": [
+            { "name": "Flour", "quantity": 100, "unit": "G" },
+            { "name": "eggs", "quantity": 2 },
+        ],
+    }))
+    .await;
+    let plat = json!({ "name": "Breakfast", "recipe_ids": [pancakes] });
+    let (status, body) = api
+        .call(reqwest::Method::POST, "/v1/plats", Some(&token), plat)
+        .await;
+    assert_eq!(status, 201, "{body}");
+    let breakfast = body["id"].as_str().unwrap().to_owned();
+    app.counts(2).await;
+    eventually("app to follow the dish", || async {
+        let listed = cook.clone().get(&router, DISHES).await.body;
+        listed.contains(&breakfast).then_some(())
+    })
+    .await;
+
+    // The bread for eight and the dish for three: the same thing in the
+    // same unit is one item, of the sum, and the items come by name.
+    let picked = [("servings", "8"), ("recipe_id", bread.as_str())];
+    let answer = cook.post(&router, ADD_MEAL, &picked).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let picked = [("servings", "3"), ("dish_id", breakfast.as_str())];
+    let answer = cook.post(&router, ADD_MEAL, &picked).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let page = cook.get(&router, GROCERIES).await.body;
+    assert!(!page.contains("data-empty"), "{page}");
+    assert!(page.contains("data-items=\"3\""), "{page}");
+    assert!(
+        page.contains("<script src=\"https://assets.test/groceries.js\" defer"),
+        "{page}"
+    );
+    // They are the api's, item for item: what is said of one is said of
+    // its id.
+    let told = groceries().await;
+    let told: Vec<&str> = told
+        .iter()
+        .map(|item| item["id"].as_str().unwrap())
+        .collect();
+    let shown = items(&page);
+    assert_eq!(shown, told, "{page}");
+    let (eggs, flour, salt) = (&shown[0], &shown[1], &shown[2]);
+    let row = item(&page, eggs);
+    assert!(row.contains("eggs"), "{row}");
+    assert!(row.contains("data-amount=\"3\""), "{row}");
+    let row = item(&page, flour);
+    assert!(row.contains("data-amount=\"650 g\""), "{row}");
+    assert!(row.contains("data-checked=\"false\""), "{row}");
+    assert!(row.contains("aria-checked=\"false\""), "{row}");
+    assert!(
+        row.contains(&format!("action=\"/groceries/{flour}/check\"")),
+        "{row}"
+    );
+    let row = item(&page, salt);
+    assert!(row.contains("salt"), "{row}");
+    assert!(!row.contains("data-amount"), "{row}");
+    assert!(page.contains("data-groceries-checked=\"\">0<"), "{page}");
+
+    // Checked: it stays so when the page is read again, and on any other
+    // device, the api's own answer among them.
+    let answer = cook
+        .post(&router, &format!("/groceries/{flour}/check"), &[])
+        .await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, GROCERIES),
+        "{}",
+        answer.body
+    );
+    let page = cook.get(&router, GROCERIES).await.body;
+    let row = item(&page, flour);
+    assert!(row.contains("data-checked=\"true\""), "{row}");
+    assert!(row.contains("aria-checked=\"true\""), "{row}");
+    assert!(
+        row.contains(&format!("action=\"/groceries/{flour}/uncheck\"")),
+        "{row}"
+    );
+    assert!(page.contains("data-groceries-checked=\"\">1<"), "{page}");
+    assert!(item(&page, eggs).contains("data-checked=\"false\""));
+    let mut phone = Browser::signed_in(&router, "fr").await;
+    let page = phone.get(&router, GROCERIES).await.body;
+    assert!(
+        item(&page, flour).contains("data-checked=\"true\""),
+        "{page}"
+    );
+    assert!(page.contains("dans le panier"), "{page}");
+    let told = groceries().await;
+    assert_eq!(told[1]["checked"], true, "{told:?}");
+    // Checked again changes nothing.
+    let answer = cook
+        .post(&router, &format!("/groceries/{flour}/check"), &[])
+        .await;
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, GROCERIES));
+
+    // What is said elsewhere is followed: an item checked and another
+    // bought in another amount, at the api.
+    let (status, body) = api
+        .call(
+            reqwest::Method::PUT,
+            &format!("/v1/groceries/items/{salt}/check"),
+            Some(&token),
+            json!({}),
+        )
+        .await;
+    assert_eq!(status, 204, "{body}");
+    let (status, body) = api
+        .call(
+            reqwest::Method::PUT,
+            &format!("/v1/groceries/items/{eggs}/quantity"),
+            Some(&token),
+            json!({ "quantity": 6 }),
+        )
+        .await;
+    assert_eq!(status, 204, "{body}");
+    let page = eventually("app to follow what was said at the api", || async {
+        let page = cook.clone().get(&router, GROCERIES).await.body;
+        (item(&page, salt).contains("data-checked=\"true\"")
+            && item(&page, eggs).contains("data-called-for"))
+        .then_some(page)
+    })
+    .await;
+    let row = item(&page, eggs);
+    assert!(row.contains("data-amount=\"6\""), "{row}");
+    assert!(row.contains("data-called-for=\"3\""), "{row}");
+    assert!(row.contains("data-checked=\"false\""), "{row}");
+
+    // Unchecked: to buy again.
+    let answer = cook
+        .post(&router, &format!("/groceries/{salt}/uncheck"), &[])
+        .await;
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, GROCERIES));
+    let page = cook.get(&router, GROCERIES).await.body;
+    assert!(
+        item(&page, salt).contains("data-checked=\"false\""),
+        "{page}"
+    );
+    assert!(page.contains("data-groceries-checked=\"\">1<"), "{page}");
+
+    // The groceries are the list's as it stands: the dish taken off, its
+    // eggs are no longer to buy, and the flour, of which the list calls
+    // for less, is to buy again.
+    let listed = cook.get(&router, LIST).await.body;
+    let meals = entries(&listed);
+    assert_eq!(meals.len(), 2, "{listed}");
+    let answer = cook
+        .post(&router, &format!("/list/{}/remove", meals[1]), &[])
+        .await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let page = cook.get(&router, GROCERIES).await.body;
+    assert_eq!(items(&page), [flour.clone(), salt.clone()], "{page}");
+    let row = item(&page, flour);
+    assert!(row.contains("data-amount=\"500 g\""), "{row}");
+    assert!(row.contains("data-checked=\"false\""), "{row}");
+
+    // An item the list no longer calls for, checked from a page read
+    // before: the groceries are shown as they now stand, and say so.
+    let answer = cook
+        .post(&router, &format!("/groceries/{eggs}/check"), &[])
+        .await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/groceries?done=changed"),
+        "{}",
+        answer.body
+    );
+    let page = cook.get(&router, &answer.location).await.body;
+    assert!(page.contains("data-done=\"changed\""), "{page}");
+    assert_eq!(items(&page).len(), 2, "{page}");
+
+    // A rewritten recipe is in the groceries too.
+    let rewritten = json!({
+        "title": "Bread",
+        "servings": 4,
+        "ingredients": [{ "name": "flour", "quantity": 300, "unit": "g" }],
+    });
+    let (status, body) = api
+        .call(
+            reqwest::Method::PUT,
+            &format!("/v1/recipes/{bread}"),
+            Some(&token),
+            rewritten,
+        )
+        .await;
+    assert!(status == 200 || status == 204, "{status}: {body}");
+    eventually("app to follow the recipe", || async {
+        let page = cook.clone().get(&router, GROCERIES).await.body;
+        (items(&page) == [flour.clone()] && item(&page, flour).contains("data-amount=\"600 g\""))
+            .then_some(())
+    })
+    .await;
+
+    // The groceries of someone else are their own: nothing of these, and
+    // nothing checked among them.
+    let mut alice = Browser::reading("en");
+    let answer = alice
+        .fill(&router, &api, REGISTER, "alice@example.com", PASSWORD, 0)
+        .await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let page = alice.get(&router, GROCERIES).await.body;
+    assert!(page.contains("data-empty"), "{page}");
+    assert!(!page.contains("flour"), "{page}");
+    let answer = alice
+        .post(&router, &format!("/groceries/{flour}/check"), &[])
+        .await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/groceries?done=changed")
+    );
+    let page = cook.get(&router, GROCERIES).await.body;
+    assert!(
+        item(&page, flour).contains("data-checked=\"false\""),
+        "{page}"
+    );
+
+    // Nor is anything read or checked without signing in.
+    let (status, location, _) = get(&router, GROCERIES, "en").await;
+    assert_eq!(
+        (status, location.as_str()),
+        (StatusCode::SEE_OTHER, SIGN_IN)
+    );
+    let answer = Browser::reading("en")
+        .post(&router, &format!("/groceries/{flour}/check"), &[])
+        .await;
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, SIGN_IN));
 
     app.stop().await;
     api.shutdown().await;

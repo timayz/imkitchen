@@ -1,6 +1,9 @@
 //! The groceries: what a user has to buy to cook their list. What there is
 //! to buy is no event: it is worked out from the list and its recipes as
-//! they stand. The events are what the user says of it, item by item.
+//! they stand ([`items`]). The events are what the user says of it, item by
+//! item.
+
+pub mod items;
 
 /// What one user says of their groceries, under the id of the user. A user
 /// who never said anything has no stream.

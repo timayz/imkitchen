@@ -399,19 +399,3 @@ pub async fn home(cx: &Cx) -> Result<impl View> {
         </main>
     })
 }
-
-/// A screen nothing is shown on yet: what it is, and what it will hold.
-#[component]
-pub(crate) async fn screen(
-    cx: &Cx,
-    title: Translation<'static>,
-    text: Translation<'static>,
-) -> Result<impl View> {
-    Ok(view! {
-        <main class="mx-auto max-w-3xl px-4 py-8 md:px-8 md:py-12">
-            <h1 class="text-3xl font-bold tracking-tight md:text-4xl">(title)</h1>
-            <p class="mt-4 text-lg leading-relaxed text-stone-600">(text)</p>
-            <p class="mt-8 text-sm text-stone-500" data-screen="coming">(t!(screen_coming))</p>
-        </main>
-    })
-}

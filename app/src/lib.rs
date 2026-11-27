@@ -23,6 +23,7 @@ pub mod config;
 pub mod db;
 pub mod dishes;
 pub mod events;
+pub mod groceries;
 pub mod list;
 pub mod recipes;
 pub mod session;

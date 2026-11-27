@@ -2593,6 +2593,7 @@ version = "1.13.0"
 dependencies = [
  "bitcode",
  "evento",
+ "sha2 0.11.2",
  "timada-core",
  "timada-identity",
 ]

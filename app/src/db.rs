@@ -109,6 +109,21 @@ pub const MIGRATIONS: Migrations<'static> = Migrations::new(
                 entries TEXT NOT NULL
             );",
         ),
+        Migration::up(
+            "0006_grocery_marks",
+            // One row per item of the groceries its user says something
+            // of: that it is in the basket (`checked`), or how much of it
+            // they buy (`quantity`). `needed` is how much the list called
+            // for when it was said, which it holds for.
+            "CREATE TABLE grocery_marks (
+                owner_id TEXT NOT NULL,
+                item_id TEXT NOT NULL,
+                needed REAL,
+                checked INTEGER NOT NULL,
+                quantity REAL,
+                PRIMARY KEY (owner_id, item_id)
+            );",
+        ),
     ],
 );
 

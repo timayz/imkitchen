@@ -310,3 +310,32 @@ pub async fn listed_own(db: &Db, owner_id: &str, ids: &[String]) -> anyhow::Resu
     )
     .await
 }
+
+/// What the groceries take of a recipe: its ingredients, and how many it
+/// is written for.
+#[derive(Debug, Clone, FromRow, PartialEq)]
+pub struct Taken {
+    pub id: String,
+    pub ingredients: Json<Vec<Ingredient>>,
+    pub servings: i64,
+}
+
+/// What the groceries take of the recipes `ids`, in no order: those among
+/// them that are `owner_id`'s.
+pub async fn taken_own(db: &Db, owner_id: &str, ids: &[String]) -> anyhow::Result<Vec<Taken>> {
+    if ids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let mut params: Vec<&str> = ids.iter().map(String::as_str).collect();
+    params.push(owner_id);
+    db.fetch_all(
+        &format!(
+            "SELECT id, ingredients, servings
+             FROM recipes WHERE id IN ({}) AND owner_id = ?{}",
+            placeholders(ids.len()),
+            params.len()
+        ),
+        params_from_iter(params),
+    )
+    .await
+}

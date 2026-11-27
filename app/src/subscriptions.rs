@@ -27,6 +27,11 @@ pub async fn start(executor: &Executor, db: &Db) -> Result<Vec<Subscription>> {
             .start(executor)
             .await
             .context("cannot start the list subscription")?,
+        crate::groceries::subscription(db.clone())
+            .supervised()
+            .start(executor)
+            .await
+            .context("cannot start the groceries subscription")?,
         crate::settings::subscription(db.clone())
             .supervised()
             .start(executor)
