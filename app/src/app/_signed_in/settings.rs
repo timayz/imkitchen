@@ -9,7 +9,7 @@ use topcoat::{
     view::{View, view},
 };
 
-use crate::app::{screen, t};
+use crate::app::{_signed_in::screen, t};
 
 #[page(with(Metadata::new().title(t!(settings_meta_title))))]
 pub async fn show(cx: &Cx) -> Result<impl View> {

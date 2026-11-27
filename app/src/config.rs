@@ -16,11 +16,16 @@ use serde::Deserialize;
 /// `sidecars.tokens.app`.
 const TOKEN_MIN_LEN: usize = 32;
 
+/// The least `session.key` may be, in bytes: what a key is derived from.
+const SESSION_KEY_MIN_LEN: usize = 32;
+
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct Config {
     pub server: ServerConfig,
     pub database: DatabaseConfig,
     pub api: ApiConfig,
+    #[serde(default)]
+    pub session: SessionConfig,
     pub monitoring: MonitoringConfig,
 }
 
@@ -28,6 +33,9 @@ pub struct Config {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
+    /// The address users reach app at. Over `https`, the cookies of a
+    /// session are only ever sent encrypted.
+    pub url: String,
     /// How long requests in flight get to finish once the server was asked
     /// to stop, in seconds.
     pub shutdown_timeout_secs: u64,
@@ -36,6 +44,21 @@ pub struct ServerConfig {
 impl ServerConfig {
     pub fn shutdown_timeout(&self) -> Duration {
         Duration::from_secs(self.shutdown_timeout_secs)
+    }
+
+    /// Whether app is reached over HTTPS.
+    pub fn secure(&self) -> bool {
+        self.url.starts_with("https://")
+    }
+
+    fn validate(&self) -> Result<(), ConfigError> {
+        if !self.url.starts_with("http://") && !self.secure() {
+            return Err(ConfigError::Message(format!(
+                "server.url must be an http(s) address, not '{}'",
+                self.url
+            )));
+        }
+        Ok(())
     }
 }
 
@@ -49,6 +72,9 @@ pub struct DatabaseConfig {
 /// How app reaches the api.
 #[derive(Debug, Deserialize, Clone, PartialEq)]
 pub struct ApiConfig {
+    /// Where the api answers HTTP: where users register, sign in and out,
+    /// are asked about on every page, and what they do is sent as commands.
+    pub url: String,
     /// The api's listener for the sidecars (`[sidecars]` there): an IP and
     /// port, or a `host:port` looked up again on every reconnect.
     pub events: String,
@@ -85,6 +111,12 @@ impl ApiConfig {
     }
 
     fn validate(&self) -> Result<(), ConfigError> {
+        if !self.url.starts_with("http://") && !self.url.starts_with("https://") {
+            return Err(ConfigError::Message(format!(
+                "api.url must be an http(s) address, not '{}'",
+                self.url
+            )));
+        }
         if self.events_host().is_none() {
             return Err(ConfigError::Message(format!(
                 "api.events must be host:port, not '{}'",
@@ -103,6 +135,29 @@ impl ApiConfig {
                 "api.tls_server_name needs api.tls_ca: without it the connection is not encrypted"
                     .to_owned(),
             ));
+        }
+        Ok(())
+    }
+}
+
+/// What the sessions of the users are kept with.
+#[derive(Debug, Default, Deserialize, Clone, PartialEq)]
+pub struct SessionConfig {
+    /// What the cookie of a session is encrypted under: 32 bytes or more,
+    /// the same for every replica of app. Absent: one is drawn each time
+    /// app starts, and whoever was signed in signs in again.
+    #[serde(default)]
+    pub key: Option<Secret>,
+}
+
+impl SessionConfig {
+    fn validate(&self) -> Result<(), ConfigError> {
+        if let Some(key) = &self.key
+            && key.expose().len() < SESSION_KEY_MIN_LEN
+        {
+            return Err(ConfigError::Message(format!(
+                "session.key must be at least {SESSION_KEY_MIN_LEN} bytes"
+            )));
         }
         Ok(())
     }
@@ -143,8 +198,10 @@ impl Config {
         let mut builder = config::Config::builder()
             .set_default("server.host", "0.0.0.0")?
             .set_default("server.port", 3030)?
+            .set_default("server.url", "http://localhost:3030")?
             .set_default("server.shutdown_timeout_secs", 30)?
             .set_default("database.path", "data/app.db")?
+            .set_default("api.url", "http://127.0.0.1:3000")?
             .set_default("api.events", "127.0.0.1:4000")?
             .set_default("monitoring.log_level", "info")?
             .set_default("monitoring.log_json", false)?
@@ -160,7 +217,9 @@ impl Config {
             .build()?
             .try_deserialize()?;
 
+        config.server.validate()?;
         config.api.validate()?;
+        config.session.validate()?;
 
         Ok(config)
     }
@@ -228,6 +287,42 @@ mod tests {
 
         let err = load("[api]\ntls_server_name = \"api\"\n").unwrap_err();
         assert!(err.to_string().contains("api.tls_ca"), "{err}");
+
+        let config = load("[api]\nurl = \"http://api.imkitchen.svc:3000\"\n").unwrap();
+        assert_eq!(config.api.url, "http://api.imkitchen.svc:3000");
+
+        let err = load("[api]\nurl = \"api:3000\"\n").unwrap_err();
+        assert!(err.to_string().contains("api.url"), "{err}");
+    }
+
+    #[test]
+    fn sessions_are_configured_and_validated() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("session.toml");
+        let load = |content: &str| {
+            std::fs::write(&path, content).unwrap();
+            Config::load(path.to_str())
+        };
+        let key = "k".repeat(SESSION_KEY_MIN_LEN);
+
+        let config = Config::load(None).unwrap();
+        assert_eq!(config.session.key, None);
+        assert!(!config.server.secure());
+
+        let config = load(&format!(
+            "[server]\nurl = \"https://imkitchen.app\"\n[session]\nkey = \"{key}\"\n"
+        ))
+        .unwrap();
+        assert!(config.server.secure());
+        assert_eq!(config.session.key.as_ref().unwrap().expose(), key);
+        let printed = format!("{config:?}");
+        assert!(!printed.contains(&key), "{printed}");
+
+        let err = load("[session]\nkey = \"short\"\n").unwrap_err();
+        assert!(err.to_string().contains("session.key"), "{err}");
+
+        let err = load("[server]\nurl = \"imkitchen.app\"\n").unwrap_err();
+        assert!(err.to_string().contains("server.url"), "{err}");
     }
 
     #[test]

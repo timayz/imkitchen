@@ -1,3 +1,7 @@
 # What CI renders the chart with: the least a release needs.
 secretEnv:
   IMKITCHEN_APP__API__TOKEN: "the token of app in ci, 32 characters"
+  IMKITCHEN_APP__SESSION__KEY: "the key of the sessions in ci, 32 bytes"
+config:
+  server:
+    url: https://imkitchen.example.com

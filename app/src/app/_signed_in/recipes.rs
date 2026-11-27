@@ -1,4 +1,4 @@
-//! `/dishes`: the dishes composed from the recipes. Nothing of them is shown
+//! `/recipes`: the recipes of who reads the page. Nothing of them is shown
 //! yet: the screen is there for the navigation to lead to.
 
 use topcoat::{
@@ -9,11 +9,11 @@ use topcoat::{
     view::{View, view},
 };
 
-use crate::app::{screen, t};
+use crate::app::{_signed_in::screen, t};
 
-#[page(with(Metadata::new().title(t!(dishes_meta_title))))]
+#[page(with(Metadata::new().title(t!(recipes_meta_title))))]
 pub async fn list(cx: &Cx) -> Result<impl View> {
     Ok(view! {
-        screen(title: t!(dishes_title), text: t!(dishes_text))
+        screen(title: t!(recipes_title), text: t!(recipes_text))
     })
 }

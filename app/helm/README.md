@@ -2,12 +2,14 @@
 
 Deploys app as a StatefulSet: two pods by default, each following the api's
 events into a store of its own, on a volume of its own, and serving the
-pages from it, never from the api.
+pages from it, never from the api. The api is asked who reads them, and
+handed what they do.
 `values.yaml` says what each value does.
 
 ```sh
 helm install imkitchen-app app/helm \
   --set secretEnv.IMKITCHEN_APP__API__TOKEN="$APP_TOKEN" \
+  --set secretEnv.IMKITCHEN_APP__SESSION__KEY="$(openssl rand -base64 48)" \
   --set route.enabled=true --set route.hostname=app.example.com
 ```
 
@@ -23,12 +25,16 @@ helm install imkitchen-app app/helm \
   is deleted.
 - **All pods start at once** (`podManagementPolicy: Parallel`): none waits
   on another.
+- **One key for the sessions**, the same for every pod and from one start
+  to the next: whoever is signed in stays so through an upgrade, and
+  whichever pod answers.
 - **`migrate` runs before `serve`**, as an init container, on the pod's own
   volume.
 - **`/health` is every probe.** app answers whether the api does or not: a
-  pod is not taken out of the service for an api that is away, it serves
-  what its store holds and catches up once the api is back. `/health` says
-  how it stands with it (`"api": "connected"`).
+  pod is not taken out of the service for an api that is away, and catches
+  up once the api is back. `/health` says how it stands with its events
+  (`"api": "connected"`). While the api is away nobody is let past the
+  pages of `/auth`: every other page asks it who its reader is.
 - **An upgrade replaces one pod at a time**, each ready again before the
   next, and a PodDisruptionBudget keeps a drain from taking more than one.
   With a single pod, app is away for the time it takes to start again.
@@ -36,15 +42,31 @@ helm install imkitchen-app app/helm \
 ## What to set
 
 - `secretEnv.IMKITCHEN_APP__API__TOKEN`, required: the token the api gives
-  app (`IMKITCHEN_API__SIDECARS__TOKENS__APP` there), or `existingSecret`
-  for a Secret made elsewhere.
-- `config.api.events`: the `sidecars` port of the api's service
-  (`sidecars.enabled` in the api's chart). The default is that of an api
-  released as `imkitchen-api` in the same namespace.
+  app (`IMKITCHEN_API__SIDECARS__TOKENS__APP` there).
+- `secretEnv.IMKITCHEN_APP__SESSION__KEY`, required: what the cookie of a
+  session is encrypted under, 32 bytes or more. Changing it signs everyone
+  out.
+- `existingSecret` for a Secret made elsewhere that holds the two, in place
+  of `secretEnv`.
+- `config.api.url` and `config.api.events`: the service of the api, its
+  HTTP port and its `sidecars` port (`sidecars.enabled` in the api's
+  chart). The defaults are those of an api released as `imkitchen-api` in
+  the same namespace.
 - `config.api.tls.secretName` when the api gives its sidecars port a
   certificate: the Secret whose `ca.crt` it is checked against. Without it
   the token travels in clear.
-- `route` to publish app through a Gateway.
+- `route` to publish app through a Gateway. The address users reach it at
+  (`config.server.url`) is `https://<route.hostname>` unless said
+  otherwise; without a route it has to be said. Over `https` the cookies of
+  a session are `Secure`.
+
+## The cookies
+
+A signed-in browser keeps two cookies, written and taken back together:
+`session`, encrypted, which holds the token of its session at the api, and
+`signed_in`, which says a session is there and nothing else. The second is
+for the gateway to route on: a main domain shared with www goes to app when
+`signed_in` is among the cookies, and `/auth` goes to app either way.
 
 ## The image
 
