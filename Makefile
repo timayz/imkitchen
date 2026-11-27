@@ -1,4 +1,4 @@
-.PHONY: start dev run migrate cluster.all www.dev www.run www.migrate admin.dev admin.run admin.migrate app.dev app.run app.migrate cert cert.install up stop down health ready lint fmt-check fmt test machete l10n check
+.PHONY: start dev run migrate cluster.all www.dev www.run www.migrate admin.dev admin.run admin.migrate app.dev app.run app.migrate cert cert.install up stop down health ready lint fmt-check fmt test test.api.unit test.www test.admin test.app machete l10n check
 
 # Traefik and the mail catcher, then the api: what a bare `make` runs.
 start: up dev
@@ -165,6 +165,32 @@ fmt:
 
 test:
 	cargo test --workspace
+
+# The same tests cut into the jobs CI runs side by side (.github/workflows/ci.yaml),
+# one crate each, the api in several: its integration tests are most of the
+# build. Every job compiles the api's library once, hence no more shards.
+API_SHARDS := 3
+API_TESTS := $(sort $(basename $(notdir $(wildcard api/tests/*.rs))))
+
+# The unit tests and the doctests of the api and of the aggregates.
+test.api.unit:
+	cargo test -p imkitchen-aggregates -p imkitchen-api --lib --bins
+	cargo test -p imkitchen-aggregates -p imkitchen-api --doc
+
+# One shard of the api's integration tests: make test.api.0, test.api.1,
+# test.api.2. A file of api/tests lands in a shard by its rank, so a new one
+# is never left out.
+test.api.%:
+	cargo test -p imkitchen-api $(shell printf '%s\n' $(API_TESTS) | awk 'NR % $(API_SHARDS) == $* { printf "--test %s ", $$1 }')
+
+test.www:
+	cargo test -p imkitchen-www
+
+test.admin:
+	cargo test -p imkitchen-admin
+
+test.app:
+	cargo test -p imkitchen-app
 
 # Check for unused dependencies. Scoped to the workspace members: the previous
 # code base is still on disk until #780 and no longer resolves.
