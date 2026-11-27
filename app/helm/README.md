@@ -10,7 +10,8 @@ handed what they do.
 helm install imkitchen-app app/helm \
   --set secretEnv.IMKITCHEN_APP__API__TOKEN="$APP_TOKEN" \
   --set secretEnv.IMKITCHEN_APP__SESSION__KEY="$(openssl rand -base64 48)" \
-  --set route.enabled=true --set route.hostname=app.example.com
+  --set config.www.url=https://about.example.com \
+  --set route.enabled=true --set route.hostname=example.com
 ```
 
 ## What it runs
@@ -30,9 +31,9 @@ helm install imkitchen-app app/helm \
   whichever pod answers.
 - **`migrate` runs before `serve`**, as an init container, on the pod's own
   volume.
-- **`/health` is every probe.** app answers whether the api does or not: a
-  pod is not taken out of the service for an api that is away, and catches
-  up once the api is back. `/health` says how it stands with its events
+- **`/_app/health` is every probe.** app answers whether the api does or
+  not: a pod is not taken out of the service for an api that is away, and
+  catches up once the api is back. It says how it stands with its events
   (`"api": "connected"`). While the api is away nobody is let past the
   pages of `/auth`: every other page asks it who its reader is.
 - **An upgrade replaces one pod at a time**, each ready again before the
@@ -55,18 +56,41 @@ helm install imkitchen-app app/helm \
 - `config.api.tls.secretName` when the api gives its sidecars port a
   certificate: the Secret whose `ca.crt` it is checked against. Without it
   the token travels in clear.
-- `route` to publish app through a Gateway. The address users reach it at
-  (`config.server.url`) is `https://<route.hostname>` unless said
-  otherwise; without a route it has to be said. Over `https` the cookies of
-  a session are `Secure`.
+- `config.www.url`, required: the address that always serves www
+  (`route.aboutHostname` of www's chart), where the pages link to the
+  public ones.
+- `route` to publish app through a Gateway, on the main domain. The address
+  users reach it at (`config.server.url`) is `https://<route.hostname>`
+  unless said otherwise; without a route it has to be said. Over `https`
+  the cookies of a session are `Secure`.
 
-## The cookies
+## The main domain
+
+app is published on the hostname www is published on, the main domain of
+imkitchen: `route.hostname` is the same in the two charts, and in the api's
+`route.mainHostname`. Three `HTTPRoute`s then share it, and the Gateway
+picks the most specific match:
+
+| Request | Route | Goes to |
+| --- | --- | --- |
+| `/api/…` | the api's chart | the api, as its `/…` |
+| `/auth/…`, `/_app/…` | this chart | app, whoever asks |
+| anything else, with the `signed_in` cookie | this chart | app |
+| anything else | www's chart | www |
 
 A signed-in browser keeps two cookies, written and taken back together:
 `session`, encrypted, which holds the token of its session at the api, and
 `signed_in`, which says a session is there and nothing else. The second is
-for the gateway to route on: a main domain shared with www goes to app when
-`signed_in` is among the cookies, and `/auth` goes to app either way.
+the one the route matches, among the others the browser sends: a regular
+expression on the `Cookie` header (`^(.*;\s*)?signed_in=.*$`, the whole
+header as Envoy matches it), which the Gateway API leaves to the
+implementation. Envoy Gateway has it. The route only sees that the cookie
+is there: a session that is no longer one is app's to find out, which then
+takes the cookie back and sends the browser to `/`, www again.
+
+www's chart asks for the certificate of the main domain
+(`route.certificate.enabled` is off here), and publishes `about.`, where
+www answers a signed-in user.
 
 ## The image
 

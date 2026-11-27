@@ -25,7 +25,7 @@ use imkitchen_app::config::ApiConfig;
 use imkitchen_app::db::{self, Db};
 use imkitchen_app::events::Events;
 use imkitchen_app::session::{MARKER, Sessions};
-use imkitchen_app::{app, config, recipes, subscriptions};
+use imkitchen_app::{app, assets, config, recipes, subscriptions};
 use serde_json::{Value, json};
 use tempfile::TempDir;
 use timada_identity::CodeMail;
@@ -33,12 +33,15 @@ use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 use tokio::task::JoinHandle;
 use topcoat::asset::{
-    AssetConfig, MANIFEST_VERSION, Manifest, ManifestEntry, RouterBuilderAssetExt,
+    AssetBundle, AssetConfig, MANIFEST_VERSION, Manifest, ManifestEntry, RouterBuilderAssetExt,
 };
+use topcoat::context::BaseUrl;
 use topcoat::cookie::Key;
-use topcoat::router::header::{ACCEPT_LANGUAGE, CONTENT_TYPE, COOKIE, LOCATION, SET_COOKIE};
+use topcoat::router::header::{
+    ACCEPT_LANGUAGE, CACHE_CONTROL, CONTENT_TYPE, COOKIE, LOCATION, SET_COOKIE,
+};
 use topcoat::router::request::Request;
-use topcoat::router::{Body, Router, StatusCode, to_bytes};
+use topcoat::router::{Body, Router, RouterBuilder, StatusCode, to_bytes};
 
 const APP_TOKEN: &str = "the token of app in the tests, 32 characters";
 
@@ -57,6 +60,13 @@ const ROOT_PASSWORD_HASH: &str = "$argon2id$v=19$m=19456,t=2,p=1$diXOV+PTSdOCfHj
 
 /// A password that passes the policy.
 const PASSWORD: &str = "correct horse battery";
+
+/// Where www always answers, in the tests: where the public pages are
+/// linked.
+const ABOUT: &str = "https://about.test";
+
+/// What tells whether app is up.
+const HEALTH: &str = "/_app/health";
 
 /// Where a visitor signs in.
 const SIGN_IN: &str = "/auth/sign-in";
@@ -387,13 +397,34 @@ impl App {
     /// The pages, as app serves them when it is reached over HTTPS
     /// (`secure`) or not.
     fn router_with(&self, secure: bool) -> Router {
+        self.pages(secure)
+            .assets(AssetConfig::hosted_at(
+                "https://assets.test",
+                Self::stylesheet(),
+            ))
+            .build()
+    }
+
+    /// The pages, without their assets.
+    fn pages(&self, secure: bool) -> RouterBuilder {
         // The same key each time: a browser of the tests keeps its session
         // from a router to the next.
         let sessions = Sessions {
             key: Key::derive_from(SESSION_KEY),
             secure,
         };
-        let manifest = Manifest {
+        app::router(
+            self.db.clone(),
+            self.events.clone(),
+            self.commands(),
+            sessions,
+            app::Www(BaseUrl::new(ABOUT).unwrap()),
+        )
+    }
+
+    /// What a bundle says of the stylesheet.
+    fn stylesheet() -> Manifest {
+        Manifest {
             version: MANIFEST_VERSION,
             assets: vec![ManifestEntry {
                 id: app::STYLESHEET.id(),
@@ -401,15 +432,7 @@ impl App {
                 hash: String::new(),
                 content_type: "text/css".to_owned(),
             }],
-        };
-        app::router(
-            self.db.clone(),
-            self.events.clone(),
-            self.commands(),
-            sessions,
-        )
-        .assets(AssetConfig::hosted_at("https://assets.test", manifest))
-        .build()
+        }
     }
 
     /// The client app asks the api with.
@@ -717,12 +740,101 @@ async fn health_says_how_app_stands_with_the_api() {
     let app = App::start(api.addr, &dir.path().join("app.db")).await;
     assert!(app.events.reached(SETTLE).await.unwrap());
 
-    let (status, _, body) = get(&app.router(), "/health", "en").await;
+    let (status, _, body) = get(&app.router(), HEALTH, "en").await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body, r#"{"status":"ok","api":"connected"}"#);
+    // `/health` of the main domain is www's: app has nothing there.
+    let (status, location, _) = get(&app.router(), "/health", "en").await;
+    assert_eq!(
+        (status, location.as_str()),
+        (StatusCode::SEE_OTHER, SIGN_IN)
+    );
 
     app.stop().await;
     api.shutdown().await;
+}
+
+#[tokio::test]
+async fn the_assets_are_at_addresses_of_app_alone() {
+    let dir = dir();
+    let api = Api::start(dir.path()).await;
+    let app = App::start(api.addr, &dir.path().join("app.db")).await;
+    // A bundle, as `topcoat asset bundle` leaves one next to the binary.
+    let bundle = dir.path().join("assets");
+    std::fs::create_dir(&bundle).unwrap();
+    App::stylesheet()
+        .save(bundle.join("manifest.toml"))
+        .unwrap();
+    std::fs::write(bundle.join("tailwind.css"), "body{}").unwrap();
+    let router = assets::serve(app.pages(false), AssetBundle::load_dir(&bundle).unwrap()).build();
+
+    // The pages of a visitor link to the stylesheet under `/_app`, which
+    // the gateway routes to app whoever asks: `/_topcoat` of the main
+    // domain is www's for a browser that is not signed in.
+    let (status, _, page) = get(&router, SIGN_IN, "en").await;
+    assert_eq!(status, StatusCode::OK);
+    let stylesheet = "/_app/assets/tailwind.css";
+    assert_eq!(
+        stylesheet,
+        format!("{}/tailwind.css", assets::PREFIX),
+        "the gateways route /_app"
+    );
+    assert!(
+        page.contains(&format!("<link rel=\"stylesheet\" href=\"{stylesheet}\">")),
+        "{page}"
+    );
+
+    // It is served there, to anyone, and for good: its name changes with
+    // what it holds.
+    let request = Request::builder()
+        .uri(stylesheet)
+        .body(Body::empty())
+        .unwrap();
+    let response = router.handle(request).await;
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()[CONTENT_TYPE], "text/css");
+    assert!(
+        response.headers()[CACHE_CONTROL]
+            .to_str()
+            .unwrap()
+            .contains("immutable")
+    );
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    assert_eq!(&body[..], b"body{}");
+
+    // And nowhere else.
+    let (status, location, _) = get(&router, "/_topcoat/assets/tailwind.css", "en").await;
+    assert_eq!(
+        (status, location.as_str()),
+        (StatusCode::SEE_OTHER, SIGN_IN)
+    );
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+/// What the gateways in front of imkitchen route to app is said in their
+/// own files: the marker by its name, and the two prefixes of what app
+/// serves whoever asks.
+#[test]
+fn the_gateways_route_what_app_serves() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+    for gateway in [
+        ".docker/traefik/dynamic.yaml",
+        "app/helm/templates/httproute.yaml",
+    ] {
+        let routes = std::fs::read_to_string(root.join(gateway)).unwrap();
+        assert!(routes.contains(&format!("{MARKER}=")), "{gateway}");
+        for prefix in ["/auth", "/_app"] {
+            assert!(routes.contains(prefix), "{gateway}: {prefix}");
+            assert!(
+                [SIGN_IN, REGISTER, SIGN_OUT, HEALTH, assets::PREFIX]
+                    .iter()
+                    .any(|served| served.starts_with(&format!("{prefix}/"))),
+                "{prefix}"
+            );
+        }
+    }
 }
 
 /// The link of the navigation to `address`, when the page has one.
@@ -764,6 +876,9 @@ async fn the_home_is_read_from_what_app_followed() {
     // to list it.
     assert!(page.contains("name=\"viewport\""), "{page}");
     assert!(page.contains("content=\"noindex, nofollow\""), "{page}");
+    // The public pages are www's, where it answers a signed-in user: the
+    // main domain is app for them.
+    assert!(page.contains(&format!("href=\"{ABOUT}/en\"")), "{page}");
 
     app.stop().await;
     api.shutdown().await;
@@ -912,6 +1027,14 @@ async fn nobody_reads_a_page_without_signing_in() {
         page.body
     );
     assert!(!page.body.contains("data-recipes"), "{}", page.body);
+    // And leads back to the public pages, in the language it is read in.
+    for public in ["/en", "/en/terms", "/en/privacy"] {
+        assert!(
+            page.body.contains(&format!("href=\"{ABOUT}{public}\"")),
+            "{public}: {}",
+            page.body
+        );
+    }
     assert!(
         page.body.contains("content=\"noindex, nofollow\""),
         "{}",
@@ -929,6 +1052,11 @@ async fn nobody_reads_a_page_without_signing_in() {
     );
     assert!(
         page.body.contains("href=\"/auth/sign-in\""),
+        "{}",
+        page.body
+    );
+    assert!(
+        page.body.contains(&format!("href=\"{ABOUT}/fr/terms\"")),
         "{}",
         page.body
     );

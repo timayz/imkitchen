@@ -1,4 +1,5 @@
-//! `GET /health`, for the probes: app is up and answers HTTP.
+//! `GET /_app/health`, for the probes: app is up and answers HTTP.
+//! `/health` of the main domain is www's.
 
 use serde::Serialize;
 use topcoat::{

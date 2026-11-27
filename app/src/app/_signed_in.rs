@@ -33,7 +33,7 @@ use topcoat::{
     view::{View, class, component, error_boundary, view},
 };
 
-use super::{api, auth, db, t};
+use super::{api, auth, db, public, t};
 use crate::api::Account;
 use crate::session::{self, Kept};
 
@@ -183,6 +183,14 @@ async fn signed_in(cx: &Cx, slot: Slot<'_>) -> Result<impl View> {
                     <button class="font-medium underline hover:text-stone-600 md:mt-1" type="submit">
                         (t!(nav_sign_out))
                     </button>
+                    // The public pages: www's, where it answers a signed-in
+                    // user too.
+                    <a
+                        class="hidden text-stone-500 hover:text-stone-900 hover:underline md:mt-4 md:block"
+                        href=(public(cx, ""))
+                    >
+                        (t!(public_about))
+                    </a>
                 </form>
             </header>
             // The bar of a phone covers the bottom of the page: the page

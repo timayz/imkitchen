@@ -18,9 +18,9 @@ fullnameOverride: ""
 # what each key does). The store and the port are the chart's to say.
 config:
   server:
-    # The address users reach app at: the main domain of imkitchen. Over
-    # https, the cookies of a session are only ever sent encrypted. Empty:
-    # https://<route.hostname>.
+    # The address users reach app at: the main domain of imkitchen, which
+    # app shares with www. Over https, the cookies of a session are only
+    # ever sent encrypted. Empty: https://<route.hostname>.
     url: ""
     # How long requests in flight get to finish when a pod is asked to stop.
     shutdownTimeoutSecs: 30
@@ -39,6 +39,11 @@ config:
       secretName: ""
       # The name that certificate must carry. Empty: the host of `events`.
       serverName: ""
+  www:
+    # The address that always serves www, the public pages of imkitchen:
+    # `route.aboutHostname` of www's chart, as https://about.example.com.
+    # What the pages of app link to them at. Required.
+    url: ""
   monitoring:
     logLevel: "info"
     logJson: true
@@ -71,16 +76,22 @@ service:
   type: ClusterIP
   port: 3030
 
-# Publishes app through a Gateway (HTTPRoute), with a certificate for its
-# hostname asked of cert-manager beside the Gateway.
+# Publishes app through a Gateway (HTTPRoute) on the main domain of
+# imkitchen, which www's chart publishes too (`route.hostname` there). app
+# takes of it the requests of a browser that is signed in (it sends the
+# `signed_in` cookie), and whoever asks under /auth and /_app; the rest is
+# www's. Matching a cookie among others takes a regular expression on the
+# `Cookie` header, which Envoy Gateway supports.
 route:
   enabled: false
   hostname: ""
   parentRef:
     name: envoy
     namespace: envoy-gateway-system
+  # The certificate of the main domain is asked by www's chart: one here is
+  # for an app published alone on a hostname of its own.
   certificate:
-    enabled: true
+    enabled: false
     issuerRef:
       kind: ClusterIssuer
       name: letsencrypt

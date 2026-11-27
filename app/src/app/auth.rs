@@ -4,7 +4,8 @@
 //!
 //! Everything a visitor is shown is under this one prefix: it is what the
 //! gateway in front of imkitchen routes to app whether the browser keeps
-//! the marker of a session or not.
+//! the marker of a session or not. The pages lead back to the public ones,
+//! which are www's.
 //!
 //! Registering and signing in are the api's, and take the same two steps:
 //! the form posts an address and its password, the api mails a code to the
@@ -29,7 +30,7 @@ use topcoat::{
     view::{View, component, view},
 };
 
-use super::{_signed_in, api, language, t};
+use super::{_signed_in, api, language, public, t};
 use crate::api::{CommandError, Credentials, Refusal, SignIn};
 use crate::session::{self, Kept};
 
@@ -157,8 +158,17 @@ pub(crate) async fn sign_out(cx: &Cx) -> Result<()> {
 async fn visitor(cx: &Cx, slot: Slot<'_>) -> Result<impl View> {
     Ok(view! {
         <main class="mx-auto max-w-sm px-4 py-12 md:py-20">
-            <p class="text-xl font-semibold tracking-tight">"imkitchen"</p>
+            <p class="text-xl font-semibold tracking-tight">
+                <a href=(public(cx, "")) aria-label=(t!(public_about))>"imkitchen"</a>
+            </p>
             (slot)
+            <nav
+                class="mt-12 flex gap-4 border-t border-stone-200 pt-6 text-sm text-stone-500"
+                aria-label=(t!(public_pages))
+            >
+                <a class="hover:underline" href=(public(cx, "/terms"))>(t!(public_terms))</a>
+                <a class="hover:underline" href=(public(cx, "/privacy"))>(t!(public_privacy))</a>
+            </nav>
         </main>
     })
 }

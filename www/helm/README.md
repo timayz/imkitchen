@@ -8,7 +8,8 @@ pages from it.
 ```sh
 helm install imkitchen-www www/helm \
   --set secretEnv.IMKITCHEN_WWW__API__TOKEN="$WWW_TOKEN" \
-  --set route.enabled=true --set route.hostname=imkitchen.app
+  --set route.enabled=true --set route.hostname=imkitchen.app \
+  --set route.aboutHostname=about.imkitchen.app
 ```
 
 ## What it runs
@@ -49,7 +50,15 @@ helm install imkitchen-www www/helm \
   at (`config.server.url`, what the canonical addresses and the sitemap
   start with) is `https://<route.hostname>` unless said otherwise; without
   a route it has to be said.
-- `config.app` once the application is listed: the links the home gives.
+- `route.aboutHostname`: a second hostname that is www whoever asks. On the
+  main domain, www answers what no other route takes: app's chart, released
+  on the same hostname, takes the browsers that are signed in and its own
+  `/auth` and `/_app`, the api's chart `/api` (`app/helm/README.md`). The
+  certificate asked here names both hostnames, and is the main domain's for
+  the three charts.
+- `config.app` once the application is listed: the links the home gives,
+  and `config.app.web` once app is released on the main domain, where a
+  visitor signs in (`https://<route.hostname>/auth/sign-in`).
 
 ## The image
 

@@ -32,8 +32,9 @@ pub struct Config {
 pub struct ServerConfig {
     pub host: String,
     pub port: u16,
-    /// The address visitors reach www at, without a path of the pages: what
-    /// the addresses a search engine is given start with.
+    /// The address visitors reach www at, without a path of the pages: the
+    /// main domain, whichever address www also answers at. What the
+    /// addresses a search engine is given start with.
     pub url: String,
     /// How long requests in flight get to finish once the server was asked
     /// to stop, in seconds.
@@ -138,6 +139,10 @@ impl ApiConfig {
 /// while none is.
 #[derive(Debug, Default, Deserialize, Clone, PartialEq)]
 pub struct AppConfig {
+    /// The application in a browser: where a visitor signs in, `/auth/sign-in`
+    /// of the main domain.
+    #[serde(default)]
+    pub web: Option<String>,
     /// The listing on Google Play.
     #[serde(default)]
     pub google_play: Option<String>,
@@ -152,6 +157,7 @@ pub struct AppConfig {
 impl AppConfig {
     fn validate(&self) -> Result<(), ConfigError> {
         for (key, link) in [
+            ("web", &self.web),
             ("google_play", &self.google_play),
             ("app_store", &self.app_store),
             ("desktop", &self.desktop),

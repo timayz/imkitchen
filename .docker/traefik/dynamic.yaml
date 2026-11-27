@@ -1,10 +1,15 @@
 # The local addresses of imkitchen, each to what runs on the host:
 #
-#   https://imkitchen.localhost          www   (make www.dev, 3010)
+#   https://imkitchen.localhost          www (make www.dev, 3010) for a
+#                                        visitor, app (make app.dev, 3030)
+#                                        for a browser that is signed in
+#   https://imkitchen.localhost/auth     app, whoever asks: where a visitor
+#   https://imkitchen.localhost/_app     signs in, and what app serves that
+#                                        is not a page
+#   https://imkitchen.localhost/api      api (make dev, 3000), for the app in
+#                                        a browser: its own origin
+#   https://about.imkitchen.localhost    www, whoever asks
 #   https://admin.imkitchen.localhost    admin (make admin.dev, 3020)
-#   https://app.imkitchen.localhost      app   (make app.dev, 3030)
-#   https://app.imkitchen.localhost/api  api   (make dev, 3000), for the app
-#                                        in a browser: its own origin
 #   https://api.imkitchen.localhost      api, for the mobile apps
 #
 # `make cert` writes the certificate they are served with.
@@ -21,10 +26,50 @@ tls:
 
 http:
   routers:
+    # The main domain is www's, and so is `about.`: what the three routers
+    # below do not take of the first. Each says its priority: left to
+    # Traefik, it is the length of the rule.
     www:
-      rule: "Host(`imkitchen.localhost`)"
+      rule: "Host(`imkitchen.localhost`) || Host(`about.imkitchen.localhost`)"
+      priority: 10
       tls: true
       service: www
+      entryPoints:
+        - https
+
+    # A browser that is signed in keeps a cookie that says so and nothing
+    # else, `signed_in` (the marker app writes beside the session): with it
+    # the main domain is app. The cookie is found among the others the
+    # browser sends. Whether the session is still one is for app to tell.
+    app:
+      rule: "Host(`imkitchen.localhost`) && HeaderRegexp(`Cookie`, `(^|;\\s*)signed_in=`)"
+      priority: 20
+      tls: true
+      service: app
+      entryPoints:
+        - https
+
+    # What app serves whoever asks: the pages of a visitor (signing in,
+    # registering) under /auth, and what is not a page (its assets, its
+    # health) under /_app.
+    app-visitor:
+      rule: "Host(`imkitchen.localhost`) && (PathPrefix(`/auth`) || PathPrefix(`/_app`))"
+      priority: 30
+      tls: true
+      service: app
+      entryPoints:
+        - https
+
+    # The api under /api of the main domain, whoever asks, which the api
+    # itself knows nothing of (/api/v1/recipes is its /v1/recipes): the app
+    # in a browser then calls its own origin, and needs no CORS.
+    app-api:
+      rule: "Host(`imkitchen.localhost`) && PathPrefix(`/api`)"
+      priority: 30
+      tls: true
+      service: api
+      middlewares:
+        - api-prefix
       entryPoints:
         - https
 
@@ -35,32 +80,11 @@ http:
       entryPoints:
         - https
 
-    # Everything of the app's address but /api, which the longer rule below
-    # takes.
-    app:
-      rule: "Host(`app.imkitchen.localhost`)"
-      tls: true
-      service: app
-      entryPoints:
-        - https
-
     # The api at an address of its own, for the mobile apps.
     api:
       rule: "Host(`api.imkitchen.localhost`)"
       tls: true
       service: api
-      entryPoints:
-        - https
-
-    # The api under /api of the app's address, which the api itself knows
-    # nothing of (/api/v1/recipes is its /v1/recipes): the app in a browser
-    # then calls its own origin, and needs no CORS.
-    app-api:
-      rule: "Host(`app.imkitchen.localhost`) && PathPrefix(`/api`)"
-      tls: true
-      service: api
-      middlewares:
-        - api-prefix
       entryPoints:
         - https
 

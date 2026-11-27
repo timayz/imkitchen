@@ -16,3 +16,4 @@ sidecars:
 route:
   enabled: true
   hostname: api.example.com
+  mainHostname: example.com

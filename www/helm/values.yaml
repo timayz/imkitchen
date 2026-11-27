@@ -18,8 +18,9 @@ fullnameOverride: ""
 # what each key does). The store and the port are the chart's to say.
 config:
   server:
-    # The address visitors reach www at, without a path: what the addresses
-    # a search engine is given start with. Empty: https://<route.hostname>.
+    # The address visitors reach www at, without a path: the main domain of
+    # imkitchen, what the addresses a search engine is given start with at
+    # either hostname. Empty: https://<route.hostname>.
     url: ""
     # How long requests in flight get to finish when a pod is asked to stop.
     shutdownTimeoutSecs: 30
@@ -41,6 +42,10 @@ config:
   # pages do not link to it, and say the application is coming while none
   # is.
   app:
+    # The application in a browser, once app's chart is released on the
+    # main domain: where a visitor signs in,
+    # https://<route.hostname>/auth/sign-in.
+    web: ""
     googlePlay: ""
     appStore: ""
     desktop: ""
@@ -73,10 +78,17 @@ service:
   port: 3010
 
 # Publishes www through a Gateway (HTTPRoute), with a certificate for its
-# hostname asked of cert-manager beside the Gateway.
+# hostnames asked of cert-manager beside the Gateway.
 route:
   enabled: false
+  # The main domain of imkitchen. www answers what no other route takes of
+  # it: app's chart, released on the same hostname, takes a browser that is
+  # signed in, and the api's its /api.
   hostname: ""
+  # A second hostname that is www whoever asks, as about.example.com: where
+  # a signed-in user, for whom the main domain is app, reads the public
+  # pages. Empty: none.
+  aboutHostname: ""
   parentRef:
     name: envoy
     namespace: envoy-gateway-system
