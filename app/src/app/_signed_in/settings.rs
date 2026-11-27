@@ -1,6 +1,6 @@
 //! `/settings`: how the list of who reads the page is generated, the
-//! language they read, and their account: the name it shows, its password
-//! and the devices it is signed in on.
+//! language they read, the tutorial, and their account: the name it shows,
+//! its password and the devices it is signed in on.
 //!
 //! Each part is a form of its own, posted to an address of its own under
 //! `/settings` and saved as a whole by a command of the api's. What the api
@@ -10,7 +10,11 @@
 //! is set here is set on every device the user signs in on, the language
 //! among it ([`super::signed_in_only`] reads every page in it). The account
 //! is the api's alone: its name comes with who the session signs in.
+//!
+//! Changing the list or the language is the third step of the tutorial
+//! ([`tutorial`]), which is skipped and started over from here too.
 
+use imkitchen_aggregates::tutorial::Step;
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use topcoat::{
@@ -23,8 +27,8 @@ use topcoat::{
 
 use super::recipes::_form::Number;
 use super::{
-    BUTTON, BUTTON_QUIET, FIELD_REFUSED, Failure, H1, H2, INPUT, LABEL, MAIN, account, asking,
-    failed, followed, read, spoken,
+    BUTTON, BUTTON_QUIET, FIELD_REFUSED, Failure, H1, H2, INPUT, LABEL, LINK, MAIN, account,
+    asking, failed, followed, home, read, spoken, tutorial,
 };
 use crate::api::CommandError;
 use crate::app::{api, db, language, t};
@@ -35,6 +39,7 @@ use crate::settings::{SOURCES, Settings};
 enum Part {
     List,
     Language,
+    Tutorial,
     Name,
     Password,
     Sessions,
@@ -46,6 +51,7 @@ impl Part {
         match self {
             Self::List => "list",
             Self::Language => "language",
+            Self::Tutorial => "tutorial",
             Self::Name => "name",
             Self::Password => "password",
             Self::Sessions => "sessions",
@@ -85,10 +91,19 @@ impl Told {
     }
 }
 
+/// The settings of who reads the page, as app followed them before a form
+/// is handed to the api: what tells whether the api changed them. `None`
+/// when they could not be read.
+async fn standing(cx: &Cx) -> Option<Settings> {
+    crate::settings::of(db(cx), &account(cx).id).await.ok()
+}
+
 /// Waits until app followed the settings as far as the api has written
-/// them. An api that does not say is not waited for: the page shows them a
-/// moment later.
-async fn settled(cx: &Cx) {
+/// them, and the step of the tutorial with them when they are not what
+/// they were (`before`): saved as they stood, they write nothing. An api
+/// that does not say is not waited for: the page shows them a moment
+/// later.
+async fn settled(cx: &Cx, before: Option<Settings>) {
     let language = language(cx);
     let told = api(cx)
         .read::<Told>(asking(cx, &language), &["settings"])
@@ -97,7 +112,12 @@ async fn settled(cx: &Cx) {
         return;
     };
     let (db, user_id) = (db(cx), account(cx).id.as_str());
-    followed(|| async { Ok(told.is(&crate::settings::of(db, user_id).await?)) }).await;
+    let shown = followed(|| async { Ok(told.is(&crate::settings::of(db, user_id).await?)) });
+    if before.is_some_and(|before| !told.is(&before)) {
+        tokio::join!(shown, tutorial::noted(cx, Step::Settings));
+    } else {
+        shown.await;
+    }
 }
 
 /// How a form that was posted went, when it did not send the browser on.
@@ -153,6 +173,7 @@ async fn set_list(cx: &Cx, Form(posted): Form<ListForm>) -> Result<impl View> {
         meals: Number::whole(&posted.meals),
         sources: &posted.sources,
     };
+    let before = standing(cx).await;
     let done = api(cx)
         .command(
             asking(cx, &language),
@@ -162,7 +183,7 @@ async fn set_list(cx: &Cx, Form(posted): Form<ListForm>) -> Result<impl View> {
         )
         .await;
     if done.is_ok() {
-        settled(cx).await;
+        settled(cx, before).await;
     }
     let failure = set(cx, Part::List, done)?;
 
@@ -195,6 +216,7 @@ async fn set_language(cx: &Cx, Form(posted): Form<LanguageForm>) -> Result<impl 
     let body = LanguageBody {
         language: posted.language.as_deref().filter(|tag| !tag.is_empty()),
     };
+    let before = standing(cx).await;
     let done = api(cx)
         .command(
             asking(cx, &language),
@@ -205,13 +227,43 @@ async fn set_language(cx: &Cx, Form(posted): Form<LanguageForm>) -> Result<impl 
         .await;
     if done.is_ok() {
         // The page the browser is sent to is read in it.
-        settled(cx).await;
+        settled(cx, before).await;
     }
     let failure = set(cx, Part::Language, done)?;
 
     Ok(view! {
         content(again: Again {
             failure: Some((Part::Language, failure)),
+            ..Again::default()
+        })
+    })
+}
+
+/// Skips the tutorial, on every device: the steps done stay done.
+#[page(POST "./tutorial/skip", with(Metadata::new().title(t!(settings_meta_title))))]
+async fn skip_tutorial(cx: &Cx) -> Result<impl View> {
+    let failure = set(cx, Part::Tutorial, tutorial::skipped(cx).await)?;
+
+    Ok(view! {
+        content(again: Again {
+            failure: Some((Part::Tutorial, failure)),
+            ..Again::default()
+        })
+    })
+}
+
+/// Starts the tutorial over, on every device, and sends the browser to the
+/// home, where its first step is.
+#[page(POST "./tutorial/restart", with(Metadata::new().title(t!(settings_meta_title))))]
+async fn restart_tutorial(cx: &Cx) -> Result<impl View> {
+    let failure = match tutorial::restarted(cx).await {
+        Ok(()) => return Err(see_other(href!(home).resolve(cx)).into()),
+        Err(err) => Failure::of(cx, err)?,
+    };
+
+    Ok(view! {
+        content(again: Again {
+            failure: Some((Part::Tutorial, failure)),
             ..Again::default()
         })
     })
@@ -325,9 +377,10 @@ async fn content(cx: &Cx, again: Again) -> Result<impl View> {
         // What a form that was just refused says replaces it.
         .filter(|_| failure.is_none());
     let done = |part: Part| done.as_deref() == Some(part.word());
-    let (list_done, language_done, name_done, password_done, sessions_done) = (
+    let (list_done, language_done, tutorial_done, name_done, password_done, sessions_done) = (
         done(Part::List),
         done(Part::Language),
+        done(Part::Tutorial),
         done(Part::Name),
         done(Part::Password),
         done(Part::Sessions),
@@ -347,9 +400,12 @@ async fn content(cx: &Cx, again: Again) -> Result<impl View> {
     let password_refused = refused(Part::Password, "password");
     let mut failure = failure.map(|(_, failure)| failure);
     let mut failure_of = |part: Part| failure.take_if(|_| refused_part == Some(part));
-    let (list_failure, language_failure, name_failure, password_failure, sessions_failure) = (
+    let (list_failure, language_failure, tutorial_failure) = (
         failure_of(Part::List),
         failure_of(Part::Language),
+        failure_of(Part::Tutorial),
+    );
+    let (name_failure, password_failure, sessions_failure) = (
         failure_of(Part::Name),
         failure_of(Part::Password),
         failure_of(Part::Sessions),
@@ -377,6 +433,19 @@ async fn content(cx: &Cx, again: Again) -> Result<impl View> {
         })
         .collect();
     let of_the_device = chosen.is_none();
+    let progress = read(crate::tutorial::of(db(cx), &account(cx).id).await)?;
+    let completed = progress.completed();
+    let (state, progress_said, under_way) = match progress.current() {
+        _ if completed => ("completed", t!(settings_tutorial_completed), false),
+        Some(step) => (
+            "under_way",
+            t!(settings_tutorial_at, number: tutorial::number(step), total: Step::ALL.len()),
+            true,
+        ),
+        None => ("skipped", t!(settings_tutorial_skipped), false),
+    };
+    // What there is to start over: a step done, or a tutorial skipped.
+    let restartable = progress.skipped || !progress.done.is_empty();
     let name = name.unwrap_or_else(|| account(cx).name.clone());
     let email = account(cx).email.clone();
 
@@ -495,6 +564,41 @@ async fn content(cx: &Cx, again: Again) -> Result<impl View> {
                         <button class=(BUTTON) type="submit">(t!(settings_save))</button>
                     </div>
                 </form>
+            </section>
+
+            <section class=(section) data-part="tutorial" data-state=(state)>
+                <h2 class=(H2)>(t!(settings_tutorial))</h2>
+                <p class=(hint)>
+                    (progress_said)
+                    if under_way {
+                        " "
+                        <a class=(LINK) href=(href!(home))>(t!(settings_tutorial_continue))</a>
+                    }
+                </p>
+                <div class="mt-6 grid gap-5">
+                    if tutorial_done {
+                        <p class=(set) role="status" data-done="tutorial">
+                            (t!(settings_tutorial_skipped_now))
+                        </p>
+                    }
+                    failed(failure: tutorial_failure)
+                    <div class="flex flex-wrap gap-3">
+                        if under_way {
+                            <form method="post" action=(href!(skip_tutorial))>
+                                <button class=(class!(BUTTON_QUIET, "text-sm")) type="submit">
+                                    (t!(tutorial_skip))
+                                </button>
+                            </form>
+                        }
+                        if restartable {
+                            <form method="post" action=(href!(restart_tutorial))>
+                                <button class=(class!(BUTTON_QUIET, "text-sm")) type="submit">
+                                    (t!(settings_tutorial_restart))
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
             </section>
 
             <section class=(section) data-part="account">

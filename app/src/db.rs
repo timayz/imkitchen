@@ -124,6 +124,18 @@ pub const MIGRATIONS: Migrations<'static> = Migrations::new(
                 PRIMARY KEY (owner_id, item_id)
             );",
         ),
+        Migration::up(
+            "0007_tutorials",
+            // One row per user who did a step of the tutorial or skipped
+            // it: the steps they did, in the order they did them (`done` as
+            // JSON, each named as the api names it), and whether they
+            // skipped it.
+            "CREATE TABLE tutorials (
+                user_id TEXT NOT NULL PRIMARY KEY,
+                done TEXT NOT NULL,
+                skipped INTEGER NOT NULL
+            );",
+        ),
     ],
 );
 

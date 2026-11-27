@@ -44,6 +44,36 @@ home_recipes =
        *[other] { $count } recipes are kept in imkitchen.
     }
 
+## The tutorial
+
+tutorial_title = Get started
+tutorial_text = Five steps through imkitchen, done with your own recipes, in any order. Leave whenever you like: imkitchen remembers where you are, on every device.
+tutorial_done_title = You went through the tutorial
+tutorial_done_text = Every step is done: imkitchen is yours. The tutorial can be started over from the settings.
+tutorial_step_of = Step { $number } of { $total }
+tutorial_step_done = done
+tutorial_all_steps = All the steps
+tutorial_skip = Skip the tutorial
+tutorial_close = Close the tutorial
+
+tutorial_recipe = Write or import a recipe
+tutorial_recipe_text = Everything starts with your recipes: write one, or import it from a page you like.
+tutorial_recipe_write = Write a recipe
+tutorial_recipe_import = Import a recipe
+tutorial_plat = Compose a dish
+tutorial_plat_text = A dish brings recipes together, in the order they are served.
+tutorial_plat_compose = Compose a dish
+tutorial_settings = Set up your list
+tutorial_settings_text = Change how many people you cook for, how many meals your list holds or what they are drawn from, or choose the language you read.
+tutorial_settings_open = Open the settings
+tutorial_list = Fill your list
+tutorial_list_text = Let imkitchen draw your meals as your settings say, or pick a meal yourself.
+tutorial_list_generate = Go to your list
+tutorial_list_pick = Pick a meal
+tutorial_groceries = Do the groceries
+tutorial_groceries_text = What your list takes, added up: check an item once it is in your basket.
+tutorial_groceries_open = Open the groceries
+
 ## The screens
 
 recipes_meta_title = Recipes — imkitchen
@@ -202,6 +232,14 @@ settings_sources_recipes = Your recipes only
 settings_language = Language
 settings_language_hint = The language imkitchen is read in, on every device you sign in on.
 settings_language_device = The language of the device
+
+settings_tutorial = Tutorial
+settings_tutorial_at = You are at step { $number } of { $total }.
+settings_tutorial_continue = Continue the tutorial
+settings_tutorial_skipped = You skipped the tutorial.
+settings_tutorial_completed = You went through every step of the tutorial.
+settings_tutorial_skipped_now = The tutorial is skipped.
+settings_tutorial_restart = Start the tutorial over
 
 settings_account = Your account
 settings_account_email = You sign in with { $email }.

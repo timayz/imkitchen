@@ -44,6 +44,36 @@ home_recipes =
        *[other] { $count } recettes sont gardées dans imkitchen.
     }
 
+## The tutorial
+
+tutorial_title = Pour commencer
+tutorial_text = Cinq étapes à travers imkitchen, faites avec vos propres recettes, dans l’ordre que vous voulez. Partez quand vous voulez : imkitchen se souvient où vous en êtes, sur tous vos appareils.
+tutorial_done_title = Vous avez fait le tutoriel
+tutorial_done_text = Toutes les étapes sont faites : imkitchen est à vous. Le tutoriel peut être recommencé depuis les réglages.
+tutorial_step_of = Étape { $number } sur { $total }
+tutorial_step_done = faite
+tutorial_all_steps = Toutes les étapes
+tutorial_skip = Passer le tutoriel
+tutorial_close = Fermer le tutoriel
+
+tutorial_recipe = Écrire ou importer une recette
+tutorial_recipe_text = Tout part de vos recettes : écrivez-en une, ou importez-la d’une page que vous aimez.
+tutorial_recipe_write = Écrire une recette
+tutorial_recipe_import = Importer une recette
+tutorial_plat = Composer un plat
+tutorial_plat_text = Un plat réunit des recettes, dans l’ordre où elles sont servies.
+tutorial_plat_compose = Composer un plat
+tutorial_settings = Régler votre liste
+tutorial_settings_text = Changez pour combien de personnes vous cuisinez, combien de repas tient votre liste ou d’où ils sont tirés, ou choisissez la langue dans laquelle vous lisez.
+tutorial_settings_open = Ouvrir les réglages
+tutorial_list = Remplir votre liste
+tutorial_list_text = Laissez imkitchen tirer vos repas selon vos réglages, ou choisissez un repas vous-même.
+tutorial_list_generate = Aller à votre liste
+tutorial_list_pick = Choisir un repas
+tutorial_groceries = Faire les courses
+tutorial_groceries_text = Ce que prend votre liste, additionné : cochez un article une fois qu’il est dans votre panier.
+tutorial_groceries_open = Ouvrir les courses
+
 ## The screens
 
 recipes_meta_title = Recettes — imkitchen
@@ -202,6 +232,14 @@ settings_sources_recipes = Vos recettes seulement
 settings_language = Langue
 settings_language_hint = La langue dans laquelle imkitchen se lit, sur tous les appareils où vous vous connectez.
 settings_language_device = La langue de l’appareil
+
+settings_tutorial = Tutoriel
+settings_tutorial_at = Vous en êtes à l’étape { $number } sur { $total }.
+settings_tutorial_continue = Continuer le tutoriel
+settings_tutorial_skipped = Vous avez passé le tutoriel.
+settings_tutorial_completed = Vous avez fait toutes les étapes du tutoriel.
+settings_tutorial_skipped_now = Le tutoriel est passé.
+settings_tutorial_restart = Recommencer le tutoriel
 
 settings_account = Votre compte
 settings_account_email = Vous vous connectez avec { $email }.

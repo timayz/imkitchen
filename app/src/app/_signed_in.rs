@@ -18,7 +18,9 @@
 //!
 //! One layout serves the desktop and the phone: the navigation between the
 //! screens is a column beside the page where there is room for one, and a
-//! bar under it where there is not.
+//! bar under it where there is not. While the reader goes through the
+//! tutorial, the step they are at is above every page but the home, where
+//! the whole tutorial is ([`tutorial`]).
 //!
 //! [`auth`]: super::auth
 
@@ -27,6 +29,7 @@ pub mod groceries;
 pub mod list;
 pub mod recipes;
 pub mod settings;
+pub mod tutorial;
 
 use std::future::Future;
 use std::time::Duration;
@@ -291,6 +294,11 @@ async fn signed_in(cx: &Cx, slot: Slot<'_>) -> Result<impl View> {
     let screens = screens(cx);
     let brand = href!(home).resolve(cx).to_string();
     let back = brand.clone();
+    // The home shows the whole tutorial, and so does skipping it when that
+    // failed: the step the reader is at is above the other pages.
+    let reading = uri(cx).path();
+    let skipping = href!(tutorial::skip).resolve(cx).to_string();
+    let whole_tutorial = reading == brand || reading == skipping;
 
     Ok(view! {
         // A phone: the name on top, the page, the screens in a bar that
@@ -351,6 +359,9 @@ async fn signed_in(cx: &Cx, slot: Slot<'_>) -> Result<impl View> {
             // The bar of a phone covers the bottom of the page: the page
             // ends above it.
             <div class="min-w-0 flex-1 pb-16 md:pb-0">
+                if !whole_tutorial {
+                    tutorial::banner()
+                }
                 error_boundary(
                     fallback: |error| {
                         if error.downcast_ref::<NotFoundError>().is_none() {
@@ -381,10 +392,18 @@ async fn signed_in(cx: &Cx, slot: Slot<'_>) -> Result<impl View> {
     })
 }
 
-/// The home: what the application is, and how many recipes app has
-/// followed. Whose they are is for the screens to tell.
+/// The home: what the application is, how many recipes app has followed
+/// (whose they are is for the screens to tell), and the tutorial of who
+/// reads it, until they skip it.
 #[page]
 pub async fn home(cx: &Cx) -> Result<impl View> {
+    Ok(view! { welcome(failure: None) })
+}
+
+/// The home, and what `failure` says of skipping the tutorial, when that
+/// was just refused.
+#[component]
+pub(crate) async fn welcome(cx: &Cx, failure: Option<Failure>) -> Result<impl View> {
     let recipes = crate::recipes::count(db(cx))
         .await
         .map_err(Error::from_anyhow)?;
@@ -393,6 +412,7 @@ pub async fn home(cx: &Cx) -> Result<impl View> {
         <main class="mx-auto max-w-3xl px-4 py-8 md:px-8 md:py-12">
             <h1 class="text-3xl font-bold tracking-tight md:text-4xl">(t!(home_title))</h1>
             <p class="mt-4 text-lg leading-relaxed text-stone-600">(t!(home_text))</p>
+            tutorial::steps(failure: failure)
             <p class="mt-8 text-sm text-stone-500" data-recipes=(recipes)>
                 (t!(home_recipes, count: recipes))
             </p>

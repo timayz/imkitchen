@@ -102,7 +102,8 @@ when topcoat moves its own.
 | `src/app/_signed_in/dishes.rs`, `src/app/_signed_in/dishes/` | The dishes: the list, a dish, and the form one is composed and recomposed with. |
 | `src/app/_signed_in/list.rs`, `src/app/_signed_in/list/` | The list: its meals, generating it, and where a meal is picked by hand. |
 | `src/app/_signed_in/groceries.rs`, `src/app/_signed_in/groceries.js` | The groceries: what the list takes, and the items checked in the shop, with the script that checks them without reloading. |
-| `src/app/_signed_in/settings.rs` | The settings: how the list is generated, the language, and the account. |
+| `src/app/_signed_in/settings.rs` | The settings: how the list is generated, the language, the tutorial, and the account. |
+| `src/app/_signed_in/tutorial.rs` | The tutorial: its steps on the home, the one the reader is at above the other pages, and skipping it. |
 | `src/app/auth.rs`, `src/app/auth/` | What a visitor is shown, under `/auth`: signing in, registering, and signing out. |
 | `src/app/_app.rs`, `src/app/_app/` | What is not a page, under `/_app`: the health. |
 | `src/assets.rs` | The assets (the stylesheet, the scripts of the cooking screen and of the groceries), served under `/_app/assets`. |
@@ -110,7 +111,7 @@ when topcoat moves its own.
 | `src/api.rs` | The api over HTTP: registering, signing in and out, who a session is, and the commands. |
 | `src/session.rs` | What a browser keeps of its session: the two cookies. |
 | `src/events.rs` | The connection to the api's events. |
-| `src/recipes.rs`, `src/dishes.rs`, `src/list.rs`, `src/settings.rs` | The read models: the subscription of each and what the pages read from it. |
+| `src/recipes.rs`, `src/dishes.rs`, `src/list.rs`, `src/groceries.rs`, `src/settings.rs`, `src/tutorial.rs` | The read models: the subscription of each and what the pages read from it. |
 | `src/subscriptions.rs` | Every subscription app runs. |
 | `src/db.rs` | The store and the migrations of its tables. |
 | `Dockerfile`, `builder.Dockerfile`, `helm/` | The image and the chart app is deployed with. |
@@ -157,7 +158,9 @@ One layout (`signed_in` in `src/app/_signed_in.rs`) serves the desktop and
 the phone. The navigation between the screens is a bar that stays at the
 bottom of a phone, and from Tailwind's `md` up a column that stays beside
 the page. It is the same links either way, and the screen being read says
-so (`aria-current`). Signing out is beside it.
+so (`aria-current`). Signing out is beside it. While the reader goes
+through the tutorial, the step they are at is above every page but the
+home (see [Tutorial](#tutorial)).
 
 A screen added under `src/app/_signed_in/` is also added to `screens` in
 `src/app/_signed_in.rs`, which is what the navigation lists.
@@ -383,12 +386,16 @@ own and saved as a whole by a command of the api's:
 | --- | --- | --- |
 | How the list is generated: for how many, how many meals, drawn from what | `/settings/list` | `PUT /v1/settings/list` |
 | The language | `/settings/language` | `PUT /v1/settings/language` |
+| Skipping the tutorial | `/settings/tutorial/skip` | `POST /v1/tutorial/skip` |
+| Starting it over | `/settings/tutorial/restart` | `POST /v1/tutorial/restart` |
 | The name of the account | `/settings/name` | `PUT /v1/account/profile` |
 | Its password | `/settings/password` | `PUT /v1/account/password` |
 | Signing out everywhere else | `/settings/sign-out-everywhere` | `POST /v1/account/sign-out-everywhere` |
 
 Once a part is set the browser is sent back to `/settings?done=…`, which
-says so; what the api refuses is said in the form it was asked of.
+says so; what the api refuses is said in the form it was asked of. The
+tutorial started over is the exception: the browser is sent to the home,
+where its first step is.
 
 The settings are the user's on every device: app follows them into its
 store, and a user who set nothing has the defaults the api has
@@ -398,6 +405,42 @@ to each browser. The account is the api's alone: its name and its address
 come with who the session signs in. A new password, and signing out
 everywhere else, end every other session and keep this one.
 
+## Tutorial
+
+The tutorial walks a new user through the whole application in five steps,
+each done by what it asks, with their own recipes:
+
+| Step | Done by | Leads to |
+| --- | --- | --- |
+| A recipe | writing one, or importing one | `/recipes/new`, `/recipes/import` |
+| A dish | composing one | `/dishes/new` |
+| The settings | changing how the list is generated, or the language | `/settings` |
+| The list | generating it, or adding a meal by hand | `/list`, `/list/add` |
+| The groceries | checking an item, or unchecking one | `/groceries` |
+
+How far a user is is the api's (`/v1/tutorial`, `api/README.md`), which
+notes each step a moment after the command that does it, wherever it was
+made from. app follows it into its store (`src/tutorial.rs`): who leaves
+finds it where they left it, here or on another device.
+
+- The home shows every step, those done and the one the user is at (the
+  first ahead, in the order above), each leading to where it is done. The
+  steps are done in any order.
+- Every other page shows the step the user is at above it, with the way to
+  where it is done and to the home.
+- A page that posts a command doing a step also waits for app to have
+  followed the step before it sends the browser on (`tutorial::noted`), so
+  the next page leads to the next step. Only when the api wrote something:
+  settings saved as they stood, or an item said as it already was, do no
+  step and are not waited for.
+- With the script of the groceries, the step shown above them goes away
+  once an item is checked, the page not being read again.
+- The home skips it (`POST /tutorial/skip`), and the settings skip it and
+  start it over. Skipped, no page shows it; the steps done stay done. Once
+  every step is done the home says so, and closing it skips it.
+- Started over, no step is done, whatever the user already has: each is
+  done again by the next command that does it.
+
 ## Read models
 
 app reads the aggregates `imkitchen-aggregates` lists for it
@@ -406,8 +449,9 @@ that is the recipes, of which app keeps all each one says, whose it is and
 the picture it shows (`src/recipes.rs`), and the plats, its dishes: the name
 of each, whose it is and the recipes it names (`src/dishes.rs`), the list
 of each user, the meals it names (`src/list.rs`), what each user says of
-their groceries, item by item (`src/groceries.rs`), and the settings of each
-user who set some (`src/settings.rs`).
+their groceries, item by item (`src/groceries.rs`), the settings of each
+user who set some (`src/settings.rs`), and the tutorial of each user who
+did a step of it or skipped it (`src/tutorial.rs`).
 
 To show something else of imkitchen:
 
