@@ -99,6 +99,16 @@ pub const MIGRATIONS: Migrations<'static> = Migrations::new(
                 language TEXT
             );",
         ),
+        Migration::up(
+            "0005_lists",
+            // One row per user whose list was ever filled: its meals in the
+            // order they were planned (`entries` as JSON), each naming a
+            // recipe or a dish and how many it is cooked for.
+            "CREATE TABLE lists (
+                owner_id TEXT NOT NULL PRIMARY KEY,
+                entries TEXT NOT NULL
+            );",
+        ),
     ],
 );
 

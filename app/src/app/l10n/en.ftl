@@ -147,7 +147,35 @@ dish_save = Save the dish
 
 list_meta_title = List — imkitchen
 list_title = List
-list_text = The dishes and the recipes of your week, generated or chosen one by one.
+list_generate = Generate my list
+list_generate_hint = Generating draws your meals from your dishes and your recipes, as your settings say, in place of what the list holds.
+list_add = Add a meal
+list_none = Your list is empty. Generate it, or add the meals you choose.
+list_meals =
+    { $count ->
+        [one] { $count } meal
+       *[other] { $count } meals
+    }
+list_generated = Your list is generated.
+list_added = The meal is on your list.
+list_replaced = The meal is replaced.
+list_removed = The meal is off your list.
+list_replace = Replace
+list_replace_of = Replace { $title }
+list_remove = Remove
+list_remove_of = Remove { $title }
+
+pick_add_meta_title = Add a meal — imkitchen
+pick_add_title = Add a meal
+pick_replace_meta_title = Replace a meal — imkitchen
+pick_replace_title = Replace a meal
+pick_replaces = In place of { $title }.
+pick_search_label = Name, title or ingredient
+pick_choose = Choose
+pick_choose_of = Choose { $title }
+pick_none_found = Nothing is found.
+pick_nothing = You have no recipe yet, and a meal is one of your recipes or of your dishes.
+pick_more = Only the most recent are shown here: search to find another.
 
 groceries_meta_title = Groceries — imkitchen
 groceries_title = Groceries

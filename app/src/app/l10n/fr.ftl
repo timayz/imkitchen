@@ -147,7 +147,35 @@ dish_save = Enregistrer le plat
 
 list_meta_title = Liste — imkitchen
 list_title = Liste
-list_text = Les plats et les recettes de votre semaine, générés ou choisis un par un.
+list_generate = Générer ma liste
+list_generate_hint = Générer tire vos repas de vos plats et de vos recettes, selon vos réglages, à la place de ce que la liste contient.
+list_add = Ajouter un repas
+list_none = Votre liste est vide. Générez-la, ou ajoutez les repas que vous choisissez.
+list_meals =
+    { $count ->
+        [one] { $count } repas
+       *[other] { $count } repas
+    }
+list_generated = Votre liste est générée.
+list_added = Le repas est sur votre liste.
+list_replaced = Le repas est remplacé.
+list_removed = Le repas n’est plus sur votre liste.
+list_replace = Remplacer
+list_replace_of = Remplacer { $title }
+list_remove = Retirer
+list_remove_of = Retirer { $title }
+
+pick_add_meta_title = Ajouter un repas — imkitchen
+pick_add_title = Ajouter un repas
+pick_replace_meta_title = Remplacer un repas — imkitchen
+pick_replace_title = Remplacer un repas
+pick_replaces = À la place de { $title }.
+pick_search_label = Nom, titre ou ingrédient
+pick_choose = Choisir
+pick_choose_of = Choisir { $title }
+pick_none_found = Rien n’est trouvé.
+pick_nothing = Vous n’avez pas encore de recette, et un repas est l’une de vos recettes ou l’un de vos plats.
+pick_more = Seuls les plus récents sont affichés ici : cherchez pour en trouver un autre.
 
 groceries_meta_title = Courses — imkitchen
 groceries_title = Courses
