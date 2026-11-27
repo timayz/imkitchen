@@ -73,5 +73,6 @@ actions = ["android.intent.action.MAIN"]
 categories = ["android.intent.category.LAUNCHER"]
 
 [package.metadata.cargo-machete]
-# Named for the feature it turns on.
-ignored = ["i-slint-common"]
+# i-slint-common is named for the feature it turns on; slint-build is used by
+# the build script, where machete does not look.
+ignored = ["i-slint-common", "slint-build"]
