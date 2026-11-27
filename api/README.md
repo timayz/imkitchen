@@ -52,8 +52,8 @@ done with it.
 
 A command has answered once its events are written, and the thing it wrote
 reads as it left it (`GET /v1/recipes/{id}`). The lists follow a moment
-later: the api's own (`GET /v1/recipes`) and those www and admin build from
-the events.
+later: the api's own (`GET /v1/recipes`) and those www, admin and app build
+from the events.
 
 ## Lists
 
@@ -359,18 +359,18 @@ Messages are worded in the language the request asks for with
 and French (`fr`). The answer says which it used with `Content-Language`.
 Codes are the same in every language.
 
-## Events for www and admin
+## Events for www, admin and app
 
-www and admin keep read models of their own and build them from the api's
-events. They do not ask for them over HTTP: with a `[sidecars]` section in
-its configuration, the api listens on a second port that speaks evento's
+www, admin and app keep read models of their own and build them from the
+api's events. They do not ask for them over HTTP: with a `[sidecars]` section
+in its configuration, the api listens on a second port that speaks evento's
 remote protocol, and each of them follows it as an evento `Sidecar`, the
 events read from the api, the cursors of its subscriptions and its read
 models kept in a store of its own.
 
 ```rust
 let client = evento::RemoteClient::builder("api:4000")
-    .token(token)          // sidecars.tokens.www or .admin
+    .token(token)          // sidecars.tokens.www, .admin or .app
     .connect_lazy();       // the sidecar starts whether the api answers or not
 let executor = evento::Sidecar::new(client, local_store);
 subscription.supervised().start(&executor).await?;

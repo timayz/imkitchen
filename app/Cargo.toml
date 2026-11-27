@@ -3,3 +3,26 @@ name = "imkitchen-app"
 version = "1.13.0"
 edition.workspace = true
 authors.workspace = true
+
+[dependencies]
+tokio.workspace = true
+serde.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+clap.workspace = true
+config.workspace = true
+topcoat = { workspace = true, features = ["anyhow", "asset", "compression", "discover", "l10n-fluent", "metadata", "router", "serve", "tailwind", "view"] }
+# The store of the read models, and the client of the api's listener.
+evento = { workspace = true, features = ["turso", "remote"] }
+imkitchen-aggregates.workspace = true
+timada-core.workspace = true
+tokio-rustls.workspace = true
+
+[build-dependencies]
+topcoat = { workspace = true, features = ["tailwind"] }
+
+[dev-dependencies]
+# The listener app follows, as the api serves it.
+imkitchen-api = { path = "../api" }
+tempfile.workspace = true

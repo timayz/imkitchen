@@ -1,5 +1,5 @@
 //! The aggregates of imkitchen and their events: what the api writes, and
-//! what www and admin build their read models from.
+//! what www, admin and app build their read models from.
 //!
 //! The api is the only one that writes them. A sidecar follows them through
 //! the api's listener (`[sidecars]` in the api's configuration), which serves

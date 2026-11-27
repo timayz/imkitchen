@@ -40,6 +40,7 @@ fn config() -> SidecarsConfig {
         tokens: SidecarTokens {
             www: Some(Secret::new(WWW_TOKEN)),
             admin: Some(Secret::new(ADMIN_TOKEN)),
+            app: None,
         },
     }
 }
@@ -400,6 +401,7 @@ async fn a_connection_without_the_token_of_a_sidecar_is_refused() {
         tokens: SidecarTokens {
             www: None,
             admin: Some(Secret::new(ADMIN_TOKEN)),
+            app: None,
         },
         ..config()
     };

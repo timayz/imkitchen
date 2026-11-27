@@ -1,4 +1,4 @@
-.PHONY: start dev run migrate cluster.all www.dev www.run www.migrate admin.dev admin.run admin.migrate cert cert.install up stop down health ready lint fmt-check fmt test machete l10n check
+.PHONY: start dev run migrate cluster.all www.dev www.run www.migrate admin.dev admin.run admin.migrate app.dev app.run app.migrate cert cert.install up stop down health ready lint fmt-check fmt test machete l10n check
 
 # Traefik and the mail catcher, then the api: what a bare `make` runs.
 start: up dev
@@ -9,17 +9,20 @@ API_ARGS := $(if $(API_CONFIG),--config $(API_CONFIG) )serve
 
 API_MIGRATE_ARGS := $(if $(API_CONFIG),--config $(API_CONFIG) )migrate
 
-# What www and admin open their connections to the local api with: for local
-# use only.
+# What www, admin and app open their connections to the local api with: for
+# local use only.
 DEV_WWW_TOKEN := local-dev-only-not-a-secret-www-0000
 DEV_ADMIN_TOKEN := local-dev-only-not-a-secret-admin-0000
+DEV_APP_TOKEN := local-dev-only-not-a-secret-app-0000
 
-# The local api serves the sidecars (www, admin) on 4000, the node N of the
-# local cluster on 400N. Set here rather than in a file so that `make dev`,
-# `make www.dev` and `make admin.dev` agree without one.
+# The local api serves the sidecars (www, admin, app) on 4000, the node N of
+# the local cluster on 400N. Set here rather than in a file so that
+# `make dev`, `make www.dev`, `make admin.dev` and `make app.dev` agree
+# without one.
 API_SIDECARS_ENV = IMKITCHEN_API__SIDECARS__LISTEN=127.0.0.1:$(1) \
 	IMKITCHEN_API__SIDECARS__TOKENS__WWW=$(DEV_WWW_TOKEN) \
-	IMKITCHEN_API__SIDECARS__TOKENS__ADMIN=$(DEV_ADMIN_TOKEN)
+	IMKITCHEN_API__SIDECARS__TOKENS__ADMIN=$(DEV_ADMIN_TOKEN) \
+	IMKITCHEN_API__SIDECARS__TOKENS__APP=$(DEV_APP_TOKEN)
 
 # Optional local overrides for www, ignored by git. `topcoat dev` passes no
 # arguments to the binary, so the config path travels through the environment
@@ -33,6 +36,11 @@ WWW_ENV := $(if $(WWW_CONFIG),IMKITCHEN_WWW_CONFIG=$(WWW_CONFIG) )IMKITCHEN_WWW_
 # IMKITCHEN_ADMIN__API__EVENTS.
 ADMIN_CONFIG := $(wildcard admin/config/dev.local.toml)
 ADMIN_ENV := $(if $(ADMIN_CONFIG),IMKITCHEN_ADMIN_CONFIG=$(ADMIN_CONFIG) )IMKITCHEN_ADMIN__API__TOKEN=$(DEV_ADMIN_TOKEN)
+
+# And for app: app/config/dev.local.toml, IMKITCHEN_APP_CONFIG and
+# IMKITCHEN_APP__API__EVENTS.
+APP_CONFIG := $(wildcard app/config/dev.local.toml)
+APP_ENV := $(if $(APP_CONFIG),IMKITCHEN_APP_CONFIG=$(APP_CONFIG) )IMKITCHEN_APP__API__TOKEN=$(DEV_APP_TOKEN)
 
 # One node of the local three-node cluster (api/config/cluster.toml): node N
 # serves HTTP on 300N, talks to the others on 700N (the store) and 710N (the
@@ -97,6 +105,20 @@ admin.run: admin.migrate
 admin.migrate:
 	$(ADMIN_ENV) cargo run -p imkitchen-admin -- migrate
 
+# Run app at http://localhost:3030 against the local api, the way
+# `make www.dev` runs www.
+app.dev: app.migrate
+	$(APP_ENV) topcoat dev -p imkitchen-app
+
+# Run app once, with the assets it serves bundled next to its binary
+app.run: app.migrate
+	topcoat asset bundle -p imkitchen-app
+	$(APP_ENV) cargo run -p imkitchen-app
+
+# Create app's store if needed and apply its pending migrations
+app.migrate:
+	$(APP_ENV) cargo run -p imkitchen-app -- migrate
+
 # The certificate Traefik serves the local addresses with (.docker/traefik).
 # `make cert.install` once makes the browser trust it.
 cert:
@@ -108,8 +130,10 @@ cert.install:
 
 # Traefik in front of what runs on the host, and the mail catcher:
 # https://imkitchen.localhost is www (`make www.dev`),
-# https://admin.imkitchen.localhost admin (`make admin.dev`), and the api (`make dev`) both
-# https://api.imkitchen.localhost and https://app.imkitchen.localhost/api.
+# https://admin.imkitchen.localhost admin (`make admin.dev`),
+# https://app.imkitchen.localhost app (`make app.dev`), and the api
+# (`make dev`) both https://api.imkitchen.localhost and
+# https://app.imkitchen.localhost/api.
 up:
 	DOCKER_GID=$$(getent group docker | cut -d: -f3) docker compose up -d --remove-orphans
 
@@ -147,10 +171,11 @@ test:
 machete:
 	cargo machete --with-metadata api aggregates www admin app
 
-# The sentences of www: a key a language lacks, one no page uses, an
+# The sentences of www and app: a key a language lacks, one no page uses, an
 # argument a page does not give.
 l10n:
 	topcoat l10n check -p imkitchen-www
+	topcoat l10n check -p imkitchen-app
 
 # Run all checks: format, lint, machete, the sentences and test (CI-ready)
 check: fmt-check lint machete l10n test

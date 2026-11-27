@@ -1,0 +1,7 @@
+/* The stylesheet of app: Tailwind's defaults until the design tokens of the
+   rewrite are there (#785). */
+
+@import "tailwindcss" source(none);
+
+/* The pages are Rust: nothing else holds a class. */
+@source "./src/**/*.rs";

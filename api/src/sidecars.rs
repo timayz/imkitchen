@@ -1,7 +1,8 @@
-//! The sidecars' listener: where www and admin read the api's events from.
+//! The sidecars' listener: where www, admin and app read the api's
+//! events from.
 //!
-//! www and admin keep read models of their own, each in a store of its own,
-//! and build them by following the events of the api (an `evento::Sidecar`:
+//! They keep read models of their own, each in a store of its own, and build
+//! them by following the events of the api (an `evento::Sidecar`:
 //! the events come from here, its cursors and snapshots stay there). This is
 //! the listener they connect to, evento's remote protocol over TCP, wrapped
 //! in TLS when the configuration gives a certificate.

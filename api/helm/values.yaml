@@ -48,6 +48,7 @@ config:
 #   IMKITCHEN_API__MAIL__SMTP_URL              smtps://user:password@host:465
 #   IMKITCHEN_API__SIDECARS__TOKENS__WWW       with sidecars.enabled, 32 characters
 #   IMKITCHEN_API__SIDECARS__TOKENS__ADMIN     or more, one each
+#   IMKITCHEN_API__SIDECARS__TOKENS__APP
 secretEnv: {}
 
 # A Secret made elsewhere that holds the same variables, in place of the one
@@ -76,7 +77,7 @@ cluster:
     # one that fills `ca.crt`.
     issuerRef: {}
 
-# The port www and admin follow the events on (evento's remote protocol, not
+# The port www, admin and app follow the events on (evento's remote protocol, not
 # HTTP), each with its token (secretEnv).
 sidecars:
   enabled: false
