@@ -31,6 +31,14 @@ API_SIDECARS_ENV = IMKITCHEN_API__SIDECARS__LISTEN=127.0.0.1:$(1) \
 DEV_MAIN_URL := https://imkitchen.localhost
 DEV_ABOUT_URL := https://about.imkitchen.localhost
 
+# www, admin and app each serve the assets bundled next to their executable,
+# and a bundle replaces whatever its directory held: built into the one
+# target/debug, the last of them to build would take the stylesheet of the
+# others away. Each gets its executable in a directory of its own
+# (target/www/debug), over the one build directory, so nothing is compiled
+# twice.
+OWN_TARGET = CARGO_BUILD_BUILD_DIR=$(CURDIR)/target CARGO_TARGET_DIR=$(CURDIR)/target/$(1)
+
 # Optional local overrides for www, ignored by git. `topcoat dev` passes no
 # arguments to the binary, so the config path travels through the environment
 # and `serve` is the default subcommand. www follows the api on 4000:
@@ -39,19 +47,22 @@ DEV_ABOUT_URL := https://about.imkitchen.localhost
 WWW_CONFIG := $(wildcard www/config/dev.local.toml)
 WWW_ENV := $(if $(WWW_CONFIG),IMKITCHEN_WWW_CONFIG=$(WWW_CONFIG) )IMKITCHEN_WWW__API__TOKEN=$(DEV_WWW_TOKEN) \
 	IMKITCHEN_WWW__SERVER__URL=$(DEV_MAIN_URL) \
-	IMKITCHEN_WWW__APP__WEB=$(DEV_MAIN_URL)/auth/sign-in
+	IMKITCHEN_WWW__APP__WEB=$(DEV_MAIN_URL)/auth/sign-in \
+	$(call OWN_TARGET,www)
 
 # The same for admin: admin/config/dev.local.toml, IMKITCHEN_ADMIN_CONFIG and
 # IMKITCHEN_ADMIN__API__EVENTS.
 ADMIN_CONFIG := $(wildcard admin/config/dev.local.toml)
-ADMIN_ENV := $(if $(ADMIN_CONFIG),IMKITCHEN_ADMIN_CONFIG=$(ADMIN_CONFIG) )IMKITCHEN_ADMIN__API__TOKEN=$(DEV_ADMIN_TOKEN)
+ADMIN_ENV := $(if $(ADMIN_CONFIG),IMKITCHEN_ADMIN_CONFIG=$(ADMIN_CONFIG) )IMKITCHEN_ADMIN__API__TOKEN=$(DEV_ADMIN_TOKEN) \
+	$(call OWN_TARGET,admin)
 
 # And for app: app/config/dev.local.toml, IMKITCHEN_APP_CONFIG and
 # IMKITCHEN_APP__API__EVENTS.
 APP_CONFIG := $(wildcard app/config/dev.local.toml)
 APP_ENV := $(if $(APP_CONFIG),IMKITCHEN_APP_CONFIG=$(APP_CONFIG) )IMKITCHEN_APP__API__TOKEN=$(DEV_APP_TOKEN) \
 	IMKITCHEN_APP__SERVER__URL=$(DEV_MAIN_URL) \
-	IMKITCHEN_APP__WWW__URL=$(DEV_ABOUT_URL)
+	IMKITCHEN_APP__WWW__URL=$(DEV_ABOUT_URL) \
+	$(call OWN_TARGET,app)
 
 # One node of the local three-node cluster (api/config/cluster.toml): node N
 # serves HTTP on 300N, talks to the others on 700N (the store) and 710N (the
@@ -96,7 +107,7 @@ www.dev: www.migrate
 
 # Run www once, with the assets it serves bundled next to its binary
 www.run: www.migrate
-	topcoat asset bundle -p imkitchen-www
+	$(WWW_ENV) topcoat asset bundle -p imkitchen-www
 	$(WWW_ENV) cargo run -p imkitchen-www
 
 # Create www's store if needed and apply its pending migrations
@@ -110,7 +121,7 @@ admin.dev: admin.migrate
 
 # Run admin once, with the assets it serves bundled next to its binary
 admin.run: admin.migrate
-	topcoat asset bundle -p imkitchen-admin
+	$(ADMIN_ENV) topcoat asset bundle -p imkitchen-admin
 	$(ADMIN_ENV) cargo run -p imkitchen-admin
 
 # Create admin's store if needed and apply its pending migrations
@@ -125,7 +136,7 @@ app.dev: app.migrate
 
 # Run app once, with the assets it serves bundled next to its binary
 app.run: app.migrate
-	topcoat asset bundle -p imkitchen-app
+	$(APP_ENV) topcoat asset bundle -p imkitchen-app
 	$(APP_ENV) cargo run -p imkitchen-app
 
 # Create app's store if needed and apply its pending migrations
