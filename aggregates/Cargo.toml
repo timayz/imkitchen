@@ -9,3 +9,5 @@ evento.workspace = true
 bitcode.workspace = true
 timada-identity.workspace = true
 timada-core.workspace = true
+# The id of a grocery item, the same to the api and to app.
+sha2.workspace = true

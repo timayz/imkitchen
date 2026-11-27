@@ -46,8 +46,6 @@ home_recipes =
 
 ## The screens
 
-screen_coming = Cet écran arrive.
-
 recipes_meta_title = Recettes — imkitchen
 recipes_title = Recettes
 recipes_new = Nouvelle recette
@@ -181,6 +179,11 @@ pick_more = Seuls les plus récents sont affichés ici : cherchez pour en trouve
 groceries_meta_title = Courses — imkitchen
 groceries_title = Courses
 groceries_text = Les ingrédients de votre liste, additionnés en ce qu’il y a à acheter.
+groceries_none = Votre liste est vide : il n’y a rien à acheter.
+groceries_fill = Remplir ma liste
+groceries_in_basket = dans le panier
+groceries_called_for = La liste en demande { $amount }
+groceries_changed = Votre liste a changé : voici ses courses telles qu’elles sont maintenant.
 
 settings_meta_title = Réglages — imkitchen
 settings_title = Réglages

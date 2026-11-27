@@ -101,10 +101,11 @@ when topcoat moves its own.
 | `src/app/_signed_in/recipes.rs`, `src/app/_signed_in/recipes/` | The recipes: the list, a recipe, the form one is written and rewritten with, the import, and the cooking screen with its script (`cook.js`). |
 | `src/app/_signed_in/dishes.rs`, `src/app/_signed_in/dishes/` | The dishes: the list, a dish, and the form one is composed and recomposed with. |
 | `src/app/_signed_in/list.rs`, `src/app/_signed_in/list/` | The list: its meals, generating it, and where a meal is picked by hand. |
+| `src/app/_signed_in/groceries.rs`, `src/app/_signed_in/groceries.js` | The groceries: what the list takes, and the items checked in the shop, with the script that checks them without reloading. |
 | `src/app/_signed_in/settings.rs` | The settings: how the list is generated, the language, and the account. |
 | `src/app/auth.rs`, `src/app/auth/` | What a visitor is shown, under `/auth`: signing in, registering, and signing out. |
 | `src/app/_app.rs`, `src/app/_app/` | What is not a page, under `/_app`: the health. |
-| `src/assets.rs` | The assets (the stylesheet, the script of the cooking screen), served under `/_app/assets`. |
+| `src/assets.rs` | The assets (the stylesheet, the scripts of the cooking screen and of the groceries), served under `/_app/assets`. |
 | `src/app/l10n/` | The sentences of the pages, one Fluent file per language. |
 | `src/api.rs` | The api over HTTP: registering, signing in and out, who a session is, and the commands. |
 | `src/session.rs` | What a browser keeps of its session: the two cookies. |
@@ -150,8 +151,7 @@ the two, or the gateway hands it to www.
 
 `/` is the home. Each screen of the application has a module under
 `src/app/_signed_in/` and is at its address: `/recipes`, `/dishes`, `/list`,
-`/groceries`, `/settings`. Nothing is shown yet on the groceries: they are
-there for the navigation to lead to.
+`/groceries`, `/settings`.
 
 One layout (`signed_in` in `src/app/_signed_in.rs`) serves the desktop and
 the phone. The navigation between the screens is a bar that stays at the
@@ -270,8 +270,8 @@ them on a phone). It is opened from a recipe, from a meal of the list
 follow) and from a dish: `/dishes/{id}/cook` asks which of its recipes to
 cook, unless it has only one.
 
-It is the one page of app with a script (`cook.js`, an asset like the
-stylesheet). Without it the page is the whole recipe, every step in order.
+It is one of the two pages of app with a script (`cook.js`, an asset like
+the stylesheet; the other is the groceries'). Without it the page is the whole recipe, every step in order.
 With it:
 
 - One step is shown at a time, with "Previous" and "Next" (the arrow keys
@@ -292,6 +292,33 @@ With it:
 
 Every sentence the script shows is in the page, in the language it is read
 in: the script words nothing.
+
+## Groceries
+
+`/groceries` is what the list takes, to be read in the shop: the ingredients
+of every meal, for as many as it is cooked for, the same thing in the same
+unit added up, by name. Nothing of it is kept: it is worked out at every
+read from the list, the dishes and the recipes as app knows them
+(`src/groceries.rs`), the way the api works its own out
+(`imkitchen_aggregates::groceries::items`, which both call). So the
+groceries are the list's as it stands, and an item has the same id for app
+and for the api.
+
+An item is checked once it is in the basket: a command of the api's
+(`PUT` and `DELETE /v1/groceries/items/{id}/check`), which app follows into
+`grocery_marks`, so it is checked when the page is read again, here or on
+another device. What is said of an item holds for as long as the list calls
+for as much of it. An amount set elsewhere (the api's `quantity`) is shown
+in place of what the list calls for; app sets none.
+
+Each item is a form that posts to `/groceries/{id}/check` or `/uncheck`,
+which sends the browser back to the groceries. With the script
+(`groceries.js`) the item is checked at once and its form sent behind the
+page, which is not read again: what was not done is shown as it was, and
+the page says so. An item the list no longer calls for, checked from a page
+read before, sends the browser to the groceries as they now stand
+(`?done=changed`). A page left open does not follow what another device
+says: it is read again for that.
 
 ## Dishes
 
@@ -378,7 +405,8 @@ app reads the aggregates `imkitchen-aggregates` lists for it
 that is the recipes, of which app keeps all each one says, whose it is and
 the picture it shows (`src/recipes.rs`), and the plats, its dishes: the name
 of each, whose it is and the recipes it names (`src/dishes.rs`), the list
-of each user, the meals it names (`src/list.rs`), and the settings of each
+of each user, the meals it names (`src/list.rs`), what each user says of
+their groceries, item by item (`src/groceries.rs`), and the settings of each
 user who set some (`src/settings.rs`).
 
 To show something else of imkitchen:
