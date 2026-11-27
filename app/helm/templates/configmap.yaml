@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+data:
+  config.toml: |
+    [server]
+    host = "0.0.0.0"
+    port = 3030
+    shutdown_timeout_secs = {{ int .Values.config.server.shutdownTimeoutSecs }}
+
+    [database]
+    path = "/var/lib/imkitchen/app.db"
+
+    # token comes from the environment.
+    [api]
+    events = {{ .Values.config.api.events | quote }}
+    {{- if .Values.config.api.tls.secretName }}
+    tls_ca = "/etc/imkitchen-tls/api/ca.crt"
+    {{- if .Values.config.api.tls.serverName }}
+    tls_server_name = {{ .Values.config.api.tls.serverName | quote }}
+    {{- end }}
+    {{- end }}
+
+    [monitoring]
+    log_level = {{ .Values.config.monitoring.logLevel | quote }}
+    log_json = {{ .Values.config.monitoring.logJson }}
+    log_target = {{ .Values.config.monitoring.logTarget }}
+    log_line_number = {{ .Values.config.monitoring.logLineNumber }}

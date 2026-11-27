@@ -1,0 +1,3 @@
+# What CI renders the chart with: the least a release needs.
+secretEnv:
+  IMKITCHEN_APP__API__TOKEN: "the token of app in ci, 32 characters"
