@@ -15,7 +15,10 @@
 //! What was picked goes to the api as it was picked: app decides nothing of
 //! what a dish may hold. What the api refuses is said under the name, or
 //! under the recipes.
+//!
+//! A dish composed is the second step of the tutorial ([`tutorial`]).
 
+use imkitchen_aggregates::tutorial::Step;
 use reqwest::Method;
 use serde::Serialize;
 use timada_core::Rendition;
@@ -35,7 +38,7 @@ use topcoat::{
 use super::{Told, caught_up, dish_id, list, named, settled, show};
 use crate::app::_signed_in::{
     BUTTON, BUTTON_QUIET, FIELD_REFUSED, Failure, H1, H2, INPUT, LABEL, LINK, MAIN, account,
-    asking, failed, read, recipes,
+    asking, failed, read, recipes, tutorial,
 };
 use crate::app::{api, db, language, t};
 use crate::dishes::Dish;
@@ -143,8 +146,8 @@ impl Again {
 
 /// Hands what the form posted to the api: a dish to compose without `id`,
 /// the dish `id` to recompose with one. Once the api did it and app
-/// followed, the browser is sent to the dish; anything else is the form
-/// again.
+/// followed, the step of the tutorial with it when the dish is a new one,
+/// the browser is sent to the dish; anything else is the form again.
 pub(crate) async fn hand(
     cx: &Cx,
     id: Option<&str>,
@@ -171,7 +174,7 @@ pub(crate) async fn hand(
                 .create::<_, Told>(asking, &["plats"], &typed.body())
                 .await;
             if let Ok(told) = &composed {
-                caught_up(cx, told).await;
+                tokio::join!(caught_up(cx, told), tutorial::noted(cx, Step::Plat));
             }
             composed.map(|told| told.id)
         }

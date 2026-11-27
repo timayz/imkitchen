@@ -11,6 +11,9 @@
 
   const count = root.querySelector("[data-groceries-checked]");
   const failed = root.querySelector("[data-groceries-failed]");
+  // The tutorial, when the groceries are the step it is at: the last one,
+  // done by the first item said, and the tutorial with it.
+  const tutorial = document.querySelector('[data-tutorial-banner="groceries"]');
 
   const show = (item) => {
     item.li.dataset.checked = String(item.wanted);
@@ -61,6 +64,7 @@
       if (await say(item, wanted)) {
         item.said = wanted;
         failed.hidden = true;
+        if (tutorial) tutorial.hidden = true;
       } else {
         item.wanted = item.said;
         show(item);

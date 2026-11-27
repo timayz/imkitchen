@@ -19,7 +19,10 @@
 //! The picture is a command of its own, sent once the recipe is written.
 //! When the api refuses it (not a picture, too large), the recipe stays
 //! written without it, and the form says both.
+//!
+//! A recipe written is the first step of the tutorial ([`tutorial`]).
 
+use imkitchen_aggregates::tutorial::Step;
 use reqwest::Method;
 use serde::Serialize;
 use timada_core::Rendition;
@@ -40,7 +43,7 @@ use topcoat::{
 use super::{list, recipe_id, settled, show};
 use crate::app::_signed_in::{
     BUTTON, BUTTON_QUIET, FIELD_REFUSED, Failure, H1, H2, INPUT, LABEL, LINK, MAIN, account,
-    asking, failed, read,
+    asking, failed, read, tutorial,
 };
 use crate::app::{api, db, language, t};
 use crate::recipes::Recipe;
@@ -331,8 +334,10 @@ impl Again {
 
 /// Hands what the form posted to the api: a recipe to write without `id`,
 /// the recipe `id` to rewrite with one. Once the api did it and app followed,
-/// the browser is sent to the recipe; anything else is the form again.
+/// the step of the tutorial with it when the recipe is a new one, the
+/// browser is sent to the recipe; anything else is the form again.
 pub(crate) async fn hand(cx: &Cx, id: Option<&str>, multipart: Multipart) -> Result<Again> {
+    let written_anew = id.is_none();
     let mut typed = Typed::posted(multipart).await?;
     let again = |typed, failure, written| {
         Ok(Again {
@@ -381,7 +386,11 @@ pub(crate) async fn hand(cx: &Cx, id: Option<&str>, multipart: Multipart) -> Res
         let failure = Failure::of(cx, err)?;
         return again(typed, Some(failure), Some(id));
     }
-    settled(cx, &id).await;
+    if written_anew {
+        tokio::join!(settled(cx, &id), tutorial::noted(cx, Step::Recipe));
+    } else {
+        settled(cx, &id).await;
+    }
     Err(see_other(href!(show, recipe_id: id.as_str()).resolve(cx)).into())
 }
 

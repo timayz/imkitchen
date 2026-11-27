@@ -37,6 +37,11 @@ pub async fn start(executor: &Executor, db: &Db) -> Result<Vec<Subscription>> {
             .start(executor)
             .await
             .context("cannot start the settings subscription")?,
+        crate::tutorial::subscription(db.clone())
+            .supervised()
+            .start(executor)
+            .await
+            .context("cannot start the tutorial subscription")?,
     ])
 }
 

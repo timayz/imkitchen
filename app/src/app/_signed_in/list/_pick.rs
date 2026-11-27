@@ -11,6 +11,7 @@
 //! What was picked goes to the api as it was picked: what it refuses is
 //! said on the page.
 
+use imkitchen_aggregates::tutorial::Step;
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use topcoat::{
@@ -87,22 +88,23 @@ async fn hand(cx: &Cx, replaces: Option<&str>, typed: Typed) -> Result<Again> {
     };
     let language = language(cx);
     let asking = asking(cx, &language);
-    let (done, picked) = match replaces {
+    // A meal added is the fourth step of the tutorial; one replaced is not.
+    let (done, step, picked) = match replaces {
         Some(id) => {
             let entry = ["list", "entries", id];
             let replaced = api(cx)
                 .command(asking, Method::PUT, &entry, Some(&body))
                 .await;
-            (REPLACED, replaced)
+            (REPLACED, None, replaced)
         }
         None => {
             let added = api(cx)
                 .command(asking, Method::POST, &["list", "entries"], Some(&body))
                 .await;
-            (ADDED, added)
+            (ADDED, Some(Step::List), added)
         }
     };
-    let failure = changed(cx, done, picked).await?;
+    let failure = changed(cx, done, step, picked).await?;
     Ok(Again {
         typed,
         failure: Some(failure),

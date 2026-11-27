@@ -15,6 +15,7 @@ pub mod _pick;
 
 use std::collections::HashMap;
 
+use imkitchen_aggregates::tutorial::Step;
 use reqwest::Method;
 use serde::Deserialize;
 use timada_core::Rendition;
@@ -29,7 +30,7 @@ use topcoat::{
 
 use super::dishes::{self, dish_id};
 use super::recipes::{self, recipe_id};
-use super::{BUTTON, BUTTON_QUIET, Failure, H1, account, asking, failed, followed, read};
+use super::{BUTTON, BUTTON_QUIET, Failure, H1, account, asking, failed, followed, read, tutorial};
 use crate::api::CommandError;
 use crate::app::{api, db, language, t};
 use crate::list::Entry;
@@ -105,15 +106,22 @@ async fn settled(cx: &Cx) {
 }
 
 /// Sends the browser back to the list once the api did what was asked and
-/// app followed, saying `done`; or says what the api refused.
+/// app followed, saying `done`, with `step` of the tutorial when what was
+/// asked does one; or says what the api refused.
 pub(crate) async fn changed(
     cx: &Cx,
     done: &str,
+    step: Option<Step>,
     asked: Result<(), CommandError>,
 ) -> Result<Failure> {
     match asked {
         Ok(()) => {
-            settled(cx).await;
+            match step {
+                Some(step) => {
+                    tokio::join!(settled(cx), tutorial::noted(cx, step));
+                }
+                None => settled(cx).await,
+            }
             let then = href!(show).query([("done", done)]).resolve(cx);
             Err(see_other(then).into())
         }
@@ -231,7 +239,8 @@ async fn generate(cx: &Cx) -> Result<impl View> {
             None::<&()>,
         )
         .await;
-    let failure = changed(cx, GENERATED, generated).await?;
+    // The fourth step of the tutorial.
+    let failure = changed(cx, GENERATED, Some(Step::List), generated).await?;
 
     Ok(view! { content(failure: Some(failure)) })
 }
@@ -248,7 +257,7 @@ async fn remove(cx: &Cx) -> Result<impl View> {
             None::<&()>,
         )
         .await;
-    let failure = changed(cx, REMOVED, removed).await?;
+    let failure = changed(cx, REMOVED, None, removed).await?;
 
     Ok(view! { content(failure: Some(failure)) })
 }

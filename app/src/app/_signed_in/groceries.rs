@@ -14,7 +14,11 @@
 //!
 //! The script says nothing itself: every sentence it shows is in the page,
 //! in the language it is read in.
+//!
+//! An item checked or unchecked is the last step of the tutorial
+//! ([`tutorial`]).
 
+use imkitchen_aggregates::tutorial::Step;
 use reqwest::Method;
 use topcoat::{
     Result,
@@ -25,7 +29,7 @@ use topcoat::{
     view::{View, component, view},
 };
 
-use super::{BUTTON, Failure, H1, account, asking, failed, followed, list, read};
+use super::{BUTTON, Failure, H1, account, asking, failed, followed, list, read, tutorial};
 use crate::api::CommandError;
 use crate::app::{api, db, language, t};
 
@@ -61,10 +65,19 @@ fn amount(quantity: f64, unit: Option<&str>) -> String {
 
 /// Puts the item of the address in the basket (`checked`) or back among
 /// what is to buy, then sends the browser back to the groceries once app
-/// followed; or says what the api refused.
+/// followed, the step of the tutorial with it when the item changed; or
+/// says what the api refused.
 async fn said(cx: &Cx, checked: bool) -> Result<Failure> {
     let language = language(cx);
     let id = item_id(cx);
+    let (db, owner_id) = (db(cx), account(cx).id.as_str());
+    // An item said as it already was writes nothing, and does no step of
+    // the tutorial.
+    let changes = crate::groceries::of(db, owner_id)
+        .await
+        .ok()
+        .and_then(|groceries| groceries.into_iter().find(|grocery| grocery.id == id))
+        .is_some_and(|grocery| grocery.checked != checked);
     let method = if checked { Method::PUT } else { Method::DELETE };
     let asked = api(cx)
         .command(
@@ -76,16 +89,19 @@ async fn said(cx: &Cx, checked: bool) -> Result<Failure> {
         .await;
     match asked {
         Ok(()) => {
-            let (db, owner_id) = (db(cx), account(cx).id.as_str());
-            followed(|| async {
+            let shown = followed(|| async {
                 let groceries = crate::groceries::of(db, owner_id).await?;
                 // An item app does not know yet is not waited for.
                 Ok(groceries
                     .iter()
                     .find(|grocery| grocery.id == id)
                     .is_none_or(|grocery| grocery.checked == checked))
-            })
-            .await;
+            });
+            if changes {
+                tokio::join!(shown, tutorial::noted(cx, Step::Groceries));
+            } else {
+                shown.await;
+            }
             Err(see_other(href!(show).resolve(cx)).into())
         }
         // The list changed since the page was read, and calls for no such

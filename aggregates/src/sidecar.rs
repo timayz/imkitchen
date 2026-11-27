@@ -12,6 +12,7 @@ use crate::recipe::Recipe;
 use crate::recipe_import::RecipeImport;
 use crate::settings::Settings;
 use crate::suspension::Suspension;
+use crate::tutorial::Tutorial;
 
 /// One of the applications that build read models of their own from the
 /// api's events.
@@ -65,14 +66,15 @@ impl Sidecar {
                 ContactMessage::aggregate_type(),
             ],
             // What a user reads in app: their recipes, the plats they
-            // compose of them, their list, what they say of its groceries
-            // and their settings.
+            // compose of them, their list, what they say of its groceries,
+            // their settings and how far they are through the tutorial.
             Sidecar::App => vec![
                 Recipe::aggregate_type(),
                 Plat::aggregate_type(),
                 List::aggregate_type(),
                 Groceries::aggregate_type(),
                 Settings::aggregate_type(),
+                Tutorial::aggregate_type(),
             ],
         }
     }

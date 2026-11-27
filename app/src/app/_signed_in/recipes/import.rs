@@ -5,6 +5,7 @@
 //! to rewrite like one they wrote, and the browser is sent to it. A page
 //! the api cannot read, or reads no recipe on, is said as the api words it.
 
+use imkitchen_aggregates::tutorial::Step;
 use serde::{Deserialize, Serialize};
 use topcoat::{
     Result,
@@ -16,7 +17,7 @@ use topcoat::{
 
 use super::{Told, caught_up, list, recipe_id, show};
 use crate::app::_signed_in::{
-    BUTTON, FIELD_REFUSED, Failure, H1, INPUT, LABEL, LINK, MAIN, asking, failed,
+    BUTTON, FIELD_REFUSED, Failure, H1, INPUT, LABEL, LINK, MAIN, asking, failed, tutorial,
 };
 use crate::app::{api, language, t};
 
@@ -40,7 +41,8 @@ async fn submit(cx: &Cx, Form(posted): Form<Posted>) -> Result<impl View> {
         .await;
     let failure = match imported {
         Ok(told) => {
-            caught_up(cx, &told).await;
+            // A recipe imported is the first step of the tutorial too.
+            tokio::join!(caught_up(cx, &told), tutorial::noted(cx, Step::Recipe));
             let then = href!(show, recipe_id: told.id.as_str()).resolve(cx);
             return Err(see_other(then).into());
         }

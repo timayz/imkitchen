@@ -191,8 +191,8 @@ struct Http {
     /// What mails the codes.
     mailing: Subscription,
     /// What the api does on its own time besides: its lists of the recipes
-    /// and of the plats, and what is deleted taken out of the plats and off
-    /// the lists.
+    /// and of the plats, what is deleted taken out of the plats and off the
+    /// lists, and the steps of the tutorials noted as the users do them.
     following: Vec<Subscription>,
     stop: oneshot::Sender<()>,
     served: JoinHandle<()>,
@@ -267,6 +267,10 @@ impl Api {
                 .await
                 .unwrap(),
             imkitchen_api::list::subscription()
+                .start(&self.executor)
+                .await
+                .unwrap(),
+            imkitchen_api::tutorial::subscription()
                 .start(&self.executor)
                 .await
                 .unwrap(),
@@ -1051,7 +1055,7 @@ async fn every_screen_is_reached_from_every_other() {
 
     // The home is no screen of the navigation: its name leads to it.
     let page = reader.get(&router, "/").await.body;
-    assert!(!page.contains("aria-current"), "{page}");
+    assert!(!page.contains("aria-current=\"page\""), "{page}");
 
     for (address, name, _) in SCREENS {
         let Answer {
@@ -3800,6 +3804,374 @@ async fn the_groceries_are_what_the_list_takes_and_are_checked_in_the_shop() {
         .post(&router, &format!("/groceries/{flour}/check"), &[])
         .await;
     assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, SIGN_IN));
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+/// Where the tutorial is skipped from the home.
+const SKIP_TUTORIAL: &str = "/tutorial/skip";
+
+/// The banner of `page`: the step of the tutorial the reader is at, above
+/// the pages but the home.
+fn banner(page: &str) -> Option<&str> {
+    let at = page.find("data-tutorial-banner=\"")?;
+    let from = page[..at].rfind("<aside")?;
+    Some(&page[from..at + page[at..].find("</aside>")?])
+}
+
+/// The step of the tutorial the banner of `page` says the reader is at.
+fn banner_at(page: &str) -> Option<&str> {
+    let marker = "data-tutorial-banner=\"";
+    let from = page.find(marker)? + marker.len();
+    Some(&page[from..from + page[from..].find('"')?])
+}
+
+/// The step the tutorial on the home says the reader is at (`none` once
+/// every step is done), when the home shows it.
+fn tutorial_at(page: &str) -> Option<&str> {
+    let marker = "data-tutorial=\"";
+    let from = page.find(marker)? + marker.len();
+    Some(&page[from..from + page[from..].find('"')?])
+}
+
+/// What the tutorial on the home shows of `step`.
+fn step<'a>(page: &'a str, step: &str) -> &'a str {
+    let at = page
+        .find(&format!("data-tutorial-step=\"{step}\""))
+        .unwrap_or_else(|| panic!("no step {step} in {page}"));
+    let from = page[..at].rfind("<li").unwrap();
+    &page[from..at + page[at..].find("</li>").unwrap()]
+}
+
+/// Whether the home shows each of `steps` done (`true`) or ahead.
+fn steps_done(page: &str, steps: &[&str], done: bool) -> bool {
+    let marker = format!("data-completed=\"{done}\"");
+    steps.iter().all(|word| step(page, word).contains(&marker))
+}
+
+/// What the settings show of their part `name`.
+fn part<'a>(page: &'a str, name: &str) -> &'a str {
+    let at = page
+        .find(&format!("data-part=\"{name}\""))
+        .unwrap_or_else(|| panic!("no part {name} in {page}"));
+    let from = page[..at].rfind("<section").unwrap();
+    &page[from..at + page[at..].find("</section>").unwrap()]
+}
+
+#[tokio::test]
+async fn a_new_user_is_walked_through_the_tutorial_by_what_they_do() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "en").await;
+    let token = api.root_token().await;
+    let all = ["recipe", "plat", "settings", "list", "groceries"];
+
+    // Every step ahead: the home shows them all, the first where it leads
+    // to, and the way to skip them.
+    let page = cook.get(&router, "/").await.body;
+    assert_eq!(tutorial_at(&page), Some("recipe"), "{page}");
+    assert!(page.contains(">Get started</h2>"), "{page}");
+    assert!(steps_done(&page, &all, false), "{page}");
+    let first = step(&page, "recipe");
+    assert!(first.contains("aria-current=\"step\""), "{first}");
+    assert!(first.contains(&format!("href=\"{NEW_RECIPE}\"")), "{first}");
+    assert!(first.contains(&format!("href=\"{IMPORT}\"")), "{first}");
+    assert!(!step(&page, "plat").contains("aria-current"), "{page}");
+    assert!(
+        step(&page, "settings").contains(&format!("href=\"{SETTINGS}\"")),
+        "{page}"
+    );
+    assert!(
+        page.contains(&format!("action=\"{SKIP_TUTORIAL}\"")),
+        "{page}"
+    );
+    // The home has the whole tutorial, and no banner: the other pages have
+    // the step the reader is at, where it is done and the way home.
+    assert_eq!(banner(&page), None, "{page}");
+    let page = cook.get(&router, RECIPES).await.body;
+    let at = banner(&page).unwrap();
+    assert!(at.contains("data-tutorial-banner=\"recipe\""), "{at}");
+    assert!(at.contains(&format!("href=\"{NEW_RECIPE}\"")), "{at}");
+    assert!(at.contains(&format!("href=\"{IMPORT}\"")), "{at}");
+    assert!(at.contains("href=\"/\""), "{at}");
+
+    // A recipe written: the page the browser is sent to leads to the next
+    // step, which the api noted a moment after the recipe.
+    let answer = cook.write(&router, NEW_RECIPE, &CREPES, None).await;
+    let crepes = recipe_sent_to(&answer);
+    let page = cook.get(&router, &answer.location).await.body;
+    let at = banner(&page).unwrap();
+    assert!(at.contains("data-tutorial-banner=\"plat\""), "{at}");
+    assert!(at.contains(&format!("href=\"{NEW_DISH}\"")), "{at}");
+
+    // A dish composed of it.
+    let composed = [("name", "Crêpes party"), ("recipe_ids", crepes.as_str())];
+    let answer = cook.post(&router, NEW_DISH, &composed).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let page = cook.get(&router, &answer.location).await.body;
+    assert_eq!(banner_at(&page), Some("settings"), "{page}");
+
+    // Where they left it, on another device too.
+    let mut elsewhere = Browser::signed_in(&router, "en").await;
+    let page = elsewhere.get(&router, "/").await.body;
+    assert_eq!(tutorial_at(&page), Some("settings"), "{page}");
+    assert!(steps_done(&page, &all[..2], true), "{page}");
+    assert!(steps_done(&page, &all[2..], false), "{page}");
+    assert!(
+        step(&page, "settings").contains("aria-current=\"step\""),
+        "{page}"
+    );
+
+    // The settings saved as they stand write nothing, and do no step:
+    // nothing is waited for (five seconds at most, when something is).
+    let defaults = [
+        ("servings", "4"),
+        ("meals", "7"),
+        ("sources", "plats_and_recipes"),
+    ];
+    let started = tokio::time::Instant::now();
+    let answer = cook.post(&router, "/settings/list", &defaults).await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/settings?done=list"),
+        "{}",
+        answer.body
+    );
+    assert!(started.elapsed() < Duration::from_secs(5));
+    let page = cook.get(&router, &answer.location).await.body;
+    assert_eq!(banner_at(&page), Some("settings"), "{page}");
+    // Changed, they do it.
+    let list = [("servings", "2"), ("meals", "1"), ("sources", "recipes")];
+    let answer = cook.post(&router, "/settings/list", &list).await;
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let page = cook.get(&router, &answer.location).await.body;
+    assert_eq!(banner_at(&page), Some("list"), "{page}");
+
+    // The list generated: the api draws from its own list of the recipes,
+    // a moment behind what was written.
+    eventually("the api to list the recipe", || async {
+        let (_, recipes) = api
+            .call(reqwest::Method::GET, "/v1/recipes", Some(&token), json!({}))
+            .await;
+        (recipes["recipes"].as_array().map_or(0, Vec::len) == 1).then_some(())
+    })
+    .await;
+    let answer = cook.post(&router, "/list/generate", &[]).await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/list?done=generated"),
+        "{}",
+        answer.body
+    );
+    let page = cook.get(&router, &answer.location).await.body;
+    let at = banner(&page).unwrap();
+    assert!(at.contains("data-tutorial-banner=\"groceries\""), "{at}");
+    assert!(at.contains(&format!("href=\"{GROCERIES}\"")), "{at}");
+
+    // An item of the groceries checked: the last step. No page shows a step
+    // any more, and the home says the tutorial is done, until it is
+    // closed.
+    let page = cook.get(&router, GROCERIES).await.body;
+    let shown = items(&page);
+    let flour = shown
+        .iter()
+        .find(|id| item(&page, id).contains("flour"))
+        .unwrap_or_else(|| panic!("no flour in {page}"));
+    let answer = cook
+        .post(&router, &format!("/groceries/{flour}/check"), &[])
+        .await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, GROCERIES),
+        "{}",
+        answer.body
+    );
+    let page = cook.get(&router, GROCERIES).await.body;
+    assert_eq!(banner(&page), None, "{page}");
+    let page = cook.get(&router, "/").await.body;
+    assert_eq!(tutorial_at(&page), Some("none"), "{page}");
+    assert!(
+        page.contains(">You went through the tutorial</h2>"),
+        "{page}"
+    );
+    assert!(steps_done(&page, &all, true), "{page}");
+    assert!(!page.contains("aria-current=\"step\""), "{page}");
+    assert!(page.contains("Close the tutorial"), "{page}");
+    // The api says the same, and so does the other device, in its
+    // language.
+    let (status, told) = api
+        .call(
+            reqwest::Method::GET,
+            "/v1/tutorial",
+            Some(&token),
+            json!({}),
+        )
+        .await;
+    assert_eq!(status, 200, "{told}");
+    assert_eq!(told["completed"], json!(true), "{told}");
+    assert_eq!(told["skipped"], json!(false), "{told}");
+    elsewhere.language = "fr".to_owned();
+    let page = elsewhere.get(&router, "/").await.body;
+    assert!(page.contains(">Vous avez fait le tutoriel</h2>"), "{page}");
+    assert!(page.contains("Fermer le tutoriel"), "{page}");
+
+    // Closed: the home shows it no more, and the settings start it over.
+    let answer = cook.post(&router, SKIP_TUTORIAL, &[]).await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/"),
+        "{}",
+        answer.body
+    );
+    let page = cook.get(&router, "/").await.body;
+    assert_eq!(tutorial_at(&page), None, "{page}");
+    assert!(page.contains("data-recipes=\"1\""), "{page}");
+    let page = cook.get(&router, SETTINGS).await.body;
+    let tutorial = part(&page, "tutorial");
+    assert!(tutorial.contains("data-state=\"completed\""), "{tutorial}");
+    assert!(
+        tutorial.contains("action=\"/settings/tutorial/restart\""),
+        "{tutorial}"
+    );
+    assert!(
+        !tutorial.contains("action=\"/settings/tutorial/skip\""),
+        "{tutorial}"
+    );
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn the_tutorial_is_skipped_and_started_over_from_the_settings() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "en").await;
+    let token = api.root_token().await;
+
+    // Nothing done: it can be skipped, and there is nothing to start over.
+    let page = cook.get(&router, SETTINGS).await.body;
+    let tutorial = part(&page, "tutorial");
+    assert!(tutorial.contains("data-state=\"under_way\""), "{tutorial}");
+    assert!(tutorial.contains("href=\"/\""), "{tutorial}");
+    assert!(
+        tutorial.contains("action=\"/settings/tutorial/skip\""),
+        "{tutorial}"
+    );
+    assert!(
+        !tutorial.contains("action=\"/settings/tutorial/restart\""),
+        "{tutorial}"
+    );
+    assert!(!page.contains("data-done"), "{page}");
+
+    // A step done: there is something to start over.
+    let answer = cook.write(&router, NEW_RECIPE, &CREPES, None).await;
+    recipe_sent_to(&answer);
+    let page = cook.get(&router, SETTINGS).await.body;
+    assert_eq!(banner_at(&page), Some("plat"), "{page}");
+    let tutorial = part(&page, "tutorial");
+    assert!(
+        tutorial.contains("action=\"/settings/tutorial/restart\""),
+        "{tutorial}"
+    );
+
+    // Skipped, on every device: no page shows it, and the steps done stay
+    // done.
+    let answer = cook.post(&router, "/settings/tutorial/skip", &[]).await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/settings?done=tutorial"),
+        "{}",
+        answer.body
+    );
+    let page = cook.get(&router, &answer.location).await.body;
+    assert_eq!(banner(&page), None, "{page}");
+    let tutorial = part(&page, "tutorial");
+    assert!(tutorial.contains("data-state=\"skipped\""), "{tutorial}");
+    assert!(tutorial.contains("data-done=\"tutorial\""), "{tutorial}");
+    assert!(
+        !tutorial.contains("action=\"/settings/tutorial/skip\""),
+        "{tutorial}"
+    );
+    assert!(
+        tutorial.contains("action=\"/settings/tutorial/restart\""),
+        "{tutorial}"
+    );
+    let mut elsewhere = Browser::signed_in(&router, "en").await;
+    let page = elsewhere.get(&router, "/").await.body;
+    assert_eq!(tutorial_at(&page), None, "{page}");
+    let page = elsewhere.get(&router, RECIPES).await.body;
+    assert_eq!(banner(&page), None, "{page}");
+    let (_, told) = api
+        .call(
+            reqwest::Method::GET,
+            "/v1/tutorial",
+            Some(&token),
+            json!({}),
+        )
+        .await;
+    assert_eq!(told["skipped"], json!(true), "{told}");
+    assert_eq!(
+        told["steps"][0],
+        json!({ "step": "recipe", "completed": true }),
+        "{told}"
+    );
+
+    // Started over: no step is done, the recipe written before included,
+    // and the browser is sent to the first one.
+    let answer = cook.post(&router, "/settings/tutorial/restart", &[]).await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/"),
+        "{}",
+        answer.body
+    );
+    let page = cook.get(&router, "/").await.body;
+    assert_eq!(tutorial_at(&page), Some("recipe"), "{page}");
+    let all = ["recipe", "plat", "settings", "list", "groceries"];
+    assert!(steps_done(&page, &all, false), "{page}");
+    let page = elsewhere.get(&router, RECIPES).await.body;
+    assert_eq!(banner_at(&page), Some("recipe"), "{page}");
+    let page = cook.get(&router, SETTINGS).await.body;
+    let tutorial = part(&page, "tutorial");
+    assert!(tutorial.contains("data-state=\"under_way\""), "{tutorial}");
+    assert!(
+        !tutorial.contains("action=\"/settings/tutorial/restart\""),
+        "{tutorial}"
+    );
+
+    // Skipped from the home: the browser is sent back to it.
+    let answer = cook.post(&router, SKIP_TUTORIAL, &[]).await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/"),
+        "{}",
+        answer.body
+    );
+    let page = cook.get(&router, "/").await.body;
+    assert_eq!(tutorial_at(&page), None, "{page}");
+    let page = cook.get(&router, SETTINGS).await.body;
+    assert!(
+        part(&page, "tutorial").contains("data-state=\"skipped\""),
+        "{page}"
+    );
+
+    // Nobody skips it nor starts it over without signing in.
+    for path in [
+        SKIP_TUTORIAL,
+        "/settings/tutorial/skip",
+        "/settings/tutorial/restart",
+    ] {
+        let answer = Browser::reading("en").post(&router, path, &[]).await;
+        assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, SIGN_IN), "{path}");
+    }
 
     app.stop().await;
     api.shutdown().await;
