@@ -86,6 +86,19 @@ pub const MIGRATIONS: Migrations<'static> = Migrations::new(
             );
             CREATE INDEX dishes_owned ON dishes (owner_id, created_at DESC, id DESC);",
         ),
+        Migration::up(
+            "0004_settings",
+            // One row per user who changed a setting: how their list is
+            // generated (`sources` as the api words it) and the tag of the
+            // language they read, when they chose one.
+            "CREATE TABLE settings (
+                user_id TEXT NOT NULL PRIMARY KEY,
+                servings INTEGER NOT NULL,
+                meals INTEGER NOT NULL,
+                sources TEXT NOT NULL,
+                language TEXT
+            );",
+        ),
     ],
 );
 

@@ -100,6 +100,7 @@ when topcoat moves its own.
 | `src/app/_signed_in.rs`, `src/app/_signed_in/` | What a signed-in user reads: who is let through, the layout and its navigation, the home, each screen at the address of its module. |
 | `src/app/_signed_in/recipes.rs`, `src/app/_signed_in/recipes/` | The recipes: the list, a recipe, the form one is written and rewritten with, and the import. |
 | `src/app/_signed_in/dishes.rs`, `src/app/_signed_in/dishes/` | The dishes: the list, a dish, and the form one is composed and recomposed with. |
+| `src/app/_signed_in/settings.rs` | The settings: how the list is generated, the language, and the account. |
 | `src/app/auth.rs`, `src/app/auth/` | What a visitor is shown, under `/auth`: signing in, registering, and signing out. |
 | `src/app/_app.rs`, `src/app/_app/` | What is not a page, under `/_app`: the health. |
 | `src/assets.rs` | The assets, served under `/_app/assets`. |
@@ -107,7 +108,7 @@ when topcoat moves its own.
 | `src/api.rs` | The api over HTTP: registering, signing in and out, who a session is, and the commands. |
 | `src/session.rs` | What a browser keeps of its session: the two cookies. |
 | `src/events.rs` | The connection to the api's events. |
-| `src/recipes.rs`, `src/dishes.rs` | The read models: the subscription of each and what the pages read from it. |
+| `src/recipes.rs`, `src/dishes.rs`, `src/settings.rs` | The read models: the subscription of each and what the pages read from it. |
 | `src/subscriptions.rs` | Every subscription app runs. |
 | `src/db.rs` | The store and the migrations of its tables. |
 | `Dockerfile`, `builder.Dockerfile`, `helm/` | The image and the chart app is deployed with. |
@@ -148,8 +149,8 @@ the two, or the gateway hands it to www.
 
 `/` is the home. Each screen of the application has a module under
 `src/app/_signed_in/` and is at its address: `/recipes`, `/dishes`, `/list`,
-`/groceries`, `/settings`. Nothing is shown on them yet but the recipes and
-the dishes: the others are there for the navigation to lead to.
+`/groceries`, `/settings`. Nothing is shown yet on the list and on the
+groceries: they are there for the navigation to lead to.
 
 One layout (`signed_in` in `src/app/_signed_in.rs`) serves the desktop and
 the phone. The navigation between the screens is a bar that stays at the
@@ -164,8 +165,10 @@ Classes are Tailwind's, found in the `.rs` files when the crate is built.
 
 ## Languages
 
-A page is read in the language the browser prefers (`Accept-Language`) among
-those app speaks, English otherwise: its address is the same in each. A page
+A page is read in the language its reader set (`/settings`), on every
+device they sign in on. For who set none, and for a visitor, it is the
+language the browser prefers (`Accept-Language`) among those app speaks,
+English otherwise. The address of a page is the same in each. A page
 names a sentence by its key, `t!(home_title)`. A language is spoken once it
 has a file in `src/app/l10n/`. `make l10n` tells a key a language lacks, a
 sentence no page uses and an argument a page does not give.
@@ -283,13 +286,38 @@ left it. The Enter key in a field searches. Nothing is written until the
 form is saved (`POST /v1/plats`, `PUT /v1/plats/{id}`), and what the api
 refuses is said under the name or under the recipes.
 
+## Settings
+
+`/settings` is one page of several forms, each posted to an address of its
+own and saved as a whole by a command of the api's:
+
+| Form | Posted to | Command |
+| --- | --- | --- |
+| How the list is generated: for how many, how many meals, drawn from what | `/settings/list` | `PUT /v1/settings/list` |
+| The language | `/settings/language` | `PUT /v1/settings/language` |
+| The name of the account | `/settings/name` | `PUT /v1/account/profile` |
+| Its password | `/settings/password` | `PUT /v1/account/password` |
+| Signing out everywhere else | `/settings/sign-out-everywhere` | `POST /v1/account/sign-out-everywhere` |
+
+Once a part is set the browser is sent back to `/settings?done=…`, which
+says so; what the api refuses is said in the form it was asked of.
+
+The settings are the user's on every device: app follows them into its
+store, and a user who set nothing has the defaults the api has
+(`imkitchen-aggregates`). The language is what every page of a signed-in
+user is read in (`signed_in_only`); "the language of the device" leaves it
+to each browser. The account is the api's alone: its name and its address
+come with who the session signs in. A new password, and signing out
+everywhere else, end every other session and keep this one.
+
 ## Read models
 
 app reads the aggregates `imkitchen-aggregates` lists for it
 (`Sidecar::App`); the api refuses it anything else, and every write. Today
 that is the recipes, of which app keeps all each one says, whose it is and
 the picture it shows (`src/recipes.rs`), and the plats, its dishes: the name
-of each, whose it is and the recipes it names (`src/dishes.rs`).
+of each, whose it is and the recipes it names (`src/dishes.rs`), and the
+settings of each user who set some (`src/settings.rs`).
 
 To show something else of imkitchen:
 

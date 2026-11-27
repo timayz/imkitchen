@@ -20,6 +20,12 @@ pub enum Settings {
     LanguageChanged { language: Option<String> },
 }
 
+/// How many people the list of a user who said nothing is cooked for.
+pub const DEFAULT_SERVINGS: u32 = 4;
+
+/// How many meals the generated list of a user who said nothing holds.
+pub const DEFAULT_MEALS: u32 = 7;
+
 /// What the meals of a generated list are drawn from. Persisted in events:
 /// its variants are frozen as theirs are.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Encode, Decode)]

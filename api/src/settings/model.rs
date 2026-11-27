@@ -12,7 +12,9 @@
 use axum::http::StatusCode;
 use evento::metadata::Event;
 use evento::{Executor, Projection, ProjectionAggregate, WriteBuilder, WriteError};
-use imkitchen_aggregates::settings::{LanguageChanged, ListChanged, ListSources, Settings};
+use imkitchen_aggregates::settings::{
+    DEFAULT_MEALS, DEFAULT_SERVINGS, LanguageChanged, ListChanged, ListSources, Settings,
+};
 
 use crate::error::{ApiError, ApiResult};
 use crate::locale::Locale;
@@ -37,8 +39,8 @@ impl Default for ListSettings {
     /// dinners for four, of everything they have.
     fn default() -> Self {
         Self {
-            servings: 4,
-            meals: 7,
+            servings: DEFAULT_SERVINGS,
+            meals: DEFAULT_MEALS,
             sources: ListSources::default(),
         }
     }
