@@ -109,7 +109,41 @@ import_submit = Import the recipe
 
 dishes_meta_title = Dishes — imkitchen
 dishes_title = Dishes
-dishes_text = The dishes you serve, composed from your recipes.
+dishes_new = New dish
+dishes_search_label = Name of a dish
+dishes_none = You have no dish yet. Compose your first one from your recipes.
+dishes_none_found = No dish is found.
+dishes_more = More dishes
+
+dish_recipes = Recipes
+dish_recipes_count =
+    { $count ->
+        [0] No recipe
+        [one] { $count } recipe
+       *[other] { $count } recipes
+    }
+dish_no_recipe = This dish has no recipe left. Edit it to compose it again.
+dish_delete_warning = The dish is gone for good. Its recipes stay.
+dish_delete_confirm = Delete the dish
+dish_deleted = The dish is deleted.
+dish_not_deleted = The dish was not deleted
+
+dish_new_meta_title = New dish — imkitchen
+dish_new_title = New dish
+dish_edit_meta_title = Edit the dish — imkitchen
+dish_edit_title = Edit the dish
+dish_name = Name
+dish_chosen = Recipes of the dish
+dish_chosen_hint = In the order they are served. Untick a recipe to take it out.
+dish_chosen_none = No recipe yet: tick some below.
+dish_move_up = Serve { $title } earlier
+dish_move_down = Serve { $title } later
+dish_others = Your other recipes
+dish_others_hint = Tick the recipes to add: they join the dish when you save, or search again.
+dish_others_none = No other recipe is found.
+dish_others_more = Only the most recent are shown here: search to find another.
+dish_no_recipe_yet = You have no recipe yet, and a dish is composed of your recipes.
+dish_save = Save the dish
 
 list_meta_title = List — imkitchen
 list_title = List

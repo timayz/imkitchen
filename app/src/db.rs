@@ -69,6 +69,23 @@ pub const MIGRATIONS: Migrations<'static> = Migrations::new(
             DELETE FROM subscriber WHERE key = 'imkitchen-app/recipes';
             DELETE FROM dead_letter WHERE subscriber = 'imkitchen-app/recipes';",
         ),
+        Migration::up(
+            "0003_dishes",
+            // One row per dish (a plat of the api) that is not deleted, with
+            // whose it is, its name and the ids of the recipes it is made
+            // of, in the order they are served (`recipe_ids` as JSON).
+            // `search` is its name, lowercased and without accents.
+            "CREATE TABLE dishes (
+                id TEXT NOT NULL PRIMARY KEY,
+                owner_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                recipe_ids TEXT NOT NULL,
+                search TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+            );
+            CREATE INDEX dishes_owned ON dishes (owner_id, created_at DESC, id DESC);",
+        ),
     ],
 );
 

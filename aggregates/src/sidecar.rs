@@ -5,6 +5,7 @@ use evento::Aggregate;
 use crate::contact::ContactMessage;
 use crate::identity::{AccountInvitation, Session, User};
 use crate::image::Image;
+use crate::plat::Plat;
 use crate::recipe::Recipe;
 use crate::recipe_import::RecipeImport;
 use crate::suspension::Suspension;
@@ -60,8 +61,9 @@ impl Sidecar {
                 Image::aggregate_type(),
                 ContactMessage::aggregate_type(),
             ],
-            // What a user reads in app: their recipes.
-            Sidecar::App => vec![Recipe::aggregate_type()],
+            // What a user reads in app: their recipes, and the plats they
+            // compose of them.
+            Sidecar::App => vec![Recipe::aggregate_type(), Plat::aggregate_type()],
         }
     }
 }
