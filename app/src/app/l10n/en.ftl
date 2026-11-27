@@ -160,6 +160,7 @@ list_generated = Your list is generated.
 list_added = The meal is on your list.
 list_replaced = The meal is replaced.
 list_removed = The meal is off your list.
+list_cook_of = Cook { $title }
 list_replace = Replace
 list_replace_of = Replace { $title }
 list_remove = Remove
@@ -213,6 +214,26 @@ settings_sessions = Other devices
 settings_sessions_hint = Signs your account out everywhere but here.
 settings_sessions_end = Sign out everywhere else
 settings_sessions_ended = Every other device is signed out.
+
+## Cooking
+
+recipe_cook_it = Cook
+cook_meta_title = Cooking — imkitchen
+cook_stop = Stop cooking
+cook_asleep = This browser does not keep the screen awake: it may go dark while you cook.
+cook_no_step = This recipe has no step.
+cook_step = Step { $number }
+cook_step_of = Step { $number } of { $total }
+cook_timer = Then wait { $minutes } min
+cook_timer_start = Start the timer
+cook_timer_stop = Stop
+cook_timer_over = The timer is over
+cook_timer_over_of = The timer of step { $number } is over.
+cook_previous = Previous
+cook_next = Next
+cook_finish = Finish
+cook_choose_meta_title = Cook a dish — imkitchen
+cook_choose = Which recipe do you cook?
 
 ## Not found
 

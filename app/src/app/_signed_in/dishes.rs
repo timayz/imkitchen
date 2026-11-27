@@ -2,7 +2,8 @@
 //! `/dishes/{dish_id}`: one of them, the recipes it is made of in the order
 //! they are served, and the button that deletes it. A dish is composed at
 //! `/dishes/new` ([`new`]) and recomposed at `/dishes/{dish_id}/edit`
-//! ([`_form`]), by picking recipes.
+//! ([`_form`]), by picking recipes. Cooking one (`/dishes/{dish_id}/cook`)
+//! asks which of its recipes to cook.
 //!
 //! A dish names its recipes: each is shown as it now stands, and one that
 //! was deleted is no longer part of it. Someone else's dish is one that
@@ -43,6 +44,12 @@ const PAGE: usize = 24;
 
 /// What the address of the list says of a dish that was just deleted.
 const DELETED: &str = "deleted";
+
+#[query_params]
+struct Cooked {
+    /// How many the dish is cooked for, when it is a meal of the list.
+    servings: Option<String>,
+}
 
 #[query_params]
 struct Query {
@@ -309,6 +316,7 @@ pub async fn show(cx: &Cx) -> Result<impl View> {
             servings: recipe.servings,
         })
         .collect();
+    let any_part = !parts.is_empty();
 
     Ok(view! {
         <main class=(MAIN) data-dish=(dish.id)>
@@ -355,6 +363,14 @@ pub async fn show(cx: &Cx) -> Result<impl View> {
                 }
             </ol>
 
+            if any_part {
+                <p class="mt-6">
+                    <a class=(BUTTON) href=(href!(cook, dish_id: id)) data-action="cook">
+                        (t!(recipe_cook_it))
+                    </a>
+                </p>
+            }
+
             <div class="mt-12 flex flex-wrap items-start gap-3 border-t border-stone-200 pt-6 text-sm">
                 <a class=(BUTTON_QUIET) href=(href!(_form::edit, dish_id: id)) data-action="edit">
                     (t!(recipe_edit))
@@ -379,6 +395,65 @@ pub async fn show(cx: &Cx) -> Result<impl View> {
                     </form>
                 </details>
             </div>
+        </main>
+    })
+}
+
+/// Where a dish is cooked: a recipe at a time, so the page asks which. A
+/// dish of one recipe has nothing to ask, and sends the browser to it.
+/// `servings` in the address, how many the dish is cooked for when it is a
+/// meal of the list, goes with the recipe that is picked.
+#[page("./{dish_id}/cook", with(Metadata::new().title(t!(cook_choose_meta_title))))]
+pub async fn cook(cx: &Cx) -> Result<impl View> {
+    let id = dish_id(cx);
+    let Some(dish) = read(crate::dishes::get_own(db(cx), &account(cx).id, id).await)? else {
+        return Err(not_found().into());
+    };
+    let servings = query_params::<Cooked>(cx)
+        .ok()
+        .and_then(|query| query.servings.clone());
+    let mut recipes = named(cx, &dish.recipe_ids.0).await?;
+    let parts: Vec<(String, String, String)> = dish
+        .recipe_ids
+        .0
+        .iter()
+        .filter_map(|id| recipes.remove(id))
+        .map(|recipe| {
+            let cooked = href!(recipes::_cook::cook, recipe_id: recipe.id.as_str());
+            let cooked = match servings.as_deref() {
+                Some(servings) => cooked
+                    .query([("servings", servings)])
+                    .resolve(cx)
+                    .to_string(),
+                None => cooked.resolve(cx).to_string(),
+            };
+            (recipe.id, recipe.title, cooked)
+        })
+        .collect();
+    if let [(_, _, only)] = parts.as_slice() {
+        return Err(see_other(only.as_str()).into());
+    }
+    let back = href!(show, dish_id: id).resolve(cx).to_string();
+
+    Ok(view! {
+        <main class=(MAIN) data-dish=(dish.id)>
+            <p class="text-sm"><a class=(LINK) href=(back)>(dish.name)</a></p>
+            <h1 class=(class!(H1, "mt-2"))>(t!(cook_choose))</h1>
+            if parts.is_empty() {
+                <p class="mt-6 text-stone-600" data-empty="">(t!(dish_no_recipe))</p>
+            }
+            <ol class="mt-6 grid gap-3" data-recipes=(parts.len())>
+                for (id, title, cooked) in parts {
+                    <li data-recipe=(id)>
+                        <a
+                            class="block rounded-xl border border-stone-200 bg-white px-5 py-4 text-lg font-semibold wrap-break-word hover:border-stone-400"
+                            href=(cooked)
+                        >
+                            (title)
+                        </a>
+                    </li>
+                }
+            </ol>
         </main>
     })
 }

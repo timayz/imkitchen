@@ -98,13 +98,13 @@ when topcoat moves its own.
 | --- | --- |
 | `src/app.rs` | The router, the language of a page and the document every page is in. |
 | `src/app/_signed_in.rs`, `src/app/_signed_in/` | What a signed-in user reads: who is let through, the layout and its navigation, the home, each screen at the address of its module. |
-| `src/app/_signed_in/recipes.rs`, `src/app/_signed_in/recipes/` | The recipes: the list, a recipe, the form one is written and rewritten with, and the import. |
+| `src/app/_signed_in/recipes.rs`, `src/app/_signed_in/recipes/` | The recipes: the list, a recipe, the form one is written and rewritten with, the import, and the cooking screen with its script (`cook.js`). |
 | `src/app/_signed_in/dishes.rs`, `src/app/_signed_in/dishes/` | The dishes: the list, a dish, and the form one is composed and recomposed with. |
 | `src/app/_signed_in/list.rs`, `src/app/_signed_in/list/` | The list: its meals, generating it, and where a meal is picked by hand. |
 | `src/app/_signed_in/settings.rs` | The settings: how the list is generated, the language, and the account. |
 | `src/app/auth.rs`, `src/app/auth/` | What a visitor is shown, under `/auth`: signing in, registering, and signing out. |
 | `src/app/_app.rs`, `src/app/_app/` | What is not a page, under `/_app`: the health. |
-| `src/assets.rs` | The assets, served under `/_app/assets`. |
+| `src/assets.rs` | The assets (the stylesheet, the script of the cooking screen), served under `/_app/assets`. |
 | `src/app/l10n/` | The sentences of the pages, one Fluent file per language. |
 | `src/api.rs` | The api over HTTP: registering, signing in and out, who a session is, and the commands. |
 | `src/session.rs` | What a browser keeps of its session: the two cookies. |
@@ -260,6 +260,38 @@ row.
 
 A picture is shown from the api, where the browsers reach it
 (`api.public_url`): app keeps the name of its files and stores none.
+
+## Cooking
+
+`/recipes/{id}/cook` is the recipe being cooked: one step at a time, large,
+with the ingredients at hand (beside the steps on a desktop, folded above
+them on a phone). It is opened from a recipe, from a meal of the list
+(`?servings=` says how many the list cooks it for, and the quantities
+follow) and from a dish: `/dishes/{id}/cook` asks which of its recipes to
+cook, unless it has only one.
+
+It is the one page of app with a script (`cook.js`, an asset like the
+stylesheet). Without it the page is the whole recipe, every step in order.
+With it:
+
+- One step is shown at a time, with "Previous" and "Next" (the arrow keys
+  too), and "Finish" on the last.
+- The screen stays awake while the page is shown, where the browser has the
+  Screen Wake Lock (a secure context: `https`, or `localhost`). Where it
+  does not, or refuses, the page says the screen may go dark.
+- A step that says how long to wait has a timer, started by who cooks. It
+  counts down above the steps, whatever step is read; when it is over the
+  page says so, with a sound and a notification when the browser grants
+  them (the notification is asked for when a first timer is started). A
+  browser rings nothing once the tab is closed: reopened, the page says the
+  timer is over.
+- The step being read and the timers started are kept in the browser
+  (`localStorage`, `imkitchen:cook:{recipe id}`): they survive reloading the
+  page and closing the tab. Nothing of them goes to the api, nor is found on
+  another device. "Finish" and "Stop cooking" forget them.
+
+Every sentence the script shows is in the page, in the language it is read
+in: the script words nothing.
 
 ## Dishes
 

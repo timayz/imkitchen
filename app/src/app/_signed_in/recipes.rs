@@ -2,12 +2,14 @@
 //! ingredient, and `/recipes/{recipe_id}`: one of them, all it says, and
 //! the button that deletes it. A recipe is written at `/recipes/new`
 //! ([`new`]), imported from a page of the web at `/recipes/import`
-//! ([`import`]) and rewritten at `/recipes/{recipe_id}/edit` ([`_form`]).
+//! ([`import`]), rewritten at `/recipes/{recipe_id}/edit` ([`_form`]) and
+//! cooked at `/recipes/{recipe_id}/cook` ([`_cook`]).
 //! Once it is there, nothing tells one that was imported from one that was
 //! written.
 //!
 //! Someone else's recipe is one that does not exist.
 
+pub mod _cook;
 pub mod _form;
 pub mod import;
 pub mod new;
@@ -338,6 +340,11 @@ pub async fn show(cx: &Cx) -> Result<impl View> {
                     <dd data-servings=(recipe.servings)>(recipe.servings)</dd>
                 </div>
             </dl>
+            <p class="mt-6">
+                <a class=(BUTTON) href=(href!(_cook::cook, recipe_id: id)) data-action="cook">
+                    (t!(recipe_cook_it))
+                </a>
+            </p>
 
             <h2 class=(H2)>(t!(recipe_ingredients))</h2>
             <ul class="mt-4 list-disc space-y-1 pl-6" data-ingredients=(ingredients.len())>
