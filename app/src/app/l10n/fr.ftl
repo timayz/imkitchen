@@ -2,6 +2,25 @@ site_title = imkitchen
 
 nav_screens = Écrans
 nav_home = Accueil
+nav_sign_out = Se déconnecter
+
+## Signing in and registering
+
+sign_in_meta_title = Connexion — imkitchen
+sign_in_title = Connexion
+sign_in_submit = Se connecter
+sign_in_to_register = Pas encore de compte ? Créez-en un
+
+register_meta_title = Créer un compte — imkitchen
+register_title = Créer un compte
+register_submit = Créer mon compte
+register_to_sign_in = Déjà un compte ? Connectez-vous
+
+auth_email = Adresse e-mail
+auth_password = Mot de passe
+auth_code = Code
+auth_code_sent = Un code a été envoyé à cette adresse. Saisissez-le ci-dessous, avec votre mot de passe à nouveau.
+auth_failed = Ce n’est pas possible pour le moment. Réessayez dans un instant.
 
 ## The home
 

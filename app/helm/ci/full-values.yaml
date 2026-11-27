@@ -3,6 +3,7 @@ existingSecret: imkitchen-app-env
 replicaCount: 3
 config:
   api:
+    url: "http://api:3000"
     events: "api:4000"
     tls:
       secretName: api-sidecars-ca

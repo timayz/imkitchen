@@ -32,6 +32,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- .Values.existingSecret | default (printf "%s-env" (include "app.fullname" .)) }}
 {{- end }}
 
+{{/* The address users reach app at: said, or the one it is published at. */}}
+{{- define "app.url" -}}
+{{- if .Values.config.server.url }}
+{{- .Values.config.server.url }}
+{{- else if and .Values.route.enabled .Values.route.hostname }}
+{{- printf "https://%s" .Values.route.hostname }}
+{{- else }}
+{{- fail "config.server.url is required without a route: the address users reach app at" }}
+{{- end }}
+{{- end }}
+
 {{/* What app and its `migrate` both run with. */}}
 {{- define "app.env" -}}
 {{- range $name, $value := .Values.extraEnv }}

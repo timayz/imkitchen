@@ -7,6 +7,10 @@ app owns no aggregate and no command. Its pages are read from read models of
 its own, never from the api: it derives them from the api's events, which it
 follows as an evento sidecar into a store of its own.
 
+It owns no account either, and writes nothing itself: a user registers and
+signs in at the api, through app, and what they do is a command app sends to
+the api over HTTP.
+
 ## Running it
 
 ```sh
@@ -17,8 +21,14 @@ make app.dev    # app, at http://localhost:3030, in another terminal
 `make app.dev` creates app's store (`data/app.db`), then builds, serves,
 rebuilds on a change and reloads the page (`topcoat dev`). The two share a
 token of the Makefile's, for local use only. app starts whether the api runs
-or not: it serves what its store holds and catches up once the api answers.
-`GET /health` says how it stands with it (`"api": "connected"`).
+or not, and catches up with its events once the api answers:
+`GET /health` says how it stands with them (`"api": "connected"`). Nobody
+gets past signing in while the api is away.
+
+<http://localhost:3030> sends a browser that is not signed in to
+`/auth/sign-in`. Root (`auth.root` of the api) signs in with its password
+alone; anyone else registers at `/auth/register` and types the code the api
+mails (`[mail]` of the api: locally the maildev of `compose.yml`).
 
 With `make up` (Traefik, after `make cert` once) app is also at
 <https://app.imkitchen.localhost>, the api under its `/api`.
@@ -39,6 +49,12 @@ the version of the workspace's `topcoat`.
 
 What a deployment sets:
 
+- `server.url`: the address users reach app at, the main domain of
+  imkitchen. Over `https` the cookies of a session are `Secure`.
+- `api.url`: where the api answers HTTP.
+- `session.key`: what the cookie of a session is encrypted under, the same
+  for every replica. Without one a key is drawn at each start, and whoever
+  was signed in signs in again.
 - `api.events`: the `[sidecars]` listener of the api (evento's remote
   protocol over TCP, not HTTP). One node, or a name in front of several.
 - `api.token`: `sidecars.tokens.app` of the api.
@@ -72,8 +88,12 @@ when topcoat moves its own.
 
 | Path | Contents |
 | --- | --- |
-| `src/app.rs`, `src/app/` | The pages: the router, the layout and its navigation, the home, each screen at the address of its module. |
+| `src/app.rs` | The router, the language of a page and the document every page is in. |
+| `src/app/_signed_in.rs`, `src/app/_signed_in/` | What a signed-in user reads: who is let through, the layout and its navigation, the home, each screen at the address of its module. |
+| `src/app/auth.rs`, `src/app/auth/` | What a visitor is shown, under `/auth`: signing in, registering, and signing out. |
 | `src/app/l10n/` | The sentences of the pages, one Fluent file per language. |
+| `src/api.rs` | The api over HTTP: registering, signing in and out, who a session is, and the commands. |
+| `src/session.rs` | What a browser keeps of its session: the two cookies. |
 | `src/events.rs` | The connection to the api's events. |
 | `src/recipes.rs` | A read model: its subscription and what the pages read from it. |
 | `src/subscriptions.rs` | Every subscription app runs. |
@@ -84,17 +104,18 @@ when topcoat moves its own.
 ## Screens and layout
 
 `/` is the home. Each screen of the application has a module under
-`src/app/` and is at its address: `/recipes`, `/dishes`, `/list`,
+`src/app/_signed_in/` and is at its address: `/recipes`, `/dishes`, `/list`,
 `/groceries`, `/settings`. Nothing is shown on them yet: they are there for
 the navigation to lead to.
 
-One layout (`root` in `src/app.rs`) serves the desktop and the phone. The
-navigation between the screens is a bar that stays at the bottom of a phone,
-and from Tailwind's `md` up a column that stays beside the page. It is the
-same links either way, and the screen being read says so (`aria-current`).
+One layout (`signed_in` in `src/app/_signed_in.rs`) serves the desktop and
+the phone. The navigation between the screens is a bar that stays at the
+bottom of a phone, and from Tailwind's `md` up a column that stays beside
+the page. It is the same links either way, and the screen being read says
+so (`aria-current`). Signing out is beside it.
 
-A screen added under `src/app/` is also added to `screens` in `src/app.rs`,
-which is what the navigation lists.
+A screen added under `src/app/_signed_in/` is also added to `screens` in
+`src/app/_signed_in.rs`, which is what the navigation lists.
 
 Classes are Tailwind's, found in the `.rs` files when the crate is built.
 
@@ -108,12 +129,64 @@ sentence no page uses and an argument a page does not give.
 
 No search engine is to list a page (`noindex, nofollow`).
 
+## Signing in
+
+Signing in is the api's (`api/README.md`): app hands it what the forms of
+`/auth/sign-in` and `/auth/register` post and keeps the token it answers.
+Both take an address and a password, then the code the api mails to the
+address.
+
+A signed-in browser keeps two cookies, for as long as the api says the
+session lasts, closed or not:
+
+- `session`: the token, encrypted under `session.key`. No script reads it.
+- `signed_in`: the marker. It says a session is there and nothing else, and
+  opens nothing by itself. It is what the gateway in front of imkitchen
+  routes the main domain on (#822): to app when the browser sends it, to
+  www when it does not.
+
+The two are written together and taken back together. Every page a user
+reads is declared under `src/app/_signed_in/`, which asks the api whose
+session the browser keeps on each request (`signed_in_only`):
+
+- A browser that keeps nothing is sent to `/auth/sign-in`. Behind the
+  gateway this does not happen: without the marker the main domain is www.
+- A session the api no longer knows (signed out elsewhere, expired,
+  suspended), or a marker without a session, has both cookies taken back
+  and the browser sent to `/`: the main domain, which is then www.
+- While the api does not answer, the page is a `503` and the cookies stay.
+
+`POST /auth/sign-out` ends the session at the api, takes back both cookies
+and sends the browser to `/` the same way.
+
+Everything a visitor who is not signed in is shown is under `/auth`: the
+one prefix the gateway routes to app whether the marker is there or not.
+
+## Commands
+
+app writes nothing: what a user does is a command of the api's, sent with
+the token of their session (`Api::command` in `src/api.rs`): the method, the
+address under `/v1` and the JSON the command takes.
+
+```rust
+let asking = Asking { language: &language(cx), token: Some(&token) };
+api(cx).command(asking, Method::PUT, &["recipes", id], Some(&recipe)).await
+```
+
+What the api refuses comes back as it worded it (`Refusal`), in the language
+the page is read in (app asks for it with `Accept-Language`): `message` for
+the whole, and under `validation_failed` one message per field
+(`refusal.field("title")`), for the form to show beside the field. A `401`
+(`refusal.signed_out()`) is a session that ended. An api that did not answer
+is not a refusal (`CommandError::Unreachable`): whether it did what was
+asked is not known. The forms of `/auth` are the ones that post today.
+
 ## Read models
 
 app reads the aggregates `imkitchen-aggregates` lists for it
 (`Sidecar::App`); the api refuses it anything else, and every write. Today
 that is the recipes, of which app keeps how many there are and nothing they
-say: nobody signs in yet, so no page knows whose a recipe is.
+say.
 
 To show something else of imkitchen:
 

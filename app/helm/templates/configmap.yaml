@@ -9,13 +9,15 @@ data:
     [server]
     host = "0.0.0.0"
     port = 3030
+    url = {{ include "app.url" . | quote }}
     shutdown_timeout_secs = {{ int .Values.config.server.shutdownTimeoutSecs }}
 
     [database]
     path = "/var/lib/imkitchen/app.db"
 
-    # token comes from the environment.
+    # token comes from the environment, as does the key of the sessions.
     [api]
+    url = {{ .Values.config.api.url | quote }}
     events = {{ .Values.config.api.events | quote }}
     {{- if .Values.config.api.tls.secretName }}
     tls_ca = "/etc/imkitchen-tls/api/ca.crt"

@@ -2647,14 +2647,18 @@ name = "imkitchen-app"
 version = "1.13.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "clap",
  "config",
  "evento",
  "imkitchen-aggregates",
  "imkitchen-api",
+ "reqwest",
  "serde",
+ "serde_json",
  "tempfile",
  "timada-core",
+ "timada-identity",
  "tokio",
  "tokio-rustls",
  "topcoat",

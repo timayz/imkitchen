@@ -18,9 +18,17 @@ fullnameOverride: ""
 # what each key does). The store and the port are the chart's to say.
 config:
   server:
+    # The address users reach app at: the main domain of imkitchen. Over
+    # https, the cookies of a session are only ever sent encrypted. Empty:
+    # https://<route.hostname>.
+    url: ""
     # How long requests in flight get to finish when a pod is asked to stop.
     shutdownTimeoutSecs: 30
   api:
+    # Where the api answers HTTP: where users register, sign in and out,
+    # are asked about on every page, and what they do is sent as commands.
+    # Its service.
+    url: "http://imkitchen-api:3000"
     # Where app follows the api's events: the `sidecars` port of its service
     # (evento's remote protocol, not HTTP). Its token goes in secretEnv.
     events: "imkitchen-api:4000"
@@ -40,9 +48,16 @@ config:
 # The secret part of the configuration, as the environment variables app
 # reads. Kept in a Secret the chart makes:
 #
-#   IMKITCHEN_APP__API__TOKEN   what app opens its connections to the api's
-#                               events with: the api's
-#                               IMKITCHEN_API__SIDECARS__TOKENS__APP. Required.
+#   IMKITCHEN_APP__API__TOKEN     what app opens its connections to the
+#                                 api's events with: the api's
+#                                 IMKITCHEN_API__SIDECARS__TOKENS__APP.
+#                                 Required.
+#   IMKITCHEN_APP__SESSION__KEY   what the cookie of a session is encrypted
+#                                 under, 32 bytes or more
+#                                 (`openssl rand -base64 48`). Required:
+#                                 without one each pod would draw its own
+#                                 when it starts, and a user signed in by
+#                                 one would be signed out by the next.
 secretEnv: {}
 
 # A Secret made elsewhere that holds the same variables, in place of the one
