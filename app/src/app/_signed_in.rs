@@ -7,6 +7,12 @@
 //! with `_`). What it adds is who may read them: whatever is declared here
 //! or below is behind [`signed_in_only`].
 //!
+//! A page shows what the store of app holds, and nothing a user does is
+//! written there: a form posts to its page, which hands it to the api as a
+//! command (with [`token`], what the api refuses said as [`Failure`]) and
+//! sends the browser on once app followed what the api wrote
+//! ([`followed`]).
+//!
 //! One layout serves the desktop and the phone: the navigation between the
 //! screens is a column beside the page where there is room for one, and a
 //! bar under it where there is not.
@@ -19,13 +25,17 @@ pub mod list;
 pub mod recipes;
 pub mod settings;
 
+use std::future::Future;
+use std::time::Duration;
+
+use tokio::time::{Instant, sleep};
 use topcoat::{
     Error, Result,
     context::{Cx, context},
     l10n::Translation,
     router::{
         Body, Next, Slot, StatusCode,
-        error::{NotFoundError, see_other, service_unavailable},
+        error::{self, NotFoundError, see_other, service_unavailable},
         href, layer, layout, not_found, page,
         request::uri,
         response::Response,
@@ -34,7 +44,7 @@ use topcoat::{
 };
 
 use super::{api, auth, db, public, t};
-use crate::api::Account;
+use crate::api::{Account, Asking, CommandError, Refusal};
 use crate::session::{self, Kept};
 
 /// How long a browser waits before it asks again, when the api could not
@@ -44,9 +54,133 @@ const RETRY_AFTER_SECS: u64 = 5;
 // Anything else is the "not found" page, of a signed-in user's too.
 not_found!();
 
+/// How long a page waits for app to follow what a command just wrote,
+/// before it sends the browser on anyway.
+const FOLLOWED_WITHIN: Duration = Duration::from_secs(5);
+
 /// Who reads the page.
 pub(crate) fn account(cx: &Cx) -> &Account {
     context(cx)
+}
+
+/// The token of the session of who reads the page.
+struct Token(String);
+
+/// What the commands of who reads the page are sent with: their token,
+/// asking for the refusals in `language`, the one the page is read in.
+pub(crate) fn asking<'a>(cx: &'a Cx, language: &'a str) -> Asking<'a> {
+    let Token(token) = context(cx);
+    Asking {
+        language,
+        token: Some(token),
+    }
+}
+
+/// Why a command was not done, as a page says it.
+pub(crate) enum Failure {
+    /// The api refused it, and says why.
+    Refused(Refusal),
+    /// The api could not be asked.
+    Unreachable,
+}
+
+impl Failure {
+    /// What a command that failed leaves a page to say. A session that
+    /// ended is none of it: the browser is sent to the main domain, as on
+    /// any page. Nor is a thing that does not exist, or is someone else's:
+    /// that is the "not found" page.
+    pub(crate) fn of(cx: &Cx, err: CommandError) -> Result<Self> {
+        match err {
+            CommandError::Refused(refusal) if refusal.signed_out() => Err(signed_out(cx)),
+            CommandError::Refused(refusal) if refusal.status == StatusCode::NOT_FOUND.as_u16() => {
+                Err(error::not_found().into())
+            }
+            CommandError::Refused(refusal) => Ok(Self::Refused(refusal)),
+            CommandError::Unreachable(err) => {
+                tracing::warn!(
+                    err = format!("{err:#}"),
+                    "a command was not handed to the api"
+                );
+                Ok(Self::Unreachable)
+            }
+        }
+    }
+
+    /// The status of the page that says it.
+    pub(crate) fn status(&self) -> StatusCode {
+        match self {
+            Self::Refused(refusal) => {
+                StatusCode::from_u16(refusal.status).unwrap_or(StatusCode::BAD_GATEWAY)
+            }
+            Self::Unreachable => StatusCode::SERVICE_UNAVAILABLE,
+        }
+    }
+
+    /// What the api says of the field `name`, when it refused it.
+    pub(crate) fn field(&self, name: &str) -> Option<String> {
+        match self {
+            Self::Refused(refusal) => refusal.field(name).map(str::to_owned),
+            Self::Unreachable => None,
+        }
+    }
+}
+
+/// Waits until app followed what a command just wrote, so that the page
+/// the browser is sent to shows it: `shown` says whether it does. Not for
+/// long: past [`FOLLOWED_WITHIN`] the page shows it a moment later.
+pub(crate) async fn followed<F>(mut shown: impl FnMut() -> F)
+where
+    F: Future<Output = anyhow::Result<bool>>,
+{
+    let deadline = Instant::now() + FOLLOWED_WITHIN;
+    // A read that fails is the next page's to say.
+    while !shown().await.unwrap_or(true) && Instant::now() < deadline {
+        sleep(Duration::from_millis(50)).await;
+    }
+}
+
+/// A read of the store that failed, as the error of a page.
+pub(crate) fn read<T>(read: anyhow::Result<T>) -> Result<T> {
+    read.map_err(Error::from_anyhow)
+}
+
+/// The classes the pages share.
+pub(crate) const MAIN: &str = "mx-auto max-w-3xl px-4 py-8 md:px-8 md:py-12";
+pub(crate) const H1: &str = "text-3xl font-bold tracking-tight md:text-4xl";
+pub(crate) const H2: &str = "mt-10 text-xl font-semibold tracking-tight";
+pub(crate) const LINK: &str = "font-medium underline hover:text-stone-600";
+pub(crate) const LABEL: &str = "text-sm font-medium";
+pub(crate) const INPUT: &str =
+    "mt-1 block w-full rounded-lg border border-stone-300 bg-white px-3 py-2";
+pub(crate) const BUTTON: &str =
+    "rounded-lg bg-stone-900 px-5 py-3 font-semibold text-stone-50 hover:bg-stone-700";
+pub(crate) const BUTTON_QUIET: &str =
+    "rounded-lg border border-stone-300 bg-white px-5 py-3 font-semibold hover:border-stone-500";
+pub(crate) const FIELD_REFUSED: &str = "mt-1 text-sm text-red-800";
+
+/// What a command that failed leaves to say above its form: the refusal as
+/// the api worded it, or that it could not be asked.
+#[component]
+pub(crate) async fn failed(cx: &Cx, failure: Option<Failure>) -> Result<impl View> {
+    let alert = "rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-red-900";
+    let status = failure.as_ref().map(Failure::status);
+    let (refused, unreachable) = match failure {
+        Some(Failure::Refused(refusal)) => (Some((refusal.code, refusal.message)), false),
+        Some(Failure::Unreachable) => (None, true),
+        None => (None, false),
+    };
+
+    Ok(view! {
+        if let Some(status) = status {
+            (status)
+        }
+        if let Some((code, message)) = refused {
+            <p class=(alert) role="alert" data-command="refused" data-code=(code)>(message)</p>
+        }
+        if unreachable {
+            <p class=(alert) role="alert" data-command="failed">(t!(command_failed))</p>
+        }
+    })
 }
 
 /// Lets a signed-in user through, and nobody else: the api is asked whose
@@ -76,6 +210,7 @@ async fn signed_in_only(cx: &Cx, body: Body, next: Next<'_>) -> Result<Response>
             return Err(service_unavailable(RETRY_AFTER_SECS).into());
         }
     };
+    let token = Token(kept.token.clone());
     // The api extends a session that is used: so does the browser. And a
     // session never goes without its marker.
     if me.expires_at > kept.expires_at || !session::marked(cx) {
@@ -87,7 +222,7 @@ async fn signed_in_only(cx: &Cx, body: Body, next: Next<'_>) -> Result<Response>
             },
         )?;
     }
-    next.run(&cx.with(me.user), body).await
+    next.run(&cx.with(me.user).with(token), body).await
 }
 
 /// Takes back what the browser keeps of a session the api does not know,

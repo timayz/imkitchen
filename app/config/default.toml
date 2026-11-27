@@ -25,6 +25,10 @@ path = "data/app.db"
 # Where the api answers HTTP: where users register, sign in and out, are
 # asked about on every page, and what they do is sent as commands.
 url = "http://127.0.0.1:3000"
+# Where the browsers of the users reach the api: what the pictures of the
+# recipes are shown from. Deployed, it is `/api` of the main domain, where
+# the gateway serves the api.
+public_url = "http://localhost:3000"
 # Where app follows the api's events: the `[sidecars]` listener of the api
 # (evento's remote protocol over TCP, not HTTP). One node, or a name in front
 # of several, looked up again on every reconnect.

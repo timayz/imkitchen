@@ -3,12 +3,15 @@
 //! the pages read from what it followed, who the api lets read them, how a
 //! browser keeps its session, and what a user does, handed to the api.
 
+use std::collections::HashMap;
 use std::future::Future;
+use std::io::Cursor;
 use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use bytes::Bytes;
 use evento::remote::ServerHandle;
 use evento::subscription::Subscription;
 use imkitchen_aggregates::recipe::{Created, Deleted, Ingredient, Instruction};
@@ -17,7 +20,7 @@ use imkitchen_api::cluster::{self, Cluster, Executor};
 use imkitchen_api::config::{AuthConfig, RootConfig, Secret, SidecarTokens, SidecarsConfig};
 use imkitchen_api::images::Images;
 use imkitchen_api::mail::{MailError, Mailer, code_mails_subscription};
-use imkitchen_api::recipes::Web;
+use imkitchen_api::recipes::{PageError, Pages};
 use imkitchen_api::server::{self, AppState};
 use imkitchen_api::sidecars;
 use imkitchen_app::api::{Api as Commands, Asking, CommandError};
@@ -64,6 +67,10 @@ const PASSWORD: &str = "correct horse battery";
 /// Where www always answers, in the tests: where the public pages are
 /// linked.
 const ABOUT: &str = "https://about.test";
+
+/// Where the browsers reach the api, in the tests: where the pictures are
+/// shown from.
+const PICTURES: &str = "https://imkitchen.test/api";
 
 /// What tells whether app is up.
 const HEALTH: &str = "/_app/health";
@@ -129,6 +136,52 @@ impl Mailer for Outbox {
     }
 }
 
+/// The web the api imports recipes from, in the tests: the pages and the
+/// pictures it was given, and nothing else.
+#[derive(Default)]
+struct Web {
+    pages: Mutex<HashMap<String, String>>,
+    images: Mutex<HashMap<String, Bytes>>,
+}
+
+impl Web {
+    /// Answers `url` with the page `html`.
+    fn put(&self, url: &str, html: &str) {
+        let mut pages = self.pages.lock().unwrap();
+        pages.insert(url.to_owned(), html.to_owned());
+    }
+
+    /// Answers `url` with `bytes`, as a site serves a picture.
+    fn put_image(&self, url: &str, bytes: &[u8]) {
+        let bytes = Bytes::copy_from_slice(bytes);
+        self.images.lock().unwrap().insert(url.to_owned(), bytes);
+    }
+}
+
+#[async_trait::async_trait]
+impl Pages for Web {
+    async fn fetch(&self, url: &reqwest::Url) -> Result<String, PageError> {
+        let nothing = || PageError::Unreachable("nothing answers there".to_owned());
+        let pages = self.pages.lock().unwrap();
+        pages.get(url.as_str()).cloned().ok_or_else(nothing)
+    }
+
+    async fn image(&self, url: &reqwest::Url) -> Result<Bytes, PageError> {
+        let nothing = || PageError::Unreachable("nothing answers there".to_owned());
+        let images = self.images.lock().unwrap();
+        images.get(url.as_str()).cloned().ok_or_else(nothing)
+    }
+}
+
+/// A PNG of `width` × `height` in one colour, as a camera or a site gives
+/// a picture.
+fn png(width: u32, height: u32, rgb: [u8; 3]) -> Vec<u8> {
+    let image = image::RgbImage::from_pixel(width, height, image::Rgb(rgb));
+    let mut out = Cursor::new(Vec::new());
+    image.write_to(&mut out, image::ImageFormat::Png).unwrap();
+    out.into_inner()
+}
+
 /// The api's routes, served over HTTP as the api serves them, its codes
 /// mailed into an outbox.
 struct Http {
@@ -149,6 +202,8 @@ struct Api {
     store: imkitchen_api::db::Store,
     /// Where it keeps its files.
     dir: std::path::PathBuf,
+    /// Where it imports recipes from.
+    web: Arc<Web>,
     /// The sidecars' listener, while there is one.
     server: Option<ServerHandle>,
     addr: SocketAddr,
@@ -170,6 +225,7 @@ impl Api {
             executor,
             store,
             dir: dir.to_owned(),
+            web: Arc::default(),
             server: Some(server),
             addr,
             http: None,
@@ -202,7 +258,7 @@ impl Api {
             db: imkitchen_api::db::Db::from(self.store.clone()),
             auth,
             sign_ins: Arc::default(),
-            pages: Arc::new(Web::new().unwrap()),
+            pages: self.web.clone(),
             images: Arc::new(Images::new(self.dir.join("images"), None)),
         };
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -366,6 +422,7 @@ impl App {
         let db = Db::from(store.clone());
         let api = ApiConfig {
             url: NOWHERE.to_owned(),
+            public_url: PICTURES.to_owned(),
             events: addr.to_string(),
             token: Some(config::Secret::new(token)),
             tls_ca: None,
@@ -439,6 +496,7 @@ impl App {
     fn commands(&self) -> Commands {
         Commands::new(&ApiConfig {
             url: self.api.clone(),
+            public_url: PICTURES.to_owned(),
             events: "127.0.0.1:1".to_owned(),
             token: None,
             tls_ca: None,
@@ -524,16 +582,63 @@ impl Browser {
             .iter()
             .map(|(name, value)| format!("{name}={}", encode(value)))
             .collect();
-        self.send(router, "POST", path, Some(form.join("&"))).await
+        let form = form.join("&").into_bytes();
+        self.send(
+            router,
+            "POST",
+            path,
+            Some(("application/x-www-form-urlencoded", form)),
+        )
+        .await
     }
 
-    /// Asks for `path`, with `form` as what a form posts when there is one.
+    /// Posts `fields` to `path` as the form a recipe is written with does
+    /// (`multipart/form-data`), in the order they are given, `picture` as
+    /// the file that was chosen when one was.
+    async fn write(
+        &mut self,
+        router: &Router,
+        path: &str,
+        fields: &[(&str, &str)],
+        picture: Option<&[u8]>,
+    ) -> Answer {
+        const BOUNDARY: &str = "the-boundary-of-the-tests";
+        let mut body = Vec::new();
+        for (name, value) in fields {
+            body.extend_from_slice(
+                format!(
+                    "--{BOUNDARY}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n"
+                )
+                .as_bytes(),
+            );
+        }
+        // A browser sends the field of a file nobody chose, empty.
+        let (file_name, content_type) = match picture {
+            Some(_) => ("picture.png", "image/png"),
+            None => ("", "application/octet-stream"),
+        };
+        body.extend_from_slice(
+            format!(
+                "--{BOUNDARY}\r\nContent-Disposition: form-data; name=\"picture\"; \
+                 filename=\"{file_name}\"\r\nContent-Type: {content_type}\r\n\r\n"
+            )
+            .as_bytes(),
+        );
+        body.extend_from_slice(picture.unwrap_or_default());
+        body.extend_from_slice(format!("\r\n--{BOUNDARY}--\r\n").as_bytes());
+        let content_type = format!("multipart/form-data; boundary={BOUNDARY}");
+        self.send(router, "POST", path, Some((&content_type, body)))
+            .await
+    }
+
+    /// Asks for `path`, with `form` as what a form posts when there is one:
+    /// how it is encoded, and its body.
     async fn send(
         &mut self,
         router: &Router,
         method: &str,
         path: &str,
-        form: Option<String>,
+        form: Option<(&str, Vec<u8>)>,
     ) -> Answer {
         let mut request = Request::builder()
             .method(method)
@@ -544,8 +649,8 @@ impl Browser {
             request = request.header(COOKIE, pairs.join("; "));
         }
         let body = match form {
-            Some(form) => {
-                request = request.header(CONTENT_TYPE, "application/x-www-form-urlencoded");
+            Some((content_type, form)) => {
+                request = request.header(CONTENT_TYPE, content_type);
                 Body::from(form)
             }
             None => Body::empty(),
@@ -1548,6 +1653,544 @@ async fn what_a_user_does_is_handed_to_the_api() {
         .await
         .unwrap_err();
     assert!(matches!(err, CommandError::Unreachable(_)), "{err:?}");
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+/// Where a recipe is written, imported, and the list of them.
+const RECIPES: &str = "/recipes";
+const NEW_RECIPE: &str = "/recipes/new";
+const IMPORT: &str = "/recipes/import";
+
+/// A page of the web that holds a recipe, and where it says its picture is.
+const PAGE: &str = "https://recipes.example.com/toast";
+const PICTURE: &str = "https://cdn.example.com/img/toast.png";
+
+/// A page that describes a recipe the way schema.org says to.
+fn page_of_toast() -> String {
+    let recipe = json!({
+        "@context": "https://schema.org",
+        "@type": "Recipe",
+        "name": "Toast",
+        "image": PICTURE,
+        "recipeIngredient": ["2 slices of bread"],
+        "recipeInstructions": "Toast the bread.",
+    });
+    format!(r#"<html><head><script type="application/ld+json">{recipe}</script></head></html>"#)
+}
+
+/// What the form posts of crêpes: a row left blank among the ingredients,
+/// and one after the steps.
+const CREPES: [(&str, &str); 23] = [
+    ("title", "Crêpes"),
+    ("description", "Thin ones."),
+    ("prep_minutes", "10"),
+    ("cook_minutes", "20"),
+    ("servings", "6"),
+    ("ingredient_quantity", "250"),
+    ("ingredient_unit", "g"),
+    ("ingredient_name", "flour"),
+    ("ingredient_quantity", "0,5"),
+    ("ingredient_unit", "l"),
+    ("ingredient_name", "milk"),
+    ("ingredient_quantity", ""),
+    ("ingredient_unit", ""),
+    ("ingredient_name", ""),
+    ("ingredient_quantity", ""),
+    ("ingredient_unit", ""),
+    ("ingredient_name", "salt"),
+    ("instruction_text", "Mix everything."),
+    ("instruction_timer_minutes", ""),
+    ("instruction_text", "Let it rest."),
+    ("instruction_timer_minutes", "30"),
+    ("instruction_text", ""),
+    ("instruction_timer_minutes", ""),
+];
+
+/// The id of the recipe an answer sends the browser to.
+fn recipe_sent_to(answer: &Answer) -> String {
+    assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
+    let id = answer.location.strip_prefix("/recipes/");
+    id.unwrap_or_else(|| panic!("sent to {}", answer.location))
+        .to_owned()
+}
+
+/// How many times `what` is in `page`.
+fn count(page: &str, what: &str) -> usize {
+    page.matches(what).count()
+}
+
+#[tokio::test]
+async fn a_user_writes_a_recipe_with_its_picture_rewrites_it_and_deletes_it() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "en").await;
+
+    // Nothing yet, and the two ways to a first recipe.
+    let page = cook.get(&router, RECIPES).await.body;
+    assert!(page.contains("data-empty"), "{page}");
+    assert!(page.contains("You have no recipe yet."), "{page}");
+    assert!(link(&page, NEW_RECIPE).is_some(), "{page}");
+    assert!(link(&page, IMPORT).is_some(), "{page}");
+
+    let Answer {
+        status, body: page, ..
+    } = cook.get(&router, NEW_RECIPE).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        page.contains("<title>New recipe — imkitchen</title>"),
+        "{page}"
+    );
+    assert!(page.contains("enctype=\"multipart/form-data\""), "{page}");
+    assert!(page.contains("action=\"/recipes/new\""), "{page}");
+    assert!(page.contains("name=\"picture\""), "{page}");
+    assert_eq!(count(&page, "name=\"ingredient_name\""), 6, "{page}");
+    assert_eq!(count(&page, "name=\"instruction_text\""), 3, "{page}");
+    // The recipes screen is the one being read on the pages under it.
+    let screen = link(&page, RECIPES).unwrap();
+    assert!(screen.contains("aria-current=\"page\""), "{screen}");
+
+    // Written with its picture: the browser is sent to it, and app shows
+    // it from what it followed.
+    let picture = png(1600, 1200, [200, 120, 40]);
+    let answer = cook
+        .write(&router, NEW_RECIPE, &CREPES, Some(&picture))
+        .await;
+    let id = recipe_sent_to(&answer);
+    let at = format!("/recipes/{id}");
+    let Answer {
+        status, body: page, ..
+    } = cook.get(&router, &at).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(page.contains(">Crêpes</h1>"), "{page}");
+    assert!(page.contains("Thin ones."), "{page}");
+    assert!(page.contains("data-prep=\"10\""), "{page}");
+    assert!(page.contains("data-cook=\"20\""), "{page}");
+    assert!(page.contains("data-servings=\"6\""), "{page}");
+    // The row left blank is no ingredient, nor the one after the steps a
+    // step.
+    assert!(page.contains("data-ingredients=\"3\""), "{page}");
+    assert!(page.contains("<li>250 g flour</li>"), "{page}");
+    assert!(page.contains("<li>0.5 l milk</li>"), "{page}");
+    assert!(page.contains("<li>salt</li>"), "{page}");
+    assert!(page.contains("data-instructions=\"2\""), "{page}");
+    assert!(page.contains("Let it rest."), "{page}");
+    assert!(page.contains("data-timer=\"30\""), "{page}");
+    // Its picture, where the browsers reach the api, in the larger size.
+    let large = format!("src=\"{PICTURES}/v1/images/1200/");
+    assert!(page.contains(&large), "{page}");
+    assert!(
+        page.contains("width=\"1200\"") && page.contains("height=\"900\""),
+        "{page}"
+    );
+    assert!(link(&page, &format!("{at}/edit")).is_some(), "{page}");
+
+    // In the list, with the smaller size of its picture.
+    let page = cook.get(&router, RECIPES).await.body;
+    assert!(page.contains(&format!("data-recipe=\"{id}\"")), "{page}");
+    assert!(
+        page.contains(&format!("src=\"{PICTURES}/v1/images/400/")),
+        "{page}"
+    );
+    assert!(link(&page, &at).unwrap().contains("Crêpes"), "{page}");
+    assert!(page.contains("data-minutes=\"30\""), "{page}");
+    assert!(page.contains("data-servings=\"6\""), "{page}");
+    assert!(!page.contains("data-empty"), "{page}");
+
+    // Searched by title or by ingredient, whatever the case and the
+    // accents.
+    for q in ["crepe", "MILK", "%C3%AApes"] {
+        let page = cook.get(&router, &format!("{RECIPES}?q={q}")).await.body;
+        assert!(
+            page.contains(&format!("data-recipe=\"{id}\"")),
+            "{q}: {page}"
+        );
+    }
+    let page = cook.get(&router, "/recipes?q=butter").await.body;
+    assert!(!page.contains("data-recipe="), "{page}");
+    assert!(page.contains("No recipe is found."), "{page}");
+    assert!(page.contains("value=\"butter\""), "{page}");
+
+    // Its form holds what it says, and a few rows more.
+    let edit = format!("{at}/edit");
+    let Answer {
+        status, body: page, ..
+    } = cook.get(&router, &edit).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(page.contains(&format!("action=\"{edit}\"")), "{page}");
+    assert!(page.contains("value=\"Crêpes\""), "{page}");
+    assert!(page.contains("value=\"0.5\""), "{page}");
+    assert!(page.contains("value=\"salt\""), "{page}");
+    assert!(page.contains("Let it rest."), "{page}");
+    assert_eq!(count(&page, "name=\"ingredient_name\""), 6, "{page}");
+    assert!(page.contains("name=\"remove_picture\""), "{page}");
+
+    // Rewritten as a whole, its picture taken off.
+    let rewritten = [
+        ("title", "Crêpes Suzette"),
+        ("servings", "2"),
+        ("ingredient_quantity", "3"),
+        ("ingredient_unit", ""),
+        ("ingredient_name", "oranges"),
+        ("instruction_text", "Flambé."),
+        ("instruction_timer_minutes", ""),
+        ("remove_picture", "1"),
+    ];
+    let answer = cook.write(&router, &edit, &rewritten, None).await;
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, at.as_str()));
+    let page = cook.get(&router, &at).await.body;
+    assert!(page.contains(">Crêpes Suzette</h1>"), "{page}");
+    assert!(page.contains("data-ingredients=\"1\""), "{page}");
+    assert!(page.contains("<li>3 oranges</li>"), "{page}");
+    assert!(!page.contains("flour"), "{page}");
+    assert!(!page.contains("Thin ones."), "{page}");
+    assert!(!page.contains("data-prep"), "{page}");
+    assert!(!page.contains("data-picture"), "{page}");
+
+    // Saved as it stands: nothing to wait for, and the browser is sent on.
+    let answer = cook.write(&router, &edit, &rewritten[..7], None).await;
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, at.as_str()));
+
+    // Given another picture from its form.
+    let picture = png(300, 600, [20, 20, 200]);
+    let answer = cook
+        .write(&router, &edit, &rewritten[..7], Some(&picture))
+        .await;
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, at.as_str()));
+    let page = cook.get(&router, &at).await.body;
+    assert!(page.contains(&large), "{page}");
+    assert!(
+        page.contains("width=\"300\"") && page.contains("height=\"600\""),
+        "{page}"
+    );
+
+    // Deleted for good: the list says so, and the recipe is nowhere.
+    let answer = cook.post(&router, &format!("{at}/delete"), &[]).await;
+    assert_eq!(
+        answer.sent_to(),
+        (StatusCode::SEE_OTHER, "/recipes?done=deleted")
+    );
+    let page = cook.get(&router, &answer.location).await.body;
+    assert!(page.contains("data-done=\"deleted\""), "{page}");
+    assert!(page.contains("data-empty"), "{page}");
+    for gone in [at.as_str(), edit.as_str()] {
+        assert_eq!(
+            cook.get(&router, gone).await.status,
+            StatusCode::NOT_FOUND,
+            "{gone}"
+        );
+    }
+    let answer = cook.post(&router, &format!("{at}/delete"), &[]).await;
+    assert_eq!(answer.status, StatusCode::NOT_FOUND, "{}", answer.body);
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn what_the_api_refuses_of_a_recipe_is_said_on_its_form() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "fr").await;
+
+    // A field the api refuses is said under it, a row under the row, in
+    // the language of the page, and what was typed is still there.
+    let refused = [
+        ("title", ""),
+        ("description", "Fines."),
+        ("servings", "0"),
+        ("ingredient_quantity", "2"),
+        ("ingredient_unit", ""),
+        ("ingredient_name", ""),
+        ("instruction_text", "Tout mélanger."),
+        ("instruction_timer_minutes", "0"),
+    ];
+    let Answer {
+        status, body: page, ..
+    } = cook.write(&router, NEW_RECIPE, &refused, None).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{page}");
+    assert!(page.contains("data-code=\"validation_failed\""), "{page}");
+    assert!(
+        page.contains("Certains champs ne sont pas valides."),
+        "{page}"
+    );
+    for field in ["title", "servings", "ingredients[0]", "instructions[0]"] {
+        assert!(
+            page.contains(&format!("data-field=\"{field}\"")),
+            "{field}: {page}"
+        );
+    }
+    assert!(!page.contains("data-field=\"description\""), "{page}");
+    assert!(page.contains("Fines."), "{page}");
+    assert!(page.contains("Tout mélanger."), "{page}");
+    assert!(page.contains("action=\"/recipes/new\""), "{page}");
+
+    // What is not a number is the api's to refuse too.
+    let mut typed = CREPES;
+    typed[5] = ("ingredient_quantity", "beaucoup");
+    let Answer {
+        status, body: page, ..
+    } = cook.write(&router, NEW_RECIPE, &typed, None).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{page}");
+    assert!(page.contains("data-code=\"invalid_request\""), "{page}");
+    assert!(page.contains("value=\"beaucoup\""), "{page}");
+
+    // Asking for more rows writes nothing: the form comes back as it was
+    // typed, longer.
+    let mut more = CREPES.to_vec();
+    more.push(("more", "rows"));
+    let Answer {
+        status, body: page, ..
+    } = cook.write(&router, NEW_RECIPE, &more, None).await;
+    assert_eq!(status, StatusCode::OK, "{page}");
+    assert!(page.contains("value=\"Crêpes\""), "{page}");
+    assert!(page.contains("value=\"milk\""), "{page}");
+    assert_eq!(count(&page, "name=\"ingredient_name\""), 12, "{page}");
+    assert_eq!(count(&page, "name=\"instruction_text\""), 7, "{page}");
+
+    // Nothing was written so far.
+    let page = cook.get(&router, RECIPES).await.body;
+    assert!(page.contains("data-empty"), "{page}");
+    assert_eq!(recipes::count(&app.db).await.unwrap(), 0);
+
+    // What is not a picture is refused, and the recipe is written without
+    // it: the form says both, and rewrites the recipe from then on.
+    let Answer {
+        status, body: page, ..
+    } = cook
+        .write(&router, NEW_RECIPE, &CREPES, Some(b"not a picture"))
+        .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{page}");
+    assert!(page.contains("data-saved=\"without-picture\""), "{page}");
+    assert!(page.contains("data-code=\"unsupported_image\""), "{page}");
+    let id = eventually("the recipe to be followed", || async {
+        let page = cook.clone().get(&router, RECIPES).await.body;
+        let from = page.find("data-recipe=\"")? + "data-recipe=\"".len();
+        let to = from + page[from..].find('"')?;
+        Some(page[from..to].to_owned())
+    })
+    .await;
+    assert!(
+        page.contains(&format!("action=\"/recipes/{id}/edit\"")),
+        "{page}"
+    );
+    let page = cook.get(&router, &format!("/recipes/{id}")).await.body;
+    assert!(page.contains(">Crêpes</h1>"), "{page}");
+    assert!(!page.contains("data-picture"), "{page}");
+
+    // The api away: the form says so, as it was typed.
+    app.api = NOWHERE.to_owned();
+    let away = app.router();
+    // Who reads is asked of the api too: nothing is let through.
+    let answer = cook.write(&away, NEW_RECIPE, &CREPES, None).await;
+    assert_eq!(answer.status, StatusCode::SERVICE_UNAVAILABLE);
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn a_user_imports_a_recipe_by_pasting_the_address_of_its_page() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    api.web.put(PAGE, &page_of_toast());
+    api.web.put_image(PICTURE, &png(800, 600, [180, 140, 90]));
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "en").await;
+
+    let Answer {
+        status, body: page, ..
+    } = cook.get(&router, IMPORT).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(
+        page.contains("<title>Import a recipe — imkitchen</title>"),
+        "{page}"
+    );
+    assert!(page.contains("name=\"url\""), "{page}");
+
+    // The address is all it takes: the recipe is the user's, with the
+    // picture of the page.
+    let answer = cook.post(&router, IMPORT, &[("url", PAGE)]).await;
+    let id = recipe_sent_to(&answer);
+    let at = format!("/recipes/{id}");
+    let page = cook.get(&router, &at).await.body;
+    assert!(page.contains(">Toast</h1>"), "{page}");
+    assert!(page.contains("data-ingredients=\"1\""), "{page}");
+    assert!(page.contains("bread"), "{page}");
+    assert!(page.contains("Toast the bread."), "{page}");
+    assert!(
+        page.contains(&format!("src=\"{PICTURES}/v1/images/1200/")),
+        "{page}"
+    );
+    // Nothing says where it came from.
+    assert!(!page.contains("recipes.example.com"), "{page}");
+    let page = cook.get(&router, RECIPES).await.body;
+    assert!(link(&page, &at).unwrap().contains("Toast"), "{page}");
+
+    // It is rewritten and deleted as one that was written by hand: the same
+    // form, the same buttons.
+    let written = cook.write(&router, NEW_RECIPE, &CREPES, None).await;
+    let written = format!("/recipes/{}", recipe_sent_to(&written));
+    let actions = |page: &str, at: &str| {
+        (
+            link(page, &format!("{at}/edit")).is_some(),
+            page.contains(&format!("action=\"{at}/delete\"")),
+        )
+    };
+    let by_hand = cook.get(&router, &written).await.body;
+    assert_eq!(
+        actions(&page_at(&mut cook, &router, &at).await, &at),
+        (true, true)
+    );
+    assert_eq!(actions(&by_hand, &written), (true, true));
+    let edit = format!("{at}/edit");
+    let page = cook.get(&router, &edit).await.body;
+    assert!(page.contains("value=\"Toast\""), "{page}");
+    assert!(page.contains("name=\"remove_picture\""), "{page}");
+    let rewritten = [
+        ("title", "French toast"),
+        ("servings", "2"),
+        ("ingredient_quantity", "2"),
+        ("ingredient_unit", ""),
+        ("ingredient_name", "eggs"),
+    ];
+    let answer = cook.write(&router, &edit, &rewritten, None).await;
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, at.as_str()));
+    let page = cook.get(&router, &at).await.body;
+    assert!(page.contains(">French toast</h1>"), "{page}");
+    assert!(page.contains("<li>2 eggs</li>"), "{page}");
+    // Its picture stays: the form did not take it off.
+    assert!(page.contains("data-picture"), "{page}");
+
+    // A page the api cannot read, and an address that is not one, are said
+    // as the api words them, what was typed still there.
+    let nowhere = "https://recipes.example.com/nothing";
+    let Answer {
+        status, body: page, ..
+    } = cook.post(&router, IMPORT, &[("url", nowhere)]).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY, "{page}");
+    assert!(page.contains("data-code=\"page_unreachable\""), "{page}");
+    assert!(page.contains("This page could not be read."), "{page}");
+    assert!(page.contains(&format!("value=\"{nowhere}\"")), "{page}");
+    api.web
+        .put(nowhere, "<html><body>Nothing to cook.</body></html>");
+    let page = cook.post(&router, IMPORT, &[("url", nowhere)]).await.body;
+    assert!(page.contains("data-code=\"no_recipe_on_page\""), "{page}");
+    let page = cook.post(&router, IMPORT, &[("url", "toast")]).await.body;
+    assert!(page.contains("data-field=\"url\""), "{page}");
+    assert!(
+        page.contains("This is not the address of a web page."),
+        "{page}"
+    );
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+/// The page at `path`, as `browser` reads it.
+async fn page_at(browser: &mut Browser, router: &Router, path: &str) -> String {
+    browser.get(router, path).await.body
+}
+
+#[tokio::test]
+async fn a_recipe_is_its_owners_alone() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    // Someone else's.
+    let soup = api.write_recipe("Soup").await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    app.counts(1).await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "en").await;
+    let at = format!("/recipes/{soup}");
+    let edit = format!("{at}/edit");
+
+    // Not in the list, searched for or not, and not found at its address.
+    for list in [RECIPES, "/recipes?q=soup"] {
+        let page = cook.get(&router, list).await.body;
+        assert!(!page.contains("Soup"), "{page}");
+        assert!(page.contains("data-empty"), "{page}");
+    }
+    for path in [at.as_str(), edit.as_str()] {
+        let Answer { status, body, .. } = cook.get(&router, path).await;
+        assert_eq!(status, StatusCode::NOT_FOUND, "{path}");
+        assert!(!body.contains("Soup"), "{body}");
+    }
+
+    // Nor rewritten, nor deleted: the api refuses, and the recipe stays.
+    let answer = cook.write(&router, &edit, &CREPES, None).await;
+    assert_eq!(answer.status, StatusCode::NOT_FOUND, "{}", answer.body);
+    let answer = cook.post(&router, &format!("{at}/delete"), &[]).await;
+    assert_eq!(answer.status, StatusCode::NOT_FOUND, "{}", answer.body);
+    assert_eq!(recipes::count(&app.db).await.unwrap(), 1);
+
+    // Nobody reads anything of the recipes without signing in.
+    for path in [RECIPES, NEW_RECIPE, IMPORT, at.as_str()] {
+        let (status, location, _) = get(&router, path, "en").await;
+        assert_eq!(
+            (status, location.as_str()),
+            (StatusCode::SEE_OTHER, SIGN_IN)
+        );
+    }
+    let answer = Browser::reading("en")
+        .write(&router, NEW_RECIPE, &CREPES, None)
+        .await;
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, SIGN_IN));
+
+    app.stop().await;
+    api.shutdown().await;
+}
+
+#[tokio::test]
+async fn the_list_of_the_recipes_is_read_a_page_at_a_time() {
+    let dir = dir();
+    let mut api = Api::start(dir.path()).await;
+    let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
+    app.api = api.serve_http().await;
+    let router = app.router();
+    let mut cook = Browser::signed_in(&router, "en").await;
+    let token = api.root_token().await;
+    for nth in 0..26 {
+        let title = if nth % 2 == 0 { "Soup" } else { "Tart" };
+        let recipe = json!({ "title": format!("{title} {nth}"), "servings": 2 });
+        let (status, body) = api
+            .call(reqwest::Method::POST, "/v1/recipes", Some(&token), recipe)
+            .await;
+        assert_eq!(status, 201, "{body}");
+    }
+    app.counts(26).await;
+
+    // The most recent first, and the way to those that follow.
+    let page = cook.get(&router, RECIPES).await.body;
+    assert_eq!(count(&page, "data-recipe="), 24, "{page}");
+    let from = page.find("data-more").expect("a page beyond");
+    let more = &page[page[..from].rfind("<a ").unwrap()..from];
+    let from = more.find("href=\"").unwrap() + "href=\"".len();
+    let next = more[from..from + more[from..].find('"').unwrap()].replace("&amp;", "&");
+    let rest = cook.get(&router, &next).await.body;
+    assert_eq!(count(&rest, "data-recipe="), 2, "{rest}");
+    assert!(!rest.contains("data-more"), "{rest}");
+    // No recipe twice, none left out.
+    for nth in 0..26 {
+        let title = format!(" {nth}</h2>");
+        assert_eq!(count(&page, &title) + count(&rest, &title), 1, "{nth}");
+    }
+
+    // A search is read the same way.
+    let page = cook.get(&router, "/recipes?q=tart").await.body;
+    assert_eq!(count(&page, "data-recipe="), 13, "{page}");
+    assert!(!page.contains("Soup"), "{page}");
+    assert!(!page.contains("data-more"), "{page}");
 
     app.stop().await;
     api.shutdown().await;

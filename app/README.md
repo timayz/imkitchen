@@ -58,6 +58,8 @@ What a deployment sets:
 - `www.url`: the address that always serves www (`about.`), where the pages
   link to the public ones.
 - `api.url`: where the api answers HTTP.
+- `api.public_url`: where the browsers reach the api, which the pictures of
+  the recipes are shown from: `/api` of the main domain.
 - `session.key`: what the cookie of a session is encrypted under, the same
   for every replica. Without one a key is drawn at each start, and whoever
   was signed in signs in again.
@@ -96,6 +98,7 @@ when topcoat moves its own.
 | --- | --- |
 | `src/app.rs` | The router, the language of a page and the document every page is in. |
 | `src/app/_signed_in.rs`, `src/app/_signed_in/` | What a signed-in user reads: who is let through, the layout and its navigation, the home, each screen at the address of its module. |
+| `src/app/_signed_in/recipes.rs`, `src/app/_signed_in/recipes/` | The recipes: the list, a recipe, the form one is written and rewritten with, and the import. |
 | `src/app/auth.rs`, `src/app/auth/` | What a visitor is shown, under `/auth`: signing in, registering, and signing out. |
 | `src/app/_app.rs`, `src/app/_app/` | What is not a page, under `/_app`: the health. |
 | `src/assets.rs` | The assets, served under `/_app/assets`. |
@@ -144,8 +147,8 @@ the two, or the gateway hands it to www.
 
 `/` is the home. Each screen of the application has a module under
 `src/app/_signed_in/` and is at its address: `/recipes`, `/dishes`, `/list`,
-`/groceries`, `/settings`. Nothing is shown on them yet: they are there for
-the navigation to lead to.
+`/groceries`, `/settings`. Nothing is shown on them yet but the recipes: the
+others are there for the navigation to lead to.
 
 One layout (`signed_in` in `src/app/_signed_in.rs`) serves the desktop and
 the phone. The navigation between the screens is a bar that stays at the
@@ -218,14 +221,47 @@ the whole, and under `validation_failed` one message per field
 (`refusal.field("title")`), for the form to show beside the field. A `401`
 (`refusal.signed_out()`) is a session that ended. An api that did not answer
 is not a refusal (`CommandError::Unreachable`): whether it did what was
-asked is not known. The forms of `/auth` are the ones that post today.
+asked is not known.
+
+A page that posts a command (`src/app/_signed_in.rs`) sends it with the
+token of who reads it (`asking`), says what failed above its form
+(`Failure`, `failed`) and, once the api did it, waits for app to have
+followed what was written before it sends the browser on (`followed`): the
+next page is read from the store, a moment behind the api. Not for long:
+past five seconds the browser is sent on anyway.
+
+## Recipes
+
+| Address | What it is |
+| --- | --- |
+| `/recipes` | The recipes of who reads it, the most recent first, 24 at a time; `q` searches their titles and their ingredients, whatever the case and the accents. |
+| `/recipes/new` | The form a recipe is written with. |
+| `/recipes/import` | Where the address of a page is pasted: the api fetches it and makes a recipe of it. |
+| `/recipes/{id}` | A recipe, and the button that deletes it. |
+| `/recipes/{id}/edit` | The same form, to rewrite it. |
+
+A recipe is its owner's alone: someone else's is one that does not exist,
+read or written. One that was imported says nothing of where it came from,
+and is read, rewritten and deleted as one that was written.
+
+The form works without a script. An ingredient and a step are a row each,
+the rows left blank are left out, and "More rows" posts the form to get it
+back longer. It posts as `multipart/form-data`, the picture with it: the
+recipe is written first (`POST /v1/recipes`, `PUT /v1/recipes/{id}`), then
+its picture (`PUT /v1/recipes/{id}/image`). A picture the api refuses leaves
+the recipe written without it, and the form says both. app checks nothing of
+what is typed: what the api refuses is said under the field, or under the
+row.
+
+A picture is shown from the api, where the browsers reach it
+(`api.public_url`): app keeps the name of its files and stores none.
 
 ## Read models
 
 app reads the aggregates `imkitchen-aggregates` lists for it
 (`Sidecar::App`); the api refuses it anything else, and every write. Today
-that is the recipes, of which app keeps how many there are and nothing they
-say.
+that is the recipes: app keeps all each one says, whose it is and the
+picture it shows (`src/recipes.rs`).
 
 To show something else of imkitchen:
 

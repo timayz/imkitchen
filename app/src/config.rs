@@ -77,6 +77,10 @@ pub struct ApiConfig {
     /// Where the api answers HTTP: where users register, sign in and out,
     /// are asked about on every page, and what they do is sent as commands.
     pub url: String,
+    /// Where the browsers of the users reach the api: what the pictures of
+    /// the recipes are shown from. Behind the gateway, `/api` of the main
+    /// domain.
+    pub public_url: String,
     /// The api's listener for the sidecars (`[sidecars]` there): an IP and
     /// port, or a `host:port` looked up again on every reconnect.
     pub events: String,
@@ -117,6 +121,12 @@ impl ApiConfig {
             return Err(ConfigError::Message(format!(
                 "api.url must be an http(s) address, not '{}'",
                 self.url
+            )));
+        }
+        if !self.public_url.starts_with("http://") && !self.public_url.starts_with("https://") {
+            return Err(ConfigError::Message(format!(
+                "api.public_url must be an http(s) address, not '{}'",
+                self.public_url
             )));
         }
         if self.events_host().is_none() {
@@ -224,6 +234,7 @@ impl Config {
             .set_default("server.shutdown_timeout_secs", 30)?
             .set_default("database.path", "data/app.db")?
             .set_default("api.url", "http://127.0.0.1:3000")?
+            .set_default("api.public_url", "http://localhost:3000")?
             .set_default("api.events", "127.0.0.1:4000")?
             .set_default("www.url", "http://localhost:3010")?
             .set_default("monitoring.log_level", "info")?
@@ -317,6 +328,12 @@ mod tests {
 
         let err = load("[api]\nurl = \"api:3000\"\n").unwrap_err();
         assert!(err.to_string().contains("api.url"), "{err}");
+
+        let config = load("[api]\npublic_url = \"https://imkitchen.app/api\"\n").unwrap();
+        assert_eq!(config.api.public_url, "https://imkitchen.app/api");
+
+        let err = load("[api]\npublic_url = \"/api\"\n").unwrap_err();
+        assert!(err.to_string().contains("api.public_url"), "{err}");
     }
 
     #[test]

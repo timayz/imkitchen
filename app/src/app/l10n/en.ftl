@@ -29,6 +29,10 @@ auth_code = Code
 auth_code_sent = A code was mailed to this address. Type it below, with your password again.
 auth_failed = This is not possible right now. Try again in a moment.
 
+## What a user does, handed to the api
+
+command_failed = This is not possible right now. Try again in a moment.
+
 ## The home
 
 home_title = Your kitchen
@@ -46,7 +50,62 @@ screen_coming = This screen is on its way.
 
 recipes_meta_title = Recipes — imkitchen
 recipes_title = Recipes
-recipes_text = The recipes you cook, written by hand or imported from the sites you like.
+recipes_new = New recipe
+recipes_import = Import
+recipes_search_label = Title or ingredient
+recipes_search = Search
+recipes_none = You have no recipe yet. Write your first one, or import it from a site you like.
+recipes_none_found = No recipe is found.
+recipes_more = More recipes
+
+recipe_minutes = { $minutes } min
+recipe_serves =
+    { $count ->
+        [one] For { $count }
+       *[other] For { $count }
+    }
+recipe_prep = Preparation
+recipe_cook = Cooking
+recipe_servings = Servings
+recipe_ingredients = Ingredients
+recipe_instructions = Steps
+recipe_edit = Edit
+recipe_delete = Delete…
+recipe_delete_warning = The recipe is gone for good, with its picture. It leaves the dishes and the list it is part of.
+recipe_delete_confirm = Delete the recipe
+recipe_deleted = The recipe is deleted.
+recipe_not_deleted = The recipe was not deleted
+recipe_back = Back
+
+recipe_new_meta_title = New recipe — imkitchen
+recipe_new_title = New recipe
+recipe_edit_meta_title = Edit the recipe — imkitchen
+recipe_edit_title = Edit the recipe
+recipe_title = Title
+recipe_description = Description
+recipe_prep_minutes = Preparation (min)
+recipe_cook_minutes = Cooking (min)
+recipe_ingredients_hint = One ingredient per row: how much of it, in what unit, and what it is. A row left blank is left out.
+recipe_ingredient_quantity = Qty
+recipe_ingredient_unit = Unit
+recipe_ingredient_name = Ingredient
+recipe_instructions_hint = One step per row, in the order they are made, each with the minutes to wait once it is done when there is something to wait for.
+recipe_instruction_text = Step { $number }
+recipe_instruction_timer = Timer
+recipe_more_rows = More rows
+recipe_picture = Picture
+recipe_picture_choose = Choose a picture
+recipe_picture_hint = A JPEG, PNG, WebP or GIF of 8 MB at most. Choose it last: asking for more rows forgets it.
+recipe_picture_remove = Remove this picture
+recipe_save = Save the recipe
+recipe_cancel = Cancel
+recipe_saved_without_picture = The recipe is saved, without the picture.
+
+import_meta_title = Import a recipe — imkitchen
+import_title = Import a recipe
+import_text = Paste the address of a page that holds a recipe. It becomes one of yours, to edit like one you wrote.
+import_url = Address of the page
+import_submit = Import the recipe
 
 dishes_meta_title = Dishes — imkitchen
 dishes_title = Dishes

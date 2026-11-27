@@ -18,6 +18,7 @@ data:
     # token comes from the environment, as does the key of the sessions.
     [api]
     url = {{ .Values.config.api.url | quote }}
+    public_url = {{ .Values.config.api.publicUrl | default (printf "%s/api" (include "app.url" .)) | quote }}
     events = {{ .Values.config.api.events | quote }}
     {{- if .Values.config.api.tls.secretName }}
     tls_ca = "/etc/imkitchen-tls/api/ca.crt"

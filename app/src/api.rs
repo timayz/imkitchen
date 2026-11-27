@@ -8,18 +8,29 @@
 //! api's, sent with their token ([`Api::command`]). What the api refuses
 //! comes back as it worded it ([`Refusal`]), in the language the page is
 //! read in, each field that is not valid under its name.
+//!
+//! The pages are read from the store of app, not from here. What a command
+//! created is answered with it ([`Api::create`]) and what one left can be
+//! asked for ([`Api::read`]): for app to tell how far its store has to
+//! follow before a page shows it, and for nothing else.
 
 use std::time::Duration;
 
 use anyhow::{Context, anyhow};
-use reqwest::header::{ACCEPT_LANGUAGE, USER_AGENT};
+use reqwest::header::{ACCEPT_LANGUAGE, CONTENT_TYPE, USER_AGENT};
 use reqwest::{Method, RequestBuilder, Response, StatusCode, Url};
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
+use timada_core::{Picture, Rendition};
 
 use crate::config::ApiConfig;
 
 /// How long the api is waited for before it is given up.
 const TIMEOUT: Duration = Duration::from_secs(10);
+
+/// The same for what takes the api longer: a recipe it imports from a page
+/// it fetches first, a picture it is sent.
+const SLOW_TIMEOUT: Duration = Duration::from_secs(60);
 
 /// The api, for the sessions of app and the commands of its users.
 #[derive(Debug, Clone)]
@@ -27,6 +38,8 @@ pub struct Api {
     http: reqwest::Client,
     /// Where the api answers HTTP, without a trailing slash.
     url: String,
+    /// Where it answers the browsers, without a trailing slash.
+    public_url: String,
 }
 
 /// Who asks, as far as the api is told: the language it words its refusals
@@ -148,7 +161,19 @@ impl Api {
         Ok(Self {
             http,
             url: config.url.trim_end_matches('/').to_owned(),
+            public_url: config.public_url.trim_end_matches('/').to_owned(),
         })
+    }
+
+    /// Where a browser gets the picture whose files are named after
+    /// `file_id`, in the size `rendition`. The api asks no token for a
+    /// picture.
+    pub fn picture(&self, file_id: &str, rendition: Rendition) -> String {
+        Picture::url(
+            &format!("{}/v1/images", self.public_url),
+            file_id,
+            rendition,
+        )
     }
 
     /// Creates the account of `credentials`, from the browser that names
@@ -255,6 +280,79 @@ impl Api {
         thing: &[&str],
         body: Option<&B>,
     ) -> Result<(), CommandError> {
+        let (path, mut request) = self.asked(asking, method, thing)?;
+        if let Some(body) = body {
+            request = request.json(body);
+        }
+        let response = self
+            .send(request, asking.language)
+            .await
+            .map_err(CommandError::Unreachable)?;
+        match response.status() {
+            StatusCode::NO_CONTENT | StatusCode::CREATED => Ok(()),
+            _ => Err(refused(&path, response).await),
+        }
+    }
+
+    /// Sends a command that creates something (a `POST` on `thing`, with
+    /// `body` as its JSON) and answers what the api says it created: its
+    /// id, and as much of it as `T` reads. The api is given the time an
+    /// import takes.
+    pub async fn create<B: Serialize + ?Sized, T: DeserializeOwned>(
+        &self,
+        asking: Asking<'_>,
+        thing: &[&str],
+        body: &B,
+    ) -> Result<T, CommandError> {
+        let (path, request) = self.asked(asking, Method::POST, thing)?;
+        let request = request.json(body).timeout(SLOW_TIMEOUT);
+        self.told(&path, request, asking.language, StatusCode::CREATED)
+            .await
+    }
+
+    /// What the api says of `thing`, as the last command left it.
+    pub async fn read<T: DeserializeOwned>(
+        &self,
+        asking: Asking<'_>,
+        thing: &[&str],
+    ) -> Result<T, CommandError> {
+        let (path, request) = self.asked(asking, Method::GET, thing)?;
+        self.told(&path, request, asking.language, StatusCode::OK)
+            .await
+    }
+
+    /// Sends the one command whose body is not JSON: `bytes` as they are,
+    /// said to be `content_type`, put at `thing` (the picture of a recipe).
+    pub async fn upload(
+        &self,
+        asking: Asking<'_>,
+        thing: &[&str],
+        content_type: &str,
+        bytes: Vec<u8>,
+    ) -> Result<(), CommandError> {
+        let (path, request) = self.asked(asking, Method::PUT, thing)?;
+        let request = request
+            .header(CONTENT_TYPE, content_type)
+            .body(bytes)
+            .timeout(SLOW_TIMEOUT);
+        let response = self
+            .send(request, asking.language)
+            .await
+            .map_err(CommandError::Unreachable)?;
+        match response.status() {
+            StatusCode::NO_CONTENT => Ok(()),
+            _ => Err(refused(&path, response).await),
+        }
+    }
+
+    /// The request `method` on `thing` as `asking` sends it, and the path
+    /// it goes to.
+    fn asked(
+        &self,
+        asking: Asking<'_>,
+        method: Method,
+        thing: &[&str],
+    ) -> Result<(String, RequestBuilder), CommandError> {
         let path = format!("/v1/{}", thing.join("/"));
         // An id comes from the address of a page: it stays one segment
         // whatever it holds.
@@ -274,17 +372,31 @@ impl Api {
         if let Some(token) = asking.token {
             request = request.bearer_auth(token);
         }
-        if let Some(body) = body {
-            request = request.json(body);
-        }
+        Ok((path, request))
+    }
+
+    /// Sends `request` and reads what `path` answers with the status
+    /// `done`.
+    async fn told<T: DeserializeOwned>(
+        &self,
+        path: &str,
+        request: RequestBuilder,
+        language: &str,
+        done: StatusCode,
+    ) -> Result<T, CommandError> {
         let response = self
-            .send(request, asking.language)
+            .send(request, language)
             .await
             .map_err(CommandError::Unreachable)?;
-        match response.status() {
-            StatusCode::NO_CONTENT | StatusCode::CREATED => Ok(()),
-            _ => Err(refused(&path, response).await),
+        let status = response.status();
+        if status != done {
+            return Err(refused(path, response).await);
         }
+        response
+            .json()
+            .await
+            .with_context(|| format!("{path} answered {status}, and not what it tells"))
+            .map_err(CommandError::Unreachable)
     }
 
     fn at(&self, path: &str) -> String {

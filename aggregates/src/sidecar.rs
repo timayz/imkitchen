@@ -60,8 +60,7 @@ impl Sidecar {
                 Image::aggregate_type(),
                 ContactMessage::aggregate_type(),
             ],
-            // Nobody signs in to app yet: of the recipes it keeps and shows
-            // how many there are, until its pages know whose they are.
+            // What a user reads in app: their recipes.
             Sidecar::App => vec![Recipe::aggregate_type()],
         }
     }
