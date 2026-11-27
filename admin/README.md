@@ -9,7 +9,7 @@ its own. What an administrator does there is a command of the api's, sent
 over HTTP: admin writes nothing except through the api.
 
 Only an administrator reads it: every page asks the api who its reader is,
-and sends anyone else to sign in. It is not deployed yet.
+and sends anyone else to sign in.
 
 ## Running it
 
@@ -66,6 +66,23 @@ the version of the workspace's `topcoat`.
 `imkitchen-admin migrate` creates the store and applies its pending
 migrations; `serve` refuses a store that is not there or not migrated.
 
+## Deploying it
+
+`admin/Dockerfile` builds the image (`timayz/imkitchen:admin-<version>`):
+the binary and, next to it, its assets. `admin/helm` is its chart, whose
+README says what it runs and what to set: a StatefulSet, each pod keeping
+its store on a volume of its own, and one key for the sessions.
+
+```sh
+docker build -f admin/builder.Dockerfile -t timayz/imkitchen:admin-builder .   # once
+docker build -f admin/Dockerfile -t timayz/imkitchen:admin-local .
+```
+
+The builder image is www's with admin built in it: the same `topcoat-cli`,
+read from `Cargo.lock`, and the same Tailwind CLI, pinned with its checksum
+(`TAILWIND_VERSION` in `admin/builder.Dockerfile`), moved by hand with
+www's when topcoat moves its own.
+
 ## Where things are
 
 | Path | Contents |
@@ -79,6 +96,7 @@ migrations; `serve` refuses a store that is not there or not migrated.
 | `src/listing.rs` | How the lists are read: a page at a time, and searched. |
 | `src/subscriptions.rs` | Every subscription admin runs. |
 | `src/db.rs` | The store and the migrations of its tables. |
+| `Dockerfile`, `builder.Dockerfile`, `helm/` | The image and the chart admin is deployed with. |
 | `styles.css`, `build.rs` | The Tailwind stylesheet, compiled at build time. |
 
 ## Pages

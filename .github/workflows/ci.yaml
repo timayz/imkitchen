@@ -16,12 +16,12 @@ jobs:
     uses: timayz/.github/.github/workflows/rust-test.yml@v3
 
   # The charts render: the api's for a cluster and for a node alone, www's
-  # with the least a release needs and with everything on.
+  # and admin's with the least a release needs and with everything on.
   charts:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        app: [api, www]
+        app: [api, www, admin]
     steps:
       - uses: actions/checkout@v7
       - run: |

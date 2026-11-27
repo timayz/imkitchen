@@ -1,0 +1,14 @@
+# What `docker build -f admin/Dockerfile .` sends: the workspace, and nothing
+# of what is beside it in the repository.
+*
+!Cargo.toml
+!Cargo.lock
+!api
+!aggregates
+!www
+!admin
+!app
+**/target
+*/helm
+*/*Dockerfile*
+*/config/*.local.toml
