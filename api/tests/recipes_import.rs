@@ -126,6 +126,7 @@ async fn a_recipe_is_imported_from_any_site_that_describes_one() {
              <div itemprop="recipeInstructions">
                <p>Mash the bananas.</p>
                <p>Bake for an hour.</p>
+               <p>Let it cool 15 minutes before slicing.</p>
              </div>
            </article>
            </body></html>"#,
@@ -146,6 +147,8 @@ async fn a_recipe_is_imported_from_any_site_that_describes_one() {
             "instructions": [
                 { "text": "Mash the bananas." },
                 { "text": "Bake for an hour." },
+                // The time its text says is its timer.
+                { "text": "Let it cool 15 minutes before slicing.", "timer_minutes": 15 },
             ],
             "prep_minutes": 0,
             "cook_minutes": 0,
@@ -178,20 +181,52 @@ async fn a_recipe_is_imported_from_an_article_that_only_shows_it() {
         }
         ingredient
     };
+    let step = |text: &str, timer_minutes: Option<u32>| {
+        let mut step = json!({ "text": text });
+        if let Some(minutes) = timer_minutes {
+            step["timer_minutes"] = json!(minutes);
+        }
+        step
+    };
+    // The steps that say a time have it as their timer.
     let steps = [
-        "Citronnez les morceaux de poulet.",
-        "Préparez la mixture aromatique en la hachant grossièrement.",
-        "Préparez les boulettes de dombrés comme expliqué ici.",
-        "Dans une cocotte, faites chauffer un filet d’huile.",
-        "Une fois chaude, incorporez les morceaux de poulet.",
-        "Faites colorer les morceaux sur feu vif, en déglaçant régulièrement avec le vin blanc.",
-        "Au bout de 10 minutes, baissez le feu puis ajoutez la mixture aromatique, le sel et le \
-         mélange bouquet garni.",
-        "Ajoutez dans la foulée, la pulpe de tomate et ensuite l’eau et le gros thym.",
-        "Une fois l’ébullition atteinte, ajoutez vos boulettes de dombrés au bout de 5 minutes.",
-        "Baissez le feu pour maintenir une petite ébullition et laissez cuire 25 minutes.",
-        "Arrêtez le feu. Pressez la dernière gousse d’ail et ciselez du persil frais.",
-        "Ajoutez la cuillère à soupe de vinaigre.",
+        step("Citronnez les morceaux de poulet.", None),
+        step(
+            "Préparez la mixture aromatique en la hachant grossièrement.",
+            None,
+        ),
+        step(
+            "Préparez les boulettes de dombrés comme expliqué ici.",
+            None,
+        ),
+        step("Dans une cocotte, faites chauffer un filet d’huile.", None),
+        step("Une fois chaude, incorporez les morceaux de poulet.", None),
+        step(
+            "Faites colorer les morceaux sur feu vif, en déglaçant régulièrement avec le vin blanc.",
+            None,
+        ),
+        step(
+            "Au bout de 10 minutes, baissez le feu puis ajoutez la mixture aromatique, le sel et \
+             le mélange bouquet garni.",
+            Some(10),
+        ),
+        step(
+            "Ajoutez dans la foulée, la pulpe de tomate et ensuite l’eau et le gros thym.",
+            None,
+        ),
+        step(
+            "Une fois l’ébullition atteinte, ajoutez vos boulettes de dombrés au bout de 5 minutes.",
+            Some(5),
+        ),
+        step(
+            "Baissez le feu pour maintenir une petite ébullition et laissez cuire 25 minutes.",
+            Some(25),
+        ),
+        step(
+            "Arrêtez le feu. Pressez la dernière gousse d’ail et ciselez du persil frais.",
+            None,
+        ),
+        step("Ajoutez la cuillère à soupe de vinaigre.", None),
     ];
     assert_eq!(
         imported,
@@ -223,7 +258,7 @@ async fn a_recipe_is_imported_from_an_article_that_only_shows_it() {
             ],
             // Up to the advice that follows the steps, under a heading of
             // its own.
-            "instructions": steps.map(|text| json!({ "text": text })),
+            "instructions": steps,
             "prep_minutes": 25,
             "cook_minutes": 30,
             "servings": 3,

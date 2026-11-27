@@ -21,7 +21,7 @@ use imkitchen_admin::{app, config, images, imports, messages, recipes, subscript
 use imkitchen_aggregates::contact::Sent;
 use imkitchen_aggregates::identity::{Deleted, EmailRegistered, ProfileUpdated, User};
 use imkitchen_aggregates::image::{RecipeImage, Released, Stored, Used};
-use imkitchen_aggregates::recipe::{self, Ingredient};
+use imkitchen_aggregates::recipe::{self, Ingredient, Instruction};
 use imkitchen_aggregates::recipe_import::{Failed, Imported};
 use imkitchen_api::auth::Auth;
 use imkitchen_api::cluster::{self, Cluster, Executor};
@@ -385,7 +385,7 @@ impl Api {
                         unit: None,
                     },
                 ],
-                instructions: vec!["Mix.".to_owned(), "Cook.".to_owned()],
+                instructions: vec![step("Mix.", None), step("Cook.", Some(20))],
                 prep_minutes: 10,
                 cook_minutes: 20,
                 servings: 4,
@@ -683,6 +683,13 @@ impl Browser {
 async fn get(router: &Router, path: &str) -> (StatusCode, String) {
     let answer = Browser::default().get(router, path).await;
     (answer.status, answer.body)
+}
+
+fn step(text: &str, timer_minutes: Option<u32>) -> Instruction {
+    Instruction {
+        text: text.to_owned(),
+        timer_minutes,
+    }
 }
 
 fn dir() -> TempDir {
@@ -1268,7 +1275,16 @@ async fn the_read_models_are_built_from_scratch_and_follow() {
     assert_eq!(pancakes.owner_id, kitchen.alice);
     assert_eq!(pancakes.ingredients.0.len(), 2);
     assert_eq!(pancakes.ingredients.0[0].quantity, Some(250.0));
-    assert_eq!(pancakes.instructions.0, ["Mix.", "Cook."]);
+    let steps = &pancakes.instructions.0;
+    assert_eq!(steps.len(), 2);
+    assert_eq!(
+        (steps[0].text.as_str(), steps[0].timer_minutes),
+        ("Mix.", None)
+    );
+    assert_eq!(
+        (steps[1].text.as_str(), steps[1].timer_minutes),
+        ("Cook.", Some(20))
+    );
     assert_eq!(pancakes.image_id.as_deref(), Some(PICTURE));
     assert_eq!(pancakes.file_id.as_deref(), Some("file-1"));
 
@@ -1327,7 +1343,7 @@ async fn the_read_models_are_built_from_scratch_and_follow() {
             quantity: None,
             unit: None,
         }],
-        instructions: vec!["Cook.".to_owned()],
+        instructions: vec![step("Cook.", None)],
         prep_minutes: 5,
         cook_minutes: 5,
         servings: 2,
@@ -1493,6 +1509,8 @@ async fn each_screen_is_read_from_what_admin_followed() {
     has(&page, "How Pancakes is made.");
     has(&page, "250 g flour");
     has(&page, "data-instructions=\"2\"");
+    assert_eq!(page.matches("data-timer=").count(), 1);
+    has(&page, "data-timer=\"20\"");
     has(&page, "data-imported-from=\"marmiton.org\"");
     has(&page, &format!("href=\"/images/{PICTURE}\""));
     has(&page, "src=\"https://api.test/v1/images/400/file-1.webp\"");

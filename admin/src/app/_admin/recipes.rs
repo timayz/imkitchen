@@ -193,7 +193,12 @@ pub async fn show(cx: &Cx) -> Result<impl View> {
             <h2 class=(H2)>"Steps"</h2>
             <ol class="mt-4 list-decimal pl-6 text-sm" data-instructions=(recipe.instructions.0.len())>
                 for step in &recipe.instructions.0 {
-                    <li class="mt-1 whitespace-pre-line">(step.as_str())</li>
+                    <li class="mt-1 whitespace-pre-line">
+                        (step.text.as_str())
+                        if let Some(minutes) = step.timer_minutes {
+                            <span class="ml-2 text-stone-500" data-timer=(minutes)>(format!("{minutes} min"))</span>
+                        }
+                    </li>
                 }
             </ol>
         </main>

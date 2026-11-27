@@ -16,7 +16,7 @@ pub enum Recipe {
         description: String,
         ingredients: Vec<Ingredient>,
         /// The steps, in the order they are made.
-        instructions: Vec<String>,
+        instructions: Vec<Instruction>,
         prep_minutes: u32,
         cook_minutes: u32,
         servings: u32,
@@ -26,7 +26,7 @@ pub enum Recipe {
         title: String,
         description: String,
         ingredients: Vec<Ingredient>,
-        instructions: Vec<String>,
+        instructions: Vec<Instruction>,
         prep_minutes: u32,
         cook_minutes: u32,
         servings: u32,
@@ -50,4 +50,14 @@ pub struct Ingredient {
     /// What `quantity` counts ("g", "tbsp"); `None` for the thing itself
     /// ("2 eggs").
     pub unit: Option<String>,
+}
+
+/// One step of a recipe. Persisted in events: its fields are frozen as the
+/// variants are.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Encode, Decode)]
+pub struct Instruction {
+    pub text: String,
+    /// The minutes to wait once the step is done ("bake 25 minutes"), what
+    /// a timer is started from; `None` when there is nothing to wait for.
+    pub timer_minutes: Option<u32>,
 }

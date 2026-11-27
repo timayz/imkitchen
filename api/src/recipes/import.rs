@@ -14,6 +14,10 @@
 //! recipe ([`image`]). Two recipes imported from the same page show the
 //! same picture, which is stored once (`crate::images`).
 //!
+//! A step that says how long to wait has that as its timer: the time the
+//! page gives the step when it does, the first one its text says otherwise
+//! ([`spoken`]).
+//!
 //! What is read is held to the bounds a recipe written by hand is held to
 //! (`recipes::RecipeBody`), cut short rather than refused.
 
@@ -22,10 +26,12 @@ mod html;
 mod ingredient;
 mod page;
 mod schema_org;
+mod spoken;
 
 use anyhow::Context as _;
 use axum::http::StatusCode;
 use imkitchen_aggregates::image::RecipeImage;
+use imkitchen_aggregates::recipe::Instruction;
 use imkitchen_aggregates::recipe_import::{Failed, Imported};
 use reqwest::Url;
 use validator::ValidationError;
@@ -60,7 +66,7 @@ struct Found {
     /// One line each, to be taken apart ([`ingredient::parse`]).
     ingredients: Vec<String>,
     /// The steps, in the order they are made.
-    instructions: Vec<String>,
+    instructions: Vec<Step>,
     prep_minutes: Option<u32>,
     cook_minutes: Option<u32>,
     /// How long it all takes, for the pages that say nothing else.
@@ -68,6 +74,41 @@ struct Found {
     servings: Option<u32>,
     /// Where the page says the picture of the recipe is, as it writes it.
     image: Option<String>,
+}
+
+/// One step of a recipe on a page, as the page writes it.
+#[derive(Debug, Default, PartialEq)]
+struct Step {
+    text: String,
+    /// The minutes to wait once it is done, when the page says so apart
+    /// from the text.
+    timer_minutes: Option<u32>,
+}
+
+impl From<String> for Step {
+    fn from(text: String) -> Self {
+        Self {
+            text,
+            timer_minutes: None,
+        }
+    }
+}
+
+impl Step {
+    /// The step as one of ours, with the timer the page gives it or, when
+    /// it gives none, the first time its text says ("25 min", "1 h 30").
+    fn into_instruction(self) -> Instruction {
+        let text = ingredient::clip(&self.text, INSTRUCTION_MAX);
+        let timer_minutes = self
+            .timer_minutes
+            .or_else(|| spoken::first_minutes(&text))
+            .filter(|minutes| *minutes > 0)
+            .map(|minutes| minutes.min(MINUTES_MAX));
+        Instruction {
+            text,
+            timer_minutes,
+        }
+    }
 }
 
 /// What a page holds: its recipe, and where its picture is.
@@ -118,9 +159,9 @@ impl Found {
                 .collect(),
             instructions: self
                 .instructions
-                .iter()
+                .into_iter()
                 .take(INSTRUCTIONS_MAX)
-                .map(|step| ingredient::clip(step, INSTRUCTION_MAX))
+                .map(Step::into_instruction)
                 .collect(),
             prep_minutes,
             cook_minutes,

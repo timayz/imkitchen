@@ -12,7 +12,7 @@ use evento::metadata::Event;
 use evento::remote::ServerHandle;
 use evento::subscription::{Context, Subscription, SubscriptionBuilder};
 use imkitchen_aggregates::contact::Sent;
-use imkitchen_aggregates::recipe::{Created, Deleted, Ingredient};
+use imkitchen_aggregates::recipe::{Created, Deleted, Ingredient, Instruction};
 use imkitchen_api::auth::Auth;
 use imkitchen_api::cluster::{self, Cluster, Executor};
 use imkitchen_api::config::{AuthConfig, Secret, SidecarTokens, SidecarsConfig};
@@ -229,7 +229,10 @@ impl Api {
                     quantity: Some(250.0),
                     unit: Some("g".to_owned()),
                 }],
-                instructions: vec!["Mix everything.".to_owned()],
+                instructions: vec![Instruction {
+                    text: "Mix everything.".to_owned(),
+                    timer_minutes: None,
+                }],
                 prep_minutes: 10,
                 cook_minutes: 20,
                 servings: 4,

@@ -16,7 +16,7 @@ use evento::metadata::Event;
 use evento::{Executor, Projection, ProjectionAggregate, WriteBuilder, WriteError};
 use imkitchen_aggregates::image::RecipeImage;
 use imkitchen_aggregates::recipe::{
-    Created, Deleted, Edited, ImageRemoved, ImageSet, Ingredient, Recipe,
+    Created, Deleted, Edited, ImageRemoved, ImageSet, Ingredient, Instruction, Recipe,
 };
 
 use crate::error::{ApiError, ApiResult};
@@ -36,7 +36,7 @@ pub struct Content {
     pub description: String,
     pub ingredients: Vec<Ingredient>,
     /// The steps, in the order they are made.
-    pub instructions: Vec<String>,
+    pub instructions: Vec<Instruction>,
     pub prep_minutes: u32,
     pub cook_minutes: u32,
     pub servings: u32,
