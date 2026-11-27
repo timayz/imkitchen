@@ -1,0 +1,25 @@
+# What CI renders the chart with: everything on.
+existingSecret: imkitchen-admin-env
+replicaCount: 2
+config:
+  api:
+    url: "http://api:3000"
+    publicUrl: "https://api.example.com"
+    events: "api:4000"
+    tls:
+      secretName: api-sidecars-ca
+      serverName: api
+extraEnv:
+  IMKITCHEN_ADMIN__MONITORING__LOG_LEVEL: "info,evento=debug"
+route:
+  enabled: true
+  hostname: admin.example.com
+persistence:
+  size: 2Gi
+  storageClassName: local-path
+  labels:
+    app.kubernetes.io/part-of: imkitchen
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi

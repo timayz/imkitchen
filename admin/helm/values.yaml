@@ -1,0 +1,124 @@
+# How many pods of admin run. Each one follows the api's events into a store
+# of its own, on a volume of its own, and serves from it: they are added
+# and taken away at will. One is enough for the few who read it; it is away
+# for the time it takes to start again.
+replicaCount: 1
+
+image:
+  repository: timayz/imkitchen
+  # Empty: admin-<the chart's appVersion>. Every application of imkitchen
+  # has its tags in the one repository.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# The non-secret part of admin's configuration (admin/config/default.toml
+# says what each key does). The store and the port are the chart's to say.
+config:
+  server:
+    # The address administrators reach admin at. Over https, the cookie of a
+    # session is only ever sent encrypted. Empty: https://<route.hostname>.
+    url: ""
+    # How long requests in flight get to finish when a pod is asked to stop.
+    shutdownTimeoutSecs: 30
+  api:
+    # Where the api answers HTTP: where administrators are signed in and
+    # out, asked about on every page, and what they do is sent as commands.
+    # Its service.
+    url: "http://imkitchen-api:3000"
+    # Where the browsers of the administrators reach the api: what the
+    # pictures of the recipes are shown from. Empty: admin shows none.
+    publicUrl: ""
+    # Where admin follows the api's events: the `sidecars` port of its
+    # service (evento's remote protocol, not HTTP). Its token goes in
+    # secretEnv.
+    events: "imkitchen-api:4000"
+    tls:
+      # A Secret whose `ca.crt` the certificate of the api's sidecars port
+      # is checked against, when the api gives it one. Empty: the
+      # connection is not encrypted and the token travels in clear.
+      secretName: ""
+      # The name that certificate must carry. Empty: the host of `events`.
+      serverName: ""
+  monitoring:
+    logLevel: "info"
+    logJson: true
+    logTarget: true
+    logLineNumber: true
+
+# The secret part of the configuration, as the environment variables admin
+# reads. Kept in a Secret the chart makes:
+#
+#   IMKITCHEN_ADMIN__API__TOKEN     what admin opens its connections to the
+#                                   api's events with: the api's
+#                                   IMKITCHEN_API__SIDECARS__TOKENS__ADMIN.
+#                                   Required.
+#   IMKITCHEN_ADMIN__SESSION__KEY   what the cookie of a session is encrypted
+#                                   under, 32 bytes or more
+#                                   (`openssl rand -base64 48`). Required:
+#                                   without one each pod would draw its own
+#                                   when it starts, and whoever was signed in
+#                                   would sign in again.
+secretEnv: {}
+
+# A Secret made elsewhere that holds the same variables, in place of the one
+# the chart makes from secretEnv.
+existingSecret: ""
+
+# More environment variables, in plain text.
+extraEnv: {}
+
+service:
+  type: ClusterIP
+  port: 3020
+
+# Publishes admin through a Gateway (HTTPRoute), with a certificate for its
+# hostname asked of cert-manager beside the Gateway. Whoever reaches it gets
+# the sign-in page: only an administrator of the api gets further.
+route:
+  enabled: false
+  hostname: ""
+  parentRef:
+    name: envoy
+    namespace: envoy-gateway-system
+  certificate:
+    enabled: true
+    issuerRef:
+      kind: ClusterIssuer
+      name: letsencrypt
+    annotations: {}
+
+# Each pod's own volume: its store, the read models it builds from the
+# api's events and how far it followed them. A pod that starts again goes on
+# from where it stopped. Nothing in it is written anywhere else: a pod that
+# lost its volume builds its store again from the first event, and serves
+# what it has while it catches up.
+persistence:
+  size: 1Gi
+  # Empty: the cluster's default class.
+  storageClassName: ""
+  labels: {}
+
+# CPU and memory each pod asks for and may use, as Kubernetes writes it.
+resources: {}
+
+# Longer than config.server.shutdownTimeoutSecs: the pod also stops its
+# subscriptions.
+terminationGracePeriodSeconds: 45
+
+# Pods that may be down at once on purpose (a drain, an upgrade). Only with
+# more than one pod.
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+
+podAnnotations: {}
+podLabels: {}
+nodeSelector: {}
+tolerations: []
+# Empty: the pods are spread over the machines when there are enough of
+# them.
+affinity: {}
