@@ -29,12 +29,47 @@ pub type Store = Turso;
 /// migration that was released is never edited.
 pub const MIGRATIONS: Migrations<'static> = Migrations::new(
     "imkitchen-app",
-    &[Migration::up(
-        "0001_recipes",
-        // One row per recipe that is not deleted, and nothing of what it
-        // says: how many there are is all app shows of them.
-        "CREATE TABLE recipes (id TEXT NOT NULL PRIMARY KEY);",
-    )],
+    &[
+        Migration::up(
+            "0001_recipes",
+            // One row per recipe that is not deleted, and nothing of what it
+            // says: how many there are is all app showed of them.
+            "CREATE TABLE recipes (id TEXT NOT NULL PRIMARY KEY);",
+        ),
+        Migration::up(
+            "0002_recipes_of_their_owners",
+            // One row per recipe that is not deleted, with whose it is, all
+            // it says (`ingredients` and `instructions` as JSON) and the
+            // picture it shows: the name of its files and the size of the
+            // larger one. `search` is its title and its ingredients,
+            // lowercased and without accents.
+            //
+            // The rows that were there held an id and nothing else: the
+            // subscription that fills the table starts again from the first
+            // event, its cursor forgotten.
+            "DROP TABLE recipes;
+            CREATE TABLE recipes (
+                id TEXT NOT NULL PRIMARY KEY,
+                owner_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                ingredients TEXT NOT NULL,
+                instructions TEXT NOT NULL,
+                prep_minutes INTEGER NOT NULL,
+                cook_minutes INTEGER NOT NULL,
+                servings INTEGER NOT NULL,
+                file_id TEXT,
+                image_width INTEGER,
+                image_height INTEGER,
+                search TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+            );
+            CREATE INDEX recipes_owned ON recipes (owner_id, created_at DESC, id DESC);
+            DELETE FROM subscriber WHERE key = 'imkitchen-app/recipes';
+            DELETE FROM dead_letter WHERE subscriber = 'imkitchen-app/recipes';",
+        ),
+    ],
 );
 
 /// Every list of migrations the store's schema is made of.
@@ -145,10 +180,55 @@ mod tests {
         // Again: nothing is pending.
         drop(migrate(&path).await.unwrap());
         let db = Db::from(open(&path).await.unwrap());
-        let recipes: i64 = db
-            .fetch_scalar("SELECT count(*) FROM recipes", ())
+        assert_eq!(crate::recipes::count(&db).await.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn a_store_that_counted_the_recipes_follows_them_again_from_the_start() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("app.db");
+        // The store as the first version of app left it: an id per recipe,
+        // and the subscription past the events that wrote them.
+        let store = Turso::open_concurrent(&path).await.unwrap();
+        let mut conn = store.connect().unwrap();
+        let first = Migrations::new("imkitchen-app", &MIGRATIONS_UNTIL_0001);
+        first.to_latest(&mut conn).await.unwrap();
+        let db = Db::from(store);
+        db.execute("INSERT INTO recipes (id) VALUES ('soup')", ())
             .await
             .unwrap();
-        assert_eq!(recipes, 0);
+        for key in [crate::recipes::SUBSCRIPTION, "imkitchen-app/other"] {
+            db.execute(
+                "INSERT INTO subscriber (key, worker_id, cursor, lag, created_at)
+                 VALUES (?1, 'worker', 'cursor', 0, 0)",
+                (key,),
+            )
+            .await
+            .unwrap();
+        }
+        drop((conn, db));
+
+        let db = Db::from(migrate(&path).await.unwrap());
+        assert_eq!(crate::recipes::count(&db).await.unwrap(), 0);
+        let cursors: i64 = db
+            .fetch_scalar(
+                "SELECT count(*) FROM subscriber WHERE key = ?1",
+                (crate::recipes::SUBSCRIPTION,),
+            )
+            .await
+            .unwrap();
+        assert_eq!(cursors, 0);
+        // Nobody else's cursor is touched.
+        let cursors: i64 = db
+            .fetch_scalar("SELECT count(*) FROM subscriber", ())
+            .await
+            .unwrap();
+        assert_eq!(cursors, 1);
     }
+
+    /// The migrations of app before its recipes had owners.
+    const MIGRATIONS_UNTIL_0001: [Migration<'static>; 1] = [Migration::up(
+        "0001_recipes",
+        "CREATE TABLE recipes (id TEXT NOT NULL PRIMARY KEY);",
+    )];
 }

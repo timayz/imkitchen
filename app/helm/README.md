@@ -53,6 +53,9 @@ helm install imkitchen-app app/helm \
   HTTP port and its `sidecars` port (`sidecars.enabled` in the api's
   chart). The defaults are those of an api released as `imkitchen-api` in
   the same namespace.
+- `config.api.publicUrl`: where the browsers reach the api, for the
+  pictures of the recipes. Left out, it is `/api` of the address users reach
+  app at, where the gateway serves the api.
 - `config.api.tls.secretName` when the api gives its sidecars port a
   certificate: the Secret whose `ca.crt` it is checked against. Without it
   the token travels in clear.

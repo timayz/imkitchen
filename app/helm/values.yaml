@@ -29,6 +29,10 @@ config:
     # are asked about on every page, and what they do is sent as commands.
     # Its service.
     url: "http://imkitchen-api:3000"
+    # Where the browsers of the users reach the api: what the pictures of
+    # the recipes are shown from. Empty: `/api` of the address users reach
+    # app at, where the gateway serves the api on the main domain.
+    publicUrl: ""
     # Where app follows the api's events: the `sidecars` port of its service
     # (evento's remote protocol, not HTTP). Its token goes in secretEnv.
     events: "imkitchen-api:4000"
