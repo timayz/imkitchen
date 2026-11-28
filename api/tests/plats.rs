@@ -317,12 +317,18 @@ async fn a_deleted_recipe_leaves_the_plats_it_was_part_of() {
     let side_path = format!("/v1/plats/{side}");
     made_of(&api, &token, &side_path, &[]).await;
 
-    // Said by the plats themselves, once each.
+    // Said by the plats themselves, once each, once the saga took it out
+    // of them: the lists and the plats above leave a recipe that is gone
+    // out before then.
     for (plat, events) in [(&sunday, 2), (&side, 2), (&sauce, 1)] {
-        let stream = evento::read::<Plat>(plat)
-            .execute(&api.state.executor)
-            .await
-            .unwrap();
+        let stream = eventually(&format!("{plat} to say it"), || async {
+            let stream = evento::read::<Plat>(plat)
+                .execute(&api.state.executor)
+                .await
+                .unwrap();
+            (stream.len() >= events).then_some(stream)
+        })
+        .await;
         assert_eq!(stream.len(), events, "{plat}");
     }
 
@@ -618,10 +624,16 @@ async fn a_plat_composed_on_a_node_is_read_on_the_others() {
         listed(api, &token, "/v1/plats", &[("Sunday roast", rest)]).await;
         made_of(api, &token, &path, rest).await;
     }
-    let stream = evento::read::<Plat>(&plat)
-        .execute(&apis[0].state.executor)
-        .await
-        .unwrap();
+    // Written by the sagas a moment later: the lists and the plat above
+    // leave a recipe that is gone out before then.
+    let stream = eventually("the plat to say the recipe is out of it", || async {
+        let stream = evento::read::<Plat>(&plat)
+            .execute(&apis[0].state.executor)
+            .await
+            .unwrap();
+        (stream.len() >= 2).then_some(stream)
+    })
+    .await;
     assert_eq!(stream.len(), 2, "created, one recipe removed once");
 
     let (status, _) = apis[0]
