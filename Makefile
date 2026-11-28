@@ -1,4 +1,4 @@
-.PHONY: start dev run migrate cluster.all www.dev www.run www.migrate admin.dev admin.run admin.migrate app.dev app.run app.migrate cert cert.install up stop down health ready lint fmt-check fmt test test.api.unit test.www test.admin test.app machete l10n check
+.PHONY: start dev run migrate dev.all cluster.all www.dev www.run www.migrate admin.dev admin.run admin.migrate app.dev app.run app.migrate cert cert.install up stop down health ready lint fmt-check fmt test test.api.unit test.www test.admin test.app machete l10n check
 
 # Traefik and the mail catcher, then the api: what a bare `make` runs.
 start: up dev
@@ -77,6 +77,13 @@ CLUSTER_NODE_ENV = IMKITCHEN_API_CONFIG=api/config/cluster.toml \
 # Run the api, restarting it on code changes
 dev: migrate
 	$(call API_SIDECARS_ENV,4000) cargo watch -w api -w aggregates -w Cargo.toml -x "run -p imkitchen-api -- $(API_ARGS)"
+
+# Run the api, www, admin and app at once, each rebuilt and restarted on its
+# changes as `make dev`, `make www.dev`, `make admin.dev` and `make app.dev`
+# run them, their logs together in this terminal. Ctrl-C stops them all.
+# Traefik in front of them is `make up`.
+dev.all:
+	$(MAKE) -j4 dev www.dev admin.dev app.dev
 
 # Run the api once
 run: migrate
