@@ -1,41 +1,188 @@
 //! The read side of the plats: the `plats` table a user's list is read
-//! from, and the subscription that keeps it current and the plats free of
-//! the recipes that were deleted.
+//! from, each row the snapshot of a projection of the plat's stream
+//! ([`Listed`]), kept by a projection subscription ([`subscription`]); and
+//! the saga that keeps the plats free of the recipes that were deleted
+//! ([`saga`]).
 //!
-//! A handler reloads the plat from its stream and rewrites its row, so an
-//! event delivered twice (the subscription is at-least-once) leaves the row
-//! as it should be; a deleted plat loses its row.
+//! A deleted plat loses its row. Every node runs both subscriptions over
+//! its own table, with cursors of its own.
 //!
 //! A recipe that is deleted is taken out of the plats it was part of
 //! (`RecipeRemoved`, on each of them): those the table knows of when the
 //! deletion comes by. A plat composed with the recipe while it was being
 //! deleted comes by later; so every event of a plat has its recipes looked
-//! at, and those that are gone taken out. One subscription does both, in
-//! the order of the events: whichever of the two comes last finds the
-//! other. Taking out what is no longer there writes nothing, so delivery
-//! may repeat, and every node runs the subscription over its own table,
-//! with a cursor of its own.
+//! at, and those that are gone taken out. The saga does both, in the order
+//! of the events: whichever of the two comes last finds the other. For the
+//! table to know a plat when the saga reaches the deletion, the saga loads
+//! every plat it sees through [`Listed`], which writes its row, rather
+//! than counting on the projection subscription to be as far as it is.
+//! Taking out what is no longer there writes nothing, so delivery may
+//! repeat.
 
+use evento::Executor;
 use evento::metadata::{Event, RawEvent};
+use evento::projection::{self, Projection, ProjectionSubscription, Snapshot};
 use evento::subscription::{Context, SubscriptionBuilder};
-use imkitchen_aggregates::plat::Plat;
+use imkitchen_aggregates::plat::{Created, Deleted, Edited, Plat, RecipeRemoved};
 use imkitchen_aggregates::recipe;
 use timada_core::db::{FromRow, Json, search_key};
 use timada_core::like_contains;
 use timada_core::page::Cursor;
 
-use super::model::{self, PlatState};
+use super::model;
 use crate::db::Db;
 use crate::recipes;
 
-/// The cursor identity of the subscription, in the store.
+/// The cursor identity of the subscription that keeps the rows, in the
+/// store.
 pub const SUBSCRIPTION: &str = "imkitchen-api/plats";
 
-/// Follows the plats into `db`, and the deleted recipes out of the plats.
-/// It writes: start it over a handle whose reads wait for the writes
-/// before them.
-pub fn subscription<E: evento::Executor>(db: Db) -> SubscriptionBuilder<E> {
-    SubscriptionBuilder::new(SUBSCRIPTION)
+/// The cursor identity of the saga, in the store.
+pub const SAGA: &str = "imkitchen-api/plats-recipes";
+
+/// A plat as its row of `plats` holds it: what the lists read of it.
+#[evento::projection]
+#[derive(Debug)]
+pub struct Listed {
+    pub id: String,
+    pub owner_id: String,
+    pub name: String,
+    /// The recipes it is made of, in the order they are served.
+    pub recipe_ids: Vec<String>,
+    /// Unix seconds of `Created`.
+    pub created_at: u64,
+    /// Unix seconds of the last event.
+    pub updated_at: u64,
+    pub deleted: bool,
+}
+
+fn projection<E: Executor>(db: Db) -> Projection<E, Listed> {
+    Projection::new::<Plat>()
+        .handler(on_created())
+        .handler(on_edited())
+        .handler(on_deleted())
+        .handler(on_recipe_removed())
+        .data(db)
+}
+
+/// Keeps the row of each plat in `db` as its stream leaves it. Start it
+/// over a handle that reads this node's file as it stands: what it loads is
+/// behind the event it handles.
+pub fn subscription<E: Executor>(db: Db) -> ProjectionSubscription<E, Listed> {
+    projection(db).subscription(SUBSCRIPTION)
+}
+
+#[evento::handler]
+async fn on_created(event: Event<Created>, plat: &mut Listed) -> anyhow::Result<()> {
+    let data = &event.data;
+    plat.id = event.aggregate_id.to_owned();
+    plat.owner_id = data.owner_id.to_owned();
+    plat.name = data.name.to_owned();
+    plat.recipe_ids = data.recipe_ids.to_owned();
+    plat.created_at = event.timestamp;
+    plat.updated_at = event.timestamp;
+    Ok(())
+}
+
+#[evento::handler]
+async fn on_edited(event: Event<Edited>, plat: &mut Listed) -> anyhow::Result<()> {
+    plat.name = event.data.name.to_owned();
+    plat.recipe_ids = event.data.recipe_ids.to_owned();
+    plat.updated_at = event.timestamp;
+    Ok(())
+}
+
+#[evento::handler]
+async fn on_deleted(event: Event<Deleted>, plat: &mut Listed) -> anyhow::Result<()> {
+    plat.deleted = true;
+    plat.updated_at = event.timestamp;
+    Ok(())
+}
+
+#[evento::handler]
+async fn on_recipe_removed(event: Event<RecipeRemoved>, plat: &mut Listed) -> anyhow::Result<()> {
+    plat.recipe_ids.retain(|id| *id != event.data.recipe_id);
+    plat.updated_at = event.timestamp;
+    Ok(())
+}
+
+/// The row of a plat, and how far its stream was folded into it.
+#[derive(FromRow)]
+struct Row {
+    id: String,
+    owner_id: String,
+    name: String,
+    recipe_ids: Json<Vec<String>>,
+    created_at: i64,
+    updated_at: i64,
+    cursor: String,
+    aggregate_version: i64,
+}
+
+impl<E: Executor> Snapshot<E> for Listed {
+    async fn restore(context: &projection::Context<'_, E>) -> anyhow::Result<Option<Self>> {
+        let db: Db = context.extract();
+        let row: Option<Row> = db
+            .fetch_optional(
+                "SELECT id, owner_id, name, recipe_ids, created_at, updated_at, cursor,
+                    aggregate_version
+                 FROM plats WHERE id = ?1",
+                (context.id.as_str(),),
+            )
+            .await?;
+        Ok(row.map(|row| Listed {
+            id: row.id,
+            owner_id: row.owner_id,
+            name: row.name,
+            recipe_ids: row.recipe_ids.0,
+            created_at: row.created_at as u64,
+            updated_at: row.updated_at as u64,
+            deleted: false,
+            cursor: row.cursor,
+            aggregate_version: row.aggregate_version as u16,
+            ..Default::default()
+        }))
+    }
+
+    /// A deleted plat loses its row: loading it again folds its stream from
+    /// the start, which says it is deleted.
+    async fn take_snapshot(&self, context: &projection::Context<'_, E>) -> anyhow::Result<()> {
+        let db: Db = context.extract();
+        if self.deleted {
+            db.execute("DELETE FROM plats WHERE id = ?1", (context.id.as_str(),))
+                .await?;
+            return Ok(());
+        }
+        db.execute(
+            "INSERT INTO plats (id, owner_id, name, recipe_ids, search, created_at, updated_at,
+                cursor, aggregate_version)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+             ON CONFLICT (id) DO UPDATE SET
+                name = excluded.name, recipe_ids = excluded.recipe_ids, search = excluded.search,
+                updated_at = excluded.updated_at, cursor = excluded.cursor,
+                aggregate_version = excluded.aggregate_version",
+            (
+                context.id.as_str(),
+                self.owner_id.as_str(),
+                self.name.as_str(),
+                Json(&self.recipe_ids).to_text()?,
+                search_key(&self.name),
+                self.created_at as i64,
+                self.updated_at as i64,
+                self.cursor.as_str(),
+                i64::from(self.aggregate_version),
+            ),
+        )
+        .await?;
+        Ok(())
+    }
+}
+
+/// Takes the deleted recipes out of the plats, which `db` names by owner.
+/// It writes: start it over a handle whose reads wait for the writes before
+/// them.
+pub fn saga<E: Executor>(db: Db) -> SubscriptionBuilder<E> {
+    SubscriptionBuilder::new(SAGA)
         .data(db)
         .handler(on_plat_event())
         .handler(on_recipe_deleted())
@@ -43,25 +190,25 @@ pub fn subscription<E: evento::Executor>(db: Db) -> SubscriptionBuilder<E> {
 }
 
 #[evento::subscription_all]
-async fn on_plat_event<E: evento::Executor>(
+async fn on_plat_event<E: Executor>(
     context: &Context<'_, E>,
     event: RawEvent<Plat>,
 ) -> anyhow::Result<()> {
     let db: Db = context.extract();
-    let Some(plat) = model::load(context.executor, &event.aggregate_id).await? else {
+    // Loaded through the projection, which writes the row: the table knows
+    // the plat before the saga handles a later event.
+    let plat = projection(db)
+        .load(&event.aggregate_id)
+        .execute(context.executor)
+        .await?;
+    let Some(plat) = plat.filter(|plat| !plat.deleted) else {
         return Ok(());
     };
-    if plat.deleted {
-        db.execute("DELETE FROM plats WHERE id = ?1", (plat.id.as_str(),))
-            .await?;
-        return Ok(());
-    }
-    upsert(&db, &plat).await?;
 
     // Composed with a recipe that was being deleted: its deletion came by
     // before the plat was there to take it out of.
     let mut gone = Vec::new();
-    for id in &plat.composition.recipe_ids {
+    for id in &plat.recipe_ids {
         if recipes::own(context.executor, &plat.owner_id, id)
             .await?
             .is_none()
@@ -73,7 +220,7 @@ async fn on_plat_event<E: evento::Executor>(
 }
 
 #[evento::subscription]
-async fn on_recipe_deleted<E: evento::Executor>(
+async fn on_recipe_deleted<E: Executor>(
     context: &Context<'_, E>,
     event: Event<recipe::Deleted>,
 ) -> anyhow::Result<()> {
@@ -106,29 +253,6 @@ pub async fn composed_by(db: &Db, owner_id: &str) -> anyhow::Result<Vec<Composed
         (owner_id,),
     )
     .await
-}
-
-/// Writes the row of a plat as its stream leaves it.
-async fn upsert(db: &Db, plat: &PlatState) -> anyhow::Result<()> {
-    let composition = &plat.composition;
-    db.execute(
-        "INSERT INTO plats (id, owner_id, name, recipe_ids, search, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
-         ON CONFLICT (id) DO UPDATE SET
-            name = excluded.name, recipe_ids = excluded.recipe_ids,
-            search = excluded.search, updated_at = excluded.updated_at",
-        (
-            plat.id.as_str(),
-            plat.owner_id.as_str(),
-            composition.name.as_str(),
-            Json(&composition.recipe_ids).to_text()?,
-            search_key(&composition.name),
-            plat.created_at as i64,
-            plat.updated_at as i64,
-        ),
-    )
-    .await?;
-    Ok(())
 }
 
 /// One row of `plats`: what a list shows of a plat, but for its recipes,

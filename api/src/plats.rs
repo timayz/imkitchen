@@ -33,7 +33,7 @@ use validator::{Validate, ValidationError};
 
 pub use self::model::PLAT_NOT_FOUND;
 use self::model::{Composition, MAX_RECIPES, PlatState};
-pub use self::read_model::{SUBSCRIPTION, subscription};
+pub use self::read_model::{SAGA, SUBSCRIPTION, saga, subscription};
 use crate::auth::Session;
 use crate::db::Db;
 use crate::error::{ApiResult, Body, Params, trimmed, trimmed_opt, valid_cursor};

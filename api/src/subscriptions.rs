@@ -35,20 +35,26 @@ pub async fn start(
             .start(executor)
             .await
             .context("cannot start the code mails subscription")?,
-        // Reads this node's file as it stands: what its handler loads is
-        // behind the event it handles, and needs no round of the cluster.
+        // The lists' rows read this node's file as it stands: what they
+        // load is behind the event they handle, and needs no round of the
+        // cluster.
         crate::recipes::subscription(db.clone())
             .supervised()
             .start(&executor.local_reads())
             .await
             .context("cannot start the recipes subscription")?,
-        // Its list, and the recipes that were deleted taken out of the
-        // plats they were part of: writes, so through the cluster.
         crate::plats::subscription(db.clone())
+            .supervised()
+            .start(&executor.local_reads())
+            .await
+            .context("cannot start the plats subscription")?,
+        // The recipes that were deleted taken out of the plats they were
+        // part of: writes, so through the cluster.
+        crate::plats::saga(db.clone())
             .supervised()
             .start(executor)
             .await
-            .context("cannot start the plats subscription")?,
+            .context("cannot start the plats saga")?,
         // The recipes and the plats that were deleted taken off the lists
         // they were on: writes, so through the cluster.
         crate::list::subscription()
