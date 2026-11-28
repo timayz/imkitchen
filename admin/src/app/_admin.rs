@@ -3,10 +3,12 @@
 //! pictures and the messages written to imkitchen each have a module below.
 //!
 //! Every page is read from the store of admin, which its subscriptions
-//! fill from the api's events: none asks the api for what it shows. What
-//! an administrator does from a page is not written there: it is posted
-//! to the page, which hands it to the api as a command ([`done`]) and
-//! shows it once admin followed what the api wrote ([`followed`]).
+//! fill from the api's events. What an administrator does from a page is
+//! not written there: it is posted to the page, which hands it to the api
+//! as a command ([`done`]). One recipe or picture is loaded from its rows
+//! and the events written after them ([`fresh`]), so its page shows what a
+//! command just did; the lists are read from the tables, a moment behind,
+//! and a page waits for what admin follows of the users ([`followed`]).
 //!
 //! The module adds nothing to the addresses of its pages (its name starts
 //! with `_`). What it adds is who may read them: whatever is declared here
@@ -22,7 +24,7 @@ use std::future::Future;
 use std::time::Duration;
 
 use timada_core::civil::format_time;
-use tokio::time::{Instant, sleep};
+use tokio::time::{Instant, sleep, timeout};
 use topcoat::{
     Error, Result,
     context::{Cx, context},
@@ -38,6 +40,7 @@ use topcoat::{
 
 use super::{api, db, sign_in, sign_out};
 use crate::api::{Account, CommandError};
+use crate::events::Events;
 use crate::listing::Pages;
 use crate::session::{self, Kept};
 
@@ -161,6 +164,35 @@ where
     while !shown().await.unwrap_or(true) && Instant::now() < deadline {
         sleep(Duration::from_millis(50)).await;
     }
+}
+
+/// How long a page waits for the api to answer a load, before it shows what
+/// the read models of admin hold.
+const LOADED_WITHIN: Duration = Duration::from_secs(2);
+
+/// One recipe or picture as the commands handed the api left it: `loaded`
+/// from its rows and the events the api wrote after them. While admin does
+/// not reach the api's events, or when they do not answer within
+/// [`LOADED_WITHIN`], what its rows hold (`kept`), a moment behind: the
+/// page is shown all the same.
+pub(crate) async fn fresh<T>(
+    cx: &Cx,
+    loaded: impl Future<Output = anyhow::Result<T>>,
+    kept: impl Future<Output = anyhow::Result<T>>,
+) -> Result<T> {
+    if context::<Events>(cx).connected() {
+        match timeout(LOADED_WITHIN, loaded).await {
+            Ok(Ok(value)) => return Ok(value),
+            Ok(Err(err)) => tracing::warn!(
+                err = format!("{err:#}"),
+                "a load from the api's events failed: the page shows the read model"
+            ),
+            Err(_) => tracing::warn!(
+                "a load from the api's events was not answered in time: the page shows the read model"
+            ),
+        }
+    }
+    read(kept.await)
 }
 
 /// A read of the store that failed, as the error of a page.

@@ -77,9 +77,16 @@ impl Events {
         }
     }
 
-    /// What subscriptions are started over.
+    /// What subscriptions are started over, and what a page loads one
+    /// aggregate through.
     pub fn executor(&self) -> &Executor {
         &self.executor
+    }
+
+    /// Whether the api answers now: a load sent while it does not would
+    /// wait for admin to reach it again.
+    pub fn connected(&self) -> bool {
+        matches!(self.client.state(), ClientState::Connected)
     }
 
     /// How admin stands with the api, in a word: `connected`, `connecting`
