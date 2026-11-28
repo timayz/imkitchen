@@ -1,8 +1,9 @@
 name: Mobile
 
-# Checks the Lynx pages and builds the app for its two targets on every change
-# under mobile/: `js` (typecheck, tests, bundles), `android` (debug APK) and
-# `ios` (simulator app).
+# Checks the Lynx pages on every change under mobile/ (`js`: typecheck, tests,
+# bundles) and builds the app for its two targets on demand: the `android`
+# (debug APK) and `ios` (simulator app) jobs only run on a manual
+# `workflow_dispatch`, since they take up to 20 minutes.
 #
 # There is no Mac in the dev environment, so the `ios` job is the only place
 # the iOS shell is compiled and started: it runs `pod install` against
@@ -17,11 +18,8 @@ on:
       - "mobile/**"
       - ".github/workflows/mobile.yaml"
   push:
-    # GitHub scopes caches per ref: the runs on these branches are what a pull
-    # request against them restores its pods and derived data from.
     branches:
       - main
-      - alpha
     paths:
       - "mobile/**"
       - ".github/workflows/mobile.yaml"
@@ -54,6 +52,9 @@ jobs:
 
   android:
     name: Android debug APK
+    # Not on pull requests and pushes: run the workflow by hand to build the
+    # shell.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -88,6 +89,9 @@ jobs:
 
   ios:
     name: iOS simulator build
+    # Not on pull requests and pushes: run the workflow by hand to build the
+    # shell, start it and collect the simulator screenshots.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-15
     timeout-minutes: 60
     steps:

@@ -49,10 +49,12 @@ deliberately and re-run `npm run autolink` afterwards.
 
 ## CI (and the only iOS build)
 
-`.github/workflows/mobile.yaml` runs on every change under `mobile/`:
-typecheck + vitest + bundles, an Android debug APK on Ubuntu, and the iOS
-simulator build on a GitHub macOS runner (`pod install`, then `xcodebuild`
-with code signing off). The iOS job uploads the `Podfile.lock` it resolved
+`.github/workflows/mobile.yaml` runs typecheck + vitest + bundles on every
+change under `mobile/`. The two native builds only run when the workflow is
+started by hand (`gh workflow run mobile.yaml --ref <branch>`), since they
+take up to 20 minutes: an Android debug APK on Ubuntu, and the iOS simulator
+build on a GitHub macOS runner (`pod install`, then `xcodebuild` with code
+signing off). The iOS job uploads the `Podfile.lock` it resolved
 and the full `xcodebuild` log as the `ios-build` artifact; after a Podfile
 change, commit the uploaded lock.
 
@@ -69,9 +71,8 @@ and `main-dark.png`, `app-light.log` and `app-dark.log` (stdout/stderr),
 The iOS job caches `ios/Pods` and the derived data under `ios/build`, both
 keyed on `Podfile.lock`, and builds arm64 only (the runner's native simulator
 architecture). Cold: about 14 min; warm: about 2 min, the app target alone
-recompiles. GitHub scopes caches per ref, so the first run of a pull request
-is served from the caches of its base branch once a push there has populated
-them.
+recompiles. GitHub scopes caches per ref, so a run on a branch only sees the caches saved
+on that branch or on the default one.
 
 iOS stays on Lynx 3.6.0: the `Sparkling` 2.0.1 pod depends on
 `Lynx/Framework (= 3.6.0)` exactly, which CocoaPods cannot override the way
