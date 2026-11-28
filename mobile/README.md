@@ -16,7 +16,7 @@ yet.
 |---|---|
 | `app.config.ts` | Rspeedy entries (one bundle per native container), package ids, splash |
 | `src/pages/<name>/` | One Lynx entry per native container; `main` hosts the tab bar |
-| `src/ui/` | Shared components: `Screen` (page root, theme), `BottomTabs` |
+| `src/ui/` | Shared components: `Screen` (page root: theme, status bar inset), `BottomTabs` |
 | `src/lib/nav.ts` | Navigation between containers: `push`, `replace`, `back`, `pageParams` |
 | `src/lib/i18n/` | Translations (`en.ts` is the reference, `fr.ts` must have every key), `t()`; the language is the device's |
 | `src/lib/theme.ts`, `src/styles/tokens.css` | Light and dark themes following the system; a screen only uses the tokens |
@@ -140,6 +140,12 @@ cd android && ./gradlew assembleDebug   # debug APK without the CLI
   read (`HostGlobalProps` in `SparklingSwiftVC.swift`, fixed upstream in
   2.1); pages go through `hostProps()` (`src/lib/device.ts`) all the same.
   A new field of `GlobalProps` (`src/typing.d.ts`) must be added there too.
+- Sparkling 2.0.1 (iOS) only loads the images that are files of the app
+  bundle. `HostImageFetcher.swift` loads the ones inlined in a Lynx bundle
+  (`data:`, the tab icons) and the ones behind a URL.
+- On iOS the container fills the screen and the page pads its own edges
+  (`insets()`, applied by `Screen` and `BottomTabs`); on Android the
+  container sits between the system bars and the insets are 0.
 - A page takes the theme when its container opens. Android recreates the
   container when the system setting changes; on iOS an open page keeps its
   theme until it is opened again.

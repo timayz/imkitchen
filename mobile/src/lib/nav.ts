@@ -18,8 +18,7 @@ export function pageParams(): Record<string, string> {
 
 export function scheme(bundle: Bundle, params: Record<string, string> = {}): string {
   const dark = theme() === 'dark';
-  // What the container shows before the page has rendered, and behind the
-  // status bar on iOS.
+  // What the container shows before the page has rendered.
   const paper = palette[dark ? 'dark' : 'light'].paper;
   const query = new URLSearchParams({
     bundle: `${bundle}.lynx.bundle`,

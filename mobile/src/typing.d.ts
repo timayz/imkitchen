@@ -13,6 +13,8 @@ declare module '@lynx-js/types' {
     language?: string;
     /** `light` | `dark`, the system setting when the container opened. */
     theme?: string;
+    /** iOS: top safe-area inset, the status bar. */
+    topHeight?: number;
     /** iOS: bottom safe-area inset. */
     bottomHeight?: number;
     /** Query parameters of the container's scheme URL, all strings. On

@@ -16,10 +16,11 @@ export function os(): Os {
 }
 
 /**
- * Space, in px, to leave free at the bottom of the container: the home
- * indicator on iOS. Both hosts already start the container below the status
- * bar.
+ * Space, in px, the page leaves free at the edges of its container. On iOS
+ * the container fills the screen, behind the status bar and the home
+ * indicator; on Android it sits between the system bars.
  */
-export function bottomInset(): number {
-  return hostProps().bottomHeight ?? 0;
+export function insets(): { top: number; bottom: number } {
+  const props = hostProps();
+  return { top: props.topHeight ?? 0, bottom: props.bottomHeight ?? 0 };
 }

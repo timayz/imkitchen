@@ -33,8 +33,7 @@ enum HostPage {
     }
 
     /// The page the app opens on. The colours are `--color-paper` in
-    /// src/styles/tokens.css: what shows behind the status bar and until the
-    /// page has rendered. Pushed pages get theirs from src/lib/nav.ts.
+    /// src/styles/tokens.css: what shows until the page has rendered. Pushed pages get theirs from src/lib/nav.ts.
     static var mainURL: String {
         let dark = UITraitCollection.current.userInterfaceStyle == .dark
         let paper = dark ? "%231b140c" : "%23fbf5e9"
@@ -74,6 +73,7 @@ final class HostGlobalProps: NSObject, SPKContainerLifecycleProtocol {
             "osVersion": UIDevice.current.systemVersion,
             "language": Locale.preferredLanguages.first ?? "",
             "theme": UITraitCollection.current.userInterfaceStyle == .dark ? "dark" : "light",
+            "topHeight": window?.safeAreaInsets.top ?? 0,
             "bottomHeight": window?.safeAreaInsets.bottom ?? 0,
             "queryItems": queryItems,
         ]
@@ -104,9 +104,9 @@ struct DemoVC: View {
         GeometryReader { geometry in
             SPKSwiftVC(state_frame: geometry.frame(in: .local))
         }
-        // The container fills the screen: Sparkling keeps the page below the
-        // status bar itself, and the page pads its own bottom edge
-        // (`bottomHeight`), so its colours reach behind both.
+        // The container fills the screen and the page pads its own edges
+        // (`topHeight`, `bottomHeight`), so its colours reach behind the
+        // status bar and the home indicator.
         .ignoresSafeArea()
     }
 }

@@ -1,4 +1,4 @@
-import { bottomInset } from '../lib/device.js';
+import { insets } from '../lib/device.js';
 import { palette, theme } from '../lib/theme.js';
 import './BottomTabs.css';
 
@@ -23,7 +23,7 @@ export function BottomTabs<K extends string>({ tabs, active, onSelect }: BottomT
   // `tint-color` takes a literal colour, not a CSS variable.
   const colors = palette[theme()];
   return (
-    <view className="tabs" style={{ paddingBottom: `${bottomInset()}px` }}>
+    <view className="tabs" style={{ paddingBottom: `${insets().bottom}px` }}>
       {tabs.map((tab) => {
         const isActive = tab.key === active;
         return (

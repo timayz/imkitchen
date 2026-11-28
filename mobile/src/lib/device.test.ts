@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { bottomInset, hostProps, os } from './device.js';
+import { hostProps, insets, os } from './device.js';
 
 function host(props: Record<string, unknown> | null) {
   vi.stubGlobal('lynx', { __globalProps: props });
@@ -13,14 +13,14 @@ describe('hostProps', () => {
     host(null);
     expect(hostProps()).toEqual({});
     expect(os()).toBe('android');
-    expect(bottomInset()).toBe(0);
+    expect(insets()).toEqual({ top: 0, bottom: 0 });
   });
 });
 
-describe('bottomInset', () => {
+describe('insets', () => {
   it('takes the safe area the iOS host reports', () => {
-    host({ os: 'ios', bottomHeight: 34 });
+    host({ os: 'ios', topHeight: 59, bottomHeight: 34 });
     expect(os()).toBe('ios');
-    expect(bottomInset()).toBe(34);
+    expect(insets()).toEqual({ top: 59, bottom: 34 });
   });
 });
