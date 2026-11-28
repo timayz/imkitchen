@@ -262,7 +262,11 @@ impl Api {
                 .start(&self.executor.local_reads())
                 .await
                 .unwrap(),
-            imkitchen_api::plats::subscription(db)
+            imkitchen_api::plats::subscription(db.clone())
+                .start(&self.executor.local_reads())
+                .await
+                .unwrap(),
+            imkitchen_api::plats::saga(db)
                 .start(&self.executor)
                 .await
                 .unwrap(),

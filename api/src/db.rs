@@ -29,15 +29,16 @@ pub type Store = Turso;
 
 /// The api's own tables, next to evento's in the same file. Append only: a
 /// migration that was released is never edited.
-pub const MIGRATIONS: Migrations<'static> = Migrations::new(
-    "imkitchen-api",
-    &[
-        Migration::up(
-            "0001_recipes",
-            // One row per recipe that is not deleted, for its owner's list.
-            // `search` is what a search looks in: the title and the names of
-            // the ingredients, lowercased and without accents.
-            "CREATE TABLE recipes (
+pub const MIGRATIONS: Migrations<'static> = Migrations::new("imkitchen-api", &APPLIED);
+
+/// Each migration of the api, in the order they are applied.
+const APPLIED: [Migration<'static>; 5] = [
+    Migration::up(
+        "0001_recipes",
+        // One row per recipe that is not deleted, for its owner's list.
+        // `search` is what a search looks in: the title and the names of
+        // the ingredients, lowercased and without accents.
+        "CREATE TABLE recipes (
             id TEXT NOT NULL PRIMARY KEY,
             owner_id TEXT NOT NULL,
             title TEXT NOT NULL,
@@ -50,27 +51,27 @@ pub const MIGRATIONS: Migrations<'static> = Migrations::new(
             updated_at INTEGER NOT NULL
         );
         CREATE INDEX recipes_listed ON recipes (owner_id, created_at DESC, id DESC);",
-        ),
-        Migration::up(
-            "0002_images",
-            // `recipes.image`: the picture a recipe shows, as JSON, when it
-            // shows one. `images`: one row per picture that is used, the id
-            // its files are named after on the nodes and what they are
-            // (JSON), for a node to check the copy it takes from another.
-            "ALTER TABLE recipes ADD COLUMN image TEXT;
+    ),
+    Migration::up(
+        "0002_images",
+        // `recipes.image`: the picture a recipe shows, as JSON, when it
+        // shows one. `images`: one row per picture that is used, the id
+        // its files are named after on the nodes and what they are
+        // (JSON), for a node to check the copy it takes from another.
+        "ALTER TABLE recipes ADD COLUMN image TEXT;
             CREATE TABLE images (
                 file_id TEXT NOT NULL PRIMARY KEY,
                 image_id TEXT NOT NULL,
                 picture TEXT NOT NULL
             );
             CREATE INDEX images_of ON images (image_id);",
-        ),
-        Migration::up(
-            "0003_plats",
-            // One row per plat that is not deleted, for its owner's list.
-            // `recipe_ids` is the recipes it is made of, in order, as JSON;
-            // `search` its name, lowercased and without accents.
-            "CREATE TABLE plats (
+    ),
+    Migration::up(
+        "0003_plats",
+        // One row per plat that is not deleted, for its owner's list.
+        // `recipe_ids` is the recipes it is made of, in order, as JSON;
+        // `search` its name, lowercased and without accents.
+        "CREATE TABLE plats (
                 id TEXT NOT NULL PRIMARY KEY,
                 owner_id TEXT NOT NULL,
                 name TEXT NOT NULL,
@@ -80,22 +81,67 @@ pub const MIGRATIONS: Migrations<'static> = Migrations::new(
                 updated_at INTEGER NOT NULL
             );
             CREATE INDEX plats_listed ON plats (owner_id, created_at DESC, id DESC);",
-        ),
-        Migration::up(
-            "0004_recipes_shown",
-            // `recipes.image_id`: the picture a recipe shows, by the stream
-            // it is known under, for an administrator to take a picture off
-            // every recipe that shows it. The rows written before are given
-            // theirs from the files their `image` names.
-            "ALTER TABLE recipes ADD COLUMN image_id TEXT;
+    ),
+    Migration::up(
+        "0004_recipes_shown",
+        // `recipes.image_id`: the picture a recipe shows, by the stream
+        // it is known under, for an administrator to take a picture off
+        // every recipe that shows it. The rows written before are given
+        // theirs from the files their `image` names.
+        "ALTER TABLE recipes ADD COLUMN image_id TEXT;
             CREATE INDEX recipes_shown ON recipes (image_id);
             UPDATE recipes SET image_id = (
                 SELECT images.image_id FROM images
                 WHERE instr(recipes.image, images.file_id) > 0
             ) WHERE image IS NOT NULL;",
-        ),
-    ],
-);
+    ),
+    Migration::up(
+        "0005_rows_are_snapshots",
+        // Each row of `recipes` and `plats` is the snapshot of a
+        // projection: what it holds, and how far its stream was folded
+        // into it (`cursor`, and the version of the stream there,
+        // `aggregate_version`).
+        //
+        // The rows that were there say nothing of where their streams
+        // stood: the tables are made again and their subscriptions start
+        // from the first event, their cursors forgotten.
+        "DROP TABLE recipes;
+            CREATE TABLE recipes (
+                id TEXT NOT NULL PRIMARY KEY,
+                owner_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                prep_minutes INTEGER NOT NULL,
+                cook_minutes INTEGER NOT NULL,
+                servings INTEGER NOT NULL,
+                search TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                image TEXT,
+                image_id TEXT,
+                cursor TEXT NOT NULL,
+                aggregate_version INTEGER NOT NULL
+            );
+            CREATE INDEX recipes_listed ON recipes (owner_id, created_at DESC, id DESC);
+            CREATE INDEX recipes_shown ON recipes (image_id);
+            DROP TABLE plats;
+            CREATE TABLE plats (
+                id TEXT NOT NULL PRIMARY KEY,
+                owner_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                recipe_ids TEXT NOT NULL,
+                search TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                cursor TEXT NOT NULL,
+                aggregate_version INTEGER NOT NULL
+            );
+            CREATE INDEX plats_listed ON plats (owner_id, created_at DESC, id DESC);
+            DELETE FROM subscriber WHERE key IN ('imkitchen-api/recipes', 'imkitchen-api/plats');
+            DELETE FROM dead_letter
+                WHERE subscriber IN ('imkitchen-api/recipes', 'imkitchen-api/plats');",
+    ),
+];
 
 /// The tables [`MIGRATIONS`] creates: all of them read models.
 const READ_MODELS: &[&str] = &["recipes", "images", "plats"];
@@ -226,4 +272,56 @@ async fn pending_migrations(conn: &Connection) -> Result<Vec<String>> {
         }
     }
     Ok(pending)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn a_store_whose_rows_were_no_snapshots_follows_them_again_from_the_start() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("imkitchen.db");
+        // The store as the api left it before its rows were snapshots: a row
+        // in a table, and the subscriptions past the events that wrote it.
+        let store = Turso::open_concurrent(&path).await.unwrap();
+        let mut conn = store.connect().unwrap();
+        let before = Migrations::new("imkitchen-api", &APPLIED[..4]);
+        before.to_latest(&mut conn).await.unwrap();
+        let db = Db::from(store);
+        db.execute(
+            "INSERT INTO plats (id, owner_id, name, recipe_ids, search, created_at, updated_at)
+             VALUES ('p1', 'u1', 'Sunday', '[]', 'sunday', 1, 1)",
+            (),
+        )
+        .await
+        .unwrap();
+        for key in [
+            crate::recipes::SUBSCRIPTION,
+            crate::plats::SUBSCRIPTION,
+            "imkitchen-api/other",
+        ] {
+            db.execute(
+                "INSERT INTO subscriber (key, worker_id, cursor, lag, created_at)
+                 VALUES (?1, 'worker', 'cursor', 0, 0)",
+                (key,),
+            )
+            .await
+            .unwrap();
+        }
+        drop((conn, db));
+
+        let db = Db::from(migrate(&path).await.unwrap());
+        let plats: i64 = db
+            .fetch_scalar("SELECT count(*) FROM plats", ())
+            .await
+            .unwrap();
+        assert_eq!(plats, 0);
+        // The read models start again; nobody else's cursor is touched.
+        let cursors: Vec<(String,)> = db
+            .fetch_all("SELECT key FROM subscriber", ())
+            .await
+            .unwrap();
+        assert_eq!(cursors, [("imkitchen-api/other".to_owned(),)]);
+    }
 }

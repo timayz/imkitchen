@@ -98,8 +98,8 @@ async fn a_reset_recreates_the_read_models_empty() {
     read_models
         .execute(
             "INSERT INTO recipes (id, owner_id, title, description, prep_minutes, cook_minutes, \
-             servings, search, created_at, updated_at) \
-             VALUES ('r1', 'u1', 'Pancakes', '', 0, 0, 4, 'pancakes', 1, 1)",
+             servings, search, created_at, updated_at, cursor, aggregate_version) \
+             VALUES ('r1', 'u1', 'Pancakes', '', 0, 0, 4, 'pancakes', 1, 1, 'cursor', 1)",
             (),
         )
         .await
