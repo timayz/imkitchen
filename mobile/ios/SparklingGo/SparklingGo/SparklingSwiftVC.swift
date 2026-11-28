@@ -28,6 +28,7 @@ enum HostPage {
             SparklingLynxElement(lynxElementName: "input", lynxElementClassName: LynxInput.self)
         ]
         context.containerLifecycleDelegate = HostGlobalProps.shared
+        context.imageFetcher = HostImageFetcher.shared
         return context
     }
 
@@ -103,6 +104,9 @@ struct DemoVC: View {
         GeometryReader { geometry in
             SPKSwiftVC(state_frame: geometry.frame(in: .local))
         }
-        
+        // The container fills the screen: Sparkling keeps the page below the
+        // status bar itself, and the page pads its own bottom edge
+        // (`bottomHeight`), so its colours reach behind both.
+        .ignoresSafeArea()
     }
 }
