@@ -1228,12 +1228,12 @@ impl Kitchen {
     async fn followed(&self, admin: &Admin) {
         eventually("admin to follow the kitchen", || async {
             let db = &admin.db;
-            let recipe = recipes::get(db, &self.crepes).await.unwrap();
+            let recipe = recipes::row(db, &self.crepes).await.unwrap();
             let settled = users::found(db, Some("léger")).await.unwrap() == 1
                 && recipes::count(db, None).await.unwrap() == 2
                 && recipe.is_some_and(|recipe| recipe.image_id.is_some())
                 && imports::count(db, Filter::default()).await.unwrap() == 3
-                && images::get(db, PICTURE)
+                && images::row(db, PICTURE)
                     .await
                     .unwrap()
                     .is_some_and(|image| image.uses == 2)
@@ -1272,7 +1272,7 @@ async fn the_read_models_are_built_from_scratch_and_follow() {
         "deleted"
     );
     assert_eq!(recipes::count_of(db, &kitchen.alice).await.unwrap(), 1);
-    let pancakes = recipes::get(db, &kitchen.pancakes).await.unwrap().unwrap();
+    let pancakes = recipes::row(db, &kitchen.pancakes).await.unwrap().unwrap();
     assert_eq!(pancakes.owner_id, kitchen.alice);
     assert_eq!(pancakes.ingredients.0.len(), 2);
     assert_eq!(pancakes.ingredients.0[0].quantity, Some(250.0));
@@ -1317,7 +1317,7 @@ async fn the_read_models_are_built_from_scratch_and_follow() {
     // The picture, stored once and shown twice.
     assert_eq!(images::count(db, false).await.unwrap(), 1);
     assert_eq!(images::count(db, true).await.unwrap(), 1);
-    let image = images::get(db, PICTURE).await.unwrap().unwrap();
+    let image = images::row(db, PICTURE).await.unwrap().unwrap();
     assert_eq!(
         (image.width, image.height, image.bytes),
         (1600, 1200, 300_000)
@@ -1357,7 +1357,7 @@ async fn the_read_models_are_built_from_scratch_and_follow() {
     };
     api.picture(PICTURE, 4, &released("use-2")).await;
     let galettes = eventually("the recipe to be rewritten", || async {
-        let recipe = recipes::get(db, &kitchen.crepes).await.unwrap()?;
+        let recipe = recipes::row(db, &kitchen.crepes).await.unwrap()?;
         (recipe.title == "Galettes" && recipe.image_id.is_none()).then_some(recipe)
     })
     .await;
@@ -1365,7 +1365,7 @@ async fn the_read_models_are_built_from_scratch_and_follow() {
     assert_eq!(recipes::count(db, Some("rum")).await.unwrap(), 0);
     assert_eq!(recipes::count(db, Some("buckwheat")).await.unwrap(), 1);
     eventually("the picture to be shown once", || async {
-        let image = images::get(db, PICTURE).await.unwrap()?;
+        let image = images::row(db, PICTURE).await.unwrap()?;
         (image.uses == 1).then_some(())
     })
     .await;
@@ -1375,7 +1375,7 @@ async fn the_read_models_are_built_from_scratch_and_follow() {
         .await;
     api.picture(PICTURE, 5, &released("use-1")).await;
     eventually("the picture to be gone with its last use", || async {
-        images::get(db, PICTURE)
+        images::row(db, PICTURE)
             .await
             .unwrap()
             .is_none()
@@ -1702,12 +1702,15 @@ async fn what_an_administrator_does_is_handed_to_the_api() {
         &root.get(&router, &answer.location).await.body,
         "data-done=\"removed\"",
     );
-    assert!(
+    // Each recipe's page at once; the table a moment later.
+    eventually("the recipes to show the picture no more", || async {
         recipes::showing(&admin.db, PICTURE, 10)
             .await
             .unwrap()
             .is_empty()
-    );
+            .then_some(())
+    })
+    .await;
     for recipe in [pancakes, crepes] {
         let page = root.get(&router, &format!("/recipes/{recipe}")).await;
         assert_eq!(page.status, StatusCode::OK);
@@ -1722,7 +1725,10 @@ async fn what_an_administrator_does_is_handed_to_the_api() {
     );
     let answer = root.post(&router, &commands[3], &[]).await;
     assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
-    assert_eq!(answer.location, "/recipes?done=deleted");
+    assert_eq!(
+        answer.location,
+        format!("/recipes?done=deleted&gone={pancakes}")
+    );
     let page = root.get(&router, &answer.location).await.body;
     has(&page, "data-done=\"deleted\"");
     lacks(&page, &recipe);
@@ -1755,7 +1761,7 @@ async fn what_an_administrator_does_is_handed_to_the_api() {
     let answer = root.post(&router, &command, &[]).await;
     assert_eq!(answer.status, StatusCode::SEE_OTHER);
     assert_eq!(answer.location, "/sign-in");
-    assert!(recipes::get(&admin.db, crepes).await.unwrap().is_some());
+    assert!(recipes::row(&admin.db, crepes).await.unwrap().is_some());
 
     admin.stop().await;
     api.shutdown().await;

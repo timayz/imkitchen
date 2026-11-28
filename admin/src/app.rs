@@ -24,7 +24,7 @@ use topcoat::{
 
 use crate::api::Api;
 use crate::db::Db;
-use crate::events::Events;
+use crate::events::{Events, Executor};
 use crate::session::{self, Secure, Sessions};
 
 /// The stylesheet of every page, as `build.rs` compiles it.
@@ -46,6 +46,13 @@ pub fn router(db: Db, events: Events, api: Api, sessions: Sessions) -> RouterBui
 /// The read models of admin.
 pub(crate) fn db(cx: &Cx) -> &Db {
     context(cx)
+}
+
+/// The api's events, which a page loads one recipe or picture from: past
+/// what the read models hold, up to the command an administrator just
+/// handed the api.
+pub(crate) fn events(cx: &Cx) -> &Executor {
+    context::<Events>(cx).executor()
 }
 
 /// The api, for who reads the pages.

@@ -27,9 +27,10 @@ pub type Store = Turso;
 
 /// The tables of admin, next to evento's in the same file. Append only: a
 /// migration that was released is never edited.
-pub const MIGRATIONS: Migrations<'static> = Migrations::new(
-    "imkitchen-admin",
-    &[
+pub const MIGRATIONS: Migrations<'static> = Migrations::new("imkitchen-admin", &APPLIED);
+
+/// Each migration of admin, in the order they are applied.
+const APPLIED: [Migration<'static>; 4] = [
         Migration::up(
             "0001_users",
             // One row per user whose account is not deleted, and nothing of
@@ -147,8 +148,56 @@ pub const MIGRATIONS: Migrations<'static> = Migrations::new(
                 at INTEGER NOT NULL
             );",
         ),
-    ],
-);
+        Migration::up(
+            "0004_rows_are_snapshots",
+            // The rows of `recipes`, and those of `images` with their
+            // `image_uses`, are the snapshots of projections: what they
+            // hold, and how far their stream was folded into them (`cursor`,
+            // and the version of the stream there, `aggregate_version`).
+            //
+            // The rows that were there say nothing of where their streams
+            // stood: the tables are made again and their subscriptions start
+            // from the first event, their cursors forgotten.
+            "DROP TABLE recipes;
+            CREATE TABLE recipes (
+                id TEXT NOT NULL PRIMARY KEY,
+                owner_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                ingredients TEXT NOT NULL,
+                instructions TEXT NOT NULL,
+                prep_minutes INTEGER NOT NULL,
+                cook_minutes INTEGER NOT NULL,
+                servings INTEGER NOT NULL,
+                image_id TEXT,
+                file_id TEXT,
+                search TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                cursor TEXT NOT NULL,
+                aggregate_version INTEGER NOT NULL
+            );
+            CREATE INDEX recipes_listed ON recipes (created_at DESC, id DESC);
+            CREATE INDEX recipes_owned ON recipes (owner_id, created_at DESC, id DESC);
+            CREATE INDEX recipes_shown ON recipes (image_id);
+            DROP TABLE images;
+            CREATE TABLE images (
+                image_id TEXT NOT NULL PRIMARY KEY,
+                file_id TEXT NOT NULL,
+                width INTEGER NOT NULL,
+                height INTEGER NOT NULL,
+                bytes INTEGER NOT NULL,
+                stored_at INTEGER NOT NULL,
+                cursor TEXT NOT NULL,
+                aggregate_version INTEGER NOT NULL
+            );
+            CREATE INDEX images_listed ON images (stored_at DESC, image_id DESC);
+            DELETE FROM image_uses;
+            DELETE FROM subscriber WHERE key IN ('imkitchen-admin/recipes', 'imkitchen-admin/images');
+            DELETE FROM dead_letter
+                WHERE subscriber IN ('imkitchen-admin/recipes', 'imkitchen-admin/images');",
+        ),
+];
 
 /// Every list of migrations the store's schema is made of.
 const SCHEMA: [&Migrations<'static>; 2] = [&evento::turso::MIGRATIONS, &MIGRATIONS];
@@ -260,5 +309,51 @@ mod tests {
         let db = Db::from(open(&path).await.unwrap());
         assert_eq!(crate::users::count(&db).await.unwrap(), 0);
         assert_eq!(crate::recipes::count(&db, None).await.unwrap(), 0);
+    }
+
+    #[tokio::test]
+    async fn a_store_whose_rows_were_no_snapshots_follows_them_again_from_the_start() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("admin.db");
+        // The store as admin left it before its rows were snapshots: rows in
+        // the tables, and the subscriptions past the events that wrote them.
+        let store = Turso::open_concurrent(&path).await.unwrap();
+        let mut conn = store.connect().unwrap();
+        let before = Migrations::new("imkitchen-admin", &APPLIED[..3]);
+        before.to_latest(&mut conn).await.unwrap();
+        let db = Db::from(store);
+        db.execute(
+            "INSERT INTO image_uses (image_id, use_id) VALUES ('picture', 'use')",
+            (),
+        )
+        .await
+        .unwrap();
+        for key in [
+            crate::recipes::SUBSCRIPTION,
+            crate::images::SUBSCRIPTION,
+            crate::users::SUBSCRIPTION,
+        ] {
+            db.execute(
+                "INSERT INTO subscriber (key, worker_id, cursor, lag, created_at)
+                 VALUES (?1, 'worker', 'cursor', 0, 0)",
+                (key,),
+            )
+            .await
+            .unwrap();
+        }
+        drop((conn, db));
+
+        let db = Db::from(migrate(&path).await.unwrap());
+        let uses: i64 = db
+            .fetch_scalar("SELECT count(*) FROM image_uses", ())
+            .await
+            .unwrap();
+        assert_eq!(uses, 0);
+        // The recipes and the pictures start again; the users go on.
+        let cursors: Vec<(String,)> = db
+            .fetch_all("SELECT key FROM subscriber", ())
+            .await
+            .unwrap();
+        assert_eq!(cursors, [(crate::users::SUBSCRIPTION.to_owned(),)]);
     }
 }

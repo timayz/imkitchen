@@ -11,12 +11,24 @@ use crate::events::Executor;
 /// its first event once it does. Keep the handles and hand them to
 /// [`shutdown`].
 pub async fn start(executor: &Executor, db: &Db) -> Result<Vec<Subscription>> {
-    let mut subscriptions = Vec::new();
+    // The recipes and the pictures: each row the snapshot of a projection.
+    let mut subscriptions = vec![
+        crate::recipes::subscription(db.clone())
+            .supervised()
+            .start(executor)
+            .await
+            .context("cannot start the recipes subscription")?,
+        crate::images::subscription(db.clone())
+            .supervised()
+            .start(executor)
+            .await
+            .context("cannot start the images subscription")?,
+    ];
+    // The users, whose rows several streams make, and the imports and the
+    // messages, a row for each event.
     for (what, subscription) in [
         ("users", crate::users::subscription(db.clone())),
-        ("recipes", crate::recipes::subscription(db.clone())),
         ("imports", crate::imports::subscription(db.clone())),
-        ("images", crate::images::subscription(db.clone())),
         ("messages", crate::messages::subscription(db.clone())),
     ] {
         subscriptions.push(

@@ -12,10 +12,10 @@ use topcoat::{
 use super::images::{self, image_id};
 use super::users::{self, user_id};
 use super::{
-    ACTIONS, DONE, H1, H2, LINK, MAIN, TABLE, TD, TH, act_for_good, done, followed, not_done,
-    notice, pager, read, search, token, when,
+    ACTIONS, DONE, H1, H2, LINK, MAIN, TABLE, TD, TH, act_for_good, done, fresh, not_done, notice,
+    pager, read, search, token, when,
 };
-use crate::app::{api, db};
+use crate::app::{api, db, events};
 use crate::listing::{PAGE_SIZE, Pages, searched};
 use crate::recipes::Ingredient;
 
@@ -27,6 +27,9 @@ struct Query {
     page: Option<u32>,
     /// What was just done to a recipe.
     done: Option<String>,
+    /// The recipe that was just deleted, which the table may hold a moment
+    /// longer: the list leaves it out.
+    gone: Option<String>,
 }
 
 #[page]
@@ -35,11 +38,13 @@ pub async fn list(cx: &Cx) -> Result<impl View> {
     let query = query_params::<Query>(cx).ok();
     let q = searched(query.and_then(|query| query.q.as_deref()));
     let deleted = query.is_some_and(|query| query.done.as_deref() == Some("deleted"));
+    let gone = query.and_then(|query| query.gone.as_deref());
     let pages = Pages::new(
         query.and_then(|query| query.page),
         read(crate::recipes::count(db, q).await)?,
     );
-    let recipes = read(crate::recipes::list(db, q, pages.offset(), PAGE_SIZE).await)?;
+    let mut recipes = read(crate::recipes::list(db, q, pages.offset(), PAGE_SIZE).await)?;
+    recipes.retain(|recipe| Some(recipe.id.as_str()) != gone);
     let owners = recipes.iter().map(|recipe| recipe.owner_id.as_str());
     let owners = read(crate::users::names(db, owners).await)?;
     let at = |page: u32| {
@@ -112,8 +117,14 @@ fn line(ingredient: &Ingredient) -> String {
 
 #[page("./{recipe_id}")]
 pub async fn show(cx: &Cx) -> Result<impl View> {
-    let db = db(cx);
-    let Some(recipe) = read(crate::recipes::get(db, recipe_id(cx)).await)? else {
+    let (db, id) = (db(cx), recipe_id(cx));
+    let recipe = fresh(
+        cx,
+        crate::recipes::get(events(cx), db, id),
+        crate::recipes::row(db, id),
+    )
+    .await?;
+    let Some(recipe) = recipe else {
         return Err(not_found().into());
     };
     let owner = read(crate::users::get(db, &recipe.owner_id).await)?;
@@ -205,14 +216,16 @@ pub async fn show(cx: &Cx) -> Result<impl View> {
     })
 }
 
+/// Deletes the recipe, and sends the browser to the list, which leaves it
+/// out while its row is still there.
 #[page(POST "./{recipe_id}/delete")]
 async fn delete(cx: &Cx) -> Result<impl View> {
-    let (db, id) = (db(cx), recipe_id(cx));
+    let id = recipe_id(cx);
     let outcome = api(cx).delete_recipe(&token(cx)?, id).await;
-    if outcome.is_ok() {
-        followed(|| async { Ok(crate::recipes::get(db, id).await?.is_none()) }).await;
-    }
-    let then = href!(list).query([(DONE, "deleted")]).resolve(cx);
+    let then = href!(list)
+        .query([(DONE, "deleted")])
+        .query([("gone", id)])
+        .resolve(cx);
     let failure = done(cx, outcome, then)?;
     Ok(view! { not_done(failure: failure, back: href!(show, recipe_id: id).resolve(cx)) })
 }

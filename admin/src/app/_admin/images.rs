@@ -12,10 +12,10 @@ use topcoat::{
 use super::recipes::{self, recipe_id};
 use super::users::{self, user_id};
 use super::{
-    ACTIONS, DONE, H1, H2, LINK, MAIN, TABLE, TD, TH, act_for_good, done, followed, not_done,
-    notice, pager, read, token, when,
+    ACTIONS, DONE, H1, H2, LINK, MAIN, TABLE, TD, TH, act_for_good, done, fresh, not_done, notice,
+    pager, read, token, when,
 };
-use crate::app::{api, db};
+use crate::app::{api, db, events};
 use crate::listing::{PAGE_SIZE, Pages};
 
 /// How many recipes the page of a picture lists.
@@ -129,8 +129,14 @@ pub async fn list(cx: &Cx) -> Result<impl View> {
 
 #[page("./{image_id}")]
 pub async fn show(cx: &Cx) -> Result<impl View> {
-    let db = db(cx);
-    let Some(image) = read(crate::images::get(db, image_id(cx)).await)? else {
+    let (db, id) = (db(cx), image_id(cx));
+    let image = fresh(
+        cx,
+        crate::images::get(events(cx), db, id),
+        crate::images::row(db, id),
+    )
+    .await?;
+    let Some(image) = image else {
         return Err(not_found().into());
     };
     let shown_by = read(crate::recipes::showing(db, &image.image_id, RECIPES_SHOWN).await)?;
@@ -186,13 +192,12 @@ pub async fn show(cx: &Cx) -> Result<impl View> {
     })
 }
 
+/// Takes the picture off every recipe that shows it, and sends the browser
+/// to the list. The recipes are said to show it no more a moment later.
 #[page(POST "./{image_id}/remove")]
 async fn remove(cx: &Cx) -> Result<impl View> {
-    let (db, id) = (db(cx), image_id(cx));
+    let id = image_id(cx);
     let outcome = api(cx).delete_image(&token(cx)?, id).await;
-    if outcome.is_ok() {
-        followed(|| async { Ok(crate::recipes::showing(db, id, 1).await?.is_empty()) }).await;
-    }
     let then = href!(list).query([(DONE, "removed")]).resolve(cx);
     let failure = done(cx, outcome, then)?;
     Ok(view! { not_done(failure: failure, back: href!(show, image_id: id).resolve(cx)) })
