@@ -4,7 +4,6 @@
 package app.imkitchen.android
 
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import com.tiktok.sparkling.Sparkling
 import com.tiktok.sparkling.SparklingContext
@@ -23,14 +22,6 @@ class SparklingHostRouterDepend : IHostRouterDepend {
         context: Context?
     ): Boolean {
         val uri = Uri.parse(scheme)
-
-        // http(s) links (recipe origins) leave the app.
-        if (uri.scheme == "http" || uri.scheme == "https") {
-            val target = context ?: HybridActivityStackManager.getTopActivity() ?: return false
-            val intent = Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            target.startActivity(intent)
-            return true
-        }
 
         val sparklingContext = SparklingContext()
         sparklingContext.scheme = scheme

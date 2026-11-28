@@ -31,16 +31,6 @@ import com.tiktok.sparkling.method.storage.setItem.StorageSetItemMethod
 import app.imkitchen.keepawake.KeepAwakeSetEnabledMethod
 import app.imkitchen.timeralarm.TimerAlarmCancelMethod
 import app.imkitchen.timeralarm.TimerAlarmScheduleMethod
-import app.imkitchen.db.DbClearMethod
-import app.imkitchen.db.DbGetMethod
-import app.imkitchen.db.DbListMethod
-import app.imkitchen.db.DbPutMethod
-import app.imkitchen.db.DbRemoveMethod
-import com.tiktok.sparkling.method.media.choosemedia.ChooseMediaMethod
-import com.tiktok.sparkling.method.media.downloadfile.DownloadFileMethod
-import com.tiktok.sparkling.method.media.savedataurl.SaveDataURLMethod
-import com.tiktok.sparkling.method.media.uploadfile.UploadFileMethod
-import com.tiktok.sparkling.method.media.uploadimage.UploadImageMethod
 
 
 class SparklingApplication : Application() {
@@ -57,8 +47,7 @@ class SparklingApplication : Application() {
      * station keyed by an intent extra. When Android recreates the task's top
      * activity after the process was killed in the background, the station is
      * empty and the container renders a bare "Sparkling Page". Start over
-     * from the splash instead: it rebuilds the kitchen, and a cooking timer
-     * that was running is picked up again from storage when the step reopens.
+     * from the splash instead, which opens the main page again.
      */
     private class RestartAfterProcessDeath : ActivityLifecycleCallbacks {
         override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
@@ -100,15 +89,11 @@ class SparklingApplication : Application() {
         HybridKit.init(this)
         val baseInfoConfig = BaseInfoConfig(isDebug = BuildConfig.DEBUG)
         val lynxConfig = SparklingLynxConfig.build(this) {
+            // The bundled Lynx has no `<input>`: the host provides it.
             addBehaviors(listOf(
                 object : Behavior("input", false) {
                     override fun createUI(context: LynxContext?): LynxUI<*>? {
                         return LynxInputComponent(context)
-                    }
-                },
-                object : Behavior("webview", false) {
-                    override fun createUI(context: LynxContext?): LynxUI<*>? {
-                        return LynxWebViewComponent(context)
                     }
                 }
             ))
@@ -128,26 +113,14 @@ class SparklingApplication : Application() {
         SparklingBridgeManager.registerIDLMethod(RouterOpenMethod::class.java)
         SparklingBridgeManager.registerIDLMethod(RouterCloseMethod::class.java)
         RouterProvider.hostRouterDepend = SparklingHostRouterDepend()
-        // sparkling-storage (SharedPreferences-backed; holds the session token)
+        // sparkling-storage (SharedPreferences-backed)
         SparklingBridgeManager.registerIDLMethod(StorageGetItemMethod::class.java)
         SparklingBridgeManager.registerIDLMethod(StorageSetItemMethod::class.java)
         SparklingBridgeManager.registerIDLMethod(StorageRemoveItemMethod::class.java)
-        // methods/keep-awake (cooking screen)
+        // methods/keep-awake (the screen stays on while cooking)
         SparklingBridgeManager.registerIDLMethod(KeepAwakeSetEnabledMethod::class.java)
-        // methods/timer-alarm (cooking step timer rings through AlarmManager)
+        // methods/timer-alarm (a cooking timer rings through AlarmManager)
         SparklingBridgeManager.registerIDLMethod(TimerAlarmScheduleMethod::class.java)
         SparklingBridgeManager.registerIDLMethod(TimerAlarmCancelMethod::class.java)
-        // methods/db (SQLite document store: offline cache + write queue)
-        SparklingBridgeManager.registerIDLMethod(DbGetMethod::class.java)
-        SparklingBridgeManager.registerIDLMethod(DbPutMethod::class.java)
-        SparklingBridgeManager.registerIDLMethod(DbRemoveMethod::class.java)
-        SparklingBridgeManager.registerIDLMethod(DbListMethod::class.java)
-        SparklingBridgeManager.registerIDLMethod(DbClearMethod::class.java)
-        // sparkling-media (recipe photo picker)
-        SparklingBridgeManager.registerIDLMethod(ChooseMediaMethod::class.java)
-        SparklingBridgeManager.registerIDLMethod(UploadImageMethod::class.java)
-        SparklingBridgeManager.registerIDLMethod(UploadFileMethod::class.java)
-        SparklingBridgeManager.registerIDLMethod(DownloadFileMethod::class.java)
-        SparklingBridgeManager.registerIDLMethod(SaveDataURLMethod::class.java)
     }
 }

@@ -1,9 +1,8 @@
 #!/usr/bin/env node
-// Rasterises the bottom tab bar icons from the web app's navigation
-// (`templates/_user.html`, Heroicons outline, 24 dp, 2 px stroke) so the native
-// tab bar shows the same glyphs. Lynx `<image>` has no SVG decoder on Android
-// (Fresco), so each icon is a transparent PNG recoloured at runtime through
-// `tint-color`; the stroke colour below is irrelevant.
+// Rasterises the bottom tab bar icons (Heroicons outline, 24 dp, 2 px
+// stroke). Lynx `<image>` has no SVG decoder on Android (Fresco), so each icon
+// is a transparent PNG recoloured at runtime through `tint-color`; the stroke
+// colour below is irrelevant.
 //
 //   src/assets/icons/<name>.png   24 dp at 4x (xxxhdpi), inlined by rspeedy
 //
@@ -19,9 +18,9 @@ const OUT = join(mobile, 'src/assets/icons')
 const DP = 24
 const SCALE = 4
 
-// Path data copied verbatim from the `<nav>` in templates/_user.html.
+// One per tab of src/pages/main/App.tsx.
 const ICONS = {
-  kitchen: [
+  dishes: [
     'M6 18h12v3a1 1 0 01-1 1H7a1 1 0 01-1-1v-3z',
     'M6 18C4 18 2 15 2 12a6 6 0 016-6',
     'M18 18c2 0 4-3 4-6a6 6 0 00-6-6',
@@ -29,6 +28,9 @@ const ICONS = {
   ],
   recipes: [
     'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
+  ],
+  list: [
+    'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
   ],
   groceries: [
     'M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z',

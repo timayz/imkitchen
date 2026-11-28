@@ -1,15 +1,16 @@
 name: Mobile
 
-# Builds the native app shells. The `android` and `ios` jobs are disabled on
-# pull requests and pushes and only run on a manual `workflow_dispatch`; `js`
-# still runs on every change under mobile/.
+# Checks the Lynx pages on every change under mobile/ (`js`: typecheck, tests,
+# bundles) and builds the app for its two targets on demand: the `android`
+# (debug APK) and `ios` (simulator app) jobs only run on a manual
+# `workflow_dispatch`, since they take up to 20 minutes.
 #
 # There is no Mac in the dev environment, so the `ios` job is the only place
-# the iOS shell is compiled: it runs `pod install` against
-# mobile/ios/Podfile and builds the simulator app with code signing
-# off, and uploads the Podfile.lock it resolved plus the full build log. It
-# then boots a simulator, launches the app, checks it is still running after
-# the splash and uploads light/dark screenshots plus the app logs.
+# the iOS shell is compiled and started: it runs `pod install` against
+# mobile/ios/Podfile, builds the simulator app with code signing off and
+# uploads the Podfile.lock it resolved plus the full build log. It then boots
+# a simulator, launches the app in light and in dark mode, fails if it dies or
+# if a page reports an error, and uploads the screenshots plus the app logs.
 
 on:
   pull_request:
@@ -51,8 +52,8 @@ jobs:
 
   android:
     name: Android debug APK
-    # Disabled on pull requests and pushes: run the workflow by hand to build
-    # the shell.
+    # Not on pull requests and pushes: run the workflow by hand to build the
+    # shell.
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -88,8 +89,8 @@ jobs:
 
   ios:
     name: iOS simulator build
-    # Disabled on pull requests and pushes: run the workflow by hand to build
-    # the shell and collect the simulator screenshots.
+    # Not on pull requests and pushes: run the workflow by hand to build the
+    # shell, start it and collect the simulator screenshots.
     if: github.event_name == 'workflow_dispatch'
     runs-on: macos-15
     timeout-minutes: 60
@@ -102,10 +103,6 @@ jobs:
           cache-dependency-path: mobile/package-lock.json
       - run: npm ci
       - name: Bundle the Lynx pages
-        # The simulator shares the Mac's network, so localhost is the dev
-        # server there (10.0.2.2 is the Android emulator's alias for it).
-        env:
-          IMKITCHEN_API_URL: http://localhost:3000
         run: npm run build
       - uses: ruby/setup-ruby@v1
         with:
@@ -157,10 +154,11 @@ jobs:
           if-no-files-found: ignore
       - name: Simulator smoke test + screenshots
         working-directory: mobile/ios
-        # Without a session the main bundle swaps itself for the login bundle,
-        # so a cold launch renders the login screen with no backend at all. A
-        # crash on launch (missing pod, bad bundle, QuickJS error) shows up as
-        # the app process being gone once the splash is over.
+        # The main page needs no backend. A crash on launch (missing pod, bad
+        # bundle, QuickJS error) shows up as the app process being gone once
+        # the splash is over; a page that throws in main-thread.js, or asks
+        # for a UI the host has not registered, keeps the process alive and
+        # renders nothing, so its errors are read from the app's output.
         run: |
           set -euo pipefail
           app=build/Build/Products/Debug-iphonesimulator/SparklingGo.app
@@ -183,30 +181,29 @@ jobs:
             xcrun simctl spawn "$udid" log show --style compact --last 5m \
               --predicate "process == \"SparklingGo\"" > smoke/system.log 2>&1 || true
             xcrun simctl shutdown "$udid" 2>/dev/null || true
+            cp ~/Library/Logs/DiagnosticReports/SparklingGo* smoke/ 2>/dev/null || true
           ' EXIT
           xcrun simctl boot "$udid"
           xcrun simctl bootstatus "$udid" -b
           xcrun simctl status_bar "$udid" override \
             --time 9:41 --batteryLevel 100 --batteryState charged --cellularBars 4 --wifiBars 3
           xcrun simctl install "$udid" "$app"
-          xcrun simctl ui "$udid" appearance light
-          xcrun simctl launch --console-pty "$udid" app.imkitchen.ios > smoke/app.log 2>&1 &
-          sleep 30
-          pgrep -xq SparklingGo || { echo "::error::SparklingGo exited within 30 s of launch (see the ios-smoke artifact)"; exit 1; }
-          xcrun simctl io "$udid" screenshot smoke/login-light.png
-          xcrun simctl ui "$udid" appearance dark
-          sleep 3
-          xcrun simctl io "$udid" screenshot smoke/login-dark.png
-          pgrep -xq SparklingGo || { echo "::error::SparklingGo exited while switching to dark mode"; exit 1; }
-          # A page that throws in main-thread.js, or asks for a UI the host has
-          # not registered, keeps the process alive and renders nothing, so the
-          # checks above cannot see it. Collect those for the artifact. They are
-          # warnings until the iOS host renders the login screen at all; make
-          # this step exit 1 once it does, so regressions cannot land.
+          # A page takes the theme when its container opens, so each
+          # appearance gets its own launch.
+          for appearance in light dark; do
+            xcrun simctl ui "$udid" appearance "$appearance"
+            xcrun simctl terminate "$udid" app.imkitchen.ios 2>/dev/null || true
+            xcrun simctl launch --console-pty "$udid" app.imkitchen.ios \
+              > "smoke/app-$appearance.log" 2>&1 &
+            sleep 30
+            pgrep -xq SparklingGo || { echo "::error::SparklingGo exited within 30 s of launch in $appearance mode (see the ios-smoke artifact)"; exit 1; }
+            xcrun simctl io "$udid" screenshot "smoke/main-$appearance.png"
+          done
           perl -ne 'while (/(main-thread\.js exception: [^"\\]+|LynxCreateUIException:[^"\\]+)/g) { print "$1\n" }' \
-            smoke/app.log | tr -d '\r' | sed 's/ *backtrace:.*//; s/ *$//' | grep -v '^$' | sort -u \
+            smoke/app-*.log | tr -d '\r' | sed 's/ *backtrace:.*//; s/ *$//' | grep -v '^$' | sort -u \
             > smoke/lynx-errors.log || true
-          while read -r line; do echo "::warning::iOS page error: $line"; done < smoke/lynx-errors.log
+          while read -r line; do echo "::error::iOS page error: $line"; done < smoke/lynx-errors.log
+          test ! -s smoke/lynx-errors.log
       - uses: actions/upload-artifact@v7
         if: always()
         with:

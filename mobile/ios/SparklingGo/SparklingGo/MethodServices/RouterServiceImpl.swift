@@ -18,7 +18,7 @@ class RouterServiceImpl: RouterService {
     
     func openScheme(withParams params: Sparkling_Router.OpenMethodParamModel, completion: @escaping SparklingMethod.PipeMethod.CompletionBlock) {
         let urlString = params.scheme
-        let context = SPKContext()
+        let context = HostPage.context()
         
         DispatchQueue.main.async {
             func openWithRouter(completionHandler: ((Bool) -> Void)? = nil) {

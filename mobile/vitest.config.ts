@@ -6,6 +6,10 @@ import { createVitestConfig } from '@lynx-js/react/testing-library/vitest-config
 
 const defaultConfig = await createVitestConfig()
 const config = defineConfig({
+  // What `source.define` in app.config.ts injects into the bundles.
+  define: {
+    __APP_VERSION__: JSON.stringify('test'),
+  },
   test: {
     coverage: {
       provider: 'v8',

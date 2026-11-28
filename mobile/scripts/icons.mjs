@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Renders every app icon from the web app's `static/icons/icon-maskable.svg` so
+// Renders every app icon from `resource/icon.svg` (maskable, 20% safe margin) so
 // the store listing, the launcher and the splash all show the same pot:
 //
 //   android/app/src/main/res/mipmap-*/ic_launcher_foreground.webp  adaptive foreground (108 dp)
@@ -17,11 +17,11 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const mobile = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const SOURCE = resolve(mobile, '../static/icons/icon-maskable.svg')
+const SOURCE = join(mobile, 'resource/icon.svg')
 const RES = join(mobile, 'android/app/src/main/res')
 const IOS_ICONSET = join(mobile, 'ios/SparklingGo/SparklingGo/Assets.xcassets/AppIcon.appiconset')
 
-// `--color-cream` in tailwind.css: the adaptive background and the tile behind the pot.
+// `--color-paper` in src/styles/tokens.css: the adaptive background and the tile behind the pot.
 const BACKGROUND = '#fbf5e9'
 // The SVG draws a 1024 content box inside a 1280 canvas (20% maskable safe margin).
 const SVG_CANVAS = 1280

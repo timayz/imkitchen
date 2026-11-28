@@ -133,19 +133,8 @@ PODS:
     - Sparkling/Application (= 2.0.1)
     - Sparkling/Service (= 2.0.1)
     - Sparkling/Utils (= 2.0.1)
-  - Sparkling-Db (0.1.0):
-    - SparklingMethod/Core
   - Sparkling-KeepAwake (0.1.0):
     - SparklingMethod/Core
-  - Sparkling-Media (2.0.1):
-    - Mantle (~> 2.2.0)
-    - Sparkling-Media/Core (= 2.0.1)
-    - SparklingMethod/Core
-    - SparklingMethod/DIProvider
-  - Sparkling-Media/Core (2.0.1):
-    - Mantle (~> 2.2.0)
-    - SparklingMethod/Core
-    - SparklingMethod/DIProvider
   - Sparkling-Router (2.0.1):
     - Mantle (~> 2.2.0)
     - Sparkling-Router/Core (= 2.0.1)
@@ -159,6 +148,8 @@ PODS:
     - Sparkling-Storage/Core (= 2.0.1)
     - SparklingMethod/Core
   - Sparkling-Storage/Core (2.0.1):
+    - SparklingMethod/Core
+  - Sparkling-TimerAlarm (0.1.0):
     - SparklingMethod/Core
   - Sparkling/Application (2.0.1):
     - SnapKit
@@ -202,11 +193,10 @@ DEPENDENCIES:
   - SDWebImageWebPCoder (= 0.11.0)
   - SnapKit
   - Sparkling (= 2.0.1)
-  - Sparkling-Db (from `../node_modules/sparkling-db/ios`)
   - Sparkling-KeepAwake (from `../node_modules/sparkling-keep-awake/ios`)
-  - Sparkling-Media (from `../node_modules/sparkling-media/ios`)
   - Sparkling-Router (from `../node_modules/sparkling-navigation/ios`)
   - Sparkling-Storage (from `../node_modules/sparkling-storage/ios`)
+  - Sparkling-TimerAlarm (from `../node_modules/sparkling-timer-alarm/ios`)
   - SparklingMethod/Debug (= 2.0.1)
   - SparklingMethod/DIProvider (= 2.0.1)
   - SparklingMethod/Lynx (= 2.0.1)
@@ -231,16 +221,14 @@ SPEC REPOS:
     - SparklingMethod
 
 EXTERNAL SOURCES:
-  Sparkling-Db:
-    :path: "../node_modules/sparkling-db/ios"
   Sparkling-KeepAwake:
     :path: "../node_modules/sparkling-keep-awake/ios"
-  Sparkling-Media:
-    :path: "../node_modules/sparkling-media/ios"
   Sparkling-Router:
     :path: "../node_modules/sparkling-navigation/ios"
   Sparkling-Storage:
     :path: "../node_modules/sparkling-storage/ios"
+  Sparkling-TimerAlarm:
+    :path: "../node_modules/sparkling-timer-alarm/ios"
 
 SPEC CHECKSUMS:
   BaseDevtool: 39ad8896da6d55bfe4a2231feb85b8e0ef23e6e3
@@ -258,13 +246,12 @@ SPEC CHECKSUMS:
   SnapKit: d612e99e678a2d3b95bf60b0705ed0a35c03484a
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Sparkling: e9540c2847cc9b3e3d9fa3ca52464a474cad9e5b
-  Sparkling-Db: d31b17c561fa9b9ef6de32f3b1fb6f5dc7b7b0f5
   Sparkling-KeepAwake: 59bfba037c7dca32c62cf9bdef2f645b6897b8e8
-  Sparkling-Media: 021387cee65cf0d4565184abf8a9466e153047b9
   Sparkling-Router: 326673d4ed422acc98583f64ad78d954d090061c
   Sparkling-Storage: b64cc09db3585af5873bd75350a4ebdf13d720e7
+  Sparkling-TimerAlarm: fe1d72fb24a075297916f7918cb40fb0eb94c269
   SparklingMethod: 49b276aabfac4578e3dcffab252f6119d6781e1f
 
-PODFILE CHECKSUM: 021702272b5395695534eb4aea14dba72a8d0752
+PODFILE CHECKSUM: 044bf81c2d018c6eda51831bba2ad60012b3f217
 
 COCOAPODS: 1.17.0

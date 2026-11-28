@@ -1,3 +1,5 @@
+import { insets } from '../lib/device.js';
+import { palette, theme } from '../lib/theme.js';
 import './BottomTabs.css';
 
 export interface Tab<K extends string> {
@@ -13,20 +15,15 @@ export interface BottomTabsProps<K extends string> {
   onSelect: (key: K) => void;
 }
 
-// `tint-color` takes a literal colour, not a CSS variable: these mirror
-// `--color-primary-500` / `--color-ink-3` in styles/tokens.css, which are the
-// web nav's `text-primary-500` / `text-ink-3`.
-const TINT_ACTIVE = '#ef6c1e';
-const TINT_IDLE = '#6f6354';
-
 /**
  * Sparkling has no native tab bar; this view-based one lives inside the
  * `main` bundle so switching tabs never leaves the container.
  */
 export function BottomTabs<K extends string>({ tabs, active, onSelect }: BottomTabsProps<K>) {
-  const inset = lynx.__globalProps.bottomHeight ?? 0;
+  // `tint-color` takes a literal colour, not a CSS variable.
+  const colors = palette[theme()];
   return (
-    <view className="tabs" style={{ paddingBottom: `${inset}px` }}>
+    <view className="tabs" style={{ paddingBottom: `${insets().bottom}px` }}>
       {tabs.map((tab) => {
         const isActive = tab.key === active;
         return (
@@ -34,12 +31,15 @@ export function BottomTabs<K extends string>({ tabs, active, onSelect }: BottomT
             key={tab.key}
             id={`tab-${tab.key}`}
             className="tab"
+            accessibility-element={true}
+            accessibility-label={tab.label}
+            accessibility-traits="button"
             bindtap={() => onSelect(tab.key)}
           >
             <image
               className="tab__icon"
               src={tab.icon}
-              tint-color={isActive ? TINT_ACTIVE : TINT_IDLE}
+              tint-color={isActive ? colors.accent : colors.inkMuted}
             />
             <text className={isActive ? 'tab__label tab__label--active' : 'tab__label'}>
               {tab.label}
