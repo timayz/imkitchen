@@ -30,6 +30,9 @@ const STEPS: &[&str] = &[
 /// What a line that says how many people the recipe feeds starts with, in
 /// lowercase.
 const SERVES: &[&str] = &["pour ", "serves ", "servings", "for ", "makes ", "yield"];
+/// How long such a line may be: "Pour 6-7 parts de haricots rouges à
+/// l'antillaise".
+const SERVES_MAX: usize = 60;
 /// The elements whose text is not the page's: what it runs, and what is
 /// there to click.
 const SKIPPED: &[&str] = &[
@@ -104,13 +107,15 @@ fn meta(document: &Html, names: &[&str]) -> Option<String> {
     })
 }
 
-/// The lines under the first heading that starts with one of `words` and
-/// has some. None: no such heading.
+/// The lines under the first heading that starts with one of `words`, or
+/// that heads an element named after one ([`named`]), and has some. None:
+/// no such heading.
 fn section(document: &Html, words: &[&str], budget: &mut Budget) -> Option<Vec<String>> {
     let mut tried = 0;
     for heading in document.select(&select("h1, h2, h3, h4, h5, h6")) {
         let says = html::text(heading, budget)?.trim_start().to_lowercase();
-        if !words.iter().any(|word| says.starts_with(word)) || aside(heading, budget)? {
+        let heads = words.iter().any(|word| says.starts_with(word)) || named(heading, words);
+        if !heads || aside(heading, budget)? {
             continue;
         }
         let lines = below(heading, budget)?;
@@ -120,6 +125,24 @@ fn section(document: &Html, words: &[&str], budget: &mut Budget) -> Option<Vec<S
         }
     }
     Some(Vec::new())
+}
+
+/// Whether the element `heading` stands in is named after one of `words`,
+/// as one of its classes: `<div class="preparation">` holds the steps
+/// whatever its heading says ("Cuisson des haricots"). A class that goes on
+/// ("preparation-time") names something else.
+fn named(heading: ElementRef, words: &[&str]) -> bool {
+    let Some(parent) = heading.parent().and_then(ElementRef::wrap) else {
+        return false;
+    };
+    parent.value().classes().any(|class| {
+        let class = class.to_lowercase();
+        words.iter().any(|word| {
+            class
+                .strip_prefix(word)
+                .is_some_and(|rest| rest.chars().all(char::is_alphabetic))
+        })
+    })
 }
 
 /// Whether `element` is within what is not the page's text ([`SKIPPED`]):
@@ -211,7 +234,7 @@ fn goes_elsewhere(node: NodeRef) -> bool {
 /// says: "Pour 4 personnes :".
 fn servings(line: &str) -> Option<u32> {
     let says = line.to_lowercase();
-    (line.chars().count() <= TIME_MAX && SERVES.iter().any(|word| says.starts_with(word)))
+    (line.chars().count() <= SERVES_MAX && SERVES.iter().any(|word| says.starts_with(word)))
         .then(|| first_number(line))
         .flatten()
 }
@@ -323,6 +346,39 @@ mod tests {
             [Step::from("Griller le pain.".to_owned())]
         );
         assert_eq!((found.prep_minutes, found.servings), (None, None));
+    }
+
+    #[test]
+    fn a_heading_heads_the_section_its_element_is_named_after() {
+        let html = r#"
+            <article class="recette">
+              <h1>Cuisson des haricots rouges</h1>
+              <div class="ingredients">
+                <h2>Ingrédients <div class="close">Fermer</div></h2>
+                <div class="contenu"><p class="intro">Pour 6-7 parts de haricots rouges à l'antillaise</p><p>500g de haricots rouges<br>12g de sel</p></div>
+                <a class="lien-aide-conversion" href="/aide">Voir l’aide à la conversion</a>
+              </div>
+              <div class="preparation-time"><h2>Temps</h2><p>1h10</p></div>
+              <div class="preparation">
+                <h2>Cuisson des haricots rouges à l'antillaise</h2>
+                <div class="etape"><p>Mettez à tremper les haricots.</p></div>
+                <div class="etape">
+                  <div class="col image"><img src="a.jpg" alt="haricots"></div>
+                  <div class="col texte"><p>Laissez cuire 45 minutes.</p></div>
+                </div>
+                <div class="texte-fin"><h2>Les conseils de Tatie Maryse</h2><p>Trempez 12 heures.</p></div>
+              </div>
+            </article>"#;
+        let found = recipe(html).unwrap();
+        assert_eq!(found.ingredients, ["500g de haricots rouges", "12g de sel"]);
+        assert_eq!(found.servings, Some(6));
+        assert_eq!(
+            found.instructions,
+            [
+                Step::from("Mettez à tremper les haricots.".to_owned()),
+                Step::from("Laissez cuire 45 minutes.".to_owned()),
+            ]
+        );
     }
 
     #[test]
