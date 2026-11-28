@@ -14,6 +14,11 @@ API_MIGRATE_ARGS := $(if $(API_CONFIG),--config $(API_CONFIG) )migrate
 DEV_WWW_TOKEN := local-dev-only-not-a-secret-www-0000
 DEV_ADMIN_TOKEN := local-dev-only-not-a-secret-admin-0000
 DEV_APP_TOKEN := local-dev-only-not-a-secret-app-0000
+# What admin and app encrypt the cookies of their sessions under: fixed, so
+# that a restart (each code change, under `topcoat dev`) does not sign
+# everyone out. For local use only.
+DEV_ADMIN_SESSION_KEY := local-dev-only-not-a-secret-admin-session-0000
+DEV_APP_SESSION_KEY := local-dev-only-not-a-secret-app-session-0000
 
 # The local api serves the sidecars (www, admin, app) on 4000, the node N of
 # the local cluster on 400N. Set here rather than in a file so that
@@ -54,12 +59,14 @@ WWW_ENV := $(if $(WWW_CONFIG),IMKITCHEN_WWW_CONFIG=$(WWW_CONFIG) )IMKITCHEN_WWW_
 # IMKITCHEN_ADMIN__API__EVENTS.
 ADMIN_CONFIG := $(wildcard admin/config/dev.local.toml)
 ADMIN_ENV := $(if $(ADMIN_CONFIG),IMKITCHEN_ADMIN_CONFIG=$(ADMIN_CONFIG) )IMKITCHEN_ADMIN__API__TOKEN=$(DEV_ADMIN_TOKEN) \
+	IMKITCHEN_ADMIN__SESSION__KEY=$(DEV_ADMIN_SESSION_KEY) \
 	$(call OWN_TARGET,admin)
 
 # And for app: app/config/dev.local.toml, IMKITCHEN_APP_CONFIG and
 # IMKITCHEN_APP__API__EVENTS.
 APP_CONFIG := $(wildcard app/config/dev.local.toml)
 APP_ENV := $(if $(APP_CONFIG),IMKITCHEN_APP_CONFIG=$(APP_CONFIG) )IMKITCHEN_APP__API__TOKEN=$(DEV_APP_TOKEN) \
+	IMKITCHEN_APP__SESSION__KEY=$(DEV_APP_SESSION_KEY) \
 	IMKITCHEN_APP__SERVER__URL=$(DEV_MAIN_URL) \
 	IMKITCHEN_APP__WWW__URL=$(DEV_ABOUT_URL) \
 	$(call OWN_TARGET,app)
