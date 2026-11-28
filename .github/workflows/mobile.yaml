@@ -181,6 +181,7 @@ jobs:
             xcrun simctl spawn "$udid" log show --style compact --last 5m \
               --predicate "process == \"SparklingGo\"" > smoke/system.log 2>&1 || true
             xcrun simctl shutdown "$udid" 2>/dev/null || true
+            cp ~/Library/Logs/DiagnosticReports/SparklingGo* smoke/ 2>/dev/null || true
           ' EXIT
           xcrun simctl boot "$udid"
           xcrun simctl bootstatus "$udid" -b
@@ -191,7 +192,8 @@ jobs:
           # appearance gets its own launch.
           for appearance in light dark; do
             xcrun simctl ui "$udid" appearance "$appearance"
-            xcrun simctl launch --console-pty --terminate-running-process "$udid" app.imkitchen.ios \
+            xcrun simctl terminate "$udid" app.imkitchen.ios 2>/dev/null || true
+            xcrun simctl launch --console-pty "$udid" app.imkitchen.ios \
               > "smoke/app-$appearance.log" 2>&1 &
             sleep 30
             pgrep -xq SparklingGo || { echo "::error::SparklingGo exited within 30 s of launch in $appearance mode (see the ios-smoke artifact)"; exit 1; }
