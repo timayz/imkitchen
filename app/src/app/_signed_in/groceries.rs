@@ -29,9 +29,10 @@ use topcoat::{
     view::{View, component, view},
 };
 
-use super::{BUTTON, Failure, H1, account, asking, failed, followed, list, read, tutorial};
+use super::{BUTTON, Failure, H1, account, asking, failed, fresh, list, tutorial};
 use crate::api::CommandError;
-use crate::app::{api, db, language, t};
+use crate::app::{api, db, events, language, t};
+use crate::groceries::Grocery;
 
 /// What checks and unchecks an item without reading the page again.
 pub const SCRIPT: Asset = asset!("./groceries.js");
@@ -63,17 +64,28 @@ fn amount(quantity: f64, unit: Option<&str>) -> String {
     }
 }
 
+/// The groceries of who reads the page, as the commands they handed the api
+/// left their list and what they said of them.
+pub(crate) async fn standing(cx: &Cx) -> Result<Vec<Grocery>> {
+    let (db, owner_id) = (db(cx), account(cx).id.as_str());
+    fresh(
+        cx,
+        crate::groceries::of(events(cx), db, owner_id),
+        crate::groceries::row_of(db, owner_id),
+    )
+    .await
+}
+
 /// Puts the item of the address in the basket (`checked`) or back among
-/// what is to buy, then sends the browser back to the groceries once app
-/// followed, the step of the tutorial with it when the item changed; or
-/// says what the api refused.
+/// what is to buy, then sends the browser back to the groceries, which show
+/// what the api did, once it noted the step of the tutorial when the item
+/// changed; or says what the api refused.
 async fn said(cx: &Cx, checked: bool) -> Result<Failure> {
     let language = language(cx);
     let id = item_id(cx);
-    let (db, owner_id) = (db(cx), account(cx).id.as_str());
     // An item said as it already was writes nothing, and does no step of
     // the tutorial.
-    let changes = crate::groceries::of(db, owner_id)
+    let changes = standing(cx)
         .await
         .ok()
         .and_then(|groceries| groceries.into_iter().find(|grocery| grocery.id == id))
@@ -89,18 +101,8 @@ async fn said(cx: &Cx, checked: bool) -> Result<Failure> {
         .await;
     match asked {
         Ok(()) => {
-            let shown = followed(|| async {
-                let groceries = crate::groceries::of(db, owner_id).await?;
-                // An item app does not know yet is not waited for.
-                Ok(groceries
-                    .iter()
-                    .find(|grocery| grocery.id == id)
-                    .is_none_or(|grocery| grocery.checked == checked))
-            });
             if changes {
-                tokio::join!(shown, tutorial::noted(cx, Step::Groceries));
-            } else {
-                shown.await;
+                tutorial::noted(cx, Step::Groceries).await;
             }
             Err(see_other(href!(show).resolve(cx)).into())
         }
@@ -152,7 +154,7 @@ struct Row {
 /// refused.
 #[component]
 async fn content(cx: &Cx, failure: Option<Failure>) -> Result<impl View> {
-    let groceries = read(crate::groceries::of(db(cx), &account(cx).id).await)?;
+    let groceries = standing(cx).await?;
     let rows: Vec<Row> = groceries
         .into_iter()
         .map(|grocery| {

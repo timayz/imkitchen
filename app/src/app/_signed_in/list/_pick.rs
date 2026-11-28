@@ -23,11 +23,11 @@ use topcoat::{
     view::{View, component, view},
 };
 
-use super::{ADDED, Meal, REPLACED, changed, entry_id, meal_of, meals, show};
+use super::{ADDED, Meal, REPLACED, changed, entries, entry_id, meal_of, meals, show};
 use crate::app::_signed_in::recipes::_form::Number;
 use crate::app::_signed_in::{
     BUTTON_QUIET, FIELD_REFUSED, Failure, H1, H2, INPUT, LABEL, LINK, MAIN, account, asking,
-    failed, read, recipes,
+    failed, read, recipes, settings,
 };
 use crate::app::{api, db, language, t};
 
@@ -72,8 +72,8 @@ struct Again {
 
 /// Hands the meal the form picked to the api: one more on the list without
 /// `replaces`, in the place of the entry `replaces` with one. Once the api
-/// did it and app followed, the browser is sent to the list; anything else
-/// is the page again.
+/// did it, the browser is sent to the list, which shows what it did;
+/// anything else is the page again.
 async fn hand(cx: &Cx, replaces: Option<&str>, typed: Typed) -> Result<Again> {
     if typed.recipe_id.is_none() && typed.dish_id.is_none() {
         return Ok(Again {
@@ -114,7 +114,7 @@ async fn hand(cx: &Cx, replaces: Option<&str>, typed: Typed) -> Result<Again> {
 #[page("./add", with(Metadata::new().title(t!(pick_add_meta_title))))]
 pub async fn add(cx: &Cx) -> Result<impl View> {
     // For as many as the settings say, until another number is typed.
-    let settings = read(crate::settings::of(db(cx), &account(cx).id).await)?;
+    let settings = settings::standing(cx).await?;
     let typed = Typed {
         servings: settings.servings.to_string(),
         ..Typed::default()
@@ -133,7 +133,7 @@ async fn submit_add(cx: &Cx, Form(typed): Form<Typed>) -> Result<impl View> {
 #[page("./{entry_id}/replace", with(Metadata::new().title(t!(pick_replace_meta_title))))]
 pub async fn replace(cx: &Cx) -> Result<impl View> {
     let id = entry_id(cx);
-    let entries = read(crate::list::of(db(cx), &account(cx).id).await)?;
+    let entries = entries(cx).await?;
     let Some(entry) = entries.iter().find(|entry| entry.id == id) else {
         return Err(not_found().into());
     };
@@ -185,7 +185,7 @@ async fn picker(cx: &Cx, again: Again, replaces: Option<String>) -> Result<impl 
     // What the meal takes the place of, when it is still on the list.
     let replaced = match replaces.as_deref() {
         Some(id) => {
-            let entries = read(crate::list::of(db(cx), owner_id).await)?;
+            let entries = entries(cx).await?;
             match entries.into_iter().find(|entry| entry.id == id) {
                 Some(entry) => {
                     let (recipes, dishes) = meals(

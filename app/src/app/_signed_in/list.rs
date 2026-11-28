@@ -17,7 +17,6 @@ use std::collections::HashMap;
 
 use imkitchen_aggregates::tutorial::Step;
 use reqwest::Method;
-use serde::Deserialize;
 use timada_core::Rendition;
 use topcoat::{
     Result,
@@ -30,9 +29,9 @@ use topcoat::{
 
 use super::dishes::{self, dish_id};
 use super::recipes::{self, recipe_id};
-use super::{BUTTON, BUTTON_QUIET, Failure, H1, account, asking, failed, followed, read, tutorial};
+use super::{BUTTON, BUTTON_QUIET, Failure, H1, account, asking, failed, fresh, read, tutorial};
 use crate::api::CommandError;
-use crate::app::{api, db, language, t};
+use crate::app::{api, db, events, language, t};
 use crate::list::Entry;
 
 path_param!(pub entry_id);
@@ -49,65 +48,21 @@ struct Query {
     done: Option<String>,
 }
 
-/// The list as the api tells of it: what app waits to have followed before
-/// it shows it. No page is read from it.
-#[derive(Debug, Deserialize)]
-struct Told {
-    entries: Vec<ToldEntry>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ToldEntry {
-    id: String,
-    servings: u32,
-    #[serde(default)]
-    recipe: Option<ToldMeal>,
-    #[serde(default)]
-    plat: Option<ToldMeal>,
-}
-
-#[derive(Debug, Deserialize)]
-struct ToldMeal {
-    id: String,
-}
-
-impl ToldEntry {
-    /// Whether `entry`, as app followed it, says the same.
-    fn is(&self, entry: &Entry) -> bool {
-        let id = |meal: &Option<ToldMeal>| meal.as_ref().map(|meal| meal.id.clone());
-        self.id == entry.id
-            && self.servings == entry.servings
-            && id(&self.recipe) == entry.recipe_id
-            && id(&self.plat) == entry.dish_id
-    }
-}
-
-/// Waits until app followed the list as far as the api has written it, for
-/// the page the browser is sent to to show it as it was just left. An api
-/// that does not say is not waited for: the page shows the list a moment
-/// later.
-async fn settled(cx: &Cx) {
-    let language = language(cx);
-    let told = api(cx).read::<Told>(asking(cx, &language), &["list"]).await;
-    let Ok(told) = told else {
-        return;
-    };
+/// The list of who reads the page, as the commands they handed the api
+/// left it.
+pub(crate) async fn entries(cx: &Cx) -> Result<Vec<Entry>> {
     let (db, owner_id) = (db(cx), account(cx).id.as_str());
-    followed(|| async {
-        let entries = crate::list::of(db, owner_id).await?;
-        Ok(told.entries.len() == entries.len()
-            && told
-                .entries
-                .iter()
-                .zip(&entries)
-                .all(|(told, entry)| told.is(entry)))
-    })
-    .await;
+    fresh(
+        cx,
+        crate::list::of(events(cx), db, owner_id),
+        crate::list::row_of(db, owner_id),
+    )
+    .await
 }
 
-/// Sends the browser back to the list once the api did what was asked and
-/// app followed, saying `done`, with `step` of the tutorial when what was
-/// asked does one; or says what the api refused.
+/// Sends the browser back to the list, which shows what the api did, once
+/// the api did what was asked, saying `done`, and noted `step` of the
+/// tutorial when what was asked does one; or says what the api refused.
 pub(crate) async fn changed(
     cx: &Cx,
     done: &str,
@@ -116,11 +71,8 @@ pub(crate) async fn changed(
 ) -> Result<Failure> {
     match asked {
         Ok(()) => {
-            match step {
-                Some(step) => {
-                    tokio::join!(settled(cx), tutorial::noted(cx, step));
-                }
-                None => settled(cx).await,
+            if let Some(step) = step {
+                tutorial::noted(cx, step).await;
             }
             let then = href!(show).query([("done", done)]).resolve(cx);
             Err(see_other(then).into())
@@ -281,7 +233,7 @@ struct Card {
 /// The list, and what `failure` says of the command that was just refused.
 #[component]
 async fn content(cx: &Cx, failure: Option<Failure>) -> Result<impl View> {
-    let entries = read(crate::list::of(db(cx), &account(cx).id).await)?;
+    let entries = entries(cx).await?;
     let ids = |pick: fn(&Entry) -> &Option<String>| -> Vec<String> {
         entries
             .iter()

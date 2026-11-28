@@ -8,8 +8,11 @@
 //! signed in.
 //!
 //! Every page is read from the store of app, which its subscriptions fill
-//! from the api's events: none asks the api for what it shows. The api is
-//! asked who reads them, and handed what they do.
+//! from the api's events. The lists are read from the tables, a moment
+//! behind the commands; one dish, recipe or list of who reads the page is
+//! loaded from its row and the events written after it, so the page a
+//! command sends the browser to shows what it did. The api is asked who
+//! reads the pages, and handed what they do.
 //!
 //! A page is read in the language the browser prefers among those app
 //! speaks: its address is the same in each. The sentences are in
@@ -34,7 +37,7 @@ use topcoat::{
 
 use crate::api::Api;
 use crate::db::Db;
-use crate::events::Events;
+use crate::events::{Events, Executor};
 use crate::session::{Secure, Sessions};
 
 topcoat::l10n::fluent::messages!(pub(crate) "{mod}/l10n/{locale}.ftl");
@@ -67,6 +70,13 @@ pub fn router(db: Db, events: Events, api: Api, sessions: Sessions, www: Www) ->
 /// The read models of app.
 pub(crate) fn db(cx: &Cx) -> &Db {
     context(cx)
+}
+
+/// The api's events, which a page loads one dish, recipe or list of its
+/// user from: past what the read models hold, up to the command its user
+/// just handed the api.
+pub(crate) fn events(cx: &Cx) -> &Executor {
+    context::<Events>(cx).executor()
 }
 
 /// The api, for who reads the pages and what they do.

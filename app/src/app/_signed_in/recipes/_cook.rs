@@ -31,9 +31,9 @@ use topcoat::{
     view::{View, class, view},
 };
 
-use super::{recipe_id, show};
-use crate::app::_signed_in::{BUTTON, BUTTON_QUIET, H1, H2, LINK, account, read};
-use crate::app::{api, db, t};
+use super::{own, recipe_id, show};
+use crate::app::_signed_in::{BUTTON, BUTTON_QUIET, H1, H2, LINK};
+use crate::app::{api, t};
 use crate::recipes::Ingredient;
 
 /// What shows a step at a time, keeps the screen awake and runs the timers.
@@ -85,7 +85,7 @@ struct Step {
 #[page("./{recipe_id}/cook", with(Metadata::new().title(t!(cook_meta_title))))]
 pub async fn cook(cx: &Cx) -> Result<impl View> {
     let id = recipe_id(cx);
-    let Some(recipe) = read(crate::recipes::get_own(db(cx), &account(cx).id, id).await)? else {
+    let Some(recipe) = own(cx, id).await? else {
         return Err(not_found().into());
     };
     let servings = query_params::<Query>(cx)

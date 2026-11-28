@@ -28,10 +28,10 @@ use topcoat::{
 use super::recipes::_form::Number;
 use super::{
     BUTTON, BUTTON_QUIET, FIELD_REFUSED, Failure, H1, H2, INPUT, LABEL, LINK, MAIN, account,
-    asking, failed, followed, home, read, spoken, tutorial,
+    asking, failed, fresh, home, spoken, tutorial,
 };
 use crate::api::CommandError;
-use crate::app::{api, db, language, t};
+use crate::app::{api, db, events, language, t};
 use crate::settings::{SOURCES, Settings};
 
 /// A part of the settings: what one form sets.
@@ -65,58 +65,27 @@ struct Query {
     done: Option<String>,
 }
 
-/// The settings as the api tells of them: what app waits to have followed
-/// before it shows them. No page is read from it.
-#[derive(Debug, Deserialize)]
-struct Told {
-    list: ToldList,
-    #[serde(default)]
-    language: Option<String>,
+/// The settings of who reads the page, as the commands they handed the api
+/// left them.
+pub(crate) async fn standing(cx: &Cx) -> Result<Settings> {
+    let (db, user_id) = (db(cx), account(cx).id.as_str());
+    fresh(
+        cx,
+        crate::settings::of(events(cx), db, user_id),
+        crate::settings::row_of(db, user_id),
+    )
+    .await
 }
 
-#[derive(Debug, Deserialize)]
-struct ToldList {
-    servings: i64,
-    meals: i64,
-    sources: String,
-}
-
-impl Told {
-    /// Whether `settings`, as app followed them, say the same.
-    fn is(&self, settings: &Settings) -> bool {
-        self.list.servings == settings.servings
-            && self.list.meals == settings.meals
-            && self.list.sources == settings.sources
-            && self.language == settings.language
-    }
-}
-
-/// The settings of who reads the page, as app followed them before a form
-/// is handed to the api: what tells whether the api changed them. `None`
-/// when they could not be read.
-async fn standing(cx: &Cx) -> Option<Settings> {
-    crate::settings::of(db(cx), &account(cx).id).await.ok()
-}
-
-/// Waits until app followed the settings as far as the api has written
-/// them, and the step of the tutorial with them when they are not what
-/// they were (`before`): saved as they stood, they write nothing. An api
-/// that does not say is not waited for: the page shows them a moment
-/// later.
-async fn settled(cx: &Cx, before: Option<Settings>) {
-    let language = language(cx);
-    let told = api(cx)
-        .read::<Told>(asking(cx, &language), &["settings"])
-        .await;
-    let Ok(told) = told else {
+/// Waits for the step of the tutorial the settings do when the api left
+/// them other than they were (`before`, read before the form was handed to
+/// it): saved as they stood, they write nothing, and do no step.
+async fn step_noted(cx: &Cx, before: Option<Settings>) {
+    let Ok(after) = standing(cx).await else {
         return;
     };
-    let (db, user_id) = (db(cx), account(cx).id.as_str());
-    let shown = followed(|| async { Ok(told.is(&crate::settings::of(db, user_id).await?)) });
-    if before.is_some_and(|before| !told.is(&before)) {
-        tokio::join!(shown, tutorial::noted(cx, Step::Settings));
-    } else {
-        shown.await;
+    if before.is_some_and(|before| before != after) {
+        tutorial::noted(cx, Step::Settings).await;
     }
 }
 
@@ -173,7 +142,7 @@ async fn set_list(cx: &Cx, Form(posted): Form<ListForm>) -> Result<impl View> {
         meals: Number::whole(&posted.meals),
         sources: &posted.sources,
     };
-    let before = standing(cx).await;
+    let before = standing(cx).await.ok();
     let done = api(cx)
         .command(
             asking(cx, &language),
@@ -183,7 +152,7 @@ async fn set_list(cx: &Cx, Form(posted): Form<ListForm>) -> Result<impl View> {
         )
         .await;
     if done.is_ok() {
-        settled(cx, before).await;
+        step_noted(cx, before).await;
     }
     let failure = set(cx, Part::List, done)?;
 
@@ -216,7 +185,7 @@ async fn set_language(cx: &Cx, Form(posted): Form<LanguageForm>) -> Result<impl 
     let body = LanguageBody {
         language: posted.language.as_deref().filter(|tag| !tag.is_empty()),
     };
-    let before = standing(cx).await;
+    let before = standing(cx).await.ok();
     let done = api(cx)
         .command(
             asking(cx, &language),
@@ -227,7 +196,7 @@ async fn set_language(cx: &Cx, Form(posted): Form<LanguageForm>) -> Result<impl 
         .await;
     if done.is_ok() {
         // The page the browser is sent to is read in it.
-        settled(cx, before).await;
+        step_noted(cx, before).await;
     }
     let failure = set(cx, Part::Language, done)?;
 
@@ -370,7 +339,7 @@ async fn content(cx: &Cx, again: Again) -> Result<impl View> {
         list,
         name,
     } = again;
-    let settings = read(crate::settings::of(db(cx), &account(cx).id).await)?;
+    let settings = standing(cx).await?;
     let done = query_params::<Query>(cx)
         .ok()
         .and_then(|query| query.done.clone())
@@ -433,7 +402,7 @@ async fn content(cx: &Cx, again: Again) -> Result<impl View> {
         })
         .collect();
     let of_the_device = chosen.is_none();
-    let progress = read(crate::tutorial::of(db(cx), &account(cx).id).await)?;
+    let progress = tutorial::progress(cx).await?;
     let completed = progress.completed();
     let (state, progress_said, under_way) = match progress.current() {
         _ if completed => ("completed", t!(settings_tutorial_completed), false),

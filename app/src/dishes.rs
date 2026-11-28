@@ -4,18 +4,19 @@
 //!
 //! A dish names its recipes and holds nothing of them: a page shows each
 //! as the recipes of app know it ([`crate::recipes`]). Like them a dish is
-//! its owner's alone: nothing is read from the table without saying whose
-//! is asked for.
+//! its owner's alone: nothing is read without saying whose is asked for.
 //!
-//! app keeps one row per dish that is not deleted. The handlers leave the
-//! table as it should be when an event is delivered twice (the subscription
-//! is at-least-once): a dish is written once however often it is composed,
-//! recomposed as its last event says, without a recipe however often the
-//! recipe is taken out of it, and gone however often it is deleted.
+//! A dish is a projection of its stream ([`DishState`]) whose snapshot is
+//! its row of the `dishes` table: one row per dish that is not deleted,
+//! kept by a projection subscription ([`subscription`]). One dish is loaded
+//! from its row and the events written after it ([`get_own`]), so a page
+//! shows it as the command its user just handed the api left it. The lists
+//! are read from the table, a moment behind the commands.
 
+use evento::Executor;
 use evento::metadata::Event;
-use evento::subscription::{Context, SubscriptionBuilder};
-use imkitchen_aggregates::plat::{Created, Deleted, Edited, RecipeRemoved};
+use evento::projection::{Context, Projection, ProjectionSubscription, Snapshot};
+use imkitchen_aggregates::plat::{Created, Deleted, Edited, Plat, RecipeRemoved};
 use timada_core::db::{FromRow, Json, params_from_iter, placeholders, search_key};
 use timada_core::like_contains;
 use timada_core::page::Cursor;
@@ -25,105 +26,143 @@ use crate::db::Db;
 /// The cursor identity of the subscription, in the store.
 pub const SUBSCRIPTION: &str = "imkitchen-app/dishes";
 
-/// Follows the dishes into `db`.
-pub fn subscription<E: evento::Executor>(db: Db) -> SubscriptionBuilder<E> {
-    SubscriptionBuilder::new(SUBSCRIPTION)
-        .data(db)
+/// A dish as its stream leaves it.
+#[evento::projection]
+#[derive(Debug)]
+pub struct DishState {
+    pub id: String,
+    pub owner_id: String,
+    pub name: String,
+    /// The recipes it is made of, in the order they are served.
+    pub recipe_ids: Vec<String>,
+    /// Unix seconds of `Created`.
+    pub created_at: u64,
+    /// Unix seconds of the last event.
+    pub updated_at: u64,
+    pub deleted: bool,
+}
+
+fn projection<E: Executor>(db: Db) -> Projection<E, DishState> {
+    Projection::new::<Plat>()
         .handler(on_created())
         .handler(on_edited())
         .handler(on_deleted())
         .handler(on_recipe_removed())
+        .data(db)
 }
 
-#[evento::subscription]
-async fn on_created<E: evento::Executor>(
-    context: &Context<'_, E>,
-    event: Event<Created>,
-) -> anyhow::Result<()> {
-    let db: Db = context.extract();
+/// Keeps the row of each dish in `db` as its stream leaves it.
+pub fn subscription<E: Executor>(db: Db) -> ProjectionSubscription<E, DishState> {
+    projection(db).subscription(SUBSCRIPTION)
+}
+
+#[evento::handler]
+async fn on_created(event: Event<Created>, dish: &mut DishState) -> anyhow::Result<()> {
     let data = &event.data;
-    db.execute(
-        "INSERT INTO dishes (id, owner_id, name, recipe_ids, search, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)
-         ON CONFLICT (id) DO NOTHING",
-        (
-            event.aggregate_id.as_str(),
-            data.owner_id.as_str(),
-            data.name.as_str(),
-            Json(&data.recipe_ids).to_text()?,
-            search_key(&data.name),
-            event.timestamp as i64,
-        ),
-    )
-    .await?;
+    dish.id = event.aggregate_id.to_owned();
+    dish.owner_id = data.owner_id.to_owned();
+    dish.name = data.name.to_owned();
+    dish.recipe_ids = data.recipe_ids.to_owned();
+    dish.created_at = event.timestamp;
+    dish.updated_at = event.timestamp;
     Ok(())
 }
 
-#[evento::subscription]
-async fn on_edited<E: evento::Executor>(
-    context: &Context<'_, E>,
-    event: Event<Edited>,
-) -> anyhow::Result<()> {
-    let db: Db = context.extract();
-    let data = &event.data;
-    db.execute(
-        "UPDATE dishes SET name = ?2, recipe_ids = ?3, search = ?4, updated_at = ?5
-         WHERE id = ?1",
-        (
-            event.aggregate_id.as_str(),
-            data.name.as_str(),
-            Json(&data.recipe_ids).to_text()?,
-            search_key(&data.name),
-            event.timestamp as i64,
-        ),
-    )
-    .await?;
+#[evento::handler]
+async fn on_edited(event: Event<Edited>, dish: &mut DishState) -> anyhow::Result<()> {
+    dish.name = event.data.name.to_owned();
+    dish.recipe_ids = event.data.recipe_ids.to_owned();
+    dish.updated_at = event.timestamp;
     Ok(())
 }
 
-#[evento::subscription]
-async fn on_deleted<E: evento::Executor>(
-    context: &Context<'_, E>,
-    event: Event<Deleted>,
-) -> anyhow::Result<()> {
-    let db: Db = context.extract();
-    db.execute(
-        "DELETE FROM dishes WHERE id = ?1",
-        (event.aggregate_id.as_str(),),
-    )
-    .await?;
+#[evento::handler]
+async fn on_deleted(event: Event<Deleted>, dish: &mut DishState) -> anyhow::Result<()> {
+    dish.deleted = true;
+    dish.updated_at = event.timestamp;
     Ok(())
 }
 
-/// What a dish is made of, as the table keeps it.
-#[derive(FromRow)]
-struct Composed {
-    recipe_ids: Json<Vec<String>>,
-}
-
-#[evento::subscription]
-async fn on_recipe_removed<E: evento::Executor>(
-    context: &Context<'_, E>,
+#[evento::handler]
+async fn on_recipe_removed(
     event: Event<RecipeRemoved>,
+    dish: &mut DishState,
 ) -> anyhow::Result<()> {
-    let db: Db = context.extract();
-    let id = event.aggregate_id.as_str();
-    let composed: Option<Composed> = db
-        .fetch_optional("SELECT recipe_ids FROM dishes WHERE id = ?1", (id,))
-        .await?;
-    let Some(Composed {
-        recipe_ids: Json(mut recipe_ids),
-    }) = composed
-    else {
-        return Ok(());
-    };
-    recipe_ids.retain(|recipe_id| *recipe_id != event.data.recipe_id);
-    db.execute(
-        "UPDATE dishes SET recipe_ids = ?2, updated_at = ?3 WHERE id = ?1",
-        (id, Json(&recipe_ids).to_text()?, event.timestamp as i64),
-    )
-    .await?;
+    dish.recipe_ids.retain(|id| *id != event.data.recipe_id);
+    dish.updated_at = event.timestamp;
     Ok(())
+}
+
+/// The row of a dish, and how far its stream was folded into it.
+#[derive(FromRow)]
+struct Row {
+    id: String,
+    owner_id: String,
+    name: String,
+    recipe_ids: Json<Vec<String>>,
+    created_at: i64,
+    updated_at: i64,
+    cursor: String,
+    aggregate_version: i64,
+}
+
+impl<E: Executor> Snapshot<E> for DishState {
+    async fn restore(context: &Context<'_, E>) -> anyhow::Result<Option<Self>> {
+        let db: Db = context.extract();
+        let row: Option<Row> = db
+            .fetch_optional(
+                "SELECT id, owner_id, name, recipe_ids, created_at, updated_at, cursor,
+                    aggregate_version
+                 FROM dishes WHERE id = ?1",
+                (context.id.as_str(),),
+            )
+            .await?;
+        Ok(row.map(|row| DishState {
+            id: row.id,
+            owner_id: row.owner_id,
+            name: row.name,
+            recipe_ids: row.recipe_ids.0,
+            created_at: row.created_at as u64,
+            updated_at: row.updated_at as u64,
+            deleted: false,
+            cursor: row.cursor,
+            aggregate_version: row.aggregate_version as u16,
+            ..Default::default()
+        }))
+    }
+
+    /// A deleted dish loses its row: loading it again folds its stream from
+    /// the start, which says it is deleted.
+    async fn take_snapshot(&self, context: &Context<'_, E>) -> anyhow::Result<()> {
+        let db: Db = context.extract();
+        if self.deleted {
+            db.execute("DELETE FROM dishes WHERE id = ?1", (context.id.as_str(),))
+                .await?;
+            return Ok(());
+        }
+        db.execute(
+            "INSERT INTO dishes (id, owner_id, name, recipe_ids, search, created_at, updated_at,
+                cursor, aggregate_version)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+             ON CONFLICT (id) DO UPDATE SET
+                name = excluded.name, recipe_ids = excluded.recipe_ids, search = excluded.search,
+                updated_at = excluded.updated_at, cursor = excluded.cursor,
+                aggregate_version = excluded.aggregate_version",
+            (
+                context.id.as_str(),
+                self.owner_id.as_str(),
+                self.name.as_str(),
+                Json(&self.recipe_ids).to_text()?,
+                search_key(&self.name),
+                self.created_at as i64,
+                self.updated_at as i64,
+                self.cursor.as_str(),
+                i64::from(self.aggregate_version),
+            ),
+        )
+        .await?;
+        Ok(())
+    }
 }
 
 /// A dish: its name and the recipes it is made of.
@@ -177,14 +216,34 @@ pub async fn list_of(
     .await
 }
 
-/// The dish `id`, when it is one of `owner_id`'s: someone else's is one
-/// that does not exist.
-pub async fn get_own(db: &Db, owner_id: &str, id: &str) -> anyhow::Result<Option<Dish>> {
+/// The dish `id`, when it is one of `owner_id`'s, as its row holds it: a
+/// moment behind the commands. Someone else's is one that does not exist.
+pub async fn row_own(db: &Db, owner_id: &str, id: &str) -> anyhow::Result<Option<Dish>> {
     db.fetch_optional(
         "SELECT id, name, recipe_ids, created_at FROM dishes WHERE id = ?1 AND owner_id = ?2",
         (id, owner_id),
     )
     .await
+}
+
+/// The dish `id`, when it is one of `owner_id`'s, as its stream leaves it:
+/// its row and the events written after it, read from the api. Someone
+/// else's is one that does not exist.
+pub async fn get_own<E: Executor>(
+    executor: &E,
+    db: &Db,
+    owner_id: &str,
+    id: &str,
+) -> anyhow::Result<Option<Dish>> {
+    let dish = projection(db.clone()).load(id).execute(executor).await?;
+    Ok(dish
+        .filter(|dish| !dish.deleted && dish.owner_id == owner_id)
+        .map(|dish| Dish {
+            id: dish.id,
+            name: dish.name,
+            recipe_ids: Json(dish.recipe_ids),
+            created_at: dish.created_at as i64,
+        }))
 }
 
 /// The dishes `ids` name, in no order: those among them that are
