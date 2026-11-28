@@ -31,9 +31,9 @@ use topcoat::{
 
 use super::recipes::{self, recipe_id};
 use super::{
-    BUTTON, BUTTON_QUIET, Failure, H1, H2, LINK, MAIN, account, asking, failed, followed, read,
+    BUTTON, BUTTON_QUIET, Failure, H1, H2, LINK, MAIN, account, asking, failed, fresh, read,
 };
-use crate::app::{api, db, language, t};
+use crate::app::{api, db, events, language, t};
 use crate::dishes::Dish;
 use crate::recipes::RecipeRow;
 
@@ -58,57 +58,27 @@ struct Query {
     after: Option<String>,
     /// What was just done to a dish.
     done: Option<String>,
+    /// The dish that was just deleted, which the table may hold a moment
+    /// longer: the list leaves it out.
+    gone: Option<String>,
 }
 
-/// A dish as the api tells of it (a plat), in answer to the command that
-/// composed it or when asked: what app waits to have followed before it
-/// shows the dish. No page is read from it.
+/// What the api answers a dish composed with (a plat): the id it is under.
 #[derive(Debug, Deserialize)]
-pub(crate) struct Told {
+pub(crate) struct Composed {
     pub(crate) id: String,
-    name: String,
-    recipes: Vec<ToldRecipe>,
 }
 
-#[derive(Debug, Deserialize)]
-struct ToldRecipe {
-    id: String,
-}
-
-impl Told {
-    /// Whether `dish`, as app followed it, says the same.
-    fn is(&self, dish: &Dish) -> bool {
-        self.name == dish.name
-            && self
-                .recipes
-                .iter()
-                .map(|recipe| &recipe.id)
-                .eq(&dish.recipe_ids.0)
-    }
-}
-
-/// Waits until app followed the dish as far as the api tells of it, for
-/// the page the browser is sent to to show it as it was just left.
-pub(crate) async fn caught_up(cx: &Cx, told: &Told) {
+/// The dish `id` of who reads the page, as the commands they handed the api
+/// left it.
+async fn own(cx: &Cx, id: &str) -> Result<Option<Dish>> {
     let (db, owner_id) = (db(cx), account(cx).id.as_str());
-    followed(|| async {
-        let dish = crate::dishes::get_own(db, owner_id, &told.id).await?;
-        Ok(dish.is_some_and(|dish| told.is(&dish)))
-    })
-    .await;
-}
-
-/// Waits until app followed the dish `id` as far as the api has written
-/// it. An api that does not say is not waited for: the page shows the dish
-/// a moment later.
-pub(crate) async fn settled(cx: &Cx, id: &str) {
-    let language = language(cx);
-    let told = api(cx)
-        .read::<Told>(asking(cx, &language), &["plats", id])
-        .await;
-    if let Ok(told) = told {
-        caught_up(cx, &told).await;
-    }
+    fresh(
+        cx,
+        crate::dishes::get_own(events(cx), db, owner_id, id),
+        crate::dishes::row_own(db, owner_id, id),
+    )
+    .await
 }
 
 /// The recipes `ids` name among those of who reads the page, by id: one
@@ -142,10 +112,12 @@ pub async fn list(cx: &Cx) -> Result<impl View> {
         .and_then(|query| query.after.as_deref())
         .and_then(Cursor::parse);
     let deleted = query.is_some_and(|query| query.done.as_deref() == Some(DELETED));
+    let gone = query.and_then(|query| query.gone.as_deref());
     // One more than shown: whether there is a page beyond.
     let mut dishes = read(
         crate::dishes::list_of(db(cx), &account(cx).id, q, after.as_ref(), PAGE as i64 + 1).await,
     )?;
+    dishes.retain(|dish| Some(dish.id.as_str()) != gone);
     let more = dishes.len() > PAGE;
     dishes.truncate(PAGE);
     let next = dishes.last().filter(|_| more).map(|last| {
@@ -293,7 +265,7 @@ struct Part {
 #[page("./{dish_id}", with(Metadata::new().title(t!(dishes_meta_title))))]
 pub async fn show(cx: &Cx) -> Result<impl View> {
     let id = dish_id(cx);
-    let Some(dish) = read(crate::dishes::get_own(db(cx), &account(cx).id, id).await)? else {
+    let Some(dish) = own(cx, id).await? else {
         return Err(not_found().into());
     };
     let mut recipes = named(cx, &dish.recipe_ids.0).await?;
@@ -406,7 +378,7 @@ pub async fn show(cx: &Cx) -> Result<impl View> {
 #[page("./{dish_id}/cook", with(Metadata::new().title(t!(cook_choose_meta_title))))]
 pub async fn cook(cx: &Cx) -> Result<impl View> {
     let id = dish_id(cx);
-    let Some(dish) = read(crate::dishes::get_own(db(cx), &account(cx).id, id).await)? else {
+    let Some(dish) = own(cx, id).await? else {
         return Err(not_found().into());
     };
     let servings = query_params::<Cooked>(cx)
@@ -458,12 +430,11 @@ pub async fn cook(cx: &Cx) -> Result<impl View> {
     })
 }
 
-/// Deletes the dish, and sends the browser to the list once app followed
-/// that it is gone. Its recipes stay.
+/// Deletes the dish, and sends the browser to the list, which leaves it
+/// out while its row is still there. Its recipes stay.
 #[page(POST "./{dish_id}/delete", with(Metadata::new().title(t!(dishes_meta_title))))]
 async fn delete(cx: &Cx) -> Result<impl View> {
     let id = dish_id(cx);
-    let (db, owner_id) = (db(cx), account(cx).id.as_str());
     let language = language(cx);
     let deleted = api(cx)
         .command(
@@ -475,9 +446,10 @@ async fn delete(cx: &Cx) -> Result<impl View> {
         .await;
     let failure = match deleted {
         Ok(()) => {
-            followed(|| async { Ok(crate::dishes::get_own(db, owner_id, id).await?.is_none()) })
-                .await;
-            let then = href!(list).query([("done", DELETED)]).resolve(cx);
+            let then = href!(list)
+                .query([("done", DELETED)])
+                .query([("gone", id)])
+                .resolve(cx);
             return Err(see_other(then).into());
         }
         Err(err) => Failure::of(cx, err)?,

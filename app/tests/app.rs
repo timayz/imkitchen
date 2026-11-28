@@ -610,6 +610,31 @@ impl Browser {
         self.send(router, "GET", path, None).await
     }
 
+    /// The page at `path` once `shown` finds what it looks for in it: what
+    /// a page reads from the tables of app, and not of the aggregate a
+    /// command just changed, is there a moment later. Panics past
+    /// [`SETTLE`].
+    async fn read_once(
+        &mut self,
+        router: &Router,
+        path: &str,
+        what: &str,
+        shown: impl Fn(&str) -> bool,
+    ) -> String {
+        let deadline = tokio::time::Instant::now() + SETTLE;
+        loop {
+            let page = self.get(router, path).await.body;
+            if shown(&page) {
+                return page;
+            }
+            assert!(
+                tokio::time::Instant::now() < deadline,
+                "timed out waiting for {what}: {page}"
+            );
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+    }
+
     /// Posts `fields` to `path` as a form.
     async fn post(&mut self, router: &Router, path: &str, fields: &[(&str, &str)]) -> Answer {
         let encode = |text: &str| -> String {
@@ -1844,13 +1869,15 @@ async fn a_user_writes_a_recipe_with_its_picture_rewrites_it_and_deletes_it() {
     );
     assert!(link(&page, &format!("{at}/edit")).is_some(), "{page}");
 
-    // In the list, with the smaller size of its picture.
-    let page = cook.get(&router, RECIPES).await.body;
-    assert!(page.contains(&format!("data-recipe=\"{id}\"")), "{page}");
-    assert!(
-        page.contains(&format!("src=\"{PICTURES}/v1/images/400/")),
-        "{page}"
-    );
+    // In the list, with the smaller size of its picture, once app followed
+    // both into its table.
+    let listed = format!("data-recipe=\"{id}\"");
+    let small = format!("src=\"{PICTURES}/v1/images/400/");
+    let page = cook
+        .read_once(&router, RECIPES, "the recipe to be listed", |page| {
+            page.contains(&listed) && page.contains(&small)
+        })
+        .await;
     assert!(link(&page, &at).unwrap().contains("Crêpes"), "{page}");
     assert!(page.contains("data-minutes=\"30\""), "{page}");
     assert!(page.contains("data-servings=\"6\""), "{page}");
@@ -1923,12 +1950,11 @@ async fn a_user_writes_a_recipe_with_its_picture_rewrites_it_and_deletes_it() {
         "{page}"
     );
 
-    // Deleted for good: the list says so, and the recipe is nowhere.
+    // Deleted for good: the list says so, and the recipe is nowhere, though
+    // its row may still be there.
     let answer = cook.post(&router, &format!("{at}/delete"), &[]).await;
-    assert_eq!(
-        answer.sent_to(),
-        (StatusCode::SEE_OTHER, "/recipes?done=deleted")
-    );
+    let gone = format!("/recipes?done=deleted&gone={id}");
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, gone.as_str()));
     let page = cook.get(&router, &answer.location).await.body;
     assert!(page.contains("data-done=\"deleted\""), "{page}");
     assert!(page.contains("data-empty"), "{page}");
@@ -2441,13 +2467,17 @@ async fn a_user_composes_a_dish_of_their_recipes_recomposes_it_and_deletes_it() 
     let answer = cook.post(&router, &edit, &recomposed).await;
     assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, at.as_str()));
 
-    // A recipe that is deleted leaves the dish, which stays.
+    // A recipe that is deleted leaves the dish, which stays: once app
+    // followed the recipe out of its table.
     let answer = cook
         .post(&router, &format!("/recipes/{roast}/delete"), &[])
         .await;
     assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
-    let page = cook.get(&router, &at).await.body;
-    assert!(page.contains("data-recipes=\"1\""), "{page}");
+    let page = cook
+        .read_once(&router, &at, "the recipe to leave the dish", |page| {
+            page.contains("data-recipes=\"1\"")
+        })
+        .await;
     assert!(!page.contains(&recipe(&roast)), "{page}");
     // The api takes it out a moment later, and app follows.
     let left = json!([soup]).to_string();
@@ -2464,19 +2494,24 @@ async fn a_user_composes_a_dish_of_their_recipes_recomposes_it_and_deletes_it() 
         .post(&router, &format!("/recipes/{soup}/delete"), &[])
         .await;
     assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
-    let page = cook.get(&router, &at).await.body;
-    assert!(page.contains("data-recipes=\"0\""), "{page}");
+    let page = cook
+        .read_once(&router, &at, "the last recipe to leave the dish", |page| {
+            page.contains("data-recipes=\"0\"")
+        })
+        .await;
     assert!(page.contains("This dish has no recipe left."), "{page}");
-    let page = cook.get(&router, DISHES).await.body;
-    assert!(link(&page, &at).unwrap().contains("No recipe"), "{page}");
+    // The list reads the dish and the recipes from the tables of app: a
+    // moment later than the dish's own page.
+    cook.read_once(&router, DISHES, "the list to show no recipe", |page| {
+        link(page, &at).is_some_and(|card| card.contains("No recipe"))
+    })
+    .await;
 
-    // Deleted for good: the list says so, and the dish is nowhere. The
-    // recipe it was not made of stays.
+    // Deleted for good: the list says so, and the dish is nowhere, though
+    // its row may still be there. The recipe it was not made of stays.
     let answer = cook.post(&router, &format!("{at}/delete"), &[]).await;
-    assert_eq!(
-        answer.sent_to(),
-        (StatusCode::SEE_OTHER, "/dishes?done=deleted")
-    );
+    let gone = format!("/dishes?done=deleted&gone={id}");
+    assert_eq!(answer.sent_to(), (StatusCode::SEE_OTHER, gone.as_str()));
     let page = cook.get(&router, &answer.location).await.body;
     assert!(page.contains("data-done=\"deleted\""), "{page}");
     assert!(page.contains("data-empty"), "{page}");
@@ -2570,7 +2605,7 @@ async fn a_dish_is_its_owners_alone() {
     let mut app = App::start(api.addr, &dir.path().join("app.db")).await;
     app.api = api.serve_http().await;
     eventually("app to follow the dish", || async {
-        dishes::get_own(&app.db, "alice", &stew).await.unwrap()
+        dishes::row_own(&app.db, "alice", &stew).await.unwrap()
     })
     .await;
     let router = app.router();
@@ -2598,7 +2633,9 @@ async fn a_dish_is_its_owners_alone() {
     assert_eq!(answer.status, StatusCode::NOT_FOUND, "{}", answer.body);
     let answer = cook.post(&router, &format!("{at}/delete"), &[]).await;
     assert_eq!(answer.status, StatusCode::NOT_FOUND, "{}", answer.body);
-    let theirs = dishes::get_own(&app.db, "alice", &stew).await.unwrap();
+    let theirs = dishes::get_own(app.events.executor(), &app.db, "alice", &stew)
+        .await
+        .unwrap();
     assert_eq!(theirs.unwrap().name, "Stew");
 
     // Nobody reads anything of the dishes without signing in.
@@ -3226,13 +3263,17 @@ async fn a_user_generates_their_list_and_picks_meals_by_hand() {
     assert_eq!(answer.status, StatusCode::NOT_FOUND, "{}", answer.body);
 
     // A recipe that is deleted leaves the list, the other meals as they
-    // were: at once on the page, and in what app follows a moment later.
+    // were: on the page once app followed the recipe out of its table, and
+    // in the list itself once the api took it off.
     let answer = cook
         .post(&router, &format!("/recipes/{soup}/delete"), &[])
         .await;
     assert_eq!(answer.status, StatusCode::SEE_OTHER, "{}", answer.body);
-    let page = cook.get(&router, LIST).await.body;
-    assert!(page.contains("data-entries=\"1\""), "{page}");
+    let page = cook
+        .read_once(&router, LIST, "the recipe to leave the list", |page| {
+            page.contains("data-entries=\"1\"")
+        })
+        .await;
     assert!(!page.contains("Soup"), "{page}");
     eventually("the meal to be taken off the list", || async {
         let entries: String = app
@@ -3427,10 +3468,10 @@ async fn a_recipe_is_cooked_a_step_at_a_time() {
         .await;
     assert_eq!(status, 201, "{body}");
     let breakfast = body["id"].as_str().unwrap().to_owned();
-    eventually("app to follow the dish", || async {
-        let at = format!("/dishes/{breakfast}");
-        let page = cook.clone().get(&router, &at).await;
-        (page.status == StatusCode::OK).then_some(())
+    // The list names its meals as the tables of app hold them.
+    let listed = format!("data-dish=\"{breakfast}\"");
+    cook.read_once(&router, DISHES, "app to follow the dish", |page| {
+        page.contains(&listed)
     })
     .await;
     let picked = [("servings", "6"), ("dish_id", breakfast.as_str())];

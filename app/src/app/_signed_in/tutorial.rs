@@ -25,11 +25,11 @@ use topcoat::{
 };
 
 use super::{
-    BUTTON, BUTTON_QUIET, Failure, LINK, account, asking, dishes, failed, followed, groceries,
-    home, list, read, recipes, settings, welcome,
+    BUTTON, BUTTON_QUIET, Failure, LINK, account, asking, dishes, failed, followed, fresh,
+    groceries, home, list, recipes, settings, welcome,
 };
 use crate::api::CommandError;
-use crate::app::{api, db, language, t};
+use crate::app::{api, db, events, language, t};
 use crate::tutorial::{Tutorial, word};
 
 /// What a step asks of the user, and where it is done.
@@ -107,43 +107,49 @@ pub(crate) fn number(step: Step) -> usize {
         + 1
 }
 
-/// Waits until app followed `step`, which a command of who reads the page
+/// The tutorial of who reads the page, as the api left it.
+pub(crate) async fn progress(cx: &Cx) -> Result<Tutorial> {
+    let (db, user_id) = (db(cx), account(cx).id.as_str());
+    fresh(
+        cx,
+        crate::tutorial::of(events(cx), db, user_id),
+        crate::tutorial::row_of(db, user_id),
+    )
+    .await
+}
+
+/// Waits until the api noted `step`, which a command of who reads the page
 /// just did, so that the page the browser is sent to shows the tutorial
-/// past it. Nothing is waited for once they skipped the tutorial or did
-/// the step before: the api notes nothing then. Nor for long
-/// ([`followed`]).
+/// past it: the api notes it a moment after the command. Nothing is waited
+/// for once they skipped the tutorial or did the step before: the api
+/// notes nothing then. Nor for long ([`followed`]).
 ///
 /// The command must be one the api wrote something for: one that left
 /// things as they stood does no step.
 pub(crate) async fn noted(cx: &Cx, step: Step) {
-    let (db, user_id) = (db(cx), account(cx).id.as_str());
     followed(|| async {
-        let tutorial = crate::tutorial::of(db, user_id).await?;
-        Ok(tutorial.skipped || tutorial.did(step))
+        // A tutorial that cannot be read is the next page's to say.
+        Ok(progress(cx)
+            .await
+            .map_or(true, |tutorial| tutorial.skipped || tutorial.did(step)))
     })
     .await;
 }
 
-/// Skips the tutorial of who reads the page, on every device, and waits
-/// until app followed: the page the browser is sent to shows it skipped.
-/// The steps they did stay done.
+/// Skips the tutorial of who reads the page, on every device: the page the
+/// browser is sent to shows it skipped. The steps they did stay done.
 pub(crate) async fn skipped(cx: &Cx) -> Result<(), CommandError> {
-    asked(cx, "skip", |tutorial| tutorial.skipped).await
+    asked(cx, "skip").await
 }
 
 /// Starts the tutorial of who reads the page over, on every device: no
-/// step is done, and it is not skipped. Waits until app followed.
+/// step is done, and it is not skipped.
 pub(crate) async fn restarted(cx: &Cx) -> Result<(), CommandError> {
-    asked(cx, "restart", |tutorial| *tutorial == Tutorial::default()).await
+    asked(cx, "restart").await
 }
 
-/// Hands the api `command` of the tutorial, then waits until the tutorial,
-/// as app followed it, is `shown`.
-async fn asked(
-    cx: &Cx,
-    command: &str,
-    shown: impl Fn(&Tutorial) -> bool,
-) -> Result<(), CommandError> {
+/// Hands the api `command` of the tutorial.
+async fn asked(cx: &Cx, command: &str) -> Result<(), CommandError> {
     let language = language(cx);
     api(cx)
         .command(
@@ -152,10 +158,7 @@ async fn asked(
             &["tutorial", command],
             None::<&()>,
         )
-        .await?;
-    let (db, user_id) = (db(cx), account(cx).id.as_str());
-    followed(|| async { Ok(shown(&crate::tutorial::of(db, user_id).await?)) }).await;
-    Ok(())
+        .await
 }
 
 /// Skips the tutorial from the home, or closes it once every step is done,
@@ -186,7 +189,7 @@ struct Row {
 /// step is done it says so, until it is closed. Nothing once it is skipped.
 #[component]
 pub(crate) async fn steps(cx: &Cx, failure: Option<Failure>) -> Result<impl View> {
-    let tutorial = read(crate::tutorial::of(db(cx), &account(cx).id).await)?;
+    let tutorial = progress(cx).await?;
     let shown = !tutorial.skipped;
     let completed = tutorial.completed();
     let current = tutorial.current();
@@ -295,7 +298,7 @@ pub(crate) async fn steps(cx: &Cx, failure: Option<Failure>) -> Result<impl View
 /// Nothing once the tutorial is skipped or every step done.
 #[component]
 pub(crate) async fn banner(cx: &Cx) -> Result<impl View> {
-    let tutorial = read(crate::tutorial::of(db(cx), &account(cx).id).await)?;
+    let tutorial = progress(cx).await?;
     let current = tutorial
         .current()
         .map(|step| (word(step), number(step), guide(cx, step)));

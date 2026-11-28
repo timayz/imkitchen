@@ -10,8 +10,9 @@
 //! A page shows what the store of app holds, and nothing a user does is
 //! written there: a form posts to its page, which hands it to the api as a
 //! command (with [`token`], what the api refuses said as [`Failure`]) and
-//! sends the browser on once app followed what the api wrote
-//! ([`followed`]).
+//! sends the browser on at once. The page it is sent to loads what the
+//! command changed from its row and the events the api wrote after it
+//! ([`fresh`]); a list is read from its table, a moment behind.
 //!
 //! The pages are read in the language their reader set, when they set one
 //! ([`settings`]), whatever device they are on.
@@ -34,7 +35,7 @@ pub mod tutorial;
 use std::future::Future;
 use std::time::Duration;
 
-use tokio::time::{Instant, sleep};
+use tokio::time::{Instant, sleep, timeout};
 use topcoat::{
     Error, Result,
     context::{Cx, context},
@@ -49,8 +50,9 @@ use topcoat::{
     view::{View, class, component, error_boundary, view},
 };
 
-use super::{api, auth, db, public, t};
+use super::{api, auth, db, events, public, t};
 use crate::api::{Account, Asking, CommandError, Refusal};
+use crate::events::Events;
 use crate::session::{self, Kept};
 
 /// How long a browser waits before it asks again, when the api could not
@@ -60,9 +62,13 @@ const RETRY_AFTER_SECS: u64 = 5;
 // Anything else is the "not found" page, of a signed-in user's too.
 not_found!();
 
-/// How long a page waits for app to follow what a command just wrote,
-/// before it sends the browser on anyway.
+/// How long a page waits for what a command set off for later, before it
+/// sends the browser on anyway.
 const FOLLOWED_WITHIN: Duration = Duration::from_secs(5);
+
+/// How long a page waits for the api to answer a load, before it shows what
+/// the read models of app hold.
+const LOADED_WITHIN: Duration = Duration::from_secs(2);
 
 /// Who reads the page.
 pub(crate) fn account(cx: &Cx) -> &Account {
@@ -131,8 +137,9 @@ impl Failure {
     }
 }
 
-/// Waits until app followed what a command just wrote, so that the page
-/// the browser is sent to shows it: `shown` says whether it does. Not for
+/// Waits until what a command set off for later is there, so that the page
+/// the browser is sent to shows it: a step of the tutorial, which the api
+/// notes a moment after the command. `shown` says whether it is. Not for
 /// long: past [`FOLLOWED_WITHIN`] the page shows it a moment later.
 pub(crate) async fn followed<F>(mut shown: impl FnMut() -> F)
 where
@@ -143,6 +150,31 @@ where
     while !shown().await.unwrap_or(true) && Instant::now() < deadline {
         sleep(Duration::from_millis(50)).await;
     }
+}
+
+/// One aggregate of who reads the page, as the commands they handed the api
+/// left it: `loaded` from its row and the events the api wrote after it.
+/// While app does not reach the api's events, or when they do not answer
+/// within [`LOADED_WITHIN`], what its row holds (`kept`), a moment behind:
+/// the page is shown all the same.
+pub(crate) async fn fresh<T>(
+    cx: &Cx,
+    loaded: impl Future<Output = anyhow::Result<T>>,
+    kept: impl Future<Output = anyhow::Result<T>>,
+) -> Result<T> {
+    if context::<Events>(cx).connected() {
+        match timeout(LOADED_WITHIN, loaded).await {
+            Ok(Ok(value)) => return Ok(value),
+            Ok(Err(err)) => tracing::warn!(
+                err = format!("{err:#}"),
+                "a load from the api's events failed: the page shows the read model"
+            ),
+            Err(_) => tracing::warn!(
+                "a load from the api's events was not answered in time: the page shows the read model"
+            ),
+        }
+    }
+    read(kept.await)
 }
 
 /// A read of the store that failed, as the error of a page.
@@ -230,9 +262,14 @@ async fn signed_in_only(cx: &Cx, body: Body, next: Next<'_>) -> Result<Response>
     }
     // The language they chose is the one their pages are read in, on every
     // device: the browser's is for who chose none.
-    let chosen = read(crate::settings::of(db(cx), &me.user.id).await)?
-        .language
-        .and_then(|language| spoken(&language));
+    let (db, user_id) = (db(cx), me.user.id.as_str());
+    let settings = fresh(
+        cx,
+        crate::settings::of(events(cx), db, user_id),
+        crate::settings::row_of(db, user_id),
+    )
+    .await?;
+    let chosen = settings.language.and_then(|language| spoken(&language));
     let cx = cx.with(me.user).with(token);
     match chosen {
         Some(locale) => next.run(&cx.with(locale), body).await,

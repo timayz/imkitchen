@@ -3,16 +3,21 @@
 //!
 //! A user who changed nothing has no row: their settings are the defaults,
 //! those the api answers ([`Settings::default`]). They are theirs alone:
-//! nothing is read from the table without saying whose is asked for.
+//! nothing is read without saying whose is asked for.
 //!
-//! The handlers leave the table as it should be when an event is delivered
-//! twice (the subscription is at-least-once): each sets its part of the
-//! row as the event says, whatever the row held.
+//! The settings are a projection of their stream, under the id of their
+//! user ([`SettingsState`]), whose snapshot is their row of the `settings`
+//! table, kept by a projection subscription ([`subscription`]). A page loads
+//! those of who reads it from the row and the events written after it
+//! ([`of`]), so it shows them as the command its user just handed the api
+//! left them.
 
+use evento::Executor;
 use evento::metadata::Event;
-use evento::subscription::{Context, SubscriptionBuilder};
+use evento::projection::{Context, Projection, ProjectionSubscription, Snapshot};
 use imkitchen_aggregates::settings::{
     DEFAULT_MEALS, DEFAULT_SERVINGS, LanguageChanged, ListChanged, ListSources,
+    Settings as SettingsStream,
 };
 use timada_core::db::FromRow;
 
@@ -33,59 +38,111 @@ fn sources(sources: ListSources) -> &'static str {
     }
 }
 
-/// Follows the settings into `db`.
-pub fn subscription<E: evento::Executor>(db: Db) -> SubscriptionBuilder<E> {
-    SubscriptionBuilder::new(SUBSCRIPTION)
-        .data(db)
+/// The settings of a user, as their stream leaves them: `None` until they
+/// changed one, the defaults for those they did not change.
+#[evento::projection]
+#[derive(Debug)]
+pub struct SettingsState {
+    pub settings: Option<Settings>,
+}
+
+fn projection<E: Executor>(db: Db) -> Projection<E, SettingsState> {
+    Projection::new::<SettingsStream>()
         .handler(on_list_changed())
         .handler(on_language_changed())
+        .data(db)
 }
 
-#[evento::subscription]
-async fn on_list_changed<E: evento::Executor>(
-    context: &Context<'_, E>,
+/// Keeps the row of the settings of each user in `db` as their stream
+/// leaves them.
+pub fn subscription<E: Executor>(db: Db) -> ProjectionSubscription<E, SettingsState> {
+    projection(db).subscription(SUBSCRIPTION)
+}
+
+#[evento::handler]
+async fn on_list_changed(
     event: Event<ListChanged>,
+    state: &mut SettingsState,
 ) -> anyhow::Result<()> {
-    let db: Db = context.extract();
     let data = &event.data;
-    db.execute(
-        "INSERT INTO settings (user_id, servings, meals, sources) VALUES (?1, ?2, ?3, ?4)
-         ON CONFLICT (user_id) DO UPDATE SET
-            servings = excluded.servings, meals = excluded.meals, sources = excluded.sources",
-        (
-            event.aggregate_id.as_str(),
-            data.servings,
-            data.meals,
-            sources(data.sources),
-        ),
-    )
-    .await?;
+    let settings = state.settings.get_or_insert_with(Settings::default);
+    settings.servings = i64::from(data.servings);
+    settings.meals = i64::from(data.meals);
+    settings.sources = sources(data.sources).to_owned();
     Ok(())
 }
 
-#[evento::subscription]
-async fn on_language_changed<E: evento::Executor>(
-    context: &Context<'_, E>,
+/// A user whose first setting is their language: the rest are the
+/// defaults.
+#[evento::handler]
+async fn on_language_changed(
     event: Event<LanguageChanged>,
+    state: &mut SettingsState,
 ) -> anyhow::Result<()> {
-    let db: Db = context.extract();
-    let defaults = Settings::default();
-    // A user whose first setting is their language: the rest of the row is
-    // the defaults.
-    db.execute(
-        "INSERT INTO settings (user_id, servings, meals, sources, language)
-         VALUES (?1, ?2, ?3, ?4, ?5)
-         ON CONFLICT (user_id) DO UPDATE SET language = excluded.language",
-        (
-            event.aggregate_id.as_str(),
-            defaults.servings,
-            defaults.meals,
-            defaults.sources.as_str(),
-            event.data.language.as_deref(),
-        ),
-    )
-    .await?;
+    let settings = state.settings.get_or_insert_with(Settings::default);
+    settings.language = event.data.language.to_owned();
     Ok(())
+}
+
+/// The row of the settings of a user, and how far their stream was folded
+/// into it.
+#[derive(FromRow)]
+struct Row {
+    servings: i64,
+    meals: i64,
+    sources: String,
+    language: Option<String>,
+    cursor: String,
+    aggregate_version: i64,
+}
+
+impl<E: Executor> Snapshot<E> for SettingsState {
+    async fn restore(context: &Context<'_, E>) -> anyhow::Result<Option<Self>> {
+        let db: Db = context.extract();
+        let row: Option<Row> = db
+            .fetch_optional(
+                "SELECT servings, meals, sources, language, cursor, aggregate_version
+                 FROM settings WHERE user_id = ?1",
+                (context.id.as_str(),),
+            )
+            .await?;
+        Ok(row.map(|row| SettingsState {
+            settings: Some(Settings {
+                servings: row.servings,
+                meals: row.meals,
+                sources: row.sources,
+                language: row.language,
+            }),
+            cursor: row.cursor,
+            aggregate_version: row.aggregate_version as u16,
+            ..Default::default()
+        }))
+    }
+
+    async fn take_snapshot(&self, context: &Context<'_, E>) -> anyhow::Result<()> {
+        let db: Db = context.extract();
+        let settings = self.settings.clone().unwrap_or_default();
+        db.execute(
+            "INSERT INTO settings (user_id, servings, meals, sources, language, cursor,
+                aggregate_version)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+             ON CONFLICT (user_id) DO UPDATE SET
+                servings = excluded.servings, meals = excluded.meals, sources = excluded.sources,
+                language = excluded.language, cursor = excluded.cursor,
+                aggregate_version = excluded.aggregate_version",
+            (
+                context.id.as_str(),
+                settings.servings,
+                settings.meals,
+                settings.sources,
+                settings.language,
+                self.cursor.as_str(),
+                i64::from(self.aggregate_version),
+            ),
+        )
+        .await?;
+        Ok(())
+    }
 }
 
 /// The settings of a user.
@@ -114,9 +171,9 @@ impl Default for Settings {
     }
 }
 
-/// The settings of `user_id`, as far as app has followed: the defaults for
-/// a user who changed none.
-pub async fn of(db: &Db, user_id: &str) -> anyhow::Result<Settings> {
+/// The settings of `user_id`, as their row holds them: a moment behind the
+/// commands. The defaults for a user who changed none.
+pub async fn row_of(db: &Db, user_id: &str) -> anyhow::Result<Settings> {
     let settings: Option<Settings> = db
         .fetch_optional(
             "SELECT servings, meals, sources, language FROM settings WHERE user_id = ?1",
@@ -124,4 +181,15 @@ pub async fn of(db: &Db, user_id: &str) -> anyhow::Result<Settings> {
         )
         .await?;
     Ok(settings.unwrap_or_default())
+}
+
+/// The settings of `user_id`, as their stream leaves them: their row and
+/// the events written after it, read from the api. The defaults for a user
+/// who changed none.
+pub async fn of<E: Executor>(executor: &E, db: &Db, user_id: &str) -> anyhow::Result<Settings> {
+    let state = projection(db.clone())
+        .load(user_id)
+        .execute(executor)
+        .await?;
+    Ok(state.and_then(|state| state.settings).unwrap_or_default())
 }

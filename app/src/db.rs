@@ -27,27 +27,28 @@ pub type Store = Turso;
 
 /// The tables of app, next to evento's in the same file. Append only: a
 /// migration that was released is never edited.
-pub const MIGRATIONS: Migrations<'static> = Migrations::new(
-    "imkitchen-app",
-    &[
-        Migration::up(
-            "0001_recipes",
-            // One row per recipe that is not deleted, and nothing of what it
-            // says: how many there are is all app showed of them.
-            "CREATE TABLE recipes (id TEXT NOT NULL PRIMARY KEY);",
-        ),
-        Migration::up(
-            "0002_recipes_of_their_owners",
-            // One row per recipe that is not deleted, with whose it is, all
-            // it says (`ingredients` and `instructions` as JSON) and the
-            // picture it shows: the name of its files and the size of the
-            // larger one. `search` is its title and its ingredients,
-            // lowercased and without accents.
-            //
-            // The rows that were there held an id and nothing else: the
-            // subscription that fills the table starts again from the first
-            // event, its cursor forgotten.
-            "DROP TABLE recipes;
+pub const MIGRATIONS: Migrations<'static> = Migrations::new("imkitchen-app", &APPLIED);
+
+/// Each migration of app, in the order they are applied.
+const APPLIED: [Migration<'static>; 8] = [
+    Migration::up(
+        "0001_recipes",
+        // One row per recipe that is not deleted, and nothing of what it
+        // says: how many there are is all app showed of them.
+        "CREATE TABLE recipes (id TEXT NOT NULL PRIMARY KEY);",
+    ),
+    Migration::up(
+        "0002_recipes_of_their_owners",
+        // One row per recipe that is not deleted, with whose it is, all
+        // it says (`ingredients` and `instructions` as JSON) and the
+        // picture it shows: the name of its files and the size of the
+        // larger one. `search` is its title and its ingredients,
+        // lowercased and without accents.
+        //
+        // The rows that were there held an id and nothing else: the
+        // subscription that fills the table starts again from the first
+        // event, its cursor forgotten.
+        "DROP TABLE recipes;
             CREATE TABLE recipes (
                 id TEXT NOT NULL PRIMARY KEY,
                 owner_id TEXT NOT NULL,
@@ -68,14 +69,14 @@ pub const MIGRATIONS: Migrations<'static> = Migrations::new(
             CREATE INDEX recipes_owned ON recipes (owner_id, created_at DESC, id DESC);
             DELETE FROM subscriber WHERE key = 'imkitchen-app/recipes';
             DELETE FROM dead_letter WHERE subscriber = 'imkitchen-app/recipes';",
-        ),
-        Migration::up(
-            "0003_dishes",
-            // One row per dish (a plat of the api) that is not deleted, with
-            // whose it is, its name and the ids of the recipes it is made
-            // of, in the order they are served (`recipe_ids` as JSON).
-            // `search` is its name, lowercased and without accents.
-            "CREATE TABLE dishes (
+    ),
+    Migration::up(
+        "0003_dishes",
+        // One row per dish (a plat of the api) that is not deleted, with
+        // whose it is, its name and the ids of the recipes it is made
+        // of, in the order they are served (`recipe_ids` as JSON).
+        // `search` is its name, lowercased and without accents.
+        "CREATE TABLE dishes (
                 id TEXT NOT NULL PRIMARY KEY,
                 owner_id TEXT NOT NULL,
                 name TEXT NOT NULL,
@@ -85,37 +86,37 @@ pub const MIGRATIONS: Migrations<'static> = Migrations::new(
                 updated_at INTEGER NOT NULL
             );
             CREATE INDEX dishes_owned ON dishes (owner_id, created_at DESC, id DESC);",
-        ),
-        Migration::up(
-            "0004_settings",
-            // One row per user who changed a setting: how their list is
-            // generated (`sources` as the api words it) and the tag of the
-            // language they read, when they chose one.
-            "CREATE TABLE settings (
+    ),
+    Migration::up(
+        "0004_settings",
+        // One row per user who changed a setting: how their list is
+        // generated (`sources` as the api words it) and the tag of the
+        // language they read, when they chose one.
+        "CREATE TABLE settings (
                 user_id TEXT NOT NULL PRIMARY KEY,
                 servings INTEGER NOT NULL,
                 meals INTEGER NOT NULL,
                 sources TEXT NOT NULL,
                 language TEXT
             );",
-        ),
-        Migration::up(
-            "0005_lists",
-            // One row per user whose list was ever filled: its meals in the
-            // order they were planned (`entries` as JSON), each naming a
-            // recipe or a dish and how many it is cooked for.
-            "CREATE TABLE lists (
+    ),
+    Migration::up(
+        "0005_lists",
+        // One row per user whose list was ever filled: its meals in the
+        // order they were planned (`entries` as JSON), each naming a
+        // recipe or a dish and how many it is cooked for.
+        "CREATE TABLE lists (
                 owner_id TEXT NOT NULL PRIMARY KEY,
                 entries TEXT NOT NULL
             );",
-        ),
-        Migration::up(
-            "0006_grocery_marks",
-            // One row per item of the groceries its user says something
-            // of: that it is in the basket (`checked`), or how much of it
-            // they buy (`quantity`). `needed` is how much the list called
-            // for when it was said, which it holds for.
-            "CREATE TABLE grocery_marks (
+    ),
+    Migration::up(
+        "0006_grocery_marks",
+        // One row per item of the groceries its user says something
+        // of: that it is in the basket (`checked`), or how much of it
+        // they buy (`quantity`). `needed` is how much the list called
+        // for when it was said, which it holds for.
+        "CREATE TABLE grocery_marks (
                 owner_id TEXT NOT NULL,
                 item_id TEXT NOT NULL,
                 needed REAL,
@@ -123,21 +124,108 @@ pub const MIGRATIONS: Migrations<'static> = Migrations::new(
                 quantity REAL,
                 PRIMARY KEY (owner_id, item_id)
             );",
-        ),
-        Migration::up(
-            "0007_tutorials",
-            // One row per user who did a step of the tutorial or skipped
-            // it: the steps they did, in the order they did them (`done` as
-            // JSON, each named as the api names it), and whether they
-            // skipped it.
-            "CREATE TABLE tutorials (
+    ),
+    Migration::up(
+        "0007_tutorials",
+        // One row per user who did a step of the tutorial or skipped
+        // it: the steps they did, in the order they did them (`done` as
+        // JSON, each named as the api names it), and whether they
+        // skipped it.
+        "CREATE TABLE tutorials (
                 user_id TEXT NOT NULL PRIMARY KEY,
                 done TEXT NOT NULL,
                 skipped INTEGER NOT NULL
             );",
-        ),
-    ],
-);
+    ),
+    Migration::up(
+        "0008_rows_are_snapshots",
+        // Each row is the snapshot of a projection: what it holds, and
+        // how far its stream was folded into it (`cursor`, and the
+        // version of the stream there, `aggregate_version`). A page
+        // loads one aggregate from its row and the events after it.
+        // What a user says of their groceries is one row per user, the
+        // items in it (`marks` as JSON, by item id), in place of a row
+        // per item.
+        //
+        // The rows that were there say nothing of where their streams
+        // stood: the tables are made again and their subscriptions start
+        // from the first event, their cursors forgotten.
+        "DROP TABLE recipes;
+            CREATE TABLE recipes (
+                id TEXT NOT NULL PRIMARY KEY,
+                owner_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT NOT NULL,
+                ingredients TEXT NOT NULL,
+                instructions TEXT NOT NULL,
+                prep_minutes INTEGER NOT NULL,
+                cook_minutes INTEGER NOT NULL,
+                servings INTEGER NOT NULL,
+                file_id TEXT,
+                image_width INTEGER,
+                image_height INTEGER,
+                search TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                cursor TEXT NOT NULL,
+                aggregate_version INTEGER NOT NULL
+            );
+            CREATE INDEX recipes_owned ON recipes (owner_id, created_at DESC, id DESC);
+            DROP TABLE dishes;
+            CREATE TABLE dishes (
+                id TEXT NOT NULL PRIMARY KEY,
+                owner_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                recipe_ids TEXT NOT NULL,
+                search TEXT NOT NULL,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL,
+                cursor TEXT NOT NULL,
+                aggregate_version INTEGER NOT NULL
+            );
+            CREATE INDEX dishes_owned ON dishes (owner_id, created_at DESC, id DESC);
+            DROP TABLE settings;
+            CREATE TABLE settings (
+                user_id TEXT NOT NULL PRIMARY KEY,
+                servings INTEGER NOT NULL,
+                meals INTEGER NOT NULL,
+                sources TEXT NOT NULL,
+                language TEXT,
+                cursor TEXT NOT NULL,
+                aggregate_version INTEGER NOT NULL
+            );
+            DROP TABLE lists;
+            CREATE TABLE lists (
+                owner_id TEXT NOT NULL PRIMARY KEY,
+                entries TEXT NOT NULL,
+                cursor TEXT NOT NULL,
+                aggregate_version INTEGER NOT NULL
+            );
+            DROP TABLE grocery_marks;
+            CREATE TABLE groceries (
+                owner_id TEXT NOT NULL PRIMARY KEY,
+                marks TEXT NOT NULL,
+                cursor TEXT NOT NULL,
+                aggregate_version INTEGER NOT NULL
+            );
+            DROP TABLE tutorials;
+            CREATE TABLE tutorials (
+                user_id TEXT NOT NULL PRIMARY KEY,
+                done TEXT NOT NULL,
+                skipped INTEGER NOT NULL,
+                cursor TEXT NOT NULL,
+                aggregate_version INTEGER NOT NULL
+            );
+            DELETE FROM subscriber WHERE key IN (
+                'imkitchen-app/recipes', 'imkitchen-app/dishes', 'imkitchen-app/settings',
+                'imkitchen-app/list', 'imkitchen-app/groceries', 'imkitchen-app/tutorial'
+            );
+            DELETE FROM dead_letter WHERE subscriber IN (
+                'imkitchen-app/recipes', 'imkitchen-app/dishes', 'imkitchen-app/settings',
+                'imkitchen-app/list', 'imkitchen-app/groceries', 'imkitchen-app/tutorial'
+            );",
+    ),
+];
 
 /// Every list of migrations the store's schema is made of.
 const SCHEMA: [&Migrations<'static>; 2] = [&evento::turso::MIGRATIONS, &MIGRATIONS];
@@ -291,6 +379,58 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(cursors, 1);
+    }
+
+    #[tokio::test]
+    async fn a_store_whose_rows_were_no_snapshots_follows_them_again_from_the_start() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("app.db");
+        // The store as app left it before its rows were snapshots: a row in
+        // a table, and every subscription past the events that wrote them.
+        let store = Turso::open_concurrent(&path).await.unwrap();
+        let mut conn = store.connect().unwrap();
+        let before = Migrations::new("imkitchen-app", &APPLIED[..7]);
+        before.to_latest(&mut conn).await.unwrap();
+        let db = Db::from(store);
+        db.execute(
+            "INSERT INTO grocery_marks (owner_id, item_id, needed, checked, quantity)
+             VALUES ('cook', 'flour-g', 250, 1, NULL)",
+            (),
+        )
+        .await
+        .unwrap();
+        let followed = [
+            crate::recipes::SUBSCRIPTION,
+            crate::dishes::SUBSCRIPTION,
+            crate::settings::SUBSCRIPTION,
+            crate::list::SUBSCRIPTION,
+            crate::groceries::SUBSCRIPTION,
+            crate::tutorial::SUBSCRIPTION,
+        ];
+        for key in followed.iter().chain(&["imkitchen-app/other"]) {
+            db.execute(
+                "INSERT INTO subscriber (key, worker_id, cursor, lag, created_at)
+                 VALUES (?1, 'worker', 'cursor', 0, 0)",
+                (*key,),
+            )
+            .await
+            .unwrap();
+        }
+        drop((conn, db));
+
+        let db = Db::from(migrate(&path).await.unwrap());
+        let marks: i64 = db
+            .fetch_scalar("SELECT count(*) FROM groceries", ())
+            .await
+            .unwrap();
+        assert_eq!(marks, 0);
+        // Every subscription of a read model starts again; nobody else's
+        // cursor is touched.
+        let cursors: Vec<(String,)> = db
+            .fetch_all("SELECT key FROM subscriber", ())
+            .await
+            .unwrap();
+        assert_eq!(cursors, [("imkitchen-app/other".to_owned(),)]);
     }
 
     /// The migrations of app before its recipes had owners.

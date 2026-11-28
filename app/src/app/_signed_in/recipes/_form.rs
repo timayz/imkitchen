@@ -40,12 +40,12 @@ use topcoat::{
     view::{View, class, component, view},
 };
 
-use super::{list, recipe_id, settled, show};
+use super::{Written, list, own, recipe_id, show};
 use crate::app::_signed_in::{
-    BUTTON, BUTTON_QUIET, FIELD_REFUSED, Failure, H1, H2, INPUT, LABEL, LINK, MAIN, account,
-    asking, failed, read, tutorial,
+    BUTTON, BUTTON_QUIET, FIELD_REFUSED, Failure, H1, H2, INPUT, LABEL, LINK, MAIN, asking, failed,
+    tutorial,
 };
-use crate::app::{api, db, language, t};
+use crate::app::{api, language, t};
 use crate::recipes::Recipe;
 
 /// The most a form may weigh: the 8 MiB the api takes of a picture, and
@@ -333,9 +333,10 @@ impl Again {
 }
 
 /// Hands what the form posted to the api: a recipe to write without `id`,
-/// the recipe `id` to rewrite with one. Once the api did it and app followed,
-/// the step of the tutorial with it when the recipe is a new one, the
-/// browser is sent to the recipe; anything else is the form again.
+/// the recipe `id` to rewrite with one. Once the api did it, and noted the
+/// step of the tutorial when the recipe is a new one, the browser is sent
+/// to the recipe, which shows what the api did; anything else is the form
+/// again.
 pub(crate) async fn hand(cx: &Cx, id: Option<&str>, multipart: Multipart) -> Result<Again> {
     let written_anew = id.is_none();
     let mut typed = Typed::posted(multipart).await?;
@@ -357,9 +358,9 @@ pub(crate) async fn hand(cx: &Cx, id: Option<&str>, multipart: Multipart) -> Res
             .await
             .map(|()| id.to_owned()),
         None => api(cx)
-            .create::<_, super::Told>(asking, &["recipes"], &typed.body())
+            .create::<_, Written>(asking, &["recipes"], &typed.body())
             .await
-            .map(|told| told.id),
+            .map(|written| written.id),
     };
     let id = match written {
         Ok(id) => id,
@@ -387,9 +388,7 @@ pub(crate) async fn hand(cx: &Cx, id: Option<&str>, multipart: Multipart) -> Res
         return again(typed, Some(failure), Some(id));
     }
     if written_anew {
-        tokio::join!(settled(cx, &id), tutorial::noted(cx, Step::Recipe));
-    } else {
-        settled(cx, &id).await;
+        tutorial::noted(cx, Step::Recipe).await;
     }
     Err(see_other(href!(show, recipe_id: id.as_str()).resolve(cx)).into())
 }
@@ -397,7 +396,7 @@ pub(crate) async fn hand(cx: &Cx, id: Option<&str>, multipart: Multipart) -> Res
 #[page("./{recipe_id}/edit", with(Metadata::new().title(t!(recipe_edit_meta_title))))]
 pub async fn edit(cx: &Cx) -> Result<impl View> {
     let id = recipe_id(cx);
-    let Some(recipe) = read(crate::recipes::get_own(db(cx), &account(cx).id, id).await)? else {
+    let Some(recipe) = own(cx, id).await? else {
         return Err(not_found().into());
     };
 
@@ -465,7 +464,7 @@ pub(crate) async fn form(cx: &Cx, again: Again, rewrites: Option<String>) -> Res
     let saved_without_picture = written.is_some();
     let rewrites = written.or(rewrites);
     let recipe = match rewrites.as_deref() {
-        Some(id) => read(crate::recipes::get_own(db(cx), &account(cx).id, id).await)?,
+        Some(id) => own(cx, id).await?,
         None => None,
     };
     let shown = recipe

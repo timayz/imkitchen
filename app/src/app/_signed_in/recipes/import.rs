@@ -15,7 +15,7 @@ use topcoat::{
     view::{View, component, view},
 };
 
-use super::{Told, caught_up, list, recipe_id, show};
+use super::{Written, list, recipe_id, show};
 use crate::app::_signed_in::{
     BUTTON, FIELD_REFUSED, Failure, H1, INPUT, LABEL, LINK, MAIN, asking, failed, tutorial,
 };
@@ -37,13 +37,13 @@ pub async fn ask(cx: &Cx) -> Result<impl View> {
 async fn submit(cx: &Cx, Form(posted): Form<Posted>) -> Result<impl View> {
     let language = language(cx);
     let imported = api(cx)
-        .create::<_, Told>(asking(cx, &language), &["recipes", "import"], &posted)
+        .create::<_, Written>(asking(cx, &language), &["recipes", "import"], &posted)
         .await;
     let failure = match imported {
-        Ok(told) => {
+        Ok(written) => {
             // A recipe imported is the first step of the tutorial too.
-            tokio::join!(caught_up(cx, &told), tutorial::noted(cx, Step::Recipe));
-            let then = href!(show, recipe_id: told.id.as_str()).resolve(cx);
+            tutorial::noted(cx, Step::Recipe).await;
+            let then = href!(show, recipe_id: written.id.as_str()).resolve(cx);
             return Err(see_other(then).into());
         }
         Err(err) => Failure::of(cx, err)?,

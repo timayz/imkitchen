@@ -13,10 +13,14 @@
 //! ([`Sidecar::reads`]): see [`ReadOnly`]. A sidecar's commands go through
 //! the HTTP routes like anyone's.
 //!
-//! What a connection reads comes from this node's file as it stands, without
-//! a consensus round: a subscription only reads up to what the node knows is
-//! settled, and what its handlers load is behind the event they handle. A
-//! sidecar may connect to any node, and to another one the next time.
+//! What a connection reads comes from this node's file, as the api reads it
+//! for its own routes: a read of one aggregate waits behind a read barrier
+//! when the node has peers, so a page that loads what its user just wrote
+//! sees it whichever node took the command; the broad reads of a
+//! subscription stay local, up to what the node knows is settled. The
+//! barrier is a consensus round per aggregate loaded, the loads of the
+//! sidecars' subscription handlers included. A sidecar may connect to any
+//! node, and to another one the next time.
 
 use std::path::Path;
 use std::sync::Arc;
@@ -48,7 +52,7 @@ pub fn serve(
     executor: &Executor,
 ) -> Result<ServerHandle> {
     let addr = listener.local_addr()?;
-    let server = ServerBuilder::new(Tokens::new(config, executor.local_reads()));
+    let server = ServerBuilder::new(Tokens::new(config, executor.clone()));
     Ok(match config.tls() {
         Some((cert, key)) => {
             let acceptor = tls_acceptor(cert, key)?;

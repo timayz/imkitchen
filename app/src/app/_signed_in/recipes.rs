@@ -30,10 +30,10 @@ use topcoat::{
 };
 
 use super::{
-    BUTTON, BUTTON_QUIET, Failure, H1, H2, LINK, MAIN, account, asking, failed, followed, read,
+    BUTTON, BUTTON_QUIET, Failure, H1, H2, LINK, MAIN, account, asking, failed, fresh, read,
 };
-use crate::app::{api, db, language, t};
-use crate::recipes::{Ingredient, Instruction, Recipe};
+use crate::app::{api, db, events, language, t};
+use crate::recipes::{Ingredient, Recipe};
 
 path_param!(pub recipe_id);
 
@@ -50,79 +50,28 @@ struct Query {
     after: Option<String>,
     /// What was just done to a recipe.
     done: Option<String>,
+    /// The recipe that was just deleted, which the table may hold a moment
+    /// longer: the list leaves it out.
+    gone: Option<String>,
 }
 
-/// A recipe as the api tells of it, in answer to the command that wrote it
-/// or when asked: what app waits to have followed before it shows the
-/// recipe. No page is read from it.
+/// What the api answers a recipe written or imported with: the id it is
+/// under.
 #[derive(Debug, Deserialize)]
-pub(crate) struct Told {
+pub(crate) struct Written {
     pub(crate) id: String,
-    title: String,
-    #[serde(default)]
-    description: String,
-    ingredients: Vec<Ingredient>,
-    instructions: Vec<Instruction>,
-    prep_minutes: i64,
-    cook_minutes: i64,
-    servings: i64,
-    #[serde(default)]
-    image: Option<ToldImage>,
 }
 
-#[derive(Debug, Deserialize)]
-struct ToldImage {
-    large: ToldFile,
-}
-
-#[derive(Debug, Deserialize)]
-struct ToldFile {
-    /// `/v1/images/1200/{file_id}.webp`.
-    url: String,
-}
-
-impl Told {
-    /// What the files of its picture are named after, when it shows one.
-    fn file_id(&self) -> Option<&str> {
-        let file = self.image.as_ref()?.large.url.rsplit('/').next()?;
-        file.strip_suffix(".webp")
-    }
-
-    /// Whether `recipe`, as app followed it, says the same.
-    fn is(&self, recipe: &Recipe) -> bool {
-        self.title == recipe.title
-            && self.description == recipe.description
-            && self.ingredients == recipe.ingredients.0
-            && self.instructions == recipe.instructions.0
-            && self.prep_minutes == recipe.prep_minutes
-            && self.cook_minutes == recipe.cook_minutes
-            && self.servings == recipe.servings
-            && self.file_id() == recipe.file_id.as_deref()
-    }
-}
-
-/// Waits until app followed the recipe as far as the api tells of it, for
-/// the page the browser is sent to to show it as it was just left.
-pub(crate) async fn caught_up(cx: &Cx, told: &Told) {
+/// The recipe `id` of who reads the page, as the commands they handed the
+/// api left it.
+pub(crate) async fn own(cx: &Cx, id: &str) -> Result<Option<Recipe>> {
     let (db, owner_id) = (db(cx), account(cx).id.as_str());
-    followed(|| async {
-        let recipe = crate::recipes::get_own(db, owner_id, &told.id).await?;
-        Ok(recipe.is_some_and(|recipe| told.is(&recipe)))
-    })
-    .await;
-}
-
-/// Waits until app followed the recipe `id` as far as the api has written
-/// it. An api that does not say is not waited for: the page shows the
-/// recipe a moment later.
-pub(crate) async fn settled(cx: &Cx, id: &str) {
-    let language = language(cx);
-    let told = api(cx)
-        .read::<Told>(asking(cx, &language), &["recipes", id])
-        .await;
-    if let Ok(told) = told {
-        caught_up(cx, &told).await;
-    }
+    fresh(
+        cx,
+        crate::recipes::get_own(events(cx), db, owner_id, id),
+        crate::recipes::row_own(db, owner_id, id),
+    )
+    .await
 }
 
 /// An ingredient as a recipe writes it: "200 g flour", "2 eggs", "salt".
@@ -161,10 +110,12 @@ pub async fn list(cx: &Cx) -> Result<impl View> {
         .and_then(|query| query.after.as_deref())
         .and_then(Cursor::parse);
     let deleted = query.is_some_and(|query| query.done.as_deref() == Some(DELETED));
+    let gone = query.and_then(|query| query.gone.as_deref());
     // One more than shown: whether there is a page beyond.
     let mut recipes = read(
         crate::recipes::list_of(db(cx), &account(cx).id, q, after.as_ref(), PAGE as i64 + 1).await,
     )?;
+    recipes.retain(|recipe| Some(recipe.id.as_str()) != gone);
     let more = recipes.len() > PAGE;
     recipes.truncate(PAGE);
     let next = recipes.last().filter(|_| more).map(|last| {
@@ -284,7 +235,7 @@ pub async fn list(cx: &Cx) -> Result<impl View> {
 #[page("./{recipe_id}", with(Metadata::new().title(t!(recipes_meta_title))))]
 pub async fn show(cx: &Cx) -> Result<impl View> {
     let id = recipe_id(cx);
-    let Some(recipe) = read(crate::recipes::get_own(db(cx), &account(cx).id, id).await)? else {
+    let Some(recipe) = own(cx, id).await? else {
         return Err(not_found().into());
     };
     let picture = recipe.file_id.as_deref().map(|file_id| {
@@ -399,12 +350,11 @@ pub async fn show(cx: &Cx) -> Result<impl View> {
     })
 }
 
-/// Deletes the recipe, and sends the browser to the list once app followed
-/// that it is gone.
+/// Deletes the recipe, and sends the browser to the list, which leaves it
+/// out while its row is still there.
 #[page(POST "./{recipe_id}/delete", with(Metadata::new().title(t!(recipes_meta_title))))]
 async fn delete(cx: &Cx) -> Result<impl View> {
     let id = recipe_id(cx);
-    let (db, owner_id) = (db(cx), account(cx).id.as_str());
     let language = language(cx);
     let deleted = api(cx)
         .command(
@@ -416,9 +366,10 @@ async fn delete(cx: &Cx) -> Result<impl View> {
         .await;
     let failure = match deleted {
         Ok(()) => {
-            followed(|| async { Ok(crate::recipes::get_own(db, owner_id, id).await?.is_none()) })
-                .await;
-            let then = href!(list).query([("done", DELETED)]).resolve(cx);
+            let then = href!(list)
+                .query([("done", DELETED)])
+                .query([("gone", id)])
+                .resolve(cx);
             return Err(see_other(then).into());
         }
         Err(err) => Failure::of(cx, err)?,

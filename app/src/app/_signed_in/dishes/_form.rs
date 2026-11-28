@@ -35,7 +35,7 @@ use topcoat::{
     view::{View, component, view},
 };
 
-use super::{Told, caught_up, dish_id, list, named, settled, show};
+use super::{Composed, dish_id, list, named, own, show};
 use crate::app::_signed_in::{
     BUTTON, BUTTON_QUIET, FIELD_REFUSED, Failure, H1, H2, INPUT, LABEL, LINK, MAIN, account,
     asking, failed, read, recipes, tutorial,
@@ -145,9 +145,9 @@ impl Again {
 }
 
 /// Hands what the form posted to the api: a dish to compose without `id`,
-/// the dish `id` to recompose with one. Once the api did it and app
-/// followed, the step of the tutorial with it when the dish is a new one,
-/// the browser is sent to the dish; anything else is the form again.
+/// the dish `id` to recompose with one. Once the api did it, and noted the
+/// step of the tutorial when the dish is a new one, the browser is sent to
+/// the dish, which shows what the api did; anything else is the form again.
 pub(crate) async fn hand(
     cx: &Cx,
     id: Option<&str>,
@@ -160,23 +160,18 @@ pub(crate) async fn hand(
     let language = language(cx);
     let asking = asking(cx, &language);
     let written = match id {
-        Some(id) => {
-            let recomposed = api(cx)
-                .command(asking, Method::PUT, &["plats", id], Some(&typed.body()))
-                .await;
-            if recomposed.is_ok() {
-                settled(cx, id).await;
-            }
-            recomposed.map(|()| id.to_owned())
-        }
+        Some(id) => api(cx)
+            .command(asking, Method::PUT, &["plats", id], Some(&typed.body()))
+            .await
+            .map(|()| id.to_owned()),
         None => {
             let composed = api(cx)
-                .create::<_, Told>(asking, &["plats"], &typed.body())
+                .create::<_, Composed>(asking, &["plats"], &typed.body())
                 .await;
-            if let Ok(told) = &composed {
-                tokio::join!(caught_up(cx, told), tutorial::noted(cx, Step::Plat));
+            if composed.is_ok() {
+                tutorial::noted(cx, Step::Plat).await;
             }
-            composed.map(|told| told.id)
+            composed.map(|composed| composed.id)
         }
     };
     match written {
@@ -191,7 +186,7 @@ pub(crate) async fn hand(
 #[page("./{dish_id}/edit", with(Metadata::new().title(t!(dish_edit_meta_title))))]
 pub async fn edit(cx: &Cx) -> Result<impl View> {
     let id = dish_id(cx);
-    let Some(dish) = read(crate::dishes::get_own(db(cx), &account(cx).id, id).await)? else {
+    let Some(dish) = own(cx, id).await? else {
         return Err(not_found().into());
     };
 

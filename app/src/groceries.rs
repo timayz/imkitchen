@@ -12,41 +12,37 @@
 //! the amount the list then called for, and holds for as long as it calls
 //! for that much.
 //!
-//! app keeps one row per item something is said of. The handlers leave the
-//! table as it should be when an event is delivered twice (the subscription
-//! is at-least-once): an item is checked however often it is, to buy again
-//! however often it is unchecked, and of the amount its last event says.
+//! What a user says is a projection of their stream, under their id
+//! ([`GroceriesState`]), whose snapshot is their row of the `groceries`
+//! table, kept by a projection subscription ([`subscription`]): one row
+//! per user who said something, every item they said something of in it.
+//! A page loads the groceries of who reads it from their list and their
+//! row, and the events written after them ([`of`]).
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
+use evento::Executor;
 use evento::metadata::Event;
-use evento::subscription::{Context, SubscriptionBuilder};
+use evento::projection::{Context, Projection, ProjectionSubscription, Snapshot};
 use imkitchen_aggregates::groceries::items::{Item, Portion, merge, same_amount};
-use imkitchen_aggregates::groceries::{Adjusted, Checked, Unchecked};
+use imkitchen_aggregates::groceries::{Adjusted, Checked, Groceries, Unchecked};
 use imkitchen_aggregates::recipe;
-use timada_core::db::FromRow;
+use serde::{Deserialize, Serialize};
+use timada_core::db::{FromRow, Json};
 
 use crate::db::Db;
+use crate::list::Entry;
 
 /// The cursor identity of the subscription, in the store.
 pub const SUBSCRIPTION: &str = "imkitchen-app/groceries";
 
-/// Follows what the users say of their groceries into `db`.
-pub fn subscription<E: evento::Executor>(db: Db) -> SubscriptionBuilder<E> {
-    SubscriptionBuilder::new(SUBSCRIPTION)
-        .data(db)
-        .handler(on_checked())
-        .handler(on_unchecked())
-        .handler(on_adjusted())
-}
-
 /// What a user said of one item, as the table keeps it.
-#[derive(Debug, Clone, Copy, Default, PartialEq, FromRow)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 struct Mark {
     /// How much the list called for when it was said.
     needed: Option<f64>,
-    /// In the basket: 1, or 0.
-    checked: i64,
+    /// In the basket.
+    checked: bool,
     /// How much the user buys, when it is not what the list calls for.
     quantity: Option<f64>,
 }
@@ -65,78 +61,127 @@ impl Mark {
     }
 }
 
-async fn mark_of(db: &Db, owner_id: &str, item_id: &str) -> anyhow::Result<Option<Mark>> {
-    db.fetch_optional(
-        "SELECT needed, checked, quantity FROM grocery_marks
-         WHERE owner_id = ?1 AND item_id = ?2",
-        (owner_id, item_id),
-    )
-    .await
+/// What a user said of their groceries, as their stream leaves it.
+#[evento::projection]
+#[derive(Debug)]
+pub struct GroceriesState {
+    /// What they say of each item, by its id: an item that says nothing
+    /// any more is forgotten.
+    marks: BTreeMap<String, Mark>,
 }
 
-/// Keeps `mark` as what `owner_id` says of `item_id`; one that says nothing
-/// any more is forgotten.
-async fn write(db: &Db, owner_id: &str, item_id: &str, mark: Mark) -> anyhow::Result<()> {
-    if mark.checked == 0 && mark.quantity.is_none() {
-        db.execute(
-            "DELETE FROM grocery_marks WHERE owner_id = ?1 AND item_id = ?2",
-            (owner_id, item_id),
-        )
-        .await?;
-        return Ok(());
+impl GroceriesState {
+    /// The mark of `item_id`, a fresh one when nothing is said of it.
+    fn mark(&self, item_id: &str) -> Option<Mark> {
+        self.marks.get(item_id).copied()
     }
-    db.execute(
-        "INSERT INTO grocery_marks (owner_id, item_id, needed, checked, quantity)
-         VALUES (?1, ?2, ?3, ?4, ?5)
-         ON CONFLICT (owner_id, item_id) DO UPDATE SET
-            needed = excluded.needed, checked = excluded.checked, quantity = excluded.quantity",
-        (owner_id, item_id, mark.needed, mark.checked, mark.quantity),
-    )
-    .await?;
+
+    /// Keeps `mark` as what is said of `item_id`.
+    fn keep(&mut self, item_id: &str, mark: Mark) {
+        if !mark.checked && mark.quantity.is_none() {
+            self.marks.remove(item_id);
+        } else {
+            self.marks.insert(item_id.to_owned(), mark);
+        }
+    }
+}
+
+fn projection<E: Executor>(db: Db) -> Projection<E, GroceriesState> {
+    Projection::new::<Groceries>()
+        .handler(on_checked())
+        .handler(on_unchecked())
+        .handler(on_adjusted())
+        .data(db)
+}
+
+/// Keeps the row of what each user said of their groceries in `db` as their
+/// stream leaves it.
+pub fn subscription<E: Executor>(db: Db) -> ProjectionSubscription<E, GroceriesState> {
+    projection(db).subscription(SUBSCRIPTION)
+}
+
+#[evento::handler]
+async fn on_checked(event: Event<Checked>, state: &mut GroceriesState) -> anyhow::Result<()> {
+    let item_id = event.data.item_id.as_str();
+    let mark = state.mark(item_id).unwrap_or_default();
+    let mark = Mark {
+        checked: true,
+        ..mark.at(event.data.needed)
+    };
+    state.keep(item_id, mark);
     Ok(())
 }
 
-#[evento::subscription]
-async fn on_checked<E: evento::Executor>(
-    context: &Context<'_, E>,
-    event: Event<Checked>,
-) -> anyhow::Result<()> {
-    let db: Db = context.extract();
-    let (owner_id, item_id) = (event.aggregate_id.as_str(), event.data.item_id.as_str());
-    let mark = mark_of(&db, owner_id, item_id).await?.unwrap_or_default();
-    let mark = Mark {
-        checked: 1,
-        ..mark.at(event.data.needed)
-    };
-    write(&db, owner_id, item_id, mark).await
+#[evento::handler]
+async fn on_unchecked(event: Event<Unchecked>, state: &mut GroceriesState) -> anyhow::Result<()> {
+    let item_id = event.data.item_id.as_str();
+    if let Some(mark) = state.mark(item_id) {
+        state.keep(
+            item_id,
+            Mark {
+                checked: false,
+                ..mark
+            },
+        );
+    }
+    Ok(())
 }
 
-#[evento::subscription]
-async fn on_unchecked<E: evento::Executor>(
-    context: &Context<'_, E>,
-    event: Event<Unchecked>,
-) -> anyhow::Result<()> {
-    let db: Db = context.extract();
-    let (owner_id, item_id) = (event.aggregate_id.as_str(), event.data.item_id.as_str());
-    let Some(mark) = mark_of(&db, owner_id, item_id).await? else {
-        return Ok(());
-    };
-    write(&db, owner_id, item_id, Mark { checked: 0, ..mark }).await
-}
-
-#[evento::subscription]
-async fn on_adjusted<E: evento::Executor>(
-    context: &Context<'_, E>,
-    event: Event<Adjusted>,
-) -> anyhow::Result<()> {
-    let db: Db = context.extract();
-    let (owner_id, item_id) = (event.aggregate_id.as_str(), event.data.item_id.as_str());
-    let mark = mark_of(&db, owner_id, item_id).await?.unwrap_or_default();
+#[evento::handler]
+async fn on_adjusted(event: Event<Adjusted>, state: &mut GroceriesState) -> anyhow::Result<()> {
+    let item_id = event.data.item_id.as_str();
+    let mark = state.mark(item_id).unwrap_or_default();
     let mark = Mark {
         quantity: event.data.quantity,
         ..mark.at(event.data.needed)
     };
-    write(&db, owner_id, item_id, mark).await
+    state.keep(item_id, mark);
+    Ok(())
+}
+
+/// The row of what a user said, and how far their stream was folded into
+/// it.
+#[derive(FromRow)]
+struct Row {
+    marks: Json<BTreeMap<String, Mark>>,
+    cursor: String,
+    aggregate_version: i64,
+}
+
+impl<E: Executor> Snapshot<E> for GroceriesState {
+    async fn restore(context: &Context<'_, E>) -> anyhow::Result<Option<Self>> {
+        let db: Db = context.extract();
+        let row: Option<Row> = db
+            .fetch_optional(
+                "SELECT marks, cursor, aggregate_version FROM groceries WHERE owner_id = ?1",
+                (context.id.as_str(),),
+            )
+            .await?;
+        Ok(row.map(|row| GroceriesState {
+            marks: row.marks.0,
+            cursor: row.cursor,
+            aggregate_version: row.aggregate_version as u16,
+            ..Default::default()
+        }))
+    }
+
+    async fn take_snapshot(&self, context: &Context<'_, E>) -> anyhow::Result<()> {
+        let db: Db = context.extract();
+        db.execute(
+            "INSERT INTO groceries (owner_id, marks, cursor, aggregate_version)
+             VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT (owner_id) DO UPDATE SET marks = excluded.marks,
+                cursor = excluded.cursor, aggregate_version = excluded.aggregate_version",
+            (
+                context.id.as_str(),
+                Json(&self.marks).to_text()?,
+                self.cursor.as_str(),
+                i64::from(self.aggregate_version),
+            ),
+        )
+        .await?;
+        Ok(())
+    }
 }
 
 /// One thing to buy, and what its user said of it.
@@ -157,18 +202,9 @@ pub struct Grocery {
     pub checked: bool,
 }
 
-#[derive(FromRow)]
-struct Said {
-    item_id: String,
-    needed: Option<f64>,
-    checked: i64,
-    quantity: Option<f64>,
-}
-
-/// What `owner_id` has to buy to cook their list, as far as app has
-/// followed it.
-async fn items(db: &Db, owner_id: &str) -> anyhow::Result<Vec<Item>> {
-    let entries = crate::list::of(db, owner_id).await?;
+/// What `owner_id` has to buy to cook the meals of their list, `entries`,
+/// as app knows the dishes and the recipes they name.
+async fn items(db: &Db, owner_id: &str, entries: &[Entry]) -> anyhow::Result<Vec<Item>> {
     let dish_ids: Vec<String> = entries
         .iter()
         .filter_map(|entry| entry.dish_id.clone())
@@ -221,30 +257,25 @@ async fn items(db: &Db, owner_id: &str) -> anyhow::Result<Vec<Item>> {
     Ok(merge(portions))
 }
 
-/// The groceries of `owner_id`, by name, as far as app has followed: what
-/// their list takes as it stands, each item with what they said of it when
-/// the list still calls for as much. Empty for an empty list.
-pub async fn of(db: &Db, owner_id: &str) -> anyhow::Result<Vec<Grocery>> {
-    let items = items(db, owner_id).await?;
-    let said: Vec<Said> = db
-        .fetch_all(
-            "SELECT item_id, needed, checked, quantity FROM grocery_marks WHERE owner_id = ?1",
-            (owner_id,),
-        )
-        .await?;
-    let said: HashMap<String, Said> = said
-        .into_iter()
-        .map(|said| (said.item_id.clone(), said))
-        .collect();
+/// The groceries of `owner_id`, by name: what the meals of their list,
+/// `entries`, take, each item with what they said of it (`marks`) when the
+/// list still calls for as much. Empty for an empty list.
+async fn worked_out(
+    db: &Db,
+    owner_id: &str,
+    entries: &[Entry],
+    marks: &BTreeMap<String, Mark>,
+) -> anyhow::Result<Vec<Grocery>> {
+    let items = items(db, owner_id, entries).await?;
     Ok(items
         .into_iter()
         .map(|item| {
-            let mark = said
+            let mark = marks
                 .get(&item.id)
-                .filter(|said| same_amount(said.needed, item.quantity));
+                .filter(|mark| same_amount(mark.needed, item.quantity));
             Grocery {
                 adjusted_quantity: mark.and_then(|mark| mark.quantity),
-                checked: mark.is_some_and(|mark| mark.checked != 0),
+                checked: mark.is_some_and(|mark| mark.checked),
                 id: item.id,
                 name: item.name,
                 unit: item.unit,
@@ -252,4 +283,40 @@ pub async fn of(db: &Db, owner_id: &str) -> anyhow::Result<Vec<Grocery>> {
             }
         })
         .collect())
+}
+
+#[derive(FromRow)]
+struct Said {
+    marks: Json<BTreeMap<String, Mark>>,
+}
+
+/// The groceries of `owner_id`, by name, from their list and what they said
+/// as their rows hold them: a moment behind the commands.
+pub async fn row_of(db: &Db, owner_id: &str) -> anyhow::Result<Vec<Grocery>> {
+    let entries = crate::list::row_of(db, owner_id).await?;
+    let said: Option<Said> = db
+        .fetch_optional(
+            "SELECT marks FROM groceries WHERE owner_id = ?1",
+            (owner_id,),
+        )
+        .await?;
+    let marks = said.map(|said| said.marks.0).unwrap_or_default();
+    worked_out(db, owner_id, &entries, &marks).await
+}
+
+/// The groceries of `owner_id`, by name, from their list and what they said
+/// as their streams leave them: their rows and the events written after
+/// them, read from the api.
+pub async fn of<E: Executor>(
+    executor: &E,
+    db: &Db,
+    owner_id: &str,
+) -> anyhow::Result<Vec<Grocery>> {
+    let entries = crate::list::of(executor, db, owner_id).await?;
+    let state = projection(db.clone())
+        .load(owner_id)
+        .execute(executor)
+        .await?;
+    let marks = state.map(|state| state.marks).unwrap_or_default();
+    worked_out(db, owner_id, &entries, &marks).await
 }
